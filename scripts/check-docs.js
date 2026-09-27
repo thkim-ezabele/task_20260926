@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 위키 문서 점검: 상대 링크 대상 존재, 앵커(제목 슬러그), frontmatter 필수 키, wikilink 금지.
+// 위키 문서 점검: 상대 링크 대상 존재, 앵커(제목 슬러그), frontmatter 필수 키, wikilink 금지, 표 구조.
 // 사용법: node scripts/check-docs.js [파일 또는 디렉터리 ...]
 //   인자가 없으면 wiki/ 전체(_templates/, .obsidian/ 제외)를 점검한다.
 //   결함이 하나라도 있으면 exit 1, 없으면 exit 0.
@@ -179,6 +179,32 @@ function checkLinks(file, lines) {
   });
 }
 
+// 표 구조: 머리글 · 구분 줄 뒤 행의 열 수가 같은지, 머리글 없이 시작하는 표 행(문단이 표를 끊은 경우)이 없는지.
+function tableCells(text) {
+  return text.trim().replace(/^\|/, '').replace(/(?<!\\)\|$/, '').split(/(?<!\\)\|/).length;
+}
+
+function checkTables(file, lines) {
+  const { bodyStart } = splitFrontmatter(lines);
+  const masked = maskCode(lines, bodyStart);
+  const isRow = (i) => i < lines.length && masked[i] !== null && /^\s{0,3}\|/.test(masked[i]);
+  const isSeparator = (i) => isRow(i) && /^\s*\|?(\s*:?-{3,}:?\s*\|)+\s*(:?-{3,}:?\s*)?$/.test(masked[i]);
+  for (let i = bodyStart; i < lines.length; i++) {
+    if (!isRow(i)) continue;
+    const start = i;
+    while (isRow(i + 1)) i++;
+    if (!isSeparator(start + 1)) {
+      report(file, start + 1, 'table', '머리글 · 구분 줄 없이 시작하는 표 행입니다(문단이 표를 끊었는지 확인)');
+      continue;
+    }
+    const columns = tableCells(masked[start]);
+    for (let r = start + 1; r <= i; r++) {
+      const n = tableCells(masked[r]);
+      if (n !== columns) report(file, r + 1, 'table', `표 열 수가 머리글(${columns})과 다릅니다(${n})`);
+    }
+  }
+}
+
 function main() {
   const args = process.argv.slice(2);
   const targets = args.length > 0 ? args.map((a) => path.resolve(process.cwd(), a)) : [wikiRoot];
@@ -195,6 +221,7 @@ function main() {
     const lines = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n').split('\n');
     checkFrontmatter(file, lines);
     checkLinks(file, lines);
+    checkTables(file, lines);
   }
   for (const d of defects) console.log(`${d.file}:${d.line}: [${d.kind}] ${d.message}`);
   const byKind = defects.reduce((acc, d) => ({ ...acc, [d.kind]: (acc[d.kind] ?? 0) + 1 }), {});
