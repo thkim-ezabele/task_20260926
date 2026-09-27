@@ -116,7 +116,7 @@ updated: 2026-09-28
 - 구현 위치: 리소스 구성은 AppHost `EmergencyHubApplication.AddEmergencyHub`, 이름 · 값 상수는 `EmergencyHubResourceNames` · `EmployeeDatabaseSettings` · `EmployeeConnectionStrings`. 이미지 태그는 `Directory.Build.props`의 `EmergencyHubPostgresImageTag` 하나가 원본이고, csproj에 `EmergencyHubUsesPostgresImage=true`를 두면 어셈블리 메타데이터(키 `EmergencyHubPostgresImageTag`)로 들어가 `PostgresImageTag.Read`가 읽는다(통합 테스트 fixture도 같은 방식, S03-T06).
 - 중지: 콘솔에서 Ctrl+C. 컨테이너는 세션 수명이라 지워지고 볼륨 `emergency-hub-postgres-data`와 AppHost user-secrets는 남는다.
 - AppHost user-secrets에 남는 키: `Parameters:postgres-password` · `Parameters:employee-app-password`(매개변수 persist), `AppHost:OtlpApiKey`(첫 실행 때 Aspire가 대시보드 OTLP 키로 저장, BL-100), `Aspire:VersionCheck:*`(Aspire 9.5.2 버전 확인이 실행마다 기록, BL-097). DB와 묶인 것은 `Parameters:*` 두 키뿐이지만, 초기화는 키를 골라 지우지 않고 전부 지운다.
-- 초기화(초기 상태로 되돌리기): AppHost를 멈춘 뒤 **볼륨 삭제와 user-secrets clear를 반드시 함께** 한다. ① `docker volume rm emergency-hub-postgres-data`(이 이름 있는 볼륨만, 익명 볼륨 · 다른 프로젝트 볼륨 금지) ② `dotnet user-secrets clear --project src/Aspire/EmergencyHub.AppHost`(위 키 전부가 지워짐) ③ 다시 실행하면 새 비밀번호 쌍이 생성되어 빈 볼륨에 초기화된다. 한쪽만 하면 위 "비밀번호와 볼륨"의 인증 실패(`28P01`)가 난다(user-secrets만 지운 경우). 같은 머신의 다른 clone도 같은 `UserSecretsId` · 볼륨 이름을 쓰므로 함께 초기화된다. 셸별 명령은 [로컬 개발 환경 구성](../01-getting-started/local-setup.md)이 원본이다.
+- 초기화(초기 상태로 되돌리기): AppHost를 멈춘 뒤 **볼륨 삭제와 user-secrets clear를 반드시 함께** 한다. ① `docker volume rm emergency-hub-postgres-data`(이 이름 있는 볼륨만, 익명 볼륨 · 다른 프로젝트 볼륨 금지) ② `dotnet user-secrets clear --project src/Aspire/EmergencyHub.AppHost`(위 키 전부가 지워짐) ③ 다시 실행하면 새 비밀번호 쌍이 생성되어 빈 볼륨에 초기화된다. 한쪽만 하면 위 "비밀번호와 볼륨"의 인증 실패(`28P01`)가 난다(user-secrets만 지운 경우). 같은 머신의 다른 clone도 같은 `UserSecretsId` · 볼륨 이름을 쓰므로 함께 초기화된다. 셸별 명령은 [로컬 개발 환경 구성의 초기화](../01-getting-started/local-setup.md#초기화-볼륨--user-secrets)가 원본이다.
 - 로컬 관찰(2026-09-28 스모크, S03-T05 판정 확정): `employee-db` 헬스 검사가 생성 스크립트보다 먼저 접속해 첫 실행 서버 로그에 `FATAL:  database "emergency_hub_employee" does not exist`(`3D000`)가 남을 수 있다. 이것은 42P04 한 쌍과 같은 Aspire 자체 검사 잡음으로, 개수를 기록하고 오류 0 판정에서 제외한다(BL-096). `pg_stat_activity`에는 Aspire 헬스 검사의 `postgres` 연결(`application_name` 비어 있음, `postgres` · `emergency_hub_employee` DB)이 보인다. 앱 연결이 아니므로 확인 10번은 `application_name LIKE 'employee-%'` 행으로 판정한다(S03-T05 메인 세션 판단 · tester 판정: `employee-api-read` 1 · `employee-api-write` 1, 헬스 주기마다 늘지 않음).
 
 ## 테이블 / 컬럼 네이밍 규칙 (snake_case)
@@ -305,7 +305,7 @@ var smsEnabled = await db.Employees
 - 서비스마다 EF Core 마이그레이션을 따로 둔다(Infrastructure 프로젝트의 `Persistence/Migrations/`).
 - 마이그레이션 이름은 PascalCase로 변경 의도를 적는다: `AddEmployeeNotificationChannels`
 - **이미 적용(push)된 마이그레이션은 고치지 않는다.** 수정은 새 마이그레이션으로 한다. 운영 전 리셋(아래)은 전체를 `InitialCreate` 하나로 다시 만드는 예외이며, 리셋 기간에도 개별 마이그레이션의 부분 수정은 금지한다. push 전 토픽 브랜치 안에만 있는 공유되지 않은 마이그레이션을 다시 만드는 것은 이 규칙의 대상이 아니다.
-- 생성한 SQL을 확인한다: `dotnet ef migrations script --idempotent`. dba는 작업마다 SQL을 검토한다.
+- 생성한 SQL을 확인한다: `dotnet ef migrations script --idempotent`. dba는 작업마다 SQL을 검토한다. 허용 / 금지 `dotnet ef` 명령과 셸별 실행 예는 [로컬 개발 환경 구성의 DB 마이그레이션](../01-getting-started/local-setup.md#db-마이그레이션)이 원본이다.
 - 파괴적 변경(컬럼 삭제 / 이름 변경 / 타입 변경)은 **확장 → 이전 → 축소** 2단계 이상으로 나눈다.
 - 운영 환경에서는 애플리케이션 시작 시 자동 적용하지 않는다(마이그레이션 번들 / 스크립트로 적용).
 - **로컬 적용**: MigrationService 하나가 Write 연결로 실행 전략 안에서 `MigrateAsync`만 하고 종료한다(실패 시 0이 아닌 종료 코드, Api는 `WaitForCompletion`으로 완료를 기다림). **Api는 시작할 때 마이그레이션하지 않는다.** DB 생성은 AppHost가 하고 `EnsureCreated`는 금지한다. EF Core 8 `MigrateAsync`에는 잠금이 없으므로 적용 주체는 하나다(TD-011, [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md)).
@@ -474,3 +474,4 @@ InitialCreate 대조(S04-T02 dba, 마이그레이션 `20260927134235_InitialCrea
 | 2026-09-28 | developer | BL-073 확정 문구(Api 3회 · 5초, Api 요청 제한 시간 없음 · 기준식 적용 대상 없음), BL-023 결정(EF 실패 이벤트 3개 `Debug`, 근거 실측과 경계 로그, 고정 테스트) (S03-T06) |
 | 2026-09-28 | dba | ERD · Employee 코드 표를 InitialCreate · 스냅샷 · idempotent SQL과 대조(대조 표 추가), `xmin` 설명을 구현(`IsConcurrencyToken` + `OnAddOrUpdate` = `IsRowVersion` 구성, 마이그레이션 C#에는 있고 생성 SQL에는 없음)에 맞춤(BL-087), 이미지 태그 한 곳 확정 문구, 초기화 절차(볼륨 + user-secrets 함께, `AppHost:OtlpApiKey` · `Aspire:VersionCheck:*` 포함, BL-100 · BL-097), 42P04 · 3D000 · psql 10번 판정 확정 문구(S03-T05), MigrationService Development 주입(BL-110), 이력 테이블 ADR 후보 문구 (S04-T02) |
 | 2026-09-28 | dba | S04-T02 재작업(tester 반려): InitialCreate 대조의 따옴표 식별자 문장을 idempotent SQL 실측에 맞춤(DDL · 이력 `INSERT`는 `"__EFMigrationsHistory"`만, 조회 조건 3곳의 `"migration_id"`는 EF 생성) (S04-T02) |
+| 2026-09-28 | dba | local-setup 앵커 링크: 초기화 셸별 명령 → `#초기화-볼륨--user-secrets`, 마이그레이션 규칙에 허용 / 금지 `dotnet ef` 명령 원본 링크 `#db-마이그레이션` 추가. configuration 링크 앵커는 제목 확정 뒤(developer) (S04-T03) |
