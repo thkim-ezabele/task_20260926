@@ -1,0 +1,55 @@
+# S03-T07 tester 재확인: 요청 완료 로그(발견 사항 1) 실제 AppHost 실행
+# 2026-09-28, 커밋 431510e 빌드, dotnet run --project src/Aspire/EmergencyHub.AppHost --launch-profile http, 기존 볼륨 · user-secrets 그대로. 비밀 값 · 대시보드 로그인 토큰은 적지 않음.
+
+===== (1) HTTP 요청 (curl, http://localhost:5180) =====
+## POST
+HTTP/1.1 201 Created
+Location: http://localhost:5180/api/v1/employees/01a0e409-05a1-7633-88df-2e0c7a830943
+{"id":"01a0e409-05a1-7633-88df-2e0c7a830943"}
+## GET http://localhost:5180/api/v1/employees/01a0e409-05a1-7633-88df-2e0c7a830943
+HTTP/1.1 200 OK
+{"id":"01a0e409-05a1-7633-88df-2e0c7a830943","displayName":"T07 Recheck","email":"t07-recheck@example.com","employeeStatus":1,"createdAt":"2026-09-27T18:03:12.003904+00:00","updatedAt":"2026-09-27T18:03:12.003904+00:00"}
+## GET 404
+HTTP/1.1 404 Not Found
+{"type":"https://httpstatuses.io/404","title":"Not Found","status":404,"detail":"직원을 찾을 수 없습니다.","instance":"/api/v1/employees/0192a1b3-0000-7000-8000-000000000001","code":22001,"traceId":"b5b0d776f9df65e6c25190817b7d62d7"}
+## POST 400
+HTTP/1.1 400 Bad Request
+{"type":"https://httpstatuses.io/400","title":"Bad Request","status":400,"detail":"요청 값이 올바르지 않습니다.","instance":"/api/v1/employees","code":1001,"traceId":"fabd96be7a71bd2ab49c419c511b22ea","errors":{"employeeStatus":[{"code":21006,"message":"직원 상태는 필수입니다."}]}}
+## health
+200
+
+===== (2) Api 파일 로그 logs/employee-20260928.json 이번 실행분(50행~). 열: 시각 | 수준 | 이벤트 ID | SourceContext | TraceId | 메시지 =====
+2026-09-27T18:03:01.1664785Z | Information | 14 | Microsoft.Hosting.Lifetime | - | Now listening on: "http://localhost:51339"
+2026-09-27T18:03:01.1878480Z | Information | - | Microsoft.Hosting.Lifetime | - | Application started. Press Ctrl+C to shut down.
+2026-09-27T18:03:01.1885678Z | Information | - | Microsoft.Hosting.Lifetime | - | Hosting environment: "Development"
+2026-09-27T18:03:01.1886750Z | Information | - | Microsoft.Hosting.Lifetime | - | Content root path: "C:\00. src\02. src\emergency-hub\src\Services\Employee\EmergencyHub.Employee.Api"
+2026-09-27T18:03:11.9190126Z | Information | 20101 | Microsoft.EntityFrameworkCore.Database.Command | 5952fafce033f57e97604a52ddfd126d | Executed DbCommand ("43"ms) [Parameters=["@__email_0='?'"], CommandType='Text', CommandTimeout='30']"
+2026-09-27T18:03:11.9934730Z | Information | 20001 | EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandHandler | 5952fafce033f57e97604a52ddfd126d | Employee 01a0e409-05a1-7633-88df-2e0c7a830943 registered
+2026-09-27T18:03:12.0553573Z | Information | 20101 | Microsoft.EntityFrameworkCore.Database.Command | 5952fafce033f57e97604a52ddfd126d | Executed DbCommand ("4"ms) [Parameters=["@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?', @p3='?', @p4='?' (DbType = Int16), @p5='?' (DbType = DateTime)"], CommandType='Text', CommandTimeout='30']"
+2026-09-27T18:03:12.0862996Z | Debug | 101 | EmergencyHub.BuildingBlocks.Application.Pipeline.LoggingCommandHandlerDecorator | 5952fafce033f57e97604a52ddfd126d | Command "RegisterEmployeeCommand" succeeded in 457.94 ms
+2026-09-27T18:03:12.1156836Z | Information | - | Serilog.AspNetCore.RequestLoggingMiddleware | 5952fafce033f57e97604a52ddfd126d | HTTP "POST" "/api/v1/employees" responded 201 in 587.5070 ms
+2026-09-27T18:03:12.3433178Z | Information | 20101 | Microsoft.EntityFrameworkCore.Database.Command | 33929261a8b613e201ebc05f1ea30af8 | Executed DbCommand ("2"ms) [Parameters=["@__p_0='?' (DbType = Guid)"], CommandType='Text', CommandTimeout='30']"
+2026-09-27T18:03:12.3558611Z | Debug | 103 | EmergencyHub.BuildingBlocks.Application.Pipeline.LoggingQueryHandlerDecorator | 33929261a8b613e201ebc05f1ea30af8 | Query "GetEmployeeByIdQuery" succeeded in 58.7921 ms
+2026-09-27T18:03:12.3657023Z | Information | - | Serilog.AspNetCore.RequestLoggingMiddleware | 33929261a8b613e201ebc05f1ea30af8 | HTTP "GET" "/api/v1/employees/01a0e409-05a1-7633-88df-2e0c7a830943" responded 200 in 79.3192 ms
+2026-09-27T18:03:12.4529636Z | Information | 20101 | Microsoft.EntityFrameworkCore.Database.Command | b5b0d776f9df65e6c25190817b7d62d7 | Executed DbCommand ("2"ms) [Parameters=["@__p_0='?' (DbType = Guid)"], CommandType='Text', CommandTimeout='30']"
+2026-09-27T18:03:12.4572472Z | Information | 104 | EmergencyHub.BuildingBlocks.Application.Pipeline.LoggingQueryHandlerDecorator | b5b0d776f9df65e6c25190817b7d62d7 | Query "GetEmployeeByIdQuery" failed with error 22001 of type 20 in 6.161 ms
+2026-09-27T18:03:12.4775150Z | Information | - | Serilog.AspNetCore.RequestLoggingMiddleware | b5b0d776f9df65e6c25190817b7d62d7 | HTTP "GET" "/api/v1/employees/0192a1b3-0000-7000-8000-000000000001" responded 404 in 31.9631 ms
+2026-09-27T18:03:12.5646199Z | Information | 102 | EmergencyHub.BuildingBlocks.Application.Pipeline.LoggingCommandHandlerDecorator | fabd96be7a71bd2ab49c419c511b22ea | Command "RegisterEmployeeCommand" failed with error 1001 of type 10 in 7.8676 ms
+2026-09-27T18:03:12.5755346Z | Information | - | Serilog.AspNetCore.RequestLoggingMiddleware | fabd96be7a71bd2ab49c419c511b22ea | HTTP "POST" "/api/v1/employees" responded 400 in 22.3881 ms
+
+===== (3) Api 콘솔(DCP 수집 표준 출력 = 대시보드 콘솔 로그 원본)에서 'responded' 줄 =====
+16 2026-09-27T18:03:12.115Z [03:03:12.115 INF] employee Serilog.AspNetCore.RequestLoggingMiddleware (5952fafce033f57e97604a52ddfd126d) HTTP POST /api/v1/employees responded 201 in 587.5070 ms
+23 2026-09-27T18:03:12.365Z [03:03:12.365 INF] employee Serilog.AspNetCore.RequestLoggingMiddleware (33929261a8b613e201ebc05f1ea30af8) HTTP GET /api/v1/employees/01a0e409-05a1-7633-88df-2e0c7a830943 responded 200 in 79.3192 ms
+30 2026-09-27T18:03:12.477Z [03:03:12.477 INF] employee Serilog.AspNetCore.RequestLoggingMiddleware (b5b0d776f9df65e6c25190817b7d62d7) HTTP GET /api/v1/employees/0192a1b3-0000-7000-8000-000000000001 responded 404 in 31.9631 ms
+32 2026-09-27T18:03:12.575Z [03:03:12.575 INF] employee Serilog.AspNetCore.RequestLoggingMiddleware (fabd96be7a71bd2ab49c419c511b22ea) HTTP POST /api/v1/employees responded 400 in 22.3881 ms
+(헬스 요청: 준비 대기 중 /health/ready 여러 번 + 마지막 1회 → 파일 · 콘솔 모두 0줄)
+
+===== (4) 대시보드 구조화 로그(CDP로 /structuredlogs 본문 텍스트에서 'responded' 줄, 캡처 dashboard-11-t07-request-completion-logs.png) =====
+responded 줄 4개:
+  HTTP POST /api/v1/employees responded 201 in 587.5070 ms
+  HTTP GET /api/v1/employees/01a0e409-05a1-7633-88df-2e0c7a830943 responded 200 in 79.3192 ms
+  HTTP GET /api/v1/employees/0192a1b3-0000-7000-8000-000000000001 responded 404 in 31.9631 ms
+  HTTP POST /api/v1/employees responded 400 in 22.3881 ms
+
+===== 종료 =====
+AppHost 프로세스 트리 강제 종료 → 남은 이 AppHost 컨테이너 postgres-* (볼륨 emergency-hub-postgres-data 마운트)와 aspire-session-network-*만 docker stop · rm(-v 없음) · network rm. 볼륨 · user-secrets 유지.

@@ -116,6 +116,7 @@ updated: 2026-09-28
 ## 발견 사항
 
 1. **요청 완료 로그 누락(ADR-0020 "요청 로그" 위반)**: 실제 실행에서 POST · GET · 400 · 404 요청 어디에도 `UseSerilogRequestLogging`의 요청 한 줄("HTTP POST … responded 201 …")이 파일 · 콘솔 · 대시보드 로그에 없습니다. `RequestLoggingOptions.Logger`의 기본값은 정적 `Serilog.Log`(Serilog.AspNetCore 10.0.0 XML 문서)인데 ServiceDefaults가 `AddSerilog(..., preserveStaticLogger: true)`라 정적 로거가 무음 로거 그대로입니다. 단위 테스트에 요청 로그 단언이 없어 드러나지 않았습니다. S03-T07(HTTP · 로그 통합 인수)에 인계.
+   - **해결(S03-T07)**: 수정 커밋 `431510e` — ServiceDefaults가 `RequestLoggingOptions.Logger`를 DI의 Serilog 로거로 채움(정적 `Log` 미사용). 확인 테스트: `RequestLoggingTests`(ServiceDefaults 단위), `RequestCompletionLogTests`(통합, 비헬스 1줄 · 헬스 0줄), `ProblemDetailsHttpTests.Get_UnhandledExceptionInReadRepository_Returns500With9001WithoutOriginalMessageAndLogsOnceAtError` · `ReadOnlyWriteRejectionHttpTests`(500이면 Error 1줄). 재확인(2026-09-28 tester, `--launch-profile http`, 기존 볼륨 · user-secrets): POST 201 · GET 200 · GET 404 · POST 400 각 1줄 `HTTP … responded …`이 파일 로그 · 콘솔 · 대시보드 구조화 로그 세 곳에 모두 있고, 헬스 요청은 0줄([원문](t07-request-log-recheck.txt), [대시보드 캡처](dashboard-11-t07-request-completion-logs.png)).
 2. **https 기본 프로필에서 대시보드 텔레메트리 0건**: 이 PC의 ASP.NET Core 개발 인증서가 신뢰되지 않아(`dotnet dev-certs https --check --trust` → 신뢰된 인증서 없음) https OTLP 엔드포인트(21180) 전송이 실패하고, 대시보드 구조화 로그 · 추적이 비었습니다([구조화 로그 0건](dashboard-07-https-structured-logs-empty.png), [추적 0건](dashboard-08-https-traces-empty.png)). 앱 파일 로그와 HTTP 동작은 정상입니다. `--launch-profile http`에서는 로그 · 추적이 모두 보였습니다. 시스템 신뢰 저장소는 바꾸지 않았습니다. S04 로컬 개발 환경 문서에 "https 프로필은 `dotnet dev-certs https --trust` 필요, 아니면 http 프로필" 기록이 필요합니다(NFR-04 "새 환경에서 명령 1개").
 3. 요청 줄 형식 오류는 Kestrel이 본문 없는 400으로 거부해 ProblemDetails · `code`가 없습니다(프레임워크 동작, 기록만).
 4. MigrationService는 Aspire에서 `Hosting environment: Production`입니다(developer 인계, 결과 리뷰 판단 대상).
@@ -131,7 +132,7 @@ updated: 2026-09-28
 
 - 프로세스: AppHost · DCP · 대시보드 · Api · MigrationService · 캡처용 Edge 모두 종료.
 - 컨테이너 · 네트워크: 이 AppHost가 만든 postgres 컨테이너와 `aspire-session-network-*` 없음. 다른 프로젝트 컨테이너 · 볼륨(`vital-*`, `elastic8`, `mysql`, `backend_postgres_data` 등)은 건드리지 않음.
-- 볼륨 `emergency-hub-postgres-data`: **남아 있음**(5회차 복구 실행으로 초기화, 이력 1행 · 직원 1행).
+- 볼륨 `emergency-hub-postgres-data`: **남아 있음**(5회차 복구 실행으로 초기화, 이력 1행 · 직원 1행. S03-T07 재확인에서 직원 1행 추가 → 2행).
 - user-secrets: **남아 있음**(`Parameters:postgres-password` · `Parameters:employee-app-password` · `AppHost:OtlpApiKey` · `Aspire:VersionCheck:*`). 비밀번호 두 개는 위 볼륨과 일치해 다음 `dotnet run`이 그대로 동작합니다. 초기 상태로 돌리려면 볼륨 삭제와 `dotnet user-secrets clear --project src/Aspire/EmergencyHub.AppHost`를 함께 합니다.
 - 앱 파일 로그(`src/Services/Employee/*/logs/`, gitignore): 이번 실행 로그가 남아 있습니다. 요약은 [app-file-logs.txt](app-file-logs.txt).
 
@@ -144,7 +145,8 @@ updated: 2026-09-28
 | [http-curl.txt](http-curl.txt) | (b) (c) H1 H2, 2회차 · 5회차 요청 원문 |
 | [psql-checks.txt](psql-checks.txt) | psql 1~11, 10번 반복, 3회차 재확인 |
 | [app-file-logs.txt](app-file-logs.txt) | MigrationService · Api 파일 로그 요약(이벤트 ID · TraceId) |
-| `dashboard-*.png` | 대시보드 캡처 10장(위 본문 링크) |
+| `dashboard-*.png` | 대시보드 캡처 11장(위 본문 링크, 11번은 S03-T07 재확인) |
+| [t07-request-log-recheck.txt](t07-request-log-recheck.txt) | S03-T07 재확인: 요청 원문, Api 파일 로그 · 콘솔 · 대시보드의 요청 완료 줄 |
 
 ---
 
@@ -153,3 +155,4 @@ updated: 2026-09-28
 | 날짜 | 작성자 | 내용 |
 |---|---|---|
 | 2026-09-28 | tester | 문서 생성(S03-T05 tester 실행 증빙) |
+| 2026-09-28 | tester | 발견 사항 1 해결 표시(수정 커밋 431510e, 확인 테스트, AppHost 재실행 재확인), 재확인 원문 · 캡처 추가 (S03-T07) |

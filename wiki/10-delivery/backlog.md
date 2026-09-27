@@ -132,6 +132,9 @@ updated: 2026-09-27
 | BL-103 | MigrationService 실제 호스트(Program.Configure + MigrationWorker)를 컨테이너로 실행하는 통합 시나리오: Program · Configure가 internal이고 InternalsVisibleTo가 UnitTests만 허용해 참조 · 가시성 확장 필요 | S03-T03 tester · S03-T06 developer | | new | S03-T06에서는 fixture가 같은 등록 · 적용 경로로 대신 검증 |
 | BL-104 | 로그 수집기 · 알림 도입 때 알림 조건에 301 · ErrorCode 9003(재시도 한도 초과) 포함: BL-023 뒤 DB 장애는 Warning으로만 남아 Error 급증 규칙으로는 안 잡힘(logging-observability 196행 TODO) | S03-T06 reviewer | | new | 재검토 트리거: ADR-0023 로그 수집기 도입 |
 | BL-105 | logging-observability 수준 표에 재시도 한도 초과(9003) = Warning(301) 예시를 적어 Outbox 발행 최종 실패 = Error 예시와의 차이 명시 | S03-T06 reviewer | | new | 문서 정리 후보 |
+| BL-106 | 500 응답(GlobalExceptionHandler WriteAsJsonAsync)의 Content-Type에 charset=utf-8이 없어 MVC 결과(400 · 404 · 409)와 표기가 다름(동작 문제 아님, 일관성) | S03-T07 tester | | new | |
+| BL-107 | swagger.json이 employee-api.md 실패 표의 500(9001) · 503(9003)을 선언하지 않음: 문서와 OpenAPI 범위 맞출지 판단 | S03-T07 tester | | new | |
+| BL-108 | DB 정지 상태 /health/ready가 연결 제한 시간만큼(약 15초) 걸려 503: 헬스 검사 제한 시간 별도 설정 여부(프로브 제한 시간) | S03-T07 tester | | new | S04 · 배포 토픽에서 판단, 실측 HealthReadyOutageTests |
 
 ---
 

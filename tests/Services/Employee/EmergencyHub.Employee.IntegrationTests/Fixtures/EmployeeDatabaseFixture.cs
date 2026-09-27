@@ -197,6 +197,20 @@ public sealed class EmployeeDatabaseFixture : IAsyncLifetime
         return new PsqlResult(result.ExitCode ?? throw new InvalidOperationException("psql 종료 코드를 받지 못했습니다."), result.Stdout, result.Stderr);
     }
 
+    /// <summary>
+    /// 컨테이너를 일시정지합니다(<c>docker pause</c>, DB 정지 상태 재현, S03-T07 <c>/health/ready</c> 측정). 호출자는 반드시 <c>finally</c>에서
+    /// <see cref="UnpauseContainerAsync"/>를 불러 같은 컬렉션의 뒤 테스트를 보호합니다.
+    /// </summary>
+    /// <param name="cancellationToken">취소 토큰.</param>
+    /// <returns>일시정지 작업.</returns>
+    /// <exception cref="InvalidOperationException">fixture가 준비되기 전인 경우.</exception>
+    public Task PauseContainerAsync(CancellationToken cancellationToken) => (_container ?? throw NotInitialized()).PauseAsync(cancellationToken);
+
+    /// <summary>일시정지한 컨테이너를 재개합니다(<c>docker unpause</c>). 취소 토큰을 받지 않아 테스트가 취소돼도 재개합니다.</summary>
+    /// <returns>재개 작업.</returns>
+    /// <exception cref="InvalidOperationException">fixture가 준비되기 전인 경우.</exception>
+    public Task UnpauseContainerAsync() => (_container ?? throw NotInitialized()).UnpauseAsync(CancellationToken.None);
+
     /// <summary>쓰기 연결 문자열을 바꾼 사본을 만듭니다(예: P1 <c>Options=-c default_transaction_isolation=serializable</c>, 잘못된 비밀번호).</summary>
     /// <param name="configure">연결 문자열 빌더 변경.</param>
     /// <returns>바뀐 연결 문자열.</returns>
