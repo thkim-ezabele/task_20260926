@@ -24,6 +24,7 @@ updated: 2026-09-27
 - ADR 작업은 developer 1차(`adr_drafts`, 파일 없음) → 사용자 확인(요약 표) → 2차(`accepted` 파일) → reviewer · tester. 문서 작업은 reviewer 점검표 대신 문서 규칙, tester는 명령 기반 점검표.
 - `/sprint` 시작 시 환경 점검(Docker, SDK, gh). 종료 시 push → 토픽 PR CI 통과 확인 → DoD 기록 → 태그 `sprint/SNN`(CI 통과 전 태그 금지).
 - 판정 · 기록만 남는 단계 커밋은 `docs(sprint): SNN-TNN <단계> 판정`. 문서 변경 시 `node scripts/check-docs.js`(링크 · 앵커 · frontmatter · 표 구조).
+- S02 회고 규칙: 파이프라인 표 dba 열이 "해당 없음"이면 dba 호출 생략, reviewer PASS는 tester 커밋에 병합(작업당 커밋 약 3개). 완료 조건은 5~7문장(세부 단언은 handoff). 테스트 범위: 도메인 로직은 TDD 전체, 기반 · 셋팅은 완료 조건 항목당 성공 / 실패 / 엣지 최소 1개, tester는 빈 곳만 보강. 완료 조건 항목은 작업자가 혼자 스프린트 밖으로 내보내지 않음(BLOCKED로 판단받음). 원본: [에이전트 워크플로우](../10-delivery/agents.md#테스트-범위)
 - 흐름 제어와 커밋은 스킬(메인 세션), 판단은 orchestrator. 서브에이전트는 다른 서브에이전트를 부를 수 없다. 에이전트 모델은 메인 세션 상속.
 - 구현: `.claude/agents/`(orchestrator, dba, developer, reviewer, tester), `.claude/skills/`(prd, sprint, retro). 에이전트는 프롬프트 첫 줄 `mode:`로 작업 구분.
 - 작업 관리는 GitHub Issues가 아니라 위키에서 한다.

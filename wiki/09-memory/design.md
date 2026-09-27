@@ -37,6 +37,7 @@ updated: 2026-09-27
 | [0021](../03-architecture/adr/0021-test-tooling-xunit-v3-and-awesomeassertions.md) | 테스트 도구 | xUnit v3(`xunit.v3` 4.0.1, VSTest 경로, SDK 8.0.4xx 필요), AwesomeAssertions 9.6.0(FluentAssertions 금지), NSubstitute · TimeProvider.Testing · Testcontainers · NetArchTest 버전 고정 |
 | [0022](../03-architecture/adr/0022-respawn-and-coverage-tooling.md) | Respawn · 커버리지 | Respawn 7.0.0(public, `__EFMigrationsHistory` 따옴표 없이 제외, 쓰기 연결, 테스트 시작 전 Reset), fixture는 `employee_app` 재현 · `postgres:17`, coverlet.collector + ReportGenerator(도구 매니페스트), 80%는 보고만(BuildingBlocks · Employee Domain / Application) |
 | [0023](../03-architecture/adr/0023-deferred-adoptions.md) | 도입 보류 | 브로커 · Outbox / Inbox · Gateway · 로그 수집기 보류(재검토 트리거 표), ADR-0004 유지, 로컬 관측은 Aspire 대시보드 |
+| [0024](../03-architecture/adr/0024-building-blocks-api-for-common-http-handling.md) | BuildingBlocks.Api 신설 | 공통 API 처리(ProblemDetails, 1001, 전역 예외, Controller · Swashbuckle 설정)는 `BuildingBlocks.Api`(Application · Domain만 참조, Infrastructure · EF · Npgsql 금지), Infrastructure 예외는 Application 분류 포트 + Infrastructure 구현(9003), 의존성 규칙 표는 아키텍처 테스트 원본 |
 
 형상관리는 GitHub로 확정했습니다(ADR 없음).
 
@@ -45,6 +46,7 @@ updated: 2026-09-27
 원본: [PRD-001 질문과 답변](../10-delivery/prd/PRD-001-foundation.md#질문과-답변)
 
 - PRD-001 방향 결정은 **S01 ADR 13건(0011~0023)으로 모두 확정**했습니다(위 표). 남은 방향 결정 항목은 없습니다.
+- S02 구현 결정(ADR 아님, 원본은 기준 문서): xmin은 EF shadow property(Domain 무변경), 매핑 없는 23505 = 3003 `Common.UniqueConstraintViolated`, IIdGenerator는 ADR-0017대로 명시 Scoped 등록, Validator는 공통 기반 `RequestValidator<T>`, enum 1002는 `MustBeDefinedEnum`([Flags] 조합 허용), 전역 예외 로그는 메시지를 뺀 사본으로 기록. ADR 후보 4건은 [S02 결과 리뷰](../10-delivery/sprints/S02-building-blocks.md#adr-후보-파일은-사용자-확인-후).
 - 정책: 도메인 이벤트는 수집만(디스패치는 이후 토픽). Aspire 9.x 마이너 버전은 9.5.2(S01-T01).
 
 ## 검토 중 (초안 기본값)
@@ -60,4 +62,4 @@ updated: 2026-09-27
 
 ## 미착수
 
-Application · Infrastructure · Employee 서비스 코드(PRD-001 S02~S03, S01에서 빌드 설정과 BuildingBlocks.Domain까지 작성), 도메인 모델(유비쿼터스 언어, 바운디드 컨텍스트, Aggregate), 서비스 상세와 의존 관계, API / 이벤트 명세
+Employee 서비스 코드(PRD-001 S03, BuildingBlocks 4개 계층은 S02까지 작성), 도메인 모델(유비쿼터스 언어, 바운디드 컨텍스트, Aggregate), 서비스 상세와 의존 관계, API / 이벤트 명세
