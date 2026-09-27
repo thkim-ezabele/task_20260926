@@ -133,6 +133,7 @@ Application 레이어는 **Command(상태 변경)와 Query(조회)를 분리**�
 - Handler 하나는 요청 하나만 처리한다.
 - Command Handler는 다른 Command를 직접 호출하지 않는다. Handler는 `ISender`를 주입받지 않는다(중첩 `SendAsync`는 커밋이 두 번 일어남). 후속 처리는 도메인 이벤트 / 통합 이벤트로 연결한다.
 - 공통 관심사(로깅, 검증, 트랜잭션)는 **Handler 데코레이터 파이프라인**으로 처리한다. 순서는 Command가 로깅 → 검증 → 트랜잭션 → Handler, Query가 로깅 → 검증 → Handler다(트랜잭션은 Command에만).
+- Validator는 `internal sealed class <요청>Validator : RequestValidator<요청>`(BuildingBlocks.Application.Validation)으로 만든다. 공통 기반이 한 속성의 규칙 체인을 첫 실패에서 멈추게 한다(`RuleLevelCascadeMode = Stop`, [ADR-0018](../03-architecture/adr/0018-use-fluentvalidation.md)). 규칙마다 `WithError(Error)`로 정수 코드를 붙이고(검증 실패 유형만), 붙이지 않은 규칙의 실패는 1001로 담긴다. FluentValidation의 문자열 `ErrorCode`는 쓰지 않는다.
 - **Handler와 Repository는 `SaveChanges`를 부르지 않는다.** Handler가 성공 `Result`를 돌려주면 트랜잭션 데코레이터가 `IUnitOfWork.CommitAsync`를 부르고, 실패 `Result`면 저장하지 않는다. Handler는 DbContext를 받지 않는다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)).
 - Application 코드는 BuildingBlocks의 추상화(`ICommand`, `ICommand<TResponse>`, `IQuery<TResponse>`, `ICommandHandler<,>`, `IQueryHandler<,>`, `ISender`)에만 의존한다. 반환 값 없는 Command는 `ICommand : ICommand<Unit>`이고 `Result<Unit>`을 돌려준다.
 
@@ -358,3 +359,4 @@ builder.Services.AddConventionalServices(
 | 2026-09-27 | developer | ADR 0013~0015 · 0017 · 0023 반영: Handler 예시에서 `SaveChanges` 제거, Command 반환 `Result<Unit>`, Mediator 직접 구현 · Scrutor 확정, 파이프라인 순서, 도메인 이벤트 수집만 (S01-T04) |
 | 2026-09-27 | developer | `.editorconfig` 표에 빌드 강제 · 테스트 예외 · 생성 코드(CS1591 none 병기, BL-047) 행 추가 (S01-T05) |
 | 2026-09-27 | developer | BuildingBlocks.Domain `sealed` 예외(Entity · AggregateRoot · Error · Result), `Error` 팩토리 · 생성 시 검증, `Result` 사용 규칙과 암시적 변환(BL-040) (S01-T06) |
+| 2026-09-27 | developer | CQRS 규칙에 Validator 공통 기반 `RequestValidator<T>` · `WithError` 규칙 추가 (S02-T02) |

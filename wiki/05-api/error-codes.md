@@ -89,6 +89,33 @@ public static class EmployeeErrors
 | Notification | 50001 ~ 50999 | |
 | API Gateway | 90001 ~ 90999 | |
 
+### 공통 하위 범위
+
+공통 범위(1 ~ 999)는 BuildingBlocks 구성 요소별로 나눕니다. 각 구성 요소는 자기 하위 범위 안에서만 번호를 붙이고, 번호를 추가하면 아래 표를 함께 갱신합니다(BL-028).
+
+| 하위 범위 | 구성 요소 | 비고 |
+|---|---|---|
+| 1 | 전역 예외 처리기(BuildingBlocks.Api) | 요청 처리 중 처리되지 않은 예외. 이 번호는 전역 예외 처리기에서만 쓴다(S02-T06) |
+| 2 ~ 100 | (예비) | |
+| 101 ~ 199 | Mediator 파이프라인(BuildingBlocks.Application) | 로깅 데코레이터 |
+| 201 ~ 299 | 영속성(BuildingBlocks.Infrastructure) | UnitOfWork, 예외 변환(S02-T07) |
+| 301 ~ 399 | API 공통 처리(BuildingBlocks.Api) | ProblemDetails 변환, 바인딩 오류(S02-T06) |
+| 400 ~ 999 | (예비) | |
+
+### Mediator 로그 이벤트
+
+로깅 데코레이터(`MediatorLogs`, [ADR-0015](../03-architecture/adr/0015-custom-mediator-pipeline.md))가 요청 하나에 한 줄을 남깁니다. 속성은 요청 형식 이름, 에러 코드, `ErrorType`(정수), 경과 시간뿐이고 요청 · 응답 값과 오류 메시지는 남기지 않습니다. 예외는 여기서 기록하지 않습니다(이벤트 ID 1, 전역 예외 처리기). 단위 테스트(`MediatorLogsTests`)가 이 표와 정의를 대조합니다.
+
+| 이벤트 ID | 이름 | 수준 | 메시지 템플릿 |
+|---|---|---|---|
+| 101 | `CommandSucceeded` | `Debug` | `Command {RequestName} succeeded in {ElapsedMilliseconds} ms` |
+| 102 | `CommandFailed` | `Information` | `Command {RequestName} failed with error {ErrorCode} of type {ErrorType} in {ElapsedMilliseconds} ms` |
+| 103 | `QuerySucceeded` | `Debug` | `Query {RequestName} succeeded in {ElapsedMilliseconds} ms` |
+| 104 | `QueryFailed` | `Information` | `Query {RequestName} failed with error {ErrorCode} of type {ErrorType} in {ElapsedMilliseconds} ms` |
+
+- 실패 로그는 Handler 실패 · 검증 실패(1001) · 커밋 실패(3001 등)를 모두 포함합니다(로깅 데코레이터가 가장 바깥).
+- `RequestName`은 요청 형식의 짧은 이름(`Type.Name`)입니다. `ElapsedMilliseconds`는 `TimeProvider`로 잰 밀리초(실수)입니다.
+
 ## 공통 에러 코드
 
 BuildingBlocks가 정의하고 모든 서비스가 씁니다.
@@ -122,3 +149,4 @@ BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 에러 코드 체계(5자리 `S T NNN`), 유형 ↔ HTTP 대응, 로그 이벤트 ID 범위, 공통 에러 코드 |
 | 2026-09-27 | developer | `ErrorType` 2자리 값(10 · 20 · 30 · 40 · 51 · 52 · 91 · 92 · 93)과 `T = 값 / 10`, HTTP 상태는 `ErrorType`으로 정함, `Error` 생성 시 검증 규칙(범위 · NNN 000 · 예비 S · T 불일치), `ValidationError`, 공통 코드 표에 `ErrorType` · `CommonErrors` 대응 (S01-T06) |
+| 2026-09-27 | developer | 공통 로그 이벤트 ID 하위 범위(1 전역 예외, 101~199 Mediator, 201~299 영속성, 301~399 API)와 Mediator 로그 이벤트 101~104 (S02-T02, BL-028) |
