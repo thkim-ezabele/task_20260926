@@ -102,6 +102,8 @@ updated: 2026-09-28
 | 2026-09-28 | S04-T06 | developer | PASS | 실패 테스트 파일은 스크래치에만(t06/CiCheck/CiFailureCheckTests.cs → tests/BuildingBlocks/EmergencyHub.BuildingBlocks.Domain.UnitTests/CiCheck/, Assert 실패 1건, 로컬 build 경고 0 · format 통과 · 실패 1 · 통과 215, 작업 트리 원복 확인). 증빙 절: CI 실패 확인 틀(실행 기록 4 · 실패 확인 5 · 정리 확인 5), FR / NFR 증빙 표 18행 빈 셀 0(Trait 재집계 FR-03 10 · 04 1 · 05 11 · 06 27 · 07 8 · 08 12 · 09 20 · 11 2, NFR-02 4 · NFR-06 2), FR-10 · NFR-07은 종료 push 뒤 판정 표시. check-docs 4건 |
 | 2026-09-28 | S04-T06 | reviewer | REJECT → developer | 반려 1회(형식). 증빙 표 FR-03 행에 PRD 선택 항목 스모크 처리(미도입, BL-111) 누락. 나머지(18행 · 빈 칸 0, Trait 재집계, CI run 4건, 수치 · 경로 표본, S01~S03 모순 없음, 실패 확인 틀, 실패 테스트 컨벤션 · format) 통과 |
 | 2026-09-28 | S04-T06 | developer | PASS | 재작업: FR-03 행 인수 조건 요지에 스모크 선택, 판정에 '스모크 미도입, 재도입 조건은 BL-111(S04-T01)', 표 머리말 Trait 수 단위 한 문장. check-docs 4건 |
+| 2026-09-28 | S04-T06 | reviewer | PASS | 재판정: FR-03 행 스모크 처리 반영으로 반려 사유 해소, 다른 부분 불변, 표 8열 18행, check-docs 4건 |
+| 2026-09-28 | S04-T06 | tester | PASS | CI 실패 표시 확인: 임시 브랜치 ci-check/s04-fail(1ce433a, 부모 77ca927) Draft PR #9 → run 36350200891 failure(약 3분 28초). Build · Format success, 실패 테스트 CiFailureCheckTests 1건뿐(Domain Failed 1 · Passed 215), Test (coverage) failure, Coverage report skipped, test-results · container-logs 아티팩트, PR 체크 fail. 정리: PR #9 닫음(CLOSED, merged false), 원격 · 로컬 ci-check/* 0, 토픽 브랜치에 1ce433a 없음. 증빙 절 기록 채움, 빈 칸 0. check-docs 4건 |
 
 ## 계획 리뷰
 
@@ -320,30 +322,30 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 
 | 항목 | 기대 | 실제 |
 |---|---|---|
-| 임시 브랜치 시작점 | `ci-check/s04-fail`의 부모 커밋 = 토픽 HEAD | (tester 기록) |
-| 실패 커밋 · 변경 파일 | 커밋 1개, 변경 파일은 위 `CiFailureCheckTests.cs` 1개뿐(`git show --stat`) | (tester 기록) |
-| Draft PR | `ci-check/s04-fail` → `develop`, Draft | (tester 기록) |
-| 실패 실행 링크 | GitHub Actions `ci` 워크플로 실행 URL | (tester 기록) |
+| 임시 브랜치 시작점 | `ci-check/s04-fail`의 부모 커밋 = 토픽 HEAD | 일치. `git log -1 --format=%P 1ce433a` = `77ca927`(토픽 HEAD `git rev-parse feature/prd-001-foundation` = `77ca927`) |
+| 실패 커밋 · 변경 파일 | 커밋 1개, 변경 파일은 위 `CiFailureCheckTests.cs` 1개뿐(`git show --stat`) | 일치. 커밋 `1ce433a` 1개, `git show --stat` = `.../CiCheck/CiFailureCheckTests.cs` 1 file, 14 insertions |
+| Draft PR | `ci-check/s04-fail` → `develop`, Draft | 일치. [PR #9](https://github.com/thkim-ezabele/task_20260926/pull/9) `isDraft` true, base `develop`, head `ci-check/s04-fail` |
+| 실패 실행 링크 | GitHub Actions `ci` 워크플로 실행 URL | [run 36350200891](https://github.com/thkim-ezabele/task_20260926/actions/runs/36350200891)(head `1ce433a`, conclusion failure, 2026-09-27T21:02:08Z~21:05:36Z 약 3분 28초, 작업 3분 25초) |
 
 #### 실패 확인 5항목
 
 | # | 확인 | 기대 | 실제 |
 |---|---|---|---|
-| 1 | 단언 실패 1건 · 컴파일 성공 | Build · Format check 단계 success, Test 결과 실패 1(`CiFailureCheckTests.Success_Always_FailsIntentionallyForCiFailureCheck`), 그 밖 실패 0 | (tester 기록) |
-| 2 | Test 단계 결과 | `Test (coverage)` 단계 failure | (tester 기록) |
-| 3 | Coverage report 단계 결과 | `Coverage report` 단계 skipped | (tester 기록) |
-| 4 | 아티팩트 | `test-results`(trx) · `container-logs` 업로드됨 | (tester 기록) |
-| 5 | PR 실패 표시 | PR 체크 `ci` 실패 표시(`gh pr checks` 또는 PR 화면) | (tester 기록) |
+| 1 | 단언 실패 1건 · 컴파일 성공 | Build · Format check 단계 success, Test 결과 실패 1(`CiFailureCheckTests.Success_Always_FailsIntentionallyForCiFailureCheck`), 그 밖 실패 0 | 일치. Build · Format check success. 로그 `Failed CiFailureCheckTests.Success_Always_FailsIntentionallyForCiFailureCheck` 1줄뿐, Domain.UnitTests 실패 1 · 통과 215, 나머지 12개 어셈블리 실패 0(ArchitectureTests 건너뜀 1은 기존 항목) |
+| 2 | Test 단계 결과 | `Test (coverage)` 단계 failure | 일치. `Test (coverage)` conclusion failure |
+| 3 | Coverage report 단계 결과 | `Coverage report` 단계 skipped | 일치. `Coverage report` conclusion skipped |
+| 4 | 아티팩트 | `test-results`(trx) · `container-logs` 업로드됨 | 일치. 실행 아티팩트 `test-results` 344617 바이트, `container-logs` 4512 바이트(expired false) |
+| 5 | PR 실패 표시 | PR 체크 `ci` 실패 표시(`gh pr checks` 또는 PR 화면) | 일치. `gh pr checks 9` = `build · format · test · coverage` fail 3m25s, 종료 코드 1 |
 
 #### 정리 확인
 
 | 확인 | 기대 | 실제 |
 |---|---|---|
-| PR 상태 | `CLOSED`, merged `false`(병합하지 않고 닫음) | (tester 기록) |
-| 원격 브랜치 `ci-check/s04-fail` 삭제 | 삭제됨 | (tester 기록) |
-| 원격 `ci-check/*` 수 | 0(`git ls-remote --heads origin 'ci-check/*'` 출력 없음) | (tester 기록) |
-| 로컬 `ci-check/*` 수 | 0(`git branch --list 'ci-check/*'` 출력 없음) | (tester 기록) |
-| 토픽 브랜치에 실패 커밋 없음 | 실패 커밋이 토픽 브랜치 조상이 아님, 토픽 브랜치에 `CiCheck/` 경로 없음 | (tester 기록) |
+| PR 상태 | `CLOSED`, merged `false`(병합하지 않고 닫음) | 일치. `gh pr close 9` 코멘트와 함께 닫음, `gh pr view 9 --json state` = CLOSED, `.merged` = false |
+| 원격 브랜치 `ci-check/s04-fail` 삭제 | 삭제됨 | 일치. `git push origin --delete ci-check/s04-fail` = `[deleted]` |
+| 원격 `ci-check/*` 수 | 0(`git ls-remote --heads origin 'ci-check/*'` 출력 없음) | 일치. 0줄 |
+| 로컬 `ci-check/*` 수 | 0(`git branch --list 'ci-check/*'` 출력 없음) | 일치. `git branch -D ci-check/s04-fail` 뒤 0줄 |
+| 토픽 브랜치에 실패 커밋 없음 | 실패 커밋이 토픽 브랜치 조상이 아님, 토픽 브랜치에 `CiCheck/` 경로 없음 | 일치. `git merge-base --is-ancestor 1ce433a feature/prd-001-foundation` 종료 코드 1, `git branch -a --contains 1ce433a` 빈 출력, 토픽 로그 grep 0, `git ls-tree -r` `CiCheck` 0 |
 
 ### FR / NFR 증빙 표
 
@@ -364,7 +366,7 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 | FR-07 | 공통 API 처리 | 실패 `Result` · 바인딩 오류 · 정의되지 않은 enum · 처리되지 않은 예외가 ProblemDetails(`code` 포함)로 응답 | FR-07 Trait 8(`ResultResponseAcceptanceTests`, `ExceptionResponseAcceptanceTests`, `ApiPipelineAcceptanceTests`, `ProblemDetailsHttpTests`, `OpenApiContractHttpTests`, `EmployeesControllerTests` 등) | CI-A · CI-B `Test (coverage)` success | [API 설계](../../04-development/api-guidelines.md), [에러 코드](../../05-api/error-codes.md)(S04-T05 대조: 에러 코드 20 · 로그 이벤트 15 누락 0 · 초과 0), S02 · S03 결과 리뷰 FR-07 | S03-T05 증빙(Kestrel 경로 바인딩 · 본문 초과 curl, 400 · 1001) | 충족 |
 | FR-08 | Employee 샘플 서비스 | Aspire에서 HTTP 등록 → 조회, 통합 테스트로 등록 → 조회 · 이메일 중복 충돌 · 체크 제약 거부 · 동시성 충돌 · 읽기 연결 쓰기 거부 · UUID v7 DB 정렬 | FR-08 Trait 12(`EmployeeRegistrationHttpTests`, `ReadOnlyWriteRejectionHttpTests`, `UnitOfWorkConflictTests`, `EmployeeSchemaTests`, `MigrationReapplyTests`, `EmployeeRepositoryTests`, `EmployeeReadRepositoryTests` 등) | CI-A · CI-B `Test (coverage)` success | [Employee API](../../05-api/employee-api.md), [데이터베이스](../../04-development/database.md), S03 결과 리뷰 FR-08(InitialCreate idempotent SQL 검토) | 이 문서 증빙 절 S04-T04(HTTP 증빙 201 · 200, psql 1~11 · 11번 read-only 거부), S03-T05 증빙 | 충족 |
 | FR-09 | 테스트 프로젝트 | `dotnet test` 전부 통과, 아키텍처 테스트가 의존성 규칙마다 검증 | FR-09 Trait 20(`DependencyRuleTests`, `ConventionRuleTests`, `ArchitectureAssemblyCoverageTests`, `EmployeeDatabaseFixtureTests`, `RespawnHistoryTableTests`, `EmployeeMigrationsTests`, `MigrationWorkerTests` 등). 전체 1537 통과 · 1 건너뜀(S04-T01), 아키텍처 규칙 25개(의존성 10 · 컨벤션 12 · 주입 3, S04-T02) | CI-A 13개 테스트 어셈블리 통과 · 통합 129건, CI-B success | [테스트 전략](../../04-development/testing-strategy.md), [Clean Architecture](../../03-architecture/clean-architecture.md)(의존성 규칙 표 ↔ 규칙 목록 1:1, S04-T02) | 해당 없음(테스트 실행) | 충족(S04 HEAD CI는 FR-10 행 종료 push 뒤 판정) |
-| FR-10 | CI | 토픽 PR에서 워크플로 통과, 실패 테스트를 넣은 임시 브랜치에서 실패 표시 1회 확인 · 기록 | 실패 확인용 `CiFailureCheckTests`(임시 브랜치 전용, 토픽 브랜치 미포함) | 통과: S01 [run 36303017840](https://github.com/thkim-ezabele/task_20260926/actions/runs/36303017840), S02 [run 36318766373](https://github.com/thkim-ezabele/task_20260926/actions/runs/36318766373), CI-A, CI-B. 실패 표시: (T06 tester 기록). S04 HEAD 토픽 PR: 종료 push 뒤 판정 | [CI / CD](../../06-deployment/ci-cd.md), `.github/workflows/ci.yml` | 이 문서 증빙 절 "S04-T06 CI 실패 표시 확인" | 종료 push 뒤 판정 |
+| FR-10 | CI | 토픽 PR에서 워크플로 통과, 실패 테스트를 넣은 임시 브랜치에서 실패 표시 1회 확인 · 기록 | 실패 확인용 `CiFailureCheckTests`(임시 브랜치 전용, 토픽 브랜치 미포함) | 통과: S01 [run 36303017840](https://github.com/thkim-ezabele/task_20260926/actions/runs/36303017840), S02 [run 36318766373](https://github.com/thkim-ezabele/task_20260926/actions/runs/36318766373), CI-A, CI-B. 실패 표시: [run 36350200891](https://github.com/thkim-ezabele/task_20260926/actions/runs/36350200891)(임시 브랜치 `ci-check/s04-fail`, PR #9 fail, 실패 1건만 · Coverage report skipped, 확인 뒤 PR 닫고 브랜치 삭제). S04 HEAD 토픽 PR: 종료 push 뒤 판정 | [CI / CD](../../06-deployment/ci-cd.md), `.github/workflows/ci.yml` | 이 문서 증빙 절 "S04-T06 CI 실패 표시 확인" | 종료 push 뒤 판정 |
 | FR-11 | 문서 갱신 | 해당 문서 `draft` 이상, 새 환경 실행은 CI 클린 러너 통과 + local-setup 수동 재현 기록 | FR-11 Trait 2(`RequestLogLevelsTests`, `ProgramTests`) | CI-A · CI-B(클린 러너 통과) | 결정 반영(`draft`): [Clean Architecture](../../03-architecture/clean-architecture.md), [기술 스택](../../03-architecture/tech-stack.md), [데이터베이스](../../04-development/database.md), [로깅](../../04-development/logging-observability.md), [에러 코드](../../05-api/error-codes.md), [코딩 컨벤션](../../04-development/coding-conventions.md). `todo` 문서(`draft`): [local-setup](../../01-getting-started/local-setup.md), [configuration](../../06-deployment/configuration.md), [environments](../../06-deployment/environments.md), [ci-cd](../../06-deployment/ci-cd.md), [troubleshooting](../../01-getting-started/troubleshooting.md) | 이 문서 증빙 절 S04-T04(재현 기록 위치는 PRD 변경 이력대로 worklog 대신 이 문서) | 충족 |
 | NFR-01 | 빌드 품질 | `TreatWarningsAsErrors`에서 경고 0, 생성 코드 분석 제외 | 해당 없음(빌드 결과가 증빙, Trait 0). S04-T01 build 경고 0 · format 통과 | CI-A · CI-B `Build` success | [코딩 컨벤션](../../04-development/coding-conventions.md)(경고 억제 규칙 · 승인 목록, S04-T05), `Directory.Build.props`, `.editorconfig`(`Migrations/**` generated_code) | S01 결과 리뷰 NFR-01(부정 점검 5종) | 충족 |
 | NFR-02 | 레이어 규칙 준수 | 아키텍처 테스트 통과(CI 필수) | NFR-02 Trait 4(`DependencyRuleTests`, `ConventionRuleTests`, `DeclaredReferenceTests`, `ArchitectureAssemblyCoverageTests`). ArchitectureTests 99 통과 · 1 건너뜀(S04-T02) | CI-A · CI-B `Test (coverage)` success(ArchitectureTests 포함) | [Clean Architecture](../../03-architecture/clean-architecture.md)(의존성 규칙), [테스트 전략](../../04-development/testing-strategy.md)(아키텍처 테스트 절), S02 · S03 결과 리뷰 NFR-02(위반 재현) | 해당 없음(테스트 실행) | 충족 |
