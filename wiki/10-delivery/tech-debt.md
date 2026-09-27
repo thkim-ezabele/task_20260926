@@ -29,6 +29,8 @@ updated: 2026-09-27
 |---|---|---|---|---|---|---|
 | TD-001 | 마이그레이션 전용 DB 롤과 애플리케이션 롤 분리 (로컬은 `employee_app` 단일 롤) | 설계 | | S01 계획 리뷰(Q4) | | new |
 | TD-002 | .NET 8(2026-11-10) · Aspire 9.x 지원 종료에 따른 메이저 업그레이드(EF Core / Npgsql 포함) | 인프라 | | S01 계획 리뷰 | | new |
+| TD-003 | Npgsql.EFCore 8.0.11의 EF 의존에 상한이 없음: `CentralPackageTransitivePinningEnabled`로 EF 8.0.31 고정해야 EF9 유입 방지 | 인프라 | | S01-T01 | | new |
+| TD-004 | Testcontainers `PostgreSqlBuilder` 매개변수 없는 생성자는 CS0618로 빌드 실패: 이미지 인자 필수 | 테스트 | | S01-T01 | | new |
 
 ---
 
