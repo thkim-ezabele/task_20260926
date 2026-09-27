@@ -69,6 +69,8 @@ updated: 2026-09-27
 | BL-040 | `Result<T>` 값 → `Result<T>` 암시적 변환 여부 확인(coding-conventions 예시 `return result.Value.Id;`) | S01-T04 | | new | S01-T06 |
 | BL-041 | package-versions.md 테스트 표 용도 열 "v3, 추천" / "v2, 대안"을 "v3, 채택" / "v2, 비교용 · 미사용"으로 | S01-T04 | | new | |
 | BL-042 | clean-architecture.md:91 서비스 카탈로그 🟡(도메인 항목)를 02-domain 토픽에서 정리할지(BL-038 범위 편입 여부) | S01-T04 | | new | |
+| BL-043 | service-catalog.md:24 "API Gateway 🟡 검토 중"을 BL-038 또는 BL-042 범위에 넣어 ADR-0023 "보류"로 정리 | S01-T04 | | new | |
+| BL-044 | security.md:71 "마이그레이션 전용 계정 🟡"를 ADR-0012 · database.md 롤 모델과 대조해 표시 정리 | S01-T04 | | new | |
 
 ---
 

@@ -98,6 +98,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T04 | reviewer | REJECT → developer | [형식] 반려 1회. ① package-versions.md:176 설명 문단이 테스트 표 중간에 들어가 coverlet.collector 행이 표에서 떨어짐 ② package-versions.md:207 · 254 CI 작업 번호 S01-T06 → S01-T07(tech-stack · ADR과 불일치). 나머지(ADR 형식 · 불변, 🟡 0, ADR 충돌 수정, 0004 유지, 규칙 삭제 없음) 통과 |
 | 2026-09-27 | S01-T04 | developer 2차(재작업) | PASS | 반려 사유 해결: 설명 문단을 테스트 표 뒤로 이동, CI 작업 번호 S01-T07로 정정(2곳), BL-041 용도 열 채택/미사용 반영. check-docs 결함 0 |
 | 2026-09-27 | S01-T04 | reviewer(재판정) | PASS | 반려 사유 2건 해결 확인, 5b94975 이후 변경은 package-versions · backlog · 스프린트 문서뿐이라 이전 통과 항목 재사용, check-docs 결함은 BL-018뿐 |
+| 2026-09-27 | S01-T04 | tester | PASS | 대상 6개 🟡 0건(Node 검색), wiki 전체 🟡 대조: FR-01 항목이 처리 방식 표 · BL-038 밖에 남은 곳 0건, 0021~0023 accepted, 0001~0020 불변, check-docs 결함은 BL-018뿐, 버전 5종 문서 간 일치, ADR 충돌 수정 확인, design.md 확정 표 0011~0023 13건 |
 
 ## 계획 리뷰
 
@@ -189,6 +190,8 @@ updated: 2026-09-27
 | TD-013 | NetArchTest.Rules · NSubstitute.Analyzers 유지 중단 | S01-T04 | |
 | BL-041 | package-versions 테스트 표 용도 열 "추천/대안" → "채택/미사용" | S01-T04 | |
 | BL-042 | clean-architecture 서비스 카탈로그 🟡(도메인 항목) 정리 위치 | S01-T04 | |
+| BL-043 | service-catalog.md:24 API Gateway 🟡를 BL-038/042 범위에 | S01-T04 | |
+| BL-044 | security.md:71 마이그레이션 전용 계정 🟡 표시 정리 | S01-T04 | |
 
 ## 회고
 
