@@ -47,3 +47,4 @@ updated: 2026-09-27
 | [0021](0021-test-tooling-xunit-v3-and-awesomeassertions.md) | 테스트 도구 (xUnit v3 · AwesomeAssertions와 주변 도구 고정) | 승인 | 2026-09-27 |
 | [0022](0022-respawn-and-coverage-tooling.md) | 통합 테스트 DB 초기화(Respawn)와 커버리지 도구(coverlet + ReportGenerator) | 승인 | 2026-09-27 |
 | [0023](0023-deferred-adoptions.md) | 도입 보류 (메시지 브로커, Outbox / Inbox, API Gateway, 로그 수집기) | 승인 | 2026-09-27 |
+| [0024](0024-building-blocks-api-for-common-http-handling.md) | 공통 API 처리 계층 BuildingBlocks.Api 신설 | 승인 | 2026-09-27 |
