@@ -1,7 +1,6 @@
 ---
 name: retro
 description: 토픽(PRD)의 모든 스프린트가 끝난 뒤 토픽 회고를 한다. dba · developer · reviewer · tester의 관점별 회고를 orchestrator가 통합(FR 충족 표, 파이프라인 분석, 개선안)하고, 승인되면 회고 문서를 쓰고 토픽 PR 병합과 릴리스(v0.N.0)까지 진행한다. 사용자가 /retro PRD-NNN 으로 직접 실행한다.
-disable-model-invocation: true
 argument-hint: "PRD-NNN (예: PRD-001)"
 ---
 

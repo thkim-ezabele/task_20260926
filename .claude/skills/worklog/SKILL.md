@@ -1,7 +1,6 @@
 ---
 name: worklog
 description: 현재 세션의 작업 로그(worklog)를 wiki/08-worklog 에 작성하고 장기기억(wiki/09-memory)을 갱신한다. 사용자가 세션 종료 전에 /worklog 로 직접 실행한다.
-disable-model-invocation: true
 argument-hint: "[세션 제목 (선택)]"
 ---
 

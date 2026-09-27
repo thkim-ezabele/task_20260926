@@ -1,7 +1,6 @@
 ---
 name: sprint
 description: 스프린트 하나를 진행한다. 에이전트별 계획 리뷰 → 작업마다 dba → developer → reviewer → tester 파이프라인(진입 점검, 반려 시 회귀, 단계별 커밋) → orchestrator 결과 리뷰와 백로그 / 기술부채 정리 → push와 sprint 태그. 사용자가 /sprint SNN 으로 직접 실행한다.
-disable-model-invocation: true
 argument-hint: "SNN (예: S01)"
 ---
 
