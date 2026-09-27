@@ -87,6 +87,7 @@ updated: 2026-09-27
 | 2026-09-27 | S02-T03 | reviewer | REJECT → developer | 점검 6 위반(coding-conventions:51 파일 하나에 최상위 타입 하나): Infrastructure.UnitTests/Samples의 MarkerSamples.cs(10) · RequestSamples.cs(11) · PortSamples.cs(3) · ViolationSamples.cs(3). 나머지 14개 통과(-warnaserror 빌드, test 469, ADR-0013 대 0017 해석 타당). T02 SampleValidators.cs(2개 형식)는 T02 리뷰 누락, 함께 분리 권장. 후보 BL-069(테스트 Samples 파일 규칙) |
 | 2026-09-27 | S02-T03 | developer | PASS | 재작업(반려 1): Infrastructure.UnitTests Samples 4개 파일 → 형식별 27개, Application.UnitTests SampleValidators.cs → 2개(권장 항목). 설명 주석은 XML remarks로, 동작 · 테스트 불변. CA1812 새 위치: InternalSampleService.cs:11, CreateSampleCommandValidator.cs:9. build 경고 0, test 469 통과, format 통과, 최상위 형식 2개 이상 파일 0 |
 | 2026-09-27 | S02-T03 | reviewer | PASS | 재판정: 반려 사유 해결(src · tests 전체에 최상위 형식 2개 이상 파일 0), -warnaserror 빌드 경고 0, test 469, format 통과. 경고 억제 승인: 테스트 CA1812 2건(InternalSampleService.cs:10, CreateSampleCommandValidator.cs:8 — 특성 시작 줄, 앞 행의 :11 · :9 정정), 누적 CA1812 제품 7 + 테스트 2 |
+| 2026-09-27 | S02-T03 | tester | PASS | 인계 · 계획 리뷰 항목 대조(PipelineOrderAcceptanceTests 등 기존 테스트로 충족). 보강 9건: ServiceCompositionAcceptanceTests(전 등록 Scoped — Singleton은 TimeProvider · 표식만, 엄격 스코프 전수 해석, 루트 해석 예외, 등록 순서 뒤바꿈, 스코프 간 UUID 순서), ConcurrentPipelineAcceptanceTests(64 스코프 동시 Send, 결과 혼합, 동시 Query IUnitOfWork 미해석, 5회 반복 안정). -warnaserror 경고 0, test 478 통과, format 통과. handoff: T07 조합 테스트 갱신, T04 샘플 의존 분리 |
 
 ## 계획 리뷰
 
