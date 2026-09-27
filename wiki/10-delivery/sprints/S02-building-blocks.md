@@ -71,6 +71,7 @@ updated: 2026-09-27
 | 2026-09-27 | S02 | 계획 리뷰 | 승인 | 작업 6 → 8개(T07 · T08 추가), T02 · T04 축소, T05 맨 뒤. N3 = BuildingBlocks.Api + ADR-0024, xmin = shadow property, 3003 = `Common.UniqueConstraintViolated` |
 | 2026-09-27 | S02-T08 | dba | PASS | 해당 없음(DB 변경 없음). handoff → developer: 23505 변환은 Infrastructure · Api는 Npgsql / EF 타입 비참조, 23514는 500 · 제약 이름 미노출, MigrationService는 Api 비참조(배제 근거), DbContext 등록은 Api에 두지 않음 |
 | 2026-09-27 | S02-T08 | developer | PASS | 1차 초안 → 사용자 확인(9003 = 분류 포트 A, Infrastructure ↛ ASP.NET Core는 아키텍처 테스트로 강제, 배제 근거 · 진입점 초안대로) → 2차 ADR-0024 accepted, ADR 목록 · PRD FR-09 비고 · frontmatter adrs. check-docs 기준선 유지(2건). handoff: T01 분류 포트, T07 구현(RetryLimitExceeded → 9003), T06 진입점 2개 · 분류기 우선, T05 규칙 원본 = ADR-0024 표(완료 조건에 반영됨) |
+| 2026-09-27 | S02-T08 | reviewer | PASS | 템플릿 · frontmatter · 링크 결함 0, 0001~0023 불변, 완료 조건 · 사용자 확인 · dba 입력 4건 반영, ADR-0014 · 0016 · 0017 · 0019 · 0020 정합. handoff: T06 Api에 EF · Npgsql · Infrastructure 참조 시 반려, 분류기 0개 엣지 테스트 / T05 규칙마다 테스트 1개 · 대상 1개 이상 단언 |
 
 ## 계획 리뷰
 
