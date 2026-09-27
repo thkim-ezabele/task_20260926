@@ -132,7 +132,18 @@ git flow hotfix finish 0.2.1
 - PR은 테스트 통과가 필수다([ADR-0006](../03-architecture/adr/0006-adopt-tdd.md)). CI 구성 후 필수 체크로 건다.
 - 템플릿: 저장소 루트의 [`.github/pull_request_template.md`](../../.github/pull_request_template.md)
 
-> 🟡 1인 과제 기준으로 리뷰어 승인은 필수로 두지 않습니다. `main` / `develop` 보호 규칙(직접 push 금지, PR 필수)은 GitHub 설정 후 여기에 적습니다.
+> 🟡 1인 과제 기준으로 리뷰어 승인은 필수로 두지 않습니다.
+
+### GitHub 저장소 설정
+
+| 항목 | 값 |
+|---|---|
+| 기본 브랜치 | `develop` (PR 기본 대상) |
+| 병합 방식 | Squash merge, Merge commit 허용 / Rebase merge 끔 |
+| 병합 후 브랜치 삭제 | 자동 |
+| 브랜치 보호 (`main`, `develop`) | ⚪ 적용 불가: GitHub Free의 private 저장소는 브랜치 보호 / Ruleset을 지원하지 않음(HTTP 403) |
+
+브랜치 보호가 없으므로 **`main` / `develop`에 직접 push하지 않는 것은 규칙으로 지킵니다.** GitHub Pro로 올리거나 저장소를 public으로 바꾸면 보호 규칙(PR 필수, force push / 삭제 금지)을 적용합니다.
 
 ## 코드 리뷰 가이드
 
@@ -158,3 +169,4 @@ git flow hotfix finish 0.2.1
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | GitHub Flow → Git Flow로 변경, 브랜치 전략·네이밍·커밋·PR·태깅 규칙 초안 작성 |
+| 2026-09-27 | - | GitHub 저장소 설정 기록, 브랜치 보호 적용 불가(Free private)로 직접 push 금지는 규칙으로 운영 |
