@@ -144,6 +144,16 @@ UnitOfWork(`PersistenceLogs`, BuildingBlocks.Infrastructure)가 영속성 예외
 - 1은 예외 분류기(`IExceptionClassifier`)가 모두 `null`을 돌려준 예외(9001)에만 씁니다. 분류된 예외(예: 재시도 한도 초과 → 9003)는 301, `BadHttpRequestException`(400 · 1001)은 302, 클라이언트가 요청을 끊어 난 취소 · 입출력 예외는 303입니다(판정은 9001 그대로, 수준만 낮춤).
 - 프레임워크 `ExceptionHandlerMiddleware`도 같은 예외를 이벤트 ID 1 · `Error`로 원본 메시지와 함께 남기므로, `AddBuildingBlocksApi`가 범주 `Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware`를 끕니다(Microsoft.Extensions.Logging 필터). Serilog를 쓰는 호스트는 같은 범주를 `MinimumLevel.Override`로도 꺼야 합니다(ServiceDefaults).
 
+### Employee 로그 이벤트
+
+Employee.Application `EmployeeLogs`가 남깁니다(S03-T01). 속성은 직원 ID뿐이고 이름 · 이메일은 남기지 않습니다([로깅 · 개인정보](../04-development/logging-observability.md#개인정보--보안)). 단위 테스트(`EmployeeLogsTests`)가 이 표와 정의를 대조합니다.
+
+| 이벤트 ID | 이름 | 수준 | 메시지 템플릿 |
+|---|---|---|---|
+| 20001 | `EmployeeRegistered` | `Information` | `Employee {EmployeeId} registered` |
+
+- 등록 Handler가 커밋 전에 남깁니다. 커밋이 실패하면(경합 23505 → 23001 등) 로깅 데코레이터가 같은 요청의 실패(102)를 뒤이어 남기므로, 등록 확정 여부는 102 유무와 함께 봅니다.
+
 ## 공통 에러 코드
 
 BuildingBlocks가 정의하고 모든 서비스가 씁니다.
@@ -167,7 +177,25 @@ BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 
 ## 서비스별 에러 코드
 
-> TODO: 서비스 코드가 생기면 서비스별 표를 추가합니다. 형식은 공통 표와 같습니다.
+서비스 코드가 생기면 서비스별 표를 추가합니다. 형식은 공통 표와 같습니다.
+
+### Employee 에러 코드
+
+Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01, S03 계획 리뷰 코드 선배정). 단위 테스트(`EmployeeErrorsTests`)가 이 표의 코드 · 유형과 필드 목록을 전수 대조합니다.
+
+| 코드 | `ErrorType` | HTTP | 이름 | 의미 |
+|---|---|---|---|---|
+| 21001 | `Validation` | 400 | `Employee.DisplayNameRequired` | `displayName` 필수 (누락 · 빈 값 · 공백만) |
+| 21002 | `Validation` | 400 | `Employee.DisplayNameTooLong` | `displayName` 길이 초과 (앞뒤 공백 제거 뒤 100자 초과) |
+| 21003 | `Validation` | 400 | `Employee.EmailRequired` | `email` 필수 (누락 · 빈 값 · 공백만) |
+| 21004 | `Validation` | 400 | `Employee.EmailInvalid` | `email` 형식 오류 (`@`가 정확히 하나이고 앞뒤가 비어 있지 않아야 함) |
+| 21005 | `Validation` | 400 | `Employee.EmailTooLong` | `email` 길이 초과 (앞뒤 공백 제거 뒤 254자 초과) |
+| 21006 | `Validation` | 400 | `Employee.EmployeeStatusRequired` | `employeeStatus` 필수 (누락). 정의되지 않은 값(0 · 99 등)은 공통 1002 |
+| 22001 | `NotFound` | 404 | `Employee.NotFound` | 직원 없음 |
+| 23001 | `Conflict` | 409 | `Employee.DuplicateEmail` | 이메일 중복 (Trim + 소문자(Invariant) 정규화한 값 기준). Handler 사전 검사와 유니크 인덱스 `ux_employees_email` 위반(23505) 매핑이 같은 인스턴스를 씀 |
+
+- 21001 ~ 21006은 요청 검증(`RegisterEmployeeCommandValidator`)의 필드별 코드로 `ValidationError`(1001)의 `errors`에 담깁니다. 길이는 앞뒤 공백을 지운 뒤 `string.Length`(UTF-16 코드 단위)로 잽니다(이모지는 한 글자가 2).
+- 한 필드 안에서는 첫 실패만 보고합니다(이름: 필수 → 길이, 이메일: 필수 → 길이 → 형식, 상태: 필수 → 정의값).
 
 ---
 
@@ -181,3 +209,4 @@ BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 | 2026-09-27 | developer | 공통 로그 이벤트 ID 하위 범위(1 전역 예외, 101~199 Mediator, 201~299 영속성, 301~399 API)와 Mediator 로그 이벤트 101~104 (S02-T02, BL-028) |
 | 2026-09-27 | developer | 공통 코드 3003 `Common.UniqueConstraintViolated`(BL-019), 영속성 로그 이벤트 201~203 (S02-T07) |
 | 2026-09-27 | developer | API 로그 이벤트 1 · 301~304(예외 메시지 미기록, 프레임워크 예외 미들웨어 로그 끄기), 공통 하위 범위 표 비고 갱신. 새 에러 코드 할당 없음(BL-052) (S02-T06) |
+| 2026-09-27 | developer | Employee 에러 코드 표(21001 ~ 21006, 22001, 23001)와 Employee 로그 이벤트 20001 `EmployeeRegistered` (S03-T01) |
