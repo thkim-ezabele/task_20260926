@@ -59,7 +59,7 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 ### 파일 출력 (JSON)
 
 ```json
-{"@t":"2026-09-27T05:03:12.4181234Z","@mt":"Employee {EmployeeId} registered with channels {NotificationChannels}","@m":"Employee 0192a1b3-... registered with channels 3","@i":"a1b2c3d4","@l":"Information","@tr":"4bf92f3577b34da6a3ce929d0e0e4736","@sp":"00f067aa0ba902b7","EventId":{"Id":11001,"Name":"EmployeeRegistered"},"EmployeeId":"0192a1b3-...","NotificationChannels":3,"SourceContext":"EmergencyHub.Employee.Application...RegisterEmployeeCommandHandler","ServiceName":"employee","Environment":"Development","MachineName":"dev-01"}
+{"@t":"2026-09-27T05:03:12.4181234Z","@mt":"Employee {EmployeeId} registered with channels {NotificationChannels}","@m":"Employee 0192a1b3-... registered with channels 3","@i":"a1b2c3d4","@l":"Information","@tr":"4bf92f3577b34da6a3ce929d0e0e4736","@sp":"00f067aa0ba902b7","EventId":{"Id":20001,"Name":"EmployeeRegistered"},"EmployeeId":"0192a1b3-...","NotificationChannels":3,"SourceContext":"EmergencyHub.Employee.Application...RegisterEmployeeCommandHandler","ServiceName":"employee","Environment":"Development","MachineName":"dev-01"}
 ```
 
 - 시각(`@t`)은 **UTC ISO 8601**
@@ -97,7 +97,7 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 
 - **메시지 템플릿을 쓴다.** 문자열 보간(`$"..."`)과 문자열 연결로 메시지를 만들지 않는다(구조화 속성이 사라지고 매번 문자열을 만든다).
 - 템플릿 속성 이름은 **PascalCase**, 같은 개념은 모든 서비스에서 같은 이름을 쓴다(`EmployeeId`, `EmergencyId`, `NotificationChannels`).
-- 반복해서 남기는 로그는 **`[LoggerMessage]` 소스 생성기**로 정의한다. 이벤트 ID는 **정수**이며, 서비스별 범위를 에러 코드와 같은 방식으로 나눈다.
+- 반복해서 남기는 로그는 **`[LoggerMessage]` 소스 생성기**로 정의한다. 이벤트 ID는 **정수**이며, 범위는 [에러 코드 · 로그 이벤트 ID 범위](../05-api/error-codes.md#로그-이벤트-id-범위)를 따른다(에러 코드와 겹치지 않음).
 - 객체 전체 분해(`{@Employee}`)는 쓰지 않는다. 필요한 속성만 남긴다(개인정보 유출과 로그 크기 방지).
 - 예외는 **경계에서 한 번만** 로그로 남긴다(전역 예외 처리기, 백그라운드 작업 최상위). 잡아서 로그를 남기고 다시 던지는 것을 여러 층에서 반복하지 않는다.
 - 예외는 `logger.LogError(exception, "...")`처럼 **예외 객체를 첫 인자로** 넘긴다. `exception.Message`만 남기지 않는다.
@@ -107,7 +107,7 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 ```csharp
 internal static partial class EmployeeLogs
 {
-    [LoggerMessage(EventId = 11001, Level = LogLevel.Information,
+    [LoggerMessage(EventId = 20001, Level = LogLevel.Information,
         Message = "Employee {EmployeeId} registered with channels {NotificationChannels}")]
     public static partial void EmployeeRegistered(this ILogger logger, Guid employeeId, NotificationChannels notificationChannels);
 }
@@ -161,4 +161,5 @@ logger.LogInformation("Employee {Email} registered", employee.Email); // 개인�
 | 날짜 | 작성자 | 내용 |
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
+| 2026-09-27 | - | 로그 이벤트 ID 범위를 에러 코드 문서로 연결, 예시 ID 수정(20001) |
 | 2026-09-27 | - | 로그 컨벤션 초안: 콘솔 텍스트 / 파일 JSON(CLEF), 공통 필드, 레벨 기준, 작성 규칙(`[LoggerMessage]`, 정수 이벤트 ID), 개인정보, 분산 추적, 헬스체크 |
