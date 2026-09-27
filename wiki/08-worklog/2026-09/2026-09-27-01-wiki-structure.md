@@ -17,7 +17,7 @@
 > 원문 유실. 요약만 남깁니다.
 
 1. 위키 기본 구조 구성 요청 (.NET 8, MSA, Clean Architecture, DDD / EDA / TDD, PostgreSQL, GitHub Actions)
-2. 과제형 프로젝트이므로 ADR과 별개로 세션별 작업 로그를 남기는 방안 논의 (→ WL-2026-09-27-02에서 이어서 진행)
+2. 과제형 프로젝트이므로 ADR과 별개로 세션별 작업 로그를 남기는 방안 논의 (→ [WL-2026-09-27-02](2026-09-27-02-worklog-convention.md)에서 이어서 진행)
 
 ## 작업 내용
 
