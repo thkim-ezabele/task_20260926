@@ -45,17 +45,17 @@ updated: 2026-09-27
 | BL-016 | package-versions.md: WithInitBindMount Obsolete(9.5.2) → WithInitFiles 표기, 클라이언트 통합 미사용 시 Npgsql.OpenTelemetry 8.0.9 · HealthChecks.EntityFrameworkCore 8.0.31 행 추가 | S01-T02 | 하 | done | package-versions.md WithInitFiles, Npgsql.OpenTelemetry, HealthChecks.EFCore 행 (기존: S01-T02) |
 | BL-017 | local-setup / troubleshooting: "MigrationService가 Waiting 상태로 멈춤" = 생성 스크립트 실패, 해결은 이름 있는 볼륨 삭제 | S01-T02 | 중 | planned:S04 | S04-T03 local-setup · troubleshooting (기존: S04) |
 | BL-018 | raw-log(08-worklog/raw/*.md) frontmatter에 created · updated 없음: hook 템플릿에 추가할지, 필수 키 표에서 raw-log를 예외로 둘지 결정(BL-001 CI 편입 전제) | S01-T02 | 중 | open | check-docs 잔여 결함, BL-001 전제. hook 템플릿 수정은 토픽 밖 feature/* 작업 권장 |
-| BL-019 | error-codes.md: 매핑 없는 23505(유니크 위반)용 공통 Conflict 코드 할당 | S01-T02 | 상 | planned:S02 | S02-T07 공통 코드 3003 Common.UniqueConstraintViolated(Conflict 409) 추가. S02 계획 리뷰에서 T06 → T07로 이동 |
+| BL-019 | error-codes.md: 매핑 없는 23505(유니크 위반)용 공통 Conflict 코드 할당 | S01-T02 | 상 | done | S02-T07(64044bd): 3003 Common.UniqueConstraintViolated 추가, CommonErrorsTests · error-codes 같은 커밋 |
 | BL-020 | check-docs.js에 유형별 추가 필드(adr의 supersedes 등) 점검 추가 검토(기존 ADR 0005 등이 결함으로 잡힘) | S01-T02 | 하 | dropped | BL-001로 병합(CI 편입 전 check-docs 보완) |
 | BL-021 | check-docs.js: 링크 대상에 공백이 있거나 `<...>` 안에 공백이 있는 형식은 점검에서 빠짐(현재 해당 링크 없음). CI 편입 전 보완 검토 | S01-T02 | 하 | dropped | BL-001로 병합(CI 편입 전 check-docs 보완) |
 | BL-022 | database.md 트랜잭션 절 "기본값(Read Committed)을 쓴다"를 ADR-0014 "Read Committed 명시"에 맞춰 정리 | S01-T02 | 하 | done | database.md "Read Committed를 명시한다" (ADR-0014) (기존: S01-T04) |
-| BL-023 | 23505가 UoW에서 Result로 바뀌어도 EF가 CommandError · SaveChangesFailed를 Error로 먼저 기록(정상 경합 경로에 Error 로그 2건). ConfigureWarnings로 수준을 낮출지 결정 | S01-T03 | 중 | open | S02 계획 리뷰: 편입하지 않음. S03-T05 실측 후 결정(ConfigureWarnings는 이벤트 ID 단위라 실제 오류도 가림) |
+| BL-023 | 23505가 UoW에서 Result로 바뀌어도 EF가 CommandError · SaveChangesFailed를 Error로 먼저 기록(정상 경합 경로에 Error 로그 2건). ConfigureWarnings로 수준을 낮출지 결정 | S01-T03 | 중 | planned:S03 | S03-T05에서 23505 실제 발생 시 EF Error 로그 중복 실측 후 결정(BL-081 P8) |
 | BL-024 | Aspire 대시보드 추적에서 db.connection_string 태그에 비밀번호가 없는지, 로그 · 추적에 파라미터 값이 없는지 실측 | S01-T03 | 상 | open | NFR-06 관련. S03 계획 리뷰에서 S03-T04 완료 조건에 편입 권장 (기존: S03-T05) |
 | BL-025 | coding-conventions CQRS 표의 Command 반환 `Result`를 `Result<Unit>`으로 수정(ADR-0015) | S01-T03 | 중 | done | coding-conventions Result<Unit> (기존: S01-T04) |
 | BL-026 | package-versions에 Serilog.Sinks.Async · Serilog.Enrichers.Environment 버전 · 라이선스 행 추가 | S01-T03 | 하 | done | package-versions.md Serilog.Sinks.Async · Enrichers.Environment 행 (기존: S01-T04) |
 | BL-027 | logging-observability에 반영: `Logging:LogLevel` 미사용, EF 로그 수준, 민감 데이터 규칙, 중복 방지 방식(ADR-0020) | S01-T03 | 중 | done | logging-observability ADR-0020 반영 (기존: S01-T04) |
-| BL-028 | Mediator 로깅 데코레이터 로그 이벤트 ID를 공통 범위 1~999에서 할당하고 error-codes에 기록 | S01-T03 | 중 | planned:S02 | S02-T02 로깅 데코레이터(이벤트 ID 할당 포함) (기존: S02-T02) |
-| BL-029 | 아키텍처 테스트 후보: Handler는 ISender 주입 금지, Validator는 IRepository · IReadRepository · IService 주입 금지 | S01-T03 | 중 | planned:S02 | BL-054 병합. S02-T05(위반 예시 타입으로 구조 확인, Employee 어셈블리 적용은 S03) |
+| BL-028 | Mediator 로깅 데코레이터 로그 이벤트 ID를 공통 범위 1~999에서 할당하고 error-codes에 기록 | S01-T03 | 중 | done | S02-T02(b3a0039): 이벤트 ID 하위 범위(1 · 101~199 · 201~299 · 301~399) error-codes 기록 |
+| BL-029 | 아키텍처 테스트 후보: Handler는 ISender 주입 금지, Validator는 IRepository · IReadRepository · IService 주입 금지 | S01-T03 | 중 | done | S02-T05(c2407f9): Handler ↛ ISender, Validator ↛ Repository · Service 규칙 구현. Employee 적용은 BL-085 |
 | BL-030 | 헬스체크 경로 정리(logging-observability `/health/live` · `/health/ready` vs Aspire 템플릿 `/health` · `/alive`) | S01-T03 | 중 | planned:S03 | S03-T04 ServiceDefaults 헬스체크 (기존: S03-T04) |
 | BL-031 | PRD-001 Q9 결론 문구가 ADR-0014 · 0015 구체화(데코레이터는 CommitAsync만, 실행 전략은 UoW 안)와 표현이 다름: "구체화: ADR-0014 · 0015" 주석 검토 | S01-T03 | 하 | done | PRD Q9 반영 열 "구체화: ADR-0014 · 0015" 주석 (기존: S01-T04) |
 | BL-032 | clean-architecture.md의 `Endpoints/` · Minimal API 기본안을 `Controllers/`로 수정(ADR-0016) | S01-T03 | 중 | done | clean-architecture Controllers/ (기존: S01-T04) |
@@ -78,10 +78,10 @@ updated: 2026-09-27
 | BL-049 | local-setup / troubleshooting: Windows 깊은 경로 clone 시 MAX_PATH 초과로 MSB3101/MSB3030 실패 → 짧은 경로 또는 LongPathsEnabled 안내 | S01-T05 | 하 | planned:S04 | S04-T03 local-setup 사전 준비(S04 계획 리뷰에서 문구 명시) (기존: S04) |
 | BL-050 | BuildingBlocks.Domain 첫 코드 도입 시 골격 확인 테스트(BuildingBlocksDomainAssemblyTests) 대체 또는 삭제 | S01-T05 | 하 | done | 골격 확인 테스트 삭제, 실제 테스트로 대체 (df00b97) (기존: S01-T06) |
 | BL-051 | IDE0005(사용하지 않는 using) 빌드 강제 여부 결정(GenerateDocumentationFile 필요) | S01-T05 | 하 | open | GenerateDocumentationFile 추가 설정 필요, 급하지 않음 |
-| BL-052 | 공통 에러 코드는 BuildingBlocks.Domain CommonErrors(11개)에 정의됨: S02-T06은 새로 할당하지 말고 ErrorType → HTTP 매핑과 ValidationError → ProblemDetails errors(camelCase) 변환만 구현 | S01-T06 | 상 | planned:S02 | S02-T06. 완료 조건을 "CommonErrors 재사용, 새 할당 없음"으로 수정(누락분 3003은 S02-T07) |
-| BL-053 | 검증 데코레이터: CustomState에 Error가 없는 실패는 Error.Validation(1001, 메시지)로 감싸 FieldError.Create에 전달(FieldError는 검증 실패 유형만 받음) | S01-T06 | 중 | planned:S02 | S02-T02 검증 데코레이터 (기존: S02-T02) |
+| BL-052 | 공통 에러 코드는 BuildingBlocks.Domain CommonErrors(11개)에 정의됨: S02-T06은 새로 할당하지 말고 ErrorType → HTTP 매핑과 ValidationError → ProblemDetails errors(camelCase) 변환만 구현 | S01-T06 | 상 | done | S02-T06(6bee2d6): CommonErrors 재사용, 새 코드 할당 0 |
+| BL-053 | 검증 데코레이터: CustomState에 Error가 없는 실패는 Error.Validation(1001, 메시지)로 감싸 FieldError.Create에 전달(FieldError는 검증 실패 유형만 받음) | S01-T06 | 중 | done | S02-T02(b3a0039): CustomState 없는 실패를 1001로 감쌈 |
 | BL-054 | 아키텍처 테스트 후보: 서비스 코드에서 Error / Result 파생 금지, Entity/AggregateRoot 파생 클래스는 sealed | S01-T06 | 중 | dropped | BL-029로 병합 (기존: S02-T05) |
-| BL-055 | coding-conventions에 경고 억제 규칙 명문화([SuppressMessage] + Justification 필수, 전역 NoWarn 금지, 승인 목록) | S01-T06 | 중 | open | S02 계획 리뷰에서 reviewer 기준 합의(S02 계획 리뷰 절). 명문화는 S04-T02 |
+| BL-055 | coding-conventions에 경고 억제 규칙 명문화([SuppressMessage] + Justification 필수, 전역 NoWarn 금지, 승인 목록) | S01-T06 | 중 | planned:S04 | S02 동안 reviewer 기준으로 운영(억제 승인 목록 기록). S04-T02에서 coding-conventions 명문화 |
 | BL-056 | error-codes.md 또는 coding-conventions에 "ValidationError는 sealed"(non-sealed는 Error) 명시 — ADR 0018:22 문구 오해 방지 | S01-T06 | 하 | dropped | TD-016으로 병합(문서 문구 정리) |
 | BL-057 | S03 CI 통합 테스트 대비: 통합 테스트 잡은 ubuntu 러너 고정 · services: 대신 Testcontainers, 이미지 pull 시간 단축(선 pull 또는 변형 검토, NFR-07), 컨테이너는 컬렉션 fixture로 공유(ADR-0022) | S01-T07 | 상 | planned:S03 | S03-T05 CI 통과 조건(NFR-07) (기존: S03) |
 | BL-058 | Dependabot(github-actions 생태계)으로 액션 SHA · 버전 주석 자동 갱신 검토 | S01-T07 | 중 | open | 액션 SHA 고정 ADR 후보와 함께 결정(security.md:85) |
@@ -91,22 +91,29 @@ updated: 2026-09-27
 | BL-062 | ci.yml Coverage report 단계는 테스트 실패 시 건너뜀: 의도라면 testing-strategy CI 절에 명시 | S01-T07 | 하 | planned:S04 | S04-T03 ci-cd 워크플로 단계 설명 |
 | BL-063 | reportgenerator 입력 패턴 `TestResults/*/coverage.cobertura.xml`이 결과 폴더 구조 변화 시 0건이 될 수 있음: 테스트 프로젝트 증가 시 합산 대상 수 확인 | S01-T07 | 중 | planned:S04 | S04-T01 커버리지 기록(S03-T05 테스트 프로젝트 추가 때 먼저 확인 권장) (기존: S03) |
 | BL-064 | 로컬(8.0.425)과 러너 setup-dotnet SDK 버전이 다를 수 있음: DoD에서 러너 `dotnet --info` 로그로 확인 | S01-T07 | 중 | done | PR #7 CI run 36303017840 러너 SDK 8.0.425(로컬과 같음) |
-| BL-065 | IService 마커가 BuildingBlocks.Application에 있어 Domain의 도메인 서비스 인터페이스가 상속할 수 없음(coding-conventions DI 표와 불일치): Domain용 마커를 둘지 문서를 고칠지 결정 | S02-T01 | 중 | new | Employee 도메인 서비스가 생기는 S03 전 결정 |
-| BL-066 | ADR-0018 본문의 Validator 형태(AbstractValidator<TRequest>)와 S02-T02에서 정한 공통 기반 RequestValidator<TRequest>(RuleLevelCascadeMode = Stop) 불일치: clean-architecture · testing-strategy 문구 정리, ADR 보충 여부 판단 | S02-T02 | 중 | new | S04-T02 기준 문서 정리 후보 |
-| BL-067 | ADR-0013 '자동 등록' 문구와 ADR-0017 '명시 등록' 불일치: S02-T03에서 ADR-0017(명시, Scoped)로 해석. 해석 기록 위치(결과 리뷰 / S04-T02 명문화) 판단 | S02-T03 | 하 | new |  |
-| BL-068 | coverlet.runsettings Include에 BuildingBlocks.Infrastructure(및 Api)가 없음: 80% 보고 대상 포함 여부 결정 | S02-T03 | 중 | new | NFR-03 대상 어셈블리 범위 |
-| BL-069 | 테스트 Samples 형식의 파일 규칙: 한 파일 한 형식을 테스트에도 적용한다고 명문화할지, 예외(시나리오 묶음 파일)를 둘지 결정(결정 전에는 현행 규칙 적용) | S02-T03 | 하 | new | S04-T02 기준 문서 정리 후보 |
-| BL-070 | owned가 아닌 하위 엔티티(같은 Aggregate, 별도 테이블)만 바뀌면 루트 행이 UPDATE되지 않아 루트 xmin 동시성 검사가 걸리지 않음: 루트 갱신 여부 · 소유 관계 판별 방법 결정 | S02-T04 | 중 | new | 서비스 Aggregate 설계 때(S03) 결정 |
-| BL-071 | 테이블 · 컬럼 · pk_ · fk_ · ix_ 이름의 63바이트 한도를 모델 생성 시 검사하는 공통 검증(현재 ux_ · ck_만 검사, EF 자동 잘림으로 23505 매핑과 어긋날 수 있음) | S02-T04 | 중 | new |  |
-| BL-072 | IStronglyTypedId<Other>처럼 형식 인자가 자기 자신이 아닌 구현은 변환기 등록에서 조용히 빠짐: 아키텍처 테스트나 분석기 규칙으로 막을지 검토 | S02-T04 | 하 | new | S02-T05 규칙 후보와 함께 검토 |
-| BL-073 | EnableRetryOnFailure 기본값(6회, 최대 지연 30초)이면 일시 장애 때 요청 하나가 수십 초 걸릴 수 있음: maxRetryCount · maxRetryDelay 조정 여부 | S02-T07 | 중 | new | S03-T05 실측 후 판단 |
-| BL-074 | IExceptionClassifier가 RetryLimitExceeded만 9003으로 분류: 실행 전략을 거치지 않은 일시 오류(NpgsqlException.IsTransient)는 9001이 됨. 분류 대상 확대 검토 | S02-T07 | 하 | new |  |
-| BL-075 | ServiceDefaults Serilog 설정에서 Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware 범주를 MinimumLevel.Override로 끄기: Serilog는 Microsoft.Extensions.Logging 필터를 무시하므로 없으면 원본 예외 메시지(제약 이름 · SQL)가 Error로 남음 | S02-T06 | 상 | new | S03 ServiceDefaults 작업, S03-T05에서 Serilog 경로 재확인 |
-| BL-076 | 메시지를 남겨도 되는 예외 형식(예: ArgumentException) 허용 목록 정책: 현재 전역 예외 로그는 모든 예외 메시지를 뺀 사본(RedactedException)으로 기록 | S02-T06 | 하 | new |  |
-| BL-077 | ADR-0018은 [Flags] 조합 검사를 Phase 2로 적었으나 S02-T06(스프린트 완료 조건)에서 MustBeDefinedEnum으로 구현: 차이를 기록할 위치(후속 ADR / 결과 리뷰) 판단 | S02-T06 | 하 | new |  |
-| BL-078 | 서비스끼리 프로젝트 참조 금지 아키텍처 규칙: 서비스가 2개 이상일 때만 대상이 생김(1개면 공허 통과) | S02-T05 | 하 | new | 두 번째 서비스 토픽에서 추가 |
-| BL-079 | [Flags] enum의 `: int` 명시 여부는 메타데이터로 구별 불가: Roslyn 분석기(구문 기준)로 강제할지 검토 | S02-T05 | 하 | new | BL-072 검토 결과 중 남은 부분 |
-| BL-080 | 테스트 프로젝트 이름 규칙(TD-014)을 아키텍처 테스트로 볼 수 없음: sln 파싱 CI 점검 스크립트로 보완 검토 | S02-T05 | 하 | new |  |
+| BL-065 | IService 마커가 BuildingBlocks.Application에 있어 Domain의 도메인 서비스 인터페이스가 상속할 수 없음(coding-conventions DI 표와 불일치): Domain용 마커를 둘지 문서를 고칠지 결정 | S02-T01 | 중 | planned:S03 | Employee 도메인 서비스 생기기 전, S03 계획 리뷰에서 결정 |
+| BL-066 | ADR-0018 본문의 Validator 형태(AbstractValidator<TRequest>)와 S02-T02에서 정한 공통 기반 RequestValidator<TRequest>(RuleLevelCascadeMode = Stop) 불일치: clean-architecture · testing-strategy 문구 정리, ADR 보충 여부 판단 | S02-T02 | 중 | planned:S04 | S04-T02 기준 문서 정리 + ADR-0018 보충 ADR 여부 판단. BL-067 · 077 병합 |
+| BL-067 | ADR-0013 '자동 등록' 문구와 ADR-0017 '명시 등록' 불일치: S02-T03에서 ADR-0017(명시, Scoped)로 해석. 해석 기록 위치(결과 리뷰 / S04-T02 명문화) 판단 | S02-T03 | 하 | dropped | BL-066에 병합. 해석(ADR-0017 명시 등록, Scoped)은 S02 결과 리뷰에 기록 |
+| BL-068 | coverlet.runsettings Include에 BuildingBlocks.Infrastructure(및 Api)가 없음: 80% 보고 대상 포함 여부 결정 | S02-T03 | 중 | planned:S04 | S04-T01에서 NFR-03 대상(BuildingBlocks에 Infrastructure · Api 포함 여부) 확정 후 coverlet Include 조정 |
+| BL-069 | 테스트 Samples 형식의 파일 규칙: 한 파일 한 형식을 테스트에도 적용한다고 명문화할지, 예외(시나리오 묶음 파일)를 둘지 결정(결정 전에는 현행 규칙 적용) | S02-T03 | 하 | planned:S04 | S02 반려 원인. S04-T02 coding-conventions에 테스트 코드 적용 명문화, 그 전까지 현행 규칙 적용 |
+| BL-070 | owned가 아닌 하위 엔티티(같은 Aggregate, 별도 테이블)만 바뀌면 루트 행이 UPDATE되지 않아 루트 xmin 동시성 검사가 걸리지 않음: 루트 갱신 여부 · 소유 관계 판별 방법 결정 | S02-T04 | 중 | open | 재검토 조건: 별도 테이블 하위 엔티티를 가진 첫 Aggregate 설계 |
+| BL-071 | 테이블 · 컬럼 · pk_ · fk_ · ix_ 이름의 63바이트 한도를 모델 생성 시 검사하는 공통 검증(현재 ux_ · ck_만 검사, EF 자동 잘림으로 23505 매핑과 어긋날 수 있음) | S02-T04 | 중 | open | PRD-001에서는 위험 낮음. S03-T02 dba 검토(BL-084)에서 63바이트 수동 확인, 공통 검증은 이후 토픽 |
+| BL-072 | IStronglyTypedId<Other>처럼 형식 인자가 자기 자신이 아닌 구현은 변환기 등록에서 조용히 빠짐: 아키텍처 테스트나 분석기 규칙으로 막을지 검토 | S02-T04 | 하 | dropped | S02-T05에서 구현(IStronglyTypedId<TSelf> 자기 형식 규칙). 남은 enum 부분은 BL-079 |
+| BL-073 | EnableRetryOnFailure 기본값(6회, 최대 지연 30초)이면 일시 장애 때 요청 하나가 수십 초 걸릴 수 있음: maxRetryCount · maxRetryDelay 조정 여부 | S02-T07 | 중 | planned:S03 | S03-T05 재시도 한도 실측(BL-081 P6) 후 조정 여부 결정 |
+| BL-074 | IExceptionClassifier가 RetryLimitExceeded만 9003으로 분류: 실행 전략을 거치지 않은 일시 오류(NpgsqlException.IsTransient)는 9001이 됨. 분류 대상 확대 검토 | S02-T07 | 하 | open | PRD-001 범위에 해당 경로 없음. 나가는 호출 · 브로커가 생길 때 재검토 |
+| BL-075 | ServiceDefaults Serilog 설정에서 Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware 범주를 MinimumLevel.Override로 끄기: Serilog는 Microsoft.Extensions.Logging 필터를 무시하므로 없으면 원본 예외 메시지(제약 이름 · SQL)가 Error로 남음 | S02-T06 | 상 | planned:S03 | S03-T04 ServiceDefaults 완료 조건에 포함, S03-T05에서 Serilog 경로 재확인(BL-083 H4). TD-022와 짝 |
+| BL-076 | 메시지를 남겨도 되는 예외 형식(예: ArgumentException) 허용 목록 정책: 현재 전역 예외 로그는 모든 예외 메시지를 뺀 사본(RedactedException)으로 기록 | S02-T06 | 하 | open | 현재 모든 예외 메시지를 빼 안전. 운영 진단 요구가 생길 때 결정 |
+| BL-077 | ADR-0018은 [Flags] 조합 검사를 Phase 2로 적었으나 S02-T06(스프린트 완료 조건)에서 MustBeDefinedEnum으로 구현: 차이를 기록할 위치(후속 ADR / 결과 리뷰) 판단 | S02-T06 | 하 | dropped | BL-066에 병합 |
+| BL-078 | 서비스끼리 프로젝트 참조 금지 아키텍처 규칙: 서비스가 2개 이상일 때만 대상이 생김(1개면 공허 통과) | S02-T05 | 하 | dropped | S02-T05 재작업(933aabb)에서 구현: 서비스 간 형식 규칙(서비스 2개 미만 건너뜀) + 선언 참조 격리 |
+| BL-079 | [Flags] enum의 `: int` 명시 여부는 메타데이터로 구별 불가: Roslyn 분석기(구문 기준)로 강제할지 검토 | S02-T05 | 하 | open | Roslyn 분석기는 비용이 큼. developer 자체 점검 항목으로 먼저 완화(S02 회고) |
+| BL-080 | 테스트 프로젝트 이름 규칙(TD-014)을 아키텍처 테스트로 볼 수 없음: sln 파싱 CI 점검 스크립트로 보완 검토 | S02-T05 | 하 | dropped | TD-014 상환 계획에 병합 |
+| BL-081 | S03-T05 이관 영속성 · 트랜잭션 실측 묶음(S02 결과 리뷰 P1~P9): 실행 전략 + Read Committed, accept false 실효, 실패 뒤 롤백, 23505 ConstraintName · 201/202, xmin 충돌 3001 · owned 소유자 UPDATE, 재시도 한도 → 9003, Deleted 이벤트 비움, EF Error 로그 중복(BL-023), 커밋 응답 끊김 오보고(TD-010) | S02 결과 리뷰 | 상 | planned:S03 | S03-T05 완료 조건에 목록으로 반영 |
+| BL-082 | S03-T05 이관 스키마 · 연결 실측 묶음(S1~S6): 감사 UTC 저장(+09:00), 읽기 연결 25006 → 9001 미노출, UUID v7 DB 정렬 · uuid · 기본값 없음, ck_ 위반 23514 · Flags 미정의 비트, 샘플 owned ck_ · bigint 마스크(BuildingBlocks 샘플로 할지 S03 계획 리뷰에서 결정), Respawn fixture employee_app · read-only 재현 | S02 결과 리뷰 | 상 | planned:S03 | S03-T05 완료 조건에 목록으로 반영 |
+| BL-083 | S03-T05 이관 HTTP · 로그 경로 실측 묶음(H1~H4): Kestrel 경로 바인딩 오류 1001 키, BadHttpRequest 본문 초과 400(TD-021), 응답 traceId = traceparent, Serilog OTLP 경로 ExceptionHandlerMiddleware 원본 메시지 미기록(BL-075) | S02 결과 리뷰 | 중 | planned:S03 | S03-T05 완료 조건에 목록으로 반영 |
+| BL-084 | S03-T02 dba 마이그레이션 SQL 검토 항목: xmin 컬럼 생성 없음, ux_ · ck_ 이름 = 상수, ck_ Flags 마스크 괄호, created_at · updated_at timestamptz NOT NULL, id uuid 기본값 없음, 식별자 63바이트 이하(BL-071) | S02-T04 dba | 중 | planned:S03 | S03-T02 dba 단계 입력 |
+| BL-085 | 아키텍처 테스트 Employee 편입: ArchitectureAssemblies.All에 Employee Domain · Application · Infrastructure · Api · MigrationService + csproj 참조, 서비스 전용 규칙 10개 활성화, 제품 코드 위반 3종(Controller Repository 주입, MigrationService → Api, Handler ISender 주입) 재현 기록. MigrationService가 S03-T04에서 생기므로 편입 순서 결정 필요 | S02-T05 | 상 | planned:S03 | S03 계획 리뷰에서 T03 · T04 순서 또는 편입 시점 결정 |
+| BL-086 | ProductNames.ServiceOf가 EmergencyHub.AppHost 등 비서비스 프로젝트도 서비스로 판정: 제외 목록 추가 | S02-T05 reviewer | 하 | planned:S03 | AppHost가 생기는 S03-T04에서 확인 · 추가 |
+| BL-087 | S04-T02 문서 반영 묶음: clean-architecture 의존성 규칙 표 Api · MigrationService 행 + testing-strategy 아키텍처 테스트 절 동기화 + 규칙 Source 문자열 변경, database.md xmin 설명과 구현(IsConcurrencyToken + OnAddOrUpdate)이 같은 구성이라는 한 줄 | S02 결과 리뷰 | 중 | planned:S04 | S04-T02 입력 |
 
 ---
 
@@ -117,3 +124,4 @@ updated: 2026-09-27
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | `new` 상태 추가: 발견 즉시 기록, 스프린트 종료 때 정리 |
 | 2026-09-27 | - | S01 종료 정리: BL-001~064 (done 22, 병합 7, planned 18, open 15, dropped 2) |
+| 2026-09-27 | orchestrator | S02 종료 정리: BL-065~080 정리(done 5 · dropped 6 · planned 9 · open 6), 인계 메모로 BL-081~087 추가(S03-T05 실측 묶음 3, S03-T02 · 아키텍처 편입 · AppHost 제외 · S04 문서 묶음), `new` 0 |

@@ -152,3 +152,4 @@ updated: 2026-09-27
 | 2026-09-27 | developer | Q5 · Q11 · Q14 반영 열에 ADR 0015~0020 링크 추가 (S01-T03) |
 | 2026-09-27 | developer | Q9 반영 열에 "구체화: ADR-0014 · 0015" 주석, Q5 · Q11 · Q18 반영 열에 ADR 0021~0023 링크 추가, 결론 본문 불변 (S01-T04) |
 | 2026-09-27 | developer | FR-09 테스트 프로젝트 목록에 `EmergencyHub.BuildingBlocks.Api.UnitTests` 비고(ADR-0024) 추가 (S02-T08) |
+| 2026-09-27 | orchestrator | S02 결과 리뷰: FR-05 본문의 "트랜잭션 데코레이터가 실행 전략 안에서 SaveChanges · 커밋"은 ADR-0014 · 0015 기준으로 해석(데코레이터는 `CommitAsync`만, 실행 전략 · SaveChanges는 UnitOfWork). FR-06의 `Decorate`는 ADR-0017의 `TryDecorate`로 해석. 결론 본문 불변 |

@@ -39,19 +39,19 @@ updated: 2026-09-27
 | TD-010 | 커밋 응답 중 연결이 끊기면 실행 전략이 SaveChanges를 재실행해 pk_ 23505 · xmin 충돌을 잘못 보고할 수 있음. 운영 전 verifySucceeded 또는 멱등 키로 해소 | 설계 | 중 | S01-T02 | Phase 4 전 verifySucceeded 또는 Idempotency-Key로 해소. S03-T05 동시성 테스트에서 재현 범위 기록 권장 | open |
 | TD-011 | EF Core 8 MigrateAsync에 마이그레이션 잠금 없음(EF 9 추가): 적용 주체를 MigrationService 1개로 제한, Phase 4는 번들 / 스크립트 | 인프라 | 중 | S01-T02 | S03-T04 적용 주체 MigrationService 1개 유지. Phase 4 번들 / 스크립트 | open |
 | TD-012 | ServiceDefaults가 Aspire 템플릿과 달라짐(OTel 로그 공급자 제거, 신호별 OTLP 내보내기, ADR-0020). Aspire 버전을 올릴 때 차이를 다시 적용해야 함 | 인프라 | 하 | S01-T03 | S03-T04 구현 때 템플릿 차이를 주석 · ADR-0020 링크로 남김. Aspire 전환 때 재적용 | open |
-| TD-013 | NetArchTest.Rules 1.3.2(2021-05 이후 릴리스 없음) · NSubstitute.Analyzers.CSharp 1.0.17(2024-02 이후 없음) 유지 중단. 막히면 ArchUnitNET 전환 검토(ADR-0021) | 테스트 | 중 | S01-T04 | S02-T05에서 막히면 ArchUnitNET 전환(ADR-0021). S02 계획 리뷰 위험으로 등록 | open |
-| TD-014 | 테스트 프로젝트 판별이 이름 규칙(MSBuildProjectName이 Tests로 끝남)에 의존: 규칙 밖 이름은 OutputType=Exe · 문서 생성 제외가 적용되지 않음. 아키텍처 테스트 / CI 점검으로 보완 검토 | 코드 | 하 | S01-T05 | S02-T05 아키텍처 테스트 또는 CI 점검에 프로젝트 이름 규칙 추가 검토(S02 계획 리뷰) | open |
-| TD-015 | 강타입 ID용 ValueConverter 공통 등록(ConfigureConventions)과 AggregateRoot.DomainEvents Ignore 공통 처리를 BuildingBlocks 영속성 계층에서 제공(첫 DbContext 작업에서 반영) | 설계 | 중 | S01-T06 | S02-T04 강타입 ID 변환 + ValueGeneratedNever, DomainEvents Ignore 공통 처리 | planned:S02 |
+| TD-013 | NetArchTest.Rules 1.3.2(2021-05 이후 릴리스 없음) · NSubstitute.Analyzers.CSharp 1.0.17(2024-02 이후 없음) 유지 중단. 막히면 ArchUnitNET 전환 검토(ADR-0021) | 테스트 | 중 | S01-T04 | S02-T05 스파이크: NetArchTest 1.3.2가 net8.0 · internal · IL 의존 · 커스텀 규칙 모두 동작, ArchUnitNET 전환 불필요. 유지 중단 위험만 남음, .NET 10 전환(TD-002) 때 재검토 | open |
+| TD-014 | 테스트 프로젝트 판별이 이름 규칙(MSBuildProjectName이 Tests로 끝남)에 의존: 규칙 밖 이름은 OutputType=Exe · 문서 생성 제외가 적용되지 않음. 아키텍처 테스트 / CI 점검으로 보완 검토 | 코드 | 하 | S01-T05 | 아키텍처 테스트로는 볼 수 없음(BL-080 병합). sln 파싱 Node 점검 스크립트를 CI에 넣는 방식으로 상환, BL-001과 함께 S04-T03에서 검토 | open |
+| TD-015 | 강타입 ID용 ValueConverter 공통 등록(ConfigureConventions)과 AggregateRoot.DomainEvents Ignore 공통 처리를 BuildingBlocks 영속성 계층에서 제공(첫 DbContext 작업에서 반영) | 설계 | 중 | S01-T06 | S02-T04(3fe392a): ConfigureConventions 강타입 ID 변환 + ValueGeneratedNever, IgnoreAny<IDomainEvent> 공통 처리, 메타데이터 테스트로 확인 | resolved |
 | TD-016 | Error는 non-sealed record라 컴파일러가 만드는 protected 복사 생성자로 어셈블리 밖에서도 파생 가능(불변식은 유지). coding-conventions:61 · Error.cs remarks의 "같은 어셈블리로 막음" 표현이 부정확(CS8878). 문서 수정 또는 아키텍처 테스트(BL-054)로 보완 | 코드 | 하 | S01-T06 | BL-056 병합. S04-T02에서 coding-conventions:61 · Error.cs remarks 문구 정정, 강제는 BL-029 | planned:S04 |
 | TD-017 | Result<T>는 성공 값 null을 런타임에만 거부하고 `where T : notnull` 제약 없음(Mediator 인터페이스 전파 부담) | 코드 | 하 | S01-T06 | S02-T01 Mediator 인터페이스 정의 때 notnull 제약 전파 재판단 | open |
 | TD-018 | GitHub Free private라 브랜치 보호 불가 → CI를 필수 체크로 걸 수 없음. "CI 미통과 PR 병합 금지"를 규칙으로만 지킴 | 인프라 | 중 | S01-T07 | 상환 수단 없음(요금제). "CI 통과 전 병합 금지"를 PR 체크리스트 · retro 점검으로 유지 | open |
-| TD-019 | 테스트 프로젝트에 Microsoft.Extensions.Logging · DependencyInjection 8.0.1(Diagnostics.Testing 전이)과 *.Abstractions 10.0.0이 섞여 해석됨(메이저 혼합) | 의존성 | 하 | S02-T02 | .NET 10 전환(BL-002 · TD-002) 때 함께 정리(TD-008 관찰 연장) | new |
-| TD-020 | Scrutor 7 Decorate가 keyed 서비스(IKeyedServiceProvider)에 의존: 앱 호스트 공유 프레임워크 DI 8.0과 Abstractions 10.0.0 혼합 런타임 호환 미확인 | 의존성 | 중 | S02-T03 | S03 호스트 실행 때 확인(TD-008 관찰 확장) | new |
-| TD-021 | BadHttpRequestException의 원래 상태 코드(413 · 408 등)를 모두 400 · 1001로 응답(원래 코드는 로그 302에만) | 설계 | 하 | S02-T06 | api-guidelines 정비 때 상태 코드 보존 여부 결정 | new |
-| TD-022 | ExceptionHandlerMiddleware 범주 전체를 로그 필터로 끄므로 같은 범주의 다른 로그(응답 시작 후 Warning, 요청 중단 Debug)도 사라짐. 이벤트 ID 단위 필터 불가 | 설계 | 중 | S02-T06 | .NET 10 전환(BL-002) 때 억제 옵션 검토 | new |
-| TD-023 | 바인딩 오류 errors 키 순서가 ModelStateDictionary 열거 순서를 따르고 요청 속성 순서를 보장하지 않음 | 설계 | 하 | S02-T06 | 클라이언트 요구가 생기면 정렬 규칙 결정 | new |
-| TD-024 | 아키텍처 테스트 프로젝트는 coverlet.collector를 쓰지 못함(계측된 제품 DLL을 검사해 Domain 규칙 실패). CI 로그에 수집기 없음 메시지 | 테스트 | 하 | S02-T05 | 수집기가 필요해지면 원본 DLL 경로(obj) 검사 또는 Coverlet 네임스페이스 예외 판단 | new |
-| TD-025 | Controller ↛ Repository 아키텍처 규칙은 시그니처 기준이라 메서드 본문 서비스 로케이터(GetRequiredService<IXxxRepository>())는 잡지 못함 | 테스트 | 하 | S02-T05 | Mono.Cecil IL 피연산자 검사 사용자 규칙으로 보완 가능, 그 전까지 reviewer 판정 | new |
+| TD-019 | 테스트 프로젝트에 Microsoft.Extensions.Logging · DependencyInjection 8.0.1(Diagnostics.Testing 전이)과 *.Abstractions 10.0.0이 섞여 해석됨(메이저 혼합) | 의존성 | 하 | S02-T02 | .NET 10 전환(TD-002) 때 Microsoft.Extensions.* 메이저를 하나로 맞춤(테스트 프로젝트 한정) | open |
+| TD-020 | Scrutor 7 Decorate가 keyed 서비스(IKeyedServiceProvider)에 의존: 앱 호스트 공유 프레임워크 DI 8.0과 Abstractions 10.0.0 혼합 런타임 호환 미확인 | 의존성 | 중 | S02-T03 | S03-T04 호스트 실행에서 Scrutor Decorate · DI 8.0 + Abstractions 10.0.0 혼합 런타임 확인, 결과를 TD-008 관찰에 추가(문제 없으면 TD-008에 병합) | planned:S03 |
+| TD-021 | BadHttpRequestException의 원래 상태 코드(413 · 408 등)를 모두 400 · 1001로 응답(원래 코드는 로그 302에만) | 설계 | 하 | S02-T06 | api-guidelines 정비 때(S04-T02 또는 이후) 413 · 408 상태 코드 보존 여부 결정. S03-T05(BL-083 H2)에서 현행 동작 확인 | open |
+| TD-022 | ExceptionHandlerMiddleware 범주 전체를 로그 필터로 끄므로 같은 범주의 다른 로그(응답 시작 후 Warning, 요청 중단 Debug)도 사라짐. 이벤트 ID 단위 필터 불가 | 설계 | 중 | S02-T06 | .NET 10 전환(BL-002 · TD-002) 때 ExceptionHandlerOptions 억제 옵션으로 범주 전체 필터 대체. BL-075와 짝 | open |
+| TD-023 | 바인딩 오류 errors 키 순서가 ModelStateDictionary 열거 순서를 따르고 요청 속성 순서를 보장하지 않음 | 설계 | 하 | S02-T06 | 클라이언트 요구가 생기면 정렬 규칙 결정(T06 tester 후보 병합) | open |
+| TD-024 | 아키텍처 테스트 프로젝트는 coverlet.collector를 쓰지 못함(계측된 제품 DLL을 검사해 Domain 규칙 실패). CI 로그에 수집기 없음 메시지 | 테스트 | 하 | S02-T05 | S04-T01 커버리지 점검 때 ArchitectureTests 수집 제외 확정, CI 로그 '수집기 없음' 메시지 문서화 | open |
+| TD-025 | Controller ↛ Repository 아키텍처 규칙은 시그니처 기준이라 메서드 본문 서비스 로케이터(GetRequiredService<IXxxRepository>())는 잡지 못함 | 테스트 | 하 | S02-T05 | 그 전까지 reviewer 점검표에 'Controller 본문 서비스 로케이터 금지', 필요해지면 Mono.Cecil IL 피연산자 규칙 추가 | open |
 
 ---
 
@@ -62,3 +62,4 @@ updated: 2026-09-27
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | `new` 상태 추가: 발견 즉시 기록, 스프린트 종료 때 정리 |
 | 2026-09-27 | - | S01 종료 정리: TD-001~018 (resolved 2, planned 3, open 13, TD-005는 TD-002에 병합) |
+| 2026-09-27 | orchestrator | S02 종료 정리: TD-015 resolved, TD-019~025 정리(planned:S03 1 · open 6), TD-013 · 014 상환 계획 갱신, `new` 0 |

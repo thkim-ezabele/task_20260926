@@ -2,10 +2,10 @@
 title: "S02: BuildingBlocks Application · Infrastructure와 공통 API 처리"
 type: sprint
 sprint: "S02"
-status: active
+status: done
 prd: [PRD-001]
 started: 2026-09-27
-finished:
+finished: 2026-09-27
 adrs: [ADR-0024]
 worklogs: []
 aliases: [S02]
@@ -55,12 +55,12 @@ updated: 2026-09-27
 
 ## 완료 기준 (DoD)
 
-- [ ] 모든 작업이 `done`이거나 백로그로 이관되었다
-- [ ] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다
-- [ ] 관련 위키 문서(API, 이벤트, DB)를 갱신했다
-- [ ] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
+- [x] 모든 작업이 `done`이거나 백로그로 이관되었다
+- [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (로컬 -warnaserror 경고 0, 1033 통과 · 11 건너뜀(의도) · 실패 0. 통합 테스트는 S03-T05 범위)
+- [x] 관련 위키 문서(API, 이벤트, DB)를 갱신했다
+- [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
 - [ ] 토픽 브랜치를 push하고 `sprint/S02` 태그를 붙였다
-- [ ] S03-T05로 이관한 DB 동작 검증 항목(실행 전략 + 트랜잭션, 감사 인터셉터 UTC, 읽기 연결 거부 25006, UUID DB 정렬, 23505 실제 발생과 제약 이름 → 3003 / 서비스 코드, RetryLimitExceeded → 9003, EF Error 로그 중복(BL-023))과 S03-T02 dba 검토 항목(idempotent SQL에 `xmin` 컬럼 생성 없음, `ux_` · `ck_` 이름 일치)을 결과 리뷰에 기록했다
+- [x] S03-T05로 이관한 DB 동작 검증 항목(실행 전략 + 트랜잭션, 감사 인터셉터 UTC, 읽기 연결 거부 25006, UUID DB 정렬, 23505 실제 발생과 제약 이름 → 3003 / 서비스 코드, RetryLimitExceeded → 9003, EF Error 로그 중복(BL-023))과 S03-T02 dba 검토 항목(idempotent SQL에 `xmin` 컬럼 생성 없음, `ux_` · `ck_` 이름 일치)을 결과 리뷰에 기록했다
 
 ## 진행 기록
 
@@ -170,27 +170,121 @@ updated: 2026-09-27
 
 > 스프린트 종료 시 orchestrator의 결과 리뷰(계획 대비 실제, 완료 조건 · FR 충족, 반려 분석)를 요약합니다.
 
--
+### 계획 대비 실제
+
+- 계획 리뷰에서 확정한 작업 8개(T08 → T01 → T02 → T03 → T04 → T07 → T06 → T05)를 모두 `done`으로 끝냈다. 이관 0, 계획 승인 뒤 추가 작업 0, BLOCKED 0, 반려 3회(모두 재작업 1회로 PASS).
+- 커밋 48439d0..HEAD 41개(운영 변경 커밋 78c6566 포함). 소요 약 4시간 30분. developer 단계가 작업당 7~31분으로 전체의 약 70%.
+- 테스트 202건 → 1033건 통과 + 11건 건너뜀(서비스 전용 규칙 10 + 서비스 격리 1, S03에서 활성화). tester 인수 테스트 112건 포함. ADR-0024 accepted.
+- 계획 범위 밖에서 구현된 항목: BL-078(서비스 간 참조 금지, T05 재작업), BL-072(IStronglyTypedId 자기 형식 규칙, T05).
+
+### FR 충족
+
+| FR / NFR | 결과 | 근거 · 남은 것 |
+|---|---|---|
+| FR-05 | 충족 | 실제 DI에서 로깅 → 검증 → 트랜잭션 → Handler 순서, 검증 실패 시 Handler 미호출, 실패 Result 미커밋(T01 · T02 · T03). FR-05 본문의 "데코레이터가 실행 전략 · SaveChanges"는 ADR-0014 · 0015 기준으로 해석(UoW가 맡음, PRD 변경 이력) |
+| FR-06 | 충족 | ValidateOnBuild · ValidateScopes 해석, UUID v7 버전 · 정렬 · 같은 밀리초 단조성(T03 · T04 · T07). 실제 DB 동작은 S03-T05(BL-081 · 082) |
+| FR-07 | 부분 | Result → ProblemDetails, 1001 · 1002 · 9001 · 9003 · 409, 23505 → 3003(T06 · T07). Employee 코드 할당은 S03-T01, HTTP 전 구간은 S03-T05(BL-083) |
+| FR-09 | 부분 | BuildingBlocks 단위 테스트 4개 프로젝트 + ArchitectureTests(의존성 규칙 10개가 ADR-0024 표와 1:1, 위반 재현 8종). Employee 단위 · 통합 테스트와 편입은 S03(BL-085) |
+| FR-11 | 부분 | database.md · error-codes · coding-conventions · testing-strategy · package-versions · api-guidelines · logging-observability, ADR-0024. 나머지는 S04-T02(BL-087) |
+| NFR-01 | 충족 | 모든 작업 -warnaserror 경고 0, 억제는 [SuppressMessage] + Justification만(승인 목록 진행 기록) |
+| NFR-02 | 부분 → push 뒤 충족 | CI와 같은 Release + 커버리지 명령 로컬 통과. PR CI 통과로 닫음 |
+| NFR-03 | 이관 | S04-T01. 보고 대상 범위(BL-068) 먼저 확정 |
+| NFR-05 | 충족 | Diagnostics.Testing 10.10.0 · DI 10.0.0 · NetArchTest 1.3.2 MIT 기록, 상용 0 |
+
+### 반려 분석
+
+| 작업 | 단계 | 원인 분류 | 내용 |
+|---|---|---|---|
+| S02-T03 | reviewer | 컨벤션 | 테스트 Samples 파일에 최상위 형식 여러 개(coding-conventions:51). T02 SampleValidators.cs도 같은 위반인데 T02 리뷰에서 놓침(BL-069) |
+| S02-T04 | reviewer | 컨벤션 | 테스트 샘플 enum 5개에 기반 형식 누락(coding-conventions:78). 리플렉션으로 못 잡는 규칙(BL-079) |
+| S02-T05 | reviewer | 누락 | ADR-0024 표 규칙 3개(Controller ↛ Infrastructure, MigrationService ↛ Api, 서비스 간 참조 금지) 테스트 없음. developer가 완료 조건 항목을 혼자 백로그(BL-078)로 내보냄 |
+
+- 설계 · 버그 원인 반려 0. 컨벤션 반려 2건은 모두 테스트 코드에서 나왔고 기계 점검으로 막을 수 있었다.
+
+### S03으로 이관한 검증 항목 (DoD 6)
+
+- **S03-T05 영속성 · 트랜잭션(BL-081)**: P1 실행 전략 + Read Committed 실제 동작 · UoW 동시성 재시도, P2 accept false 실효(커밋 실패 뒤 엔트리 상태 · OriginalValues, 재시도 때 같은 INSERT, WHERE xmin 원래 값), P3 실패 뒤 롤백, P4 실제 23505 ConstraintName = ux_ → 서비스 코드 / 3003 · 로그 201 · 202, P5 xmin 충돌 → 3001 · owned 변경 시 소유자 UPDATE, P6 재시도 한도 → 9003(BL-073), P7 Deleted Aggregate 이벤트 비움, P8 EF Error 로그 중복(BL-023), P9 커밋 응답 끊김 오보고(TD-010)
+- **S03-T05 스키마 · 연결(BL-082)**: S1 감사 UTC 저장(+09:00), S2 읽기 연결 25006 → 9001 미노출, S3 UUID v7 DB 정렬 · uuid · 기본값 없음, S4 ck_ 위반 23514 · Flags 미정의 비트, S5 샘플 owned ck_ · bigint 마스크(방식은 S03 계획 리뷰), S6 Respawn fixture employee_app · read-only 재현
+- **S03-T05 HTTP · 로그(BL-083)**: H1 Kestrel 경로 바인딩 오류 1001 키, H2 BadHttpRequest 본문 초과 400, H3 응답 traceId = traceparent, H4 Serilog 경로 ExceptionHandlerMiddleware 원본 메시지 미기록(BL-075)
+- **S03-T02 dba 검토(BL-084)**: xmin 컬럼 생성 없음, ux_ · ck_ 이름 = 상수, ck_ Flags 마스크 괄호, created_at · updated_at timestamptz NOT NULL, id uuid 기본값 없음, 식별자 63바이트 이하
+- **S03 위험**: 아키텍처 테스트에 Employee 어셈블리를 넣으면 MigrationService 규칙이 대상 0개로 실패(MigrationService는 S03-T04). 편입 순서를 S03 계획 리뷰에서 결정(BL-085)
+
+### 해석 기록
+
+- IIdGenerator 등록: ADR-0013 "자동 등록해도"는 수명 · 단조성 근거로 보고, ADR-0017 "공통 등록 코드에서 명시 등록"을 따라 `AddBuildingBlocksInfrastructure`에서 Scoped 명시 등록(BL-067 → BL-066).
+- FakeLogger(Microsoft.Extensions.Diagnostics.Testing): ADR 없이 package-versions 기록 유지(Microsoft 공식 보조 라이브러리).
+
+### ADR 후보 (파일은 사용자 확인 후)
+
+- (추천) ADR-0018 보충: RequestValidator 공통 기반(RuleLevelCascadeMode = Stop), MustBeDefinedEnum(비Flags 0 거부, Flags 조합 · 0 허용, Phase 2 앞당김). BL-066 처리
+- BuildingBlocks.Domain 식별자 · 이벤트 계약: `IStronglyTypedId<TSelf>` + IHasDomainEvents
+- 예외 로그 비식별화 정책: RedactedException, ExceptionHandlerMiddleware 범주 끄기(BL-075 · 076, TD-022)
+- 아키텍처 테스트 규칙 원본과 범위: 선언 참조로 쓰지 않는 참조 차단, 서비스 전용 규칙 건너뜀 조건, 테스트 어셈블리 예외
 
 ## 생긴 백로그 / 기술부채
 
 | ID | 제목 | 발생 작업 | 정리 결과 |
 |---|---|---|---|
-| | | | open / planned:SNN / dropped |
+| BL-065 | IService 마커 위치와 coding-conventions 불일치 | S02-T01 | planned:S03 |
+| BL-066 | ADR-0018 Validator 형태와 RequestValidator 차이 | S02-T02 | planned:S04 (BL-067 · 077 병합) |
+| BL-067 | ADR-0013 / 0017 IIdGenerator 등록 문구 | S02-T03 | dropped (BL-066에 병합) |
+| BL-068 | coverlet Include에 Infrastructure · Api 없음 | S02-T03 | planned:S04 |
+| BL-069 | 테스트 Samples 파일 규칙 명문화 | S02-T03 | planned:S04 |
+| BL-070 | 별도 테이블 하위 엔티티 변경 시 루트 xmin | S02-T04 | open |
+| BL-071 | 식별자 63바이트 공통 검증 | S02-T04 | open |
+| BL-072 | IStronglyTypedId 자기 형식 아닌 구현 | S02-T04 | dropped (S02-T05에서 구현) |
+| BL-073 | EnableRetryOnFailure 기본값 지연 | S02-T07 | planned:S03 |
+| BL-074 | 실행 전략 밖 일시 오류 분류 | S02-T07 | open |
+| BL-075 | Serilog에서 ExceptionHandlerMiddleware 범주 끄기 | S02-T06 | planned:S03 (상) |
+| BL-076 | 메시지를 남겨도 되는 예외 허용 목록 | S02-T06 | open |
+| BL-077 | ADR-0018 Phase 2 기재와 [Flags] 구현 차이 | S02-T06 | dropped (BL-066에 병합) |
+| BL-078 | 서비스 간 참조 금지 규칙 | S02-T05 | dropped (S02-T05 재작업에서 구현) |
+| BL-079 | [Flags] `: int` 명시 분석기 | S02-T05 | open |
+| BL-080 | 테스트 프로젝트 이름 규칙 CI 점검 | S02-T05 | dropped (TD-014에 병합) |
+| BL-081 | S03-T05 영속성 · 트랜잭션 실측 묶음 | 결과 리뷰 | planned:S03 |
+| BL-082 | S03-T05 스키마 · 연결 실측 묶음 | 결과 리뷰 | planned:S03 |
+| BL-083 | S03-T05 HTTP · 로그 실측 묶음 | 결과 리뷰 | planned:S03 |
+| BL-084 | S03-T02 dba 마이그레이션 SQL 검토 항목 | S02-T04 | planned:S03 |
+| BL-085 | 아키텍처 테스트 Employee 편입 | S02-T05 | planned:S03 |
+| BL-086 | ProductNames 비서비스 프로젝트 제외 | S02-T05 | planned:S03 |
+| BL-087 | S04-T02 문서 반영 묶음 | 결과 리뷰 | planned:S04 |
+| TD-019 | 테스트 프로젝트 Microsoft.Extensions 메이저 혼합 | S02-T02 | open |
+| TD-020 | Scrutor keyed DI · 공유 프레임워크 8.0 혼합 런타임 | S02-T03 | planned:S03 |
+| TD-021 | BadHttpRequest 원래 상태 코드 미보존 | S02-T06 | open |
+| TD-022 | ExceptionHandlerMiddleware 범주 전체 필터 | S02-T06 | open |
+| TD-023 | 바인딩 오류 errors 키 순서 | S02-T06 | open |
+| TD-024 | 아키텍처 테스트 coverlet 수집 불가 | S02-T05 | open |
+| TD-025 | Controller 서비스 로케이터 미검출 | S02-T05 | open |
+
+- 기존 항목: BL-019 · 028 · 029 · 052 · 053 done, BL-023 planned:S03, BL-055 planned:S04, TD-015 resolved, TD-013 · 014 상환 계획 갱신.
 
 ## 회고
 
 ### 잘된 점
 
--
+- 계획 리뷰에서 작업 6개를 8개로 재구성(T07 · T08 추가, T05 맨 뒤)해 계획 승인 뒤 추가 · 이관 작업이 0이었다. N3을 ADR-0024로 먼저 확정해 T06 · T05의 판정 기준이 분명했다.
+- handoff가 제대로 돌았다. dba 조건(트랜잭션 데코레이터 11개, 메타데이터 단언 A1~A13, 변환 규칙표 1~9)이 developer 테스트와 tester 인수 테스트로 이어졌고, 제품 결함 반려는 0이었다.
+- DB 없이 완결하는 목표를 지켰다. FakeDatabase 인터셉터 대역으로 실제 Npgsql 재시도 전략 경로를 검증했고, 실측 항목은 목록으로 이관했다.
+- 아키텍처 테스트의 공허 통과 방지, 규칙별 위반 표본, 제품 코드 임시 변형 재현 8종으로 규칙이 실제로 실패함을 증명했다.
+- 운영 변경(dba 해당 없음 생략, reviewer PASS 커밋 병합)으로 작업당 커밋을 5개에서 3개로 줄였다.
 
 ### 문제
 
--
+- 셋팅 단계인데 스프린트가 너무 오래 걸렸다(사용자 제기). 약 4.5시간 중 developer가 약 70%, 작업당 13~31분. 테스트가 831건 늘었고, tester 인수 테스트 상당수가 developer 테스트와 같은 시나리오를 다른 조립으로 재확인했다.
+- 완료 조건이 하위 항목 10개 이상으로 비대했다(T04 · T07 · T06). 조건이 많을수록 developer 시간과 reviewer 대조 시간이 늘었다.
+- 반려 2건이 테스트 코드 컨벤션이었다. 기계로 막을 수 있는 규칙을 사람 리뷰에 맡겼고, 앞 작업 리뷰에서도 놓쳤다.
+- developer가 완료 조건 항목(서비스 간 참조 규칙)을 혼자 백로그로 내보냈다가 반려됐다. 스프린트 밖 이관 판단 권한이 정해져 있지 않았다.
+- S03-T05로 이관한 실측 항목이 19개로 불어 한 작업에 위험이 몰렸다.
 
 ### 다음에 바꿀 것
 
--
+- **(사용자 결정) developer 테스트 범위**: 기반 · 셋팅 작업은 완료 조건 항목마다 성공 / 실패 / 엣지 최소 1개로 제한하고 추가 엣지는 tester가 판단한다. 도메인 로직(S03-T01 등)은 TDD 전체 적용을 유지한다.
+- **(사용자 결정) tester 인수 테스트 기준**: 완료 조건 대조에서 빈 곳이 있을 때만 보강하고, 같은 시나리오를 다른 조립으로 재확인하는 테스트는 만들지 않는다.
+- 운영 변경(dba 해당 없음 생략, reviewer PASS 커밋 병합)을 스킬 · agents.md에 반영한다.
+- 완료 조건은 검증 가능한 문장 5~7개 안쪽으로 쓰고, 세부 단언 목록은 dba · developer handoff로 넘긴다.
+- developer 제출 전 자체 점검에 컨벤션 항목(최상위 형식 2개 이상 파일 0, enum 기반 형식 명시)을 넣는다.
+- 완료 조건 항목을 스프린트 밖으로 내보내려면 developer가 혼자 정하지 않고 handoff로 올려 orchestrator(사용자) 판단을 받는다.
+- S03 계획 리뷰에서 BL-081 · 082 · 083을 S03-T05 완료 조건에 반영하고, S03-T05를 영속성 · HTTP 두 작업으로 나눌지 판단한다.
 
 ---
 
@@ -201,3 +295,4 @@ updated: 2026-09-27
 | 2026-09-27 | - | 스프린트 계획 (`/prd` PRD-001 분할) |
 | 2026-09-27 | orchestrator | 계획 리뷰 반영: T07 · T08 추가, T02 · T03 · T04 · T05 · T06 완료 조건 수정, 실행 순서 변경, `active` |
 | 2026-09-27 | - | ADR-0024 초안 확인 반영: 예외 분류 포트(T01 계약, T07 구현, T06 사용), T05 규칙 추가, T08 배제 근거 문구 |
+| 2026-09-27 | orchestrator | S02 종료: 결과 리뷰, 백로그 / 기술부채 정리, 회고(사용자 결정 2건 포함), DoD, `done` |
