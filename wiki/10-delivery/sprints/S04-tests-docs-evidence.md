@@ -81,6 +81,7 @@ updated: 2026-09-28
 | 2026-09-28 | S04-T02 | tester | PASS | 재점검: idempotent SQL 재실측("__EFMigrationsHistory" 5, "migration_id" 3 조회 조건만)이 443행과 일치, 재작업 범위 database.md 443행 · 변경 이력뿐, 이전 6개 항목 결과 재사용, check-docs 4건 |
 | 2026-09-28 | S04-T05 | dba | 해당 없음 | 파이프라인 표 dba 열 해당 없음, 호출 생략 |
 | 2026-09-28 | S04-T05 | developer | PASS | coding-conventions: 실패 처리 경계 문장(요청 값만으로 판정 가능 = Validator · Result, Aggregate 재검사 위반 = 예외, 저장 데이터 · 상태 의존 = Result), Email.Create 값 객체 예시 제거(BL-089), CQRS · Repository 예시를 실제 코드와 diff 일치(BL-039), 테스트 코드 한 파일 한 형식(BL-069), 0 예약 예외(BL-091), AddHostedService 허용(BL-092), Error 파생 문구(TD-016), sealed · Validator 설명은 testing-strategy 링크, 경고 억제 규칙 절 · 승인 목록 20건(BL-055). logging-observability: Aspire 연동 절, 20001 템플릿 정정, 9003 = 301 Warning 예시(BL-105), BL-094 · 108 기록. error-codes: 에러 코드 20 · 로그 이벤트 15 양방향 대조 누락 0 · 초과 0 · 불일치 0(문서 변경 없음). check-docs 4건. 확인 요청: 승인 목록 Employee CA1812 3건은 S03 개별 승인 기록 없음 |
+| 2026-09-28 | S04-T05 | reviewer | REJECT → developer | 반려 1회(형식). coding-conventions 162 · 221행 예시 도입 문장이 실제 편집(설명 주석 2줄 추가, using · namespace 제외, 두 파일 합침)과 다름, 395행 승인 절차 문장의 주체 · 순서 판정 불가. 승인 결정: Employee CA1812 3건(RegisterEmployeeCommandHandler, RegisterEmployeeCommandValidator, GetEmployeeByIdQueryHandler)은 S04-T05 reviewer 사후 승인(S03-T01 도입, 기존 CA1812 DI 생성과 같은 사유) → 406행 승인 기록 칸 수정. 나머지(에러 코드 · 로그 이벤트 대조, logging-observability, BL-069 · 091 · 092 · TD-016) 통과 |
 
 ## 계획 리뷰
 
