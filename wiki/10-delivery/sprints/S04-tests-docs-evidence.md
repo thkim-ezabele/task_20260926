@@ -75,6 +75,7 @@ updated: 2026-09-28
 | 2026-09-28 | S04-T02 | developer | PASS | 재작업: testing-strategy 부정 범위 해석 문단과 변경 이력 문구 삭제(grep 0건), tech-stack 변경 이력 날짜순 정렬. check-docs 4건 |
 | 2026-09-28 | S04-T02 | reviewer | PASS | 재판정: 반려 사유 해소('부정 범위' grep 0), 재작업 범위가 반려 부분 · tech-stack 변경 이력 정렬뿐, check-docs 4건, ADR 불변. handoff: T05 해석 기준 임의 추가 금지(BL-113) |
 | 2026-09-28 | S04-T02 | tester | REJECT → dba | 반려 2회. database.md 약 443행 '따옴표 식별자는 "__EFMigrationsHistory"뿐'이 idempotent SQL 실측("__EFMigrationsHistory" 5, "migration_id" 3)과 불일치(bd368f3). 나머지 점검 통과: 트리 94 누락 0 · csproj 24 역방향 누락 0, 규칙 25 1:1, InitialCreate · 스냅샷 · enum 대조, Include 6, 🟡 0, check-docs 4, 링크, ADR 불변, 테스트 1537 통과 · 1 건너뜀(DOCKER_API_VERSION=1.43) |
+| 2026-09-28 | S04-T02 | dba | PASS | 재작업: database.md 443행 범위를 DDL · 이력 INSERT로 좁히고 조회 조건 3곳의 "migration_id" 따옴표 문장 추가(실측 "__EFMigrationsHistory" 5 · "migration_id" 3). 다른 SQL 인용 문장 대조 일치. check-docs 4건 |
 
 ## 계획 리뷰
 

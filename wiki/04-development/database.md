@@ -440,7 +440,7 @@ InitialCreate 대조(S04-T02 dba, 마이그레이션 `20260927134235_InitialCrea
 | `updated_at` | `timestamp with time zone` | NOT NULL | 없음 | shadow `UpdatedAt` |
 | `xmin` | (생성 안 함, 시스템 컬럼) | - | - | shadow `Version`, `IsConcurrencyToken` · `ValueGeneratedOnAddOrUpdate` · `xid` |
 
-- 제약 · 인덱스: `CONSTRAINT pk_employees PRIMARY KEY (id)`, `CONSTRAINT ck_employees_employee_status CHECK (employee_status IN (1, 2))`, `CREATE UNIQUE INDEX ux_employees_email ON employees (email)`. `ix_` 인덱스 · 외래 키 · 스키마 한정자 · `DEFAULT`는 없고, 따옴표 식별자는 `"__EFMigrationsHistory"`뿐이다. 이력 행 `product_version`은 `8.0.31`이다.
+- 제약 · 인덱스: `CONSTRAINT pk_employees PRIMARY KEY (id)`, `CONSTRAINT ck_employees_employee_status CHECK (employee_status IN (1, 2))`, `CREATE UNIQUE INDEX ux_employees_email ON employees (email)`. `ix_` 인덱스 · 외래 키 · 스키마 한정자 · `DEFAULT`는 없다. DDL(`CREATE TABLE` · `CREATE INDEX`)과 이력 `INSERT`에서 따옴표 식별자는 `"__EFMigrationsHistory"`뿐이다. 그 밖에 EF가 idempotent 스크립트의 마이그레이션별 조회 조건(`IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = ...)`, 이 스크립트에서 3곳)에만 `"migration_id"`를 따옴표로 감싸 생성한다. 이름이 소문자 snake_case라 따옴표가 없어도 같은 컬럼을 가리킨다. 이력 행 `product_version`은 `8.0.31`이다.
 - ERD의 `varchar(n)`은 `character varying(n)`, `timestamptz`는 `timestamp with time zone`과 같은 타입이다(Mermaid 표기 줄임).
 
 | 테이블 | 인덱스 · 제약 | 비고 |
@@ -473,3 +473,4 @@ InitialCreate 대조(S04-T02 dba, 마이그레이션 `20260927134235_InitialCrea
 | 2026-09-28 | dba | S03-T06 실측 반영: 이력 테이블 Respawn 제외 · `to_regclass`가 이름 대소문자 그대로 동작, 테스트 전용 `DEFERRABLE` 트리거 예외, Api 재시도 실측값(3회 · 5초 약 4.3초, 기본값 약 57초, 시도마다 EF Error 2건), 23505 한 건당 EF Error 2건 · 앱 로그 이메일 없음 · 서버 로그 `DETAIL` 노출 (S03-T06) |
 | 2026-09-28 | developer | BL-073 확정 문구(Api 3회 · 5초, Api 요청 제한 시간 없음 · 기준식 적용 대상 없음), BL-023 결정(EF 실패 이벤트 3개 `Debug`, 근거 실측과 경계 로그, 고정 테스트) (S03-T06) |
 | 2026-09-28 | dba | ERD · Employee 코드 표를 InitialCreate · 스냅샷 · idempotent SQL과 대조(대조 표 추가), `xmin` 설명을 구현(`IsConcurrencyToken` + `OnAddOrUpdate` = `IsRowVersion` 구성, 마이그레이션 C#에는 있고 생성 SQL에는 없음)에 맞춤(BL-087), 이미지 태그 한 곳 확정 문구, 초기화 절차(볼륨 + user-secrets 함께, `AppHost:OtlpApiKey` · `Aspire:VersionCheck:*` 포함, BL-100 · BL-097), 42P04 · 3D000 · psql 10번 판정 확정 문구(S03-T05), MigrationService Development 주입(BL-110), 이력 테이블 ADR 후보 문구 (S04-T02) |
+| 2026-09-28 | dba | S04-T02 재작업(tester 반려): InitialCreate 대조의 따옴표 식별자 문장을 idempotent SQL 실측에 맞춤(DDL · 이력 `INSERT`는 `"__EFMigrationsHistory"`만, 조회 조건 3곳의 `"migration_id"`는 EF 생성) (S04-T02) |
