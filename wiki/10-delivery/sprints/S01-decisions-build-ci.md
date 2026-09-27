@@ -83,6 +83,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T02 | developer 1차 | PASS | ADR 0011~0014 초안(`adr_drafts`), `scripts/check-docs.js` 작성(wiki/ 전체 결함 2건: raw-log frontmatter, 기존) |
 | 2026-09-27 | S01-T02 | 사용자 확인 | 승인 | 초안 4건 수정 없음. 클라이언트 통합 미사용, ServiceDiscovery · Http.Resilience 0011 포함, 23514 미변환, 리셋 기록 footer 없음, Q12 롤 생성은 init 스크립트 + 생성 스크립트로 구체화 |
 | 2026-09-27 | S01-T02 | developer 2차 | PASS | ADR 0011~0014 `accepted` 생성(초안과 diff 동일), ADR 목록 · design.md · PRD Q9/Q10/Q12/Q13 링크 갱신, 점검 결함 0 |
+| 2026-09-27 | S01-T02 | reviewer | PASS | 템플릿 · frontmatter · 링크(check-docs 결함 0), ADR 0005 / 0009 정합, 0001~0010 불변, PRD Q 결론 일치, 완료 조건 필수 항목 전부 확인 |
 
 ## 계획 리뷰
 
@@ -150,6 +151,8 @@ updated: 2026-09-27
 | BL-018 | raw-log frontmatter created · updated 누락(hook 템플릿 vs 예외) | S01-T02 | |
 | BL-019 | 매핑 없는 23505용 공통 Conflict 코드 할당 | S01-T02 | |
 | BL-020 | check-docs.js 유형별 추가 필드 점검 검토 | S01-T02 | |
+| BL-021 | check-docs.js 공백 포함 링크 대상 형식 미점검 | S01-T02 | |
+| BL-022 | database.md "기본값(Read Committed)" → "명시" 문구 정리(T04) | S01-T02 | |
 
 ## 회고
 
