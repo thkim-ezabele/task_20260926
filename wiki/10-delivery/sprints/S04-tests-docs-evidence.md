@@ -93,6 +93,7 @@ updated: 2026-09-28
 | 2026-09-28 | S04-T03 | tester | PASS | 두 셸(PowerShell 5.1 · Git Bash) 문서 그대로 실행: 사전 준비(SDK 8.0.425, Docker API 1.43, tool restore, dev-certs --check --trust exit 7), user-secrets 키 5개(값 미출력), AppHost http · https 기동 · /health/ready 200, 등록 409 · 23001(기존 이메일) · 새 email 201 → GET 200 소문자 정규화, 중지 후 컨테이너 · 프로세스 0 · 볼륨 유지, migrations script --idempotent · has-pending-model-changes exit 0, 통합 테스트 DOCKER_API_VERSION=1.43 두 셸 문법 exit 0. configuration 키 grep 일치. 미실측 3건(No secrets configured, https OTLP 0건, 초기화 ②③)은 T04로. migrations remove는 --help만(과장 없는 문구). 정리 후 볼륨 목록 diff 없음. 새 BL-114 |
 | 2026-09-28 | S04-T04 | 계획 변경 | 승인 | 오케스트레이션 세션 결정: 이 PC 개발 인증서 미신뢰(--check --trust exit 7)라 T04 재현 · FR-03 대시보드 증빙은 http 프로필, dev-certs --trust 실행 안 함, https는 한 번 띄워 OTLP 0건 확인(실측 못 하면 미실측), 사용자 https 재확인 절차는 결과 리뷰 사용자 확인 사항에. PRD 변경 이력 · 인수 조건 대비 변경 표 FR-03 보충 |
 | 2026-09-28 | S04-T04 | dba | PASS | 재현 절차 · 판정 기준 확정(명령 미실행): 로컬 저장소 clone(원격이 24커밋 뒤처짐) → C:\eh-s04에서 local-setup 초기화 ①~③ 한 번 → http 1회차(새 볼륨 psql 1~11, 42P04 0 기대) → 2회차 재시작(42P04 한 쌍 1, 등록 id 조회 200) → https 회차 선택. 삭제 대상: 볼륨 emergency-hub-postgres-data, UserSecretsId 4264c4b6-… 키 전부(이름만 기록). 보호 대상 3시점 diff. psql은 Git Bash heredoc · 컨테이너 환경 변수 비밀번호. 새 BL-115 · 116(판정 문구 · psql 명령 틀 보완) |
+| 2026-09-28 | S04-T04 | developer | PASS | 스프린트 문서 '## 증빙' 절 틀: T04 하위 절 10개(환경 · 시작 조건, 삭제 전 대상 목록, 실행 절차 1~14단계, psql 1~11, 회차별 서버 로그, HTTP, 대시보드, https 확인, 재현 차이점, 정리 확인), 값 칸 '(tester 기록)', T06 자리. check-docs 4건 |
 
 ## 계획 리뷰
 
@@ -164,6 +165,148 @@ S03 인계: 로컬 통합 테스트 `DOCKER_API_VERSION=1.43`(BL-102), https 대
 - T04: `dotnet user-secrets clear --project src/Aspire/EmergencyHub.AppHost`, 볼륨 `emergency-hub-postgres-data`. `C:\eh-s04` 삭제 후 원래 트리에서 다시 초기화하지 않는다
 - T06: 실패 확인 5항목(단언 실패 1건 · 컴파일 성공, Test 단계 failure, Coverage report skipped, trx · container-logs 아티팩트, PR 실패 표시), 정리 확인(원격 브랜치 삭제, 원격 · 로컬 `ci-check/*` 0, 토픽에 실패 커밋 없음, PR CLOSED · merged false). FR Trait 집계(계획 리뷰 시점): FR-03 9 · 04 1 · 05 11 · 06 27 · 07 8 · 08 12 · 09 20 · 11 2
 - check-docs 기준선(계획 확정 시점): 결함 4건(raw 로그 frontmatter, BL-018)
+
+## 증빙
+
+> 인수 증빙 기록입니다. 값 칸은 실행한 단계(tester)가 채웁니다. 비밀 값(비밀번호, 연결 문자열, user-secrets 값, 대시보드 토큰)은 적지 않습니다. user-secrets는 키 이름만, 대시보드 로그인 URL은 `login?t=<토큰>`으로 적습니다.
+
+### S04-T04 새 환경 재현
+
+절차 원본: [로컬 개발 환경 구성](../../01-getting-started/local-setup.md), psql 확인 원본: [데이터베이스 로컬 DB 구성](../../04-development/database.md#로컬-db-구성-apphost).
+
+#### 환경 · 시작 조건
+
+| 항목 | 값 |
+|---|---|
+| 날짜 | (tester 기록) |
+| 토픽 HEAD(원래 트리 `git rev-parse HEAD`) | (tester 기록) |
+| clone 원본 · 경로 | (tester 기록) |
+| clone HEAD(`git -C C:\eh-s04 rev-parse HEAD`) | (tester 기록) |
+| init 스크립트 줄바꿈(`git ls-files --eol`, `01-create-employee-app-role.sh`) | (tester 기록) |
+| SDK(`dotnet --version`, clone 루트) | (tester 기록) |
+| Docker Engine / API | (tester 기록) |
+| dev-certs 상태(`dotnet dev-certs https --check --trust` 종료 코드) | (tester 기록) |
+| 프로필 | (tester 기록) |
+| 원래 트리에서 실행 중인 AppHost 없음 | (tester 기록) |
+
+#### 삭제 전 대상 목록
+
+| 구분 | 대상 | 확인 결과 |
+|---|---|---|
+| 볼륨 이름(삭제 대상) | `emergency-hub-postgres-data` | (tester 기록) |
+| user-secrets 키 이름(삭제 대상, 값 미기록) | `UserSecretsId` 4264c4b6-2b53-4765-93fd-f38191980ff4의 키 전부 | (tester 기록) |
+| 보호 대상 볼륨 | 익명 볼륨, `backend_postgres_data` | (tester 기록) |
+| 보호 대상 컨테이너 | `vital-*` | (tester 기록) |
+| 목록 스냅숏 파일(스크래치) | volumes-0 · containers-0 | (tester 기록) |
+
+#### 실행 절차와 결과
+
+local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 쓰고, 다르게 실행했으면 결과 칸에 차이를 적습니다.
+
+| # | 단계(local-setup 절) | 명령 | 셸 | 결과 |
+|---|---|---|---|---|
+| 1 | 사전 준비 | `dotnet --version`, `docker version --format '{{.Server.APIVersion}}'`, `dotnet dev-certs https --check --trust` | (tester 기록) | (tester 기록) |
+| 2 | 저장소 클론 | `git clone --branch feature/prd-001-foundation <원본> C:\eh-s04` | (tester 기록) | (tester 기록) |
+| 3 | 저장소 클론(도구) | `dotnet tool restore` | (tester 기록) | (tester 기록) |
+| 4 | 초기화 ① 컨테이너 없음 확인 | `docker ps -a --filter volume=emergency-hub-postgres-data --format '{{.Names}}'` | (tester 기록) | (tester 기록) |
+| 5 | 초기화 ② 볼륨 확인 · 삭제 | `docker volume ls --filter name=emergency-hub-postgres-data --format '{{.Name}}'`, `docker volume rm emergency-hub-postgres-data` | (tester 기록) | (tester 기록) |
+| 6 | 초기화 ③ user-secrets clear · 키 이름 확인 | `dotnet user-secrets clear --project src/Aspire/EmergencyHub.AppHost`, local-setup ③의 키 이름 확인 명령 | (tester 기록) | (tester 기록) |
+| 7 | 로컬 설정(User Secrets) 첫 실행 전 키 이름 | local-setup "로컬 설정" 절의 키 이름 확인 명령 | (tester 기록) | (tester 기록) |
+| 8 | 서비스 빌드 및 실행(1회차) | `dotnet run --project src/Aspire/EmergencyHub.AppHost --launch-profile http` | (tester 기록) | (tester 기록) |
+| 9 | 대시보드 확인 | Resources 화면 상태 | (tester 기록) | (tester 기록) |
+| 10 | 동작 확인 · 헬스 체크 | `curl -s -i http://localhost:5180/health/ready` 또는 `Invoke-RestMethod` | (tester 기록) | (tester 기록) |
+| 11 | 동작 확인 · 등록 → 조회 | local-setup "등록 → 조회" 명령 | (tester 기록) | (tester 기록) |
+| 12 | 첫 실행 뒤 키 이름 | local-setup "로컬 설정" 절의 키 이름 확인 명령 | (tester 기록) | (tester 기록) |
+| 13 | 중지(1회차) | Ctrl+C 또는 local-setup "중지" 절 명령, 뒤이어 컨테이너 없음 확인 | (tester 기록) | (tester 기록) |
+| 14 | 재시작(2회차 이후) | 8과 같은 명령(회차별 프로필은 서버 로그 표) | (tester 기록) | (tester 기록) |
+
+#### psql 확인 1~11 결과
+
+1회차(새 볼륨) 기준입니다. 2회차에서 다시 본 항목은 실제 칸에 회차를 붙여 적습니다.
+
+| # | 확인 내용 | 기대 | 실제 |
+|---|---|---|---|
+| 1 | `emergency_hub_employee` 소유자 | `employee_app` | (tester 기록) |
+| 2 | `employee_app` 롤 속성 | `f f f f f t` | (tester 기록) |
+| 3 | `employee_app` 비밀번호 SCRAM 여부 | `t`(해시 미출력) | (tester 기록) |
+| 4 | 서버 버전 | `17.x` | (tester 기록) |
+| 5 | `public` 스키마 소유자 | `pg_database_owner` | (tester 기록) |
+| 6 | 스키마 목록 · `employee_app` 스키마 수 | `public`만, `0` | (tester 기록) |
+| 7 | `__EFMigrationsHistory` 존재 · 수 | `t`, `1` | (tester 기록) |
+| 8 | 마이그레이션 이력 | 1행, `20260927134235_InitialCreate` · `8.0.31` | (tester 기록) |
+| 9 | 테이블 · 소유자 | `__EFMigrationsHistory` · `employees`, 둘 다 `employee_app` | (tester 기록) |
+| 10 | 연결(등록 → 조회 직후와 약 30초 뒤) | `employee-%` 행이 `employee-api-read` 1 · `employee-api-write` 1, `usename` `employee_app`만, 두 번 수 같음, `employee-migration` 행 없음(빈 `application_name`의 `postgres` 연결 제외) | (tester 기록) |
+| 11 | 읽기 전용 옵션 연결 | `on`, 그다음 `25006`(read-only transaction) | (tester 기록) |
+
+#### 실행 회차별 서버 로그
+
+각 회차를 멈추기 전에 `docker logs`를 스크래치에 저장해 셉니다. 판정 기준: 1회차는 42P04 0 · 42710 0 · 기타 0(3D000 · 25006 탐침은 수만 기록하고 제외), 2회차 이후는 42P04 한 쌍(ERROR 1 + STATEMENT 1) 정확히 1 · 3D000 0 · 42710 0 · 기타 0.
+
+| 회차 | 프로필 | 42P04 쌍 | 3D000 | 25006 탐침 | 42710 | 기타 ERROR · FATAL | 판정 |
+|---|---|---|---|---|---|---|---|
+| 1 | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) |
+| 2 | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) |
+| 3 | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) |
+
+#### HTTP 증빙
+
+| 확인 | 회차 | 기대 | 실제 |
+|---|---|---|---|
+| 헬스(`/health/ready`) | (tester 기록) | `200`, `Healthy` | (tester 기록) |
+| 등록(`POST /api/v1/employees`) | (tester 기록) | `201`, `Location` · `id` | (tester 기록) |
+| 조회(`GET /api/v1/employees/{id}`) | (tester 기록) | `200`, `email` 소문자 정규화, `employeeStatus` 정수 | (tester 기록) |
+| 재시작 후 조회(1회차 등록 `id`) | (tester 기록) | `200`, 1회차 등록 값과 같음 | (tester 기록) |
+
+#### 대시보드 증빙
+
+| 확인 | 회차 | 기대 | 실제 |
+|---|---|---|---|
+| 대시보드 로그인 URL | (tester 기록) | `login?t=<토큰>` 형식(토큰 미기록) | (tester 기록) |
+| Resources 상태 | (tester 기록) | `postgres` Running, `employee-migrations` Finished, `employee-api` Running · Healthy | (tester 기록) |
+| `employee-migrations` 종료 코드 | (tester 기록) | `0`(2회차 이후는 적용할 마이그레이션 없음) | (tester 기록) |
+| Structured logs DOM 덤프 요지 | (tester 기록) | `employee-api` 로그 있음, `employee-migrations` · `employee-api` Error · Critical 0 | (tester 기록) |
+| Traces DOM 덤프 요지 | (tester 기록) | `employee-api` 등록 · 조회 추적 있음 | (tester 기록) |
+| 스크린샷 | - | 사용자 추가 항목 | (사용자 추가) |
+
+#### https 프로필 확인
+
+| 확인 | 기대 | 실제 |
+|---|---|---|
+| `dotnet dev-certs https --check --trust` 출력 · 종료 코드 | 신뢰 여부 기록(미신뢰면 종료 코드 `7`) | (tester 기록) |
+| https 회차 실행 여부 | 실행 또는 미실측(사유) | (tester 기록) |
+| https 회차 OTLP(구조화 로그 · 추적) 건수 | 신뢰 시 0건 아님, 미신뢰 시 0건 여부 또는 미실측 | (tester 기록) |
+
+#### 재현 차이점
+
+| 항목 | 새 환경이라면 | 이번 재현 | 영향 |
+|---|---|---|---|
+| warm 항목(SDK · NuGet 캐시 · `postgres:17` 이미지 · Docker) | 설치 · 다운로드부터 시작 | (tester 기록) | (tester 기록) |
+| clone 원본 | GitHub 원격 | (tester 기록, 로컬 저장소. 원격 토픽 브랜치가 24커밋 뒤) | (tester 기록) |
+| 초기화 실행 디렉터리 | clone 루트 | (tester 기록) | (tester 기록) |
+| `UserSecretsId` · 볼륨 이름 공유 | 다른 clone 없음 | (tester 기록) | (tester 기록) |
+| 원래 트리 상태 | 해당 없음 | (tester 기록, 원래 트리도 새 비밀번호 쌍 · 새 볼륨 사용) | (tester 기록) |
+| 프로필 | 기본 `https`(dev-certs 신뢰) | (tester 기록, `http`. dev-certs 미신뢰) | (tester 기록) |
+| https 회차 | 실행 | (tester 기록) | (tester 기록) |
+
+#### 정리 확인
+
+| 확인 | 기대 | 실제 |
+|---|---|---|
+| `C:\eh-s04` 삭제 | 경로 없음 | (tester 기록) |
+| 보호 대상 diff(볼륨 0 → 1) | `emergency-hub-postgres-data` 삭제 1건만 | (tester 기록) |
+| 보호 대상 diff(볼륨 1 → 2) | `emergency-hub-postgres-data` 재생성 1건만 | (tester 기록) |
+| 보호 대상 diff(컨테이너 0 → 1) | 차이 없음 | (tester 기록) |
+| user-secrets 키 집합(1회차 뒤와 마지막 회차 뒤) | 같음(키 이름만 비교) | (tester 기록) |
+| AppHost · 프로젝트 프로세스 | 0 | (tester 기록) |
+| 이 프로젝트 컨테이너 | 0 | (tester 기록) |
+
+### S04-T06 CI 실패 표시 확인
+
+(S04-T06에서 작성)
+
+### FR / NFR 증빙 표
+
+(S04-T06에서 작성)
 
 ## 결과 리뷰
 
