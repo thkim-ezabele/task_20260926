@@ -107,6 +107,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T06 | developer | PASS | TDD(Red 확인 후 구현). Entity · AggregateRoot · IDomainEvent · IRepository · ErrorType(2자리, None=0 예약) · Error(get 전용, private protected 생성자 + 팩토리 9개, 생성 시 검증) · ValidationError · FieldError · CommonErrors(11) · Result / Result<T>(Error.None 없음, 암시적 변환 3종). 테스트 197/197, 경고 0, format 통과, Domain 패키지 0건, 라인 98.2% · 분기 100%. error-codes.md ErrorType 표 갱신. BL-040 · BL-050 해결 |
 | 2026-09-27 | S01-T06 | reviewer | PASS | 점검 15개 통과(#4 해당 없음). 직접 build 경고 0 · test 197/197 · format 0, Domain 패키지 0건. developer 판단 사항(Error.None 없음, private protected, None=0 예약 등) 기준 문서 · Q1/Q2와 충돌 없음, CA1716 억제는 규칙 부재로 사유 명시 조건 허용 |
 | 2026-09-27 | S01-T06 | tester | PASS | FR-04 인수 테스트 5건 추가(참조 어셈블리 System.* 뿐, Domain 전체 Error T ↔ ErrorType, FR-04 타입 · 마커, AggregateRoot 수집만, 시나리오). test 202/202, 경고 0, format 0, Domain 패키지 0건, CS1591 부정 점검 오류 확인, 커버리지 라인 98.22% · 분기 100%(보고만), error-codes.md 대조 일치. coverlet.runsettings는 T07 완료 조건으로 처리 |
+| 2026-09-27 | S01-T07 | dba | PASS | 해당 없음(DB 변경 없음). S03 CI 통합 테스트 대비 주의점 기록(BL-057) |
 
 ## 계획 리뷰
 
@@ -216,6 +217,7 @@ updated: 2026-09-27
 | TD-017 | Result<T> notnull 제약 없음(런타임 거부만) | S01-T06 | |
 | BL-055 | coding-conventions 경고 억제 규칙 명문화 | S01-T06 | |
 | BL-056 | "ValidationError는 sealed" 명시(ADR 0018 문구 오해 방지) | S01-T06 | |
+| BL-057 | S03 CI 통합 테스트 대비: ubuntu 러너 · services 미사용, 이미지 pull 시간, 컨테이너 공유 | S01-T07 | |
 
 ## 회고
 

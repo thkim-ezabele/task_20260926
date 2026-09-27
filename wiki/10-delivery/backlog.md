@@ -83,6 +83,7 @@ updated: 2026-09-27
 | BL-054 | 아키텍처 테스트 후보: 서비스 코드에서 Error / Result 파생 금지, Entity/AggregateRoot 파생 클래스는 sealed | S01-T06 | | new | S02-T05 |
 | BL-055 | coding-conventions에 경고 억제 규칙 명문화([SuppressMessage] + Justification 필수, 전역 NoWarn 금지, 승인 목록) | S01-T06 | | new | |
 | BL-056 | error-codes.md 또는 coding-conventions에 "ValidationError는 sealed"(non-sealed는 Error) 명시 — ADR 0018:22 문구 오해 방지 | S01-T06 | | new | |
+| BL-057 | S03 CI 통합 테스트 대비: 통합 테스트 잡은 ubuntu 러너 고정 · services: 대신 Testcontainers, 이미지 pull 시간 단축(선 pull 또는 변형 검토, NFR-07), 컨테이너는 컬렉션 fixture로 공유(ADR-0022) | S01-T07 | | new | S03 |
 
 ---
 
