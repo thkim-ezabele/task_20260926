@@ -7,7 +7,7 @@ prd: [PRD-001]
 started: 2026-09-27
 finished: 2026-09-28
 adrs: []
-worklogs: []
+worklogs: [WL-2026-09-28-01]
 aliases: [S03]
 tags: [delivery, sprint]
 created: 2026-09-27

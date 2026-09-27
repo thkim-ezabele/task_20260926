@@ -3,7 +3,7 @@ title: "정책 / 규칙"
 type: memory
 tags: [memory]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 정책 / 규칙
@@ -25,6 +25,7 @@ updated: 2026-09-27
 - `/sprint` 시작 시 환경 점검(Docker, SDK, gh). 종료 시 push → 토픽 PR CI 통과 확인 → DoD 기록 → 태그 `sprint/SNN`(CI 통과 전 태그 금지).
 - 판정 · 기록만 남는 단계 커밋은 `docs(sprint): SNN-TNN <단계> 판정`. 문서 변경 시 `node scripts/check-docs.js`(링크 · 앵커 · frontmatter · 표 구조).
 - S02 회고 규칙: 파이프라인 표 dba 열이 "해당 없음"이면 dba 호출 생략, reviewer PASS는 tester 커밋에 병합(작업당 커밋 약 3개). 완료 조건은 5~7문장(세부 단언은 handoff). 테스트 범위: 도메인 로직은 TDD 전체, 기반 · 셋팅은 완료 조건 항목당 성공 / 실패 / 엣지 최소 1개, tester는 빈 곳만 보강. 완료 조건 항목은 작업자가 혼자 스프린트 밖으로 내보내지 않음(BLOCKED로 판단받음). 원본: [에이전트 워크플로우](../10-delivery/agents.md#테스트-범위)
+- S03부터 오케스트레이션 세션이 스프린트 세션에 SendMessage로 지시하고 승인 지점(계획 리뷰 · 결정 · BLOCKED · 결과 리뷰)을 처리한다. 스킬 개선은 토픽 `/retro`에서 한꺼번에(진행 중 변경 금지).
 - 흐름 제어와 커밋은 스킬(메인 세션), 판단은 orchestrator. 서브에이전트는 다른 서브에이전트를 부를 수 없다. 에이전트 모델은 메인 세션 상속.
 - 구현: `.claude/agents/`(orchestrator, dba, developer, reviewer, tester), `.claude/skills/`(prd, sprint, retro). 에이전트는 프롬프트 첫 줄 `mode:`로 작업 구분.
 - 작업 관리는 GitHub Issues가 아니라 위키에서 한다.
@@ -58,3 +59,5 @@ updated: 2026-09-27
 - `python`은 Windows 스토어 스텁이라 실행되지 않는다. 스크립트는 **Node.js**로 작성한다.
 - .NET SDK(8.0.425 사용, `global.json` 8.0.400 + latestFeature), Docker, GitHub CLI(`gh`, 로그인됨)가 설치되어 있다.
 - Windows 깊은 경로에서 clone하면 MAX_PATH로 빌드가 실패할 수 있다(짧은 경로 사용).
+- 이 PC Docker Desktop 4.26(Engine API 1.43)에서는 통합 테스트(Testcontainers 4.15.0)에 `DOCKER_API_VERSION=1.43`이 필요하다(CI 무관, BL-102). 개발 인증서 미신뢰면 AppHost https 프로필 대시보드에 로그 · 추적이 안 보이므로 `--launch-profile http`를 쓴다(BL-099).
+- 실행 증빙은 `wiki/10-delivery/evidence/<작업 ID>/`에 README(요약) · 마스킹한 원문 로그 · 캡처로 둔다(S03). 로컬 AppHost 볼륨은 `emergency-hub-postgres-data`만 지울 수 있다(다른 프로젝트 볼륨 금지).
