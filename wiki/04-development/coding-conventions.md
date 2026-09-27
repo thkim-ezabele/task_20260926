@@ -1,8 +1,17 @@
+---
+title: "코딩 컨벤션"
+type: doc
+status: todo
+tags: [development]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 코딩 컨벤션
 
 > C# 코드 작성 규칙과 스타일 가이드입니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 네이밍 규칙
 

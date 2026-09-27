@@ -1,8 +1,17 @@
-# ADR-0003: Clean Architecture + DDD 적용
+---
+title: "ADR-0003: Clean Architecture + DDD 적용"
+type: adr
+adr: "0003"
+status: accepted
+date: 2026-09-27
+deciders: []
+aliases: [ADR-0003]
+tags: [adr, architecture]
+created: 2026-09-27
+updated: 2026-09-27
+---
 
-- 상태: 승인
-- 날짜: 2026-09-27
-- 결정자:
+# ADR-0003: Clean Architecture + DDD 적용
 
 ## 배경 (Context)
 

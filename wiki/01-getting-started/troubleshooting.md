@@ -1,8 +1,17 @@
+---
+title: "트러블슈팅"
+type: doc
+status: todo
+tags: [getting-started]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 트러블슈팅
 
 > 자주 발생하는 문제와 해결 방법입니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 빌드 오류
 

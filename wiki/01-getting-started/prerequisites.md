@@ -1,8 +1,17 @@
+---
+title: "사전 준비 사항"
+type: doc
+status: todo
+tags: [getting-started]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 사전 준비 사항
 
 > 개발에 필요한 도구와 버전을 안내합니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## .NET 8 SDK
 

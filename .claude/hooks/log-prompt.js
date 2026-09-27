@@ -26,7 +26,11 @@ process.stdin.on('end', () => {
 
     const file = path.join(dir, `${date}.md`);
     if (!fs.existsSync(file)) {
-      fs.writeFileSync(file, `# 프롬프트 원문 로그 ${date}\n\n> hook(UserPromptSubmit)이 자동으로 기록합니다. 직접 수정하지 마세요.\n`);
+      fs.writeFileSync(
+        file,
+        `---\ntitle: "프롬프트 원문 로그 ${date}"\ntype: raw-log\ndate: ${date}\ntags: [worklog, raw]\n---\n\n` +
+          `# 프롬프트 원문 로그 ${date}\n\n> hook(UserPromptSubmit)이 자동으로 기록합니다. 직접 수정하지 마세요.\n`
+      );
     }
 
     // 프롬프트 안의 코드블록과 충돌하지 않도록 가장 긴 백틱 연속보다 긴 fence 를 사용한다.

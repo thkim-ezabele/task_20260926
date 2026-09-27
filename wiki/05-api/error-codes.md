@@ -1,8 +1,17 @@
+---
+title: "에러 코드"
+type: doc
+status: todo
+tags: [api]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 에러 코드
 
 > 서비스 공통 및 도메인별 에러 코드를 정의합니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 에러 코드 체계
 

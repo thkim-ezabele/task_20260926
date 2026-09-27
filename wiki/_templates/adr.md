@@ -1,8 +1,19 @@
-# ADR-NNNN: 제목
+---
+title: "ADR-NNNN: 제목"
+type: adr
+adr: "NNNN"
+status: proposed
+date: {{date}}
+deciders: []
+supersedes:
+superseded_by:
+aliases: [ADR-NNNN]
+tags: [adr, architecture]
+created: {{date}}
+updated: {{date}}
+---
 
-- 상태: 제안 | 승인 | 폐기 | 대체됨 (ADR-XXXX)
-- 날짜: YYYY-MM-DD
-- 결정자:
+# ADR-NNNN: 제목
 
 ## 배경 (Context)
 

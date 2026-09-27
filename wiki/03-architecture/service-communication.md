@@ -1,8 +1,17 @@
+---
+title: "서비스 간 통신"
+type: doc
+status: todo
+tags: [architecture]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 서비스 간 통신
 
 > 동기 / 비동기 통신 방식의 선택 기준과 규칙입니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 동기 vs 비동기 선택 기준
 

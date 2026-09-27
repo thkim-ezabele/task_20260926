@@ -1,9 +1,20 @@
+---
+title: "WL-YYYY-MM-DD-NN: 세션 제목"
+type: worklog
+date: {{date}}
+session: "xxxxxxxx"
+model: "Claude Code · <모델명>"
+adrs: []
+aliases: [WL-YYYY-MM-DD-NN]
+tags: [worklog]
+created: {{date}}
+updated: {{date}}
+---
+
 # WL-YYYY-MM-DD-NN: 세션 제목
 
-- 날짜: YYYY-MM-DD
-- 도구 / 모델: Claude Code · <모델명>
-- 세션 ID: `xxxxxxxx` ([원문 로그](../raw/YYYY-MM-DD.md))
-- 관련: ADR-NNNN, #이슈, PR
+- 원문 로그: [raw/YYYY-MM-DD](../raw/YYYY-MM-DD.md)
+- 관련: ADR-NNNN, #이슈, PR, 커밋
 
 ## 목표
 

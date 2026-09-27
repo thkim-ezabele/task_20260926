@@ -1,8 +1,17 @@
-# ADR-0005: PostgreSQL 채택
+---
+title: "ADR-0005: PostgreSQL 채택"
+type: adr
+adr: "0005"
+status: accepted
+date: 2026-09-27
+deciders: []
+aliases: [ADR-0005]
+tags: [adr, architecture]
+created: 2026-09-27
+updated: 2026-09-27
+---
 
-- 상태: 승인
-- 날짜: 2026-09-27
-- 결정자:
+# ADR-0005: PostgreSQL 채택
 
 ## 배경 (Context)
 

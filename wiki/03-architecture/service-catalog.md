@@ -1,8 +1,17 @@
+---
+title: "MSA 서비스 카탈로그"
+type: doc
+status: draft
+tags: [architecture]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # MSA 서비스 카탈로그
 
 > 마이크로서비스 목록과 각 서비스의 책임, 소유 데이터, 의존 관계를 정의합니다.
 >
-> 상태: 🟡 검토 중 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 서비스 분리 원칙
 

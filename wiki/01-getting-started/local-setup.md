@@ -1,8 +1,17 @@
+---
+title: "로컬 개발 환경 구성"
+type: doc
+status: todo
+tags: [getting-started]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 로컬 개발 환경 구성
 
 > 저장소 클론부터 로컬 실행까지의 절차입니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 저장소 클론
 

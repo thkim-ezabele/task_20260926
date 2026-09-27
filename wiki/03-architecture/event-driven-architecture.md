@@ -1,8 +1,17 @@
+---
+title: "이벤트 기반 아키텍처 (EDA)"
+type: doc
+status: todo
+tags: [architecture]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 이벤트 기반 아키텍처 (EDA)
 
 > 서비스 간 비동기 이벤트 통신의 구조와 규칙을 정의합니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## EDA 적용 원칙
 

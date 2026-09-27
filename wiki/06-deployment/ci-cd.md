@@ -1,8 +1,17 @@
+---
+title: "CI/CD (GitHub Actions)"
+type: doc
+status: todo
+tags: [deployment]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # CI/CD (GitHub Actions)
 
 > GitHub Actions 기반 빌드, 테스트, 배포 파이프라인입니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 파이프라인 개요
 

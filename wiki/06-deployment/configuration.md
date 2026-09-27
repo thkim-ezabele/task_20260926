@@ -1,8 +1,17 @@
+---
+title: "설정 & 시크릿 관리"
+type: doc
+status: todo
+tags: [deployment]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 설정 & 시크릿 관리
 
 > 애플리케이션 설정 구조와 시크릿 관리 방법입니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## appsettings 구조
 

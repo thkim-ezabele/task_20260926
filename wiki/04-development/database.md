@@ -1,8 +1,17 @@
+---
+title: "데이터베이스 (PostgreSQL)"
+type: doc
+status: todo
+tags: [development]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 데이터베이스 (PostgreSQL)
 
 > PostgreSQL 설계 규칙과 EF Core 사용 가이드입니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## Database per Service 원칙
 

@@ -1,8 +1,17 @@
+---
+title: "프로젝트 개요"
+type: doc
+status: draft
+tags: [overview]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 프로젝트 개요
 
 > Emergency Hub 백엔드의 목적, 범위, 이해관계자를 정의합니다.
 >
-> 상태: 🟡 검토 중 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 프로젝트 목적
 

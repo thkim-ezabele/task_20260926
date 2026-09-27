@@ -1,8 +1,17 @@
+---
+title: "TDD 가이드"
+type: doc
+status: todo
+tags: [development]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # TDD 가이드
 
 > TDD 사이클과 테스트 작성 규칙입니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## TDD 사이클 (Red → Green → Refactor)
 

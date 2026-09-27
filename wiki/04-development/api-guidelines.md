@@ -1,8 +1,17 @@
+---
+title: "API 설계 가이드"
+type: doc
+status: todo
+tags: [development]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # API 설계 가이드
 
 > REST API 설계 원칙과 공통 규칙입니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## URL 및 리소스 네이밍
 

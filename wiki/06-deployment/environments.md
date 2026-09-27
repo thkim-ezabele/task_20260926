@@ -1,8 +1,17 @@
+---
+title: "환경 구성"
+type: doc
+status: todo
+tags: [deployment]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 환경 구성
 
 > 환경별 구성과 접속 정보를 정리합니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 환경 목록 (Local / Dev / Staging / Prod)
 

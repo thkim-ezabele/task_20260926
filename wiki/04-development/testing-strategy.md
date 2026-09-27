@@ -1,8 +1,17 @@
+---
+title: "테스트 전략"
+type: doc
+status: todo
+tags: [development]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 테스트 전략
 
 > 테스트 종류별 범위, 도구, 품질 기준을 정의합니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 테스트 피라미드
 

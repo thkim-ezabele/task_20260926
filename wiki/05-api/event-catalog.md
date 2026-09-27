@@ -1,8 +1,17 @@
+---
+title: "이벤트 카탈로그"
+type: doc
+status: todo
+tags: [api]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 이벤트 카탈로그
 
 > 서비스 간 통합 이벤트(Integration Event) 명세입니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 이벤트 명세 규칙 (이름 / 버전 / 스키마)
 

@@ -1,3 +1,12 @@
+---
+title: "아키텍처 결정 기록 (ADR)"
+type: index
+status: stable
+tags: [adr, architecture]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 아키텍처 결정 기록 (ADR)
 
 > 주요 기술/아키텍처 의사결정의 배경과 결과를 기록합니다.
@@ -6,10 +15,10 @@
 
 ## 작성 방법
 
-1. [0000-template.md](0000-template.md)를 복사합니다.
-2. 파일명은 `NNNN-kebab-case-title.md` 형식으로 합니다.
+1. [ADR 템플릿](../../_templates/adr.md)으로 새 문서를 만듭니다 (Obsidian: Templates 플러그인).
+2. 파일명은 `NNNN-kebab-case-title.md` 형식으로 하고, frontmatter의 `adr`, `aliases`, 제목의 번호를 맞춥니다.
 3. 작성한 ADR을 아래 목록에 추가합니다.
-4. 결정이 바뀌면 기존 ADR은 수정하지 않습니다. 새 ADR을 작성한 뒤 기존 ADR의 상태를 `대체됨`으로 변경합니다.
+4. 결정이 바뀌면 기존 ADR의 본문은 수정하지 않습니다. 새 ADR에 `supersedes`를 적고, 기존 ADR의 frontmatter만 `status: superseded`, `superseded_by`로 바꿉니다.
 
 ## ADR 목록
 

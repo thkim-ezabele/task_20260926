@@ -1,8 +1,17 @@
+---
+title: "로드맵"
+type: doc
+status: todo
+tags: [overview]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 로드맵
 
 > 마일스톤과 단계별 목표를 정리합니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## Phase 1 - 프로젝트 초기 구축 (위키 / 솔루션 / 공통 기반)
 

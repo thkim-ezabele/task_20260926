@@ -1,8 +1,17 @@
+---
+title: "아키텍처 개요"
+type: doc
+status: todo
+tags: [architecture]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 아키텍처 개요
 
 > 시스템 전체 구성과 컴포넌트 간 관계를 설명합니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 시스템 구성도 (Mermaid)
 

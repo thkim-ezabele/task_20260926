@@ -1,8 +1,17 @@
+---
+title: "컨테이너 & 로컬 인프라"
+type: doc
+status: todo
+tags: [deployment]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 컨테이너 & 로컬 인프라
 
 > Docker 이미지 규칙과 docker compose 구성입니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## Dockerfile 작성 규칙
 

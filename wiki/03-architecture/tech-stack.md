@@ -1,8 +1,17 @@
+---
+title: "기술 스택"
+type: doc
+status: draft
+tags: [architecture]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 기술 스택
 
 > 백엔드에서 사용하는 기술과 선정 사유를 정리합니다. 결정 배경은 [ADR](adr/README.md)을 참고합니다.
 >
-> 상태: 🟡 검토 중 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 런타임 & 아키텍처
 

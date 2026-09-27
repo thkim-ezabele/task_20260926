@@ -1,8 +1,17 @@
+---
+title: "Clean Architecture & 솔루션 구조"
+type: doc
+status: todo
+tags: [architecture]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # Clean Architecture & 솔루션 구조
 
 > 서비스 내부 레이어 구조와 .NET 솔루션 / 프로젝트 구성을 정의합니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 레이어 구성 (Domain / Application / Infrastructure / Api)
 
