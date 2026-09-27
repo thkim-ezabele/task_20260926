@@ -1,7 +1,7 @@
 ---
 title: "에이전트 워크플로우"
 type: doc
-status: draft
+status: stable
 tags: [delivery, agents]
 aliases: [Agents, 에이전트]
 created: 2026-09-27
@@ -14,20 +14,29 @@ updated: 2026-09-27
 >
 > [개발 관리](README.md)
 
-> 🟡 설계 확정, 구현 전입니다. 에이전트(`.claude/agents/`)와 스킬(`.claude/skills/`)을 만들면 `stable`로 바꿉니다.
+## 구현 위치
+
+| 구분 | 파일 |
+|---|---|
+| 에이전트 | [`orchestrator`](../../.claude/agents/orchestrator.md) · [`dba`](../../.claude/agents/dba.md) · [`developer`](../../.claude/agents/developer.md) · [`reviewer`](../../.claude/agents/reviewer.md) · [`tester`](../../.claude/agents/tester.md) |
+| 스킬 | [`/prd`](../../.claude/skills/prd/SKILL.md) · [`/sprint`](../../.claude/skills/sprint/SKILL.md) · [`/retro`](../../.claude/skills/retro/SKILL.md) |
+
+에이전트는 호출 프롬프트 첫 줄의 `mode:`(예: `prd-review`, `task-stage`, `retro`)로 할 일을 구분합니다. 이 문서와 구현이 다르면 구현을 이 문서에 맞추고, 규칙을 바꿀 때는 이 문서를 먼저 고칩니다.
 
 ## 구조
 
 - **흐름 제어는 스킬(메인 세션)이 한다.** Claude Code의 서브에이전트는 다른 서브에이전트를 실행할 수 없으므로, 병렬 실행, 순차 진행, 회귀 루프는 스킬 절차가 담당한다.
 - **orchestrator는 판단을 맡는다.** 기획 관점 리뷰, 리뷰 통합, 스프린트 분할, 결과 리뷰, 백로그 / 기술부채 정리, 회고 통합을 한다.
 - **병렬로 도는 에이전트는 결과만 반환**하고, 위키 문서는 메인 세션이 한 번에 쓴다. 같은 파일을 동시에 고쳐 충돌하는 것을 막는다.
+- **커밋은 스킬이 한다.** 에이전트는 `git commit` / `push`를 하지 않고, 커밋 메시지(`commit_message`)만 반환한다.
+- 에이전트가 반환한 백로그 / 기술부채 후보(`candidates`)는 스킬이 `new` 행으로 기록해 그 단계의 커밋에 넣는다.
 - 모든 에이전트는 메인 세션의 모델을 상속한다.
 
 ## 에이전트
 
 | 에이전트 | `/prd` | `/sprint` | `/retro` | 파일 쓰기 |
 |---|---|---|---|---|
-| **orchestrator** | 범위 · 우선순위 · 위험 · 의존 관계 리뷰, 리뷰 통합, **스프린트 분할** | 계획 리뷰 통합, **결과 리뷰, 백로그 / 기술부채 정리** | **회고 통합**, 개선안 | ❌ 읽기 전용 |
+| **orchestrator** | 범위 · 우선순위 · 위험 · 의존 관계 리뷰, 리뷰 통합, **스프린트 분할** | 계획 리뷰 통합, **결과 리뷰, 백로그 / 기술부채 정리** | **회고 통합**, 개선안 | ❌ 읽기 전용 (조회 명령만) |
 | **dba** | 데이터 모델, 서비스별 DB 경계, 개인정보 · 보존 기간 리뷰 | 계획 리뷰, 스키마 · EF Core 매핑 · 마이그레이션 | DB 관점 회고 | ✅ |
 | **developer** | 도메인 모델, 서비스 · 이벤트 영향, 구현 가능성 리뷰 | 계획 리뷰, **단위 테스트 먼저 작성 후 구현(TDD)**, [코딩 컨벤션](../04-development/coding-conventions.md) 준수 필수 | 구현 관점 회고 | ✅ |
 | **reviewer** | - | 계획 리뷰, 컨벤션 · 레이어 규칙 · 완료 조건 판정 | 품질 관점 회고 | ❌ 빌드 · 검사 명령만 |
@@ -175,3 +184,4 @@ Stage: dba | developer | reviewer | tester
 |---|---|---|
 | 2026-09-27 | - | 문서 생성: 에이전트 구성, `/prd` · `/sprint` · `/retro` 흐름, 인계 계약, 회귀 규칙 |
 | 2026-09-27 | - | developer 코딩 컨벤션 준수 필수, reviewer 진입 점검 항목 구체화 |
+| 2026-09-27 | - | 에이전트 5개 · 스킬 3개 구현, 구현 위치 추가, 커밋 · 후보 기록 주체(스킬) 명시 → `stable` |

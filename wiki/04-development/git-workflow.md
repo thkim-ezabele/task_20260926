@@ -96,6 +96,7 @@ git flow hotfix finish 0.2.1
 | `feature/prd-001-foundation` | 토픽 PRD-001 |
 | `feature/retro-prd-001-reviewer-checklist` | PRD-001 회고 개선안 반영 |
 | `feature/wiki-git-workflow` | 토픽 밖 문서 작업 |
+| `chore/backmerge-v0.1.0` | 릴리스 후 `main` → `develop` 역병합 (`/retro`) |
 | `bugfix/notification-retry` | 토픽 밖 미릴리스 버그 수정 |
 | `release/0.1.0` | 첫 릴리스 준비 |
 | `hotfix/0.1.1` | 릴리스 긴급 수정 |
@@ -139,7 +140,8 @@ Stage: developer
 |---|---|---|---|
 | `feature/prd-*` (토픽) | `/prd`에서 **Draft PR** 생성 → `/retro` 후 Ready로 바꿔 병합 | `develop` | **Merge commit**: 스프린트 · 작업자별 커밋을 증빙으로 보존 |
 | `feature/*`, `bugfix/*` (토픽 밖) | 작업 완료 시 | `develop` | **Squash merge** (PR 제목을 Conventional Commits 형식으로) |
-| `release/*`, `hotfix/*` | 릴리스 / 수정 준비 완료 시 | `main` (병합 후 `develop`에 역병합) | **Merge commit** (`--no-ff`) |
+| `release/*`, `hotfix/*` | 릴리스 / 수정 준비 완료 시 | `main` | **Merge commit** (`--no-ff`) |
+| `chore/backmerge-*` | `main` 병합 · 태그 직후 | `develop` | **Merge commit**: 병합 후 브랜치 자동 삭제 설정 때문에 `release/*`를 두 번 병합할 수 없어, `main`에서 역병합 브랜치를 따로 만든다 |
 
 - 토픽 PR 제목: `feat(<scope>): PRD-NNN <토픽 제목>`
 - PR 병합 전 테스트 통과가 필수다([ADR-0006](../03-architecture/adr/0006-adopt-tdd.md)). CI 구성 후 필수 체크로 건다.
@@ -186,4 +188,5 @@ Stage: developer
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | GitHub Flow → Git Flow로 변경, 브랜치 전략·네이밍·커밋·PR·태깅 규칙 초안 작성 |
 | 2026-09-27 | - | GitHub 저장소 설정 기록, 브랜치 보호 적용 불가(Free private)로 직접 push 금지는 규칙으로 운영 |
+| 2026-09-27 | - | 역병합 브랜치 `chore/backmerge-*` 추가 |
 | 2026-09-27 | - | 개발 관리(10-delivery)와 연결: 토픽 브랜치(`feature/prd-*`), 단계별 커밋, 토픽 PR은 Draft → Merge commit, 토픽 = 릴리스 |
