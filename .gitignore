@@ -8,6 +8,9 @@ wiki/.obsidian/plugins/
 wiki/.obsidian/.trash/
 wiki/.trash/
 
+# 로그
+logs/
+
 # .NET
 bin/
 obj/
