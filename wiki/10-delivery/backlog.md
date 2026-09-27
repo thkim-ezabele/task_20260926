@@ -127,6 +127,7 @@ updated: 2026-09-27
 | BL-098 | 초기화 스크립트가 employee_app 비밀번호를 psql -v 명령줄 인자로 넘겨 실행 중 짧게 컨테이너 안 프로세스 목록에 보일 수 있음(로컬 전용): PGOPTIONS · 표준 입력 방식 전환 여부 | S03-T05 reviewer | | new | 우선순위 낮음 후보 |
 | BL-099 | local-setup: https 기본 프로필은 dotnet dev-certs https --trust가 있어야 대시보드 로그 · 추적이 보임(없으면 OTLP TLS 실패로 0건). http 프로필 대안 · 확인 방법(dotnet dev-certs https --check --trust) 기록, 기본 프로필 순서 변경 여부 판단 | S03-T05 tester | | new | S04 local-setup 후보, 증빙 dashboard-07 · 08 |
 | BL-100 | database.md · local-setup: 첫 실행 때 user-secrets에 AppHost:OtlpApiKey도 저장됨을 기록하고 초기화 절차 clear 대상에 포함 | S03-T05 tester | | new | S04 local-setup 후보 |
+| BL-101 | 운영 PostgreSQL 서버 로그 DETAIL 노출: 기본 설정에서 23505 · 23514 때 Key (email)=(...)와 위반 행 전체가 서버 로그에 남음. log_error_verbosity=terse 등 서버 로그 설정 검토 | S03-T06 dba | | new | 재검토 트리거: 배포 토픽(Phase 4) 또는 로그 수집기 도입 |
 
 ---
 
