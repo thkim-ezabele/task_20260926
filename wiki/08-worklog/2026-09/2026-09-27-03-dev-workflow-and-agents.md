@@ -93,6 +93,7 @@ updated: 2026-09-27
 | 에러 코드 5자리 `S T NNN`(서비스 · 유형 · 일련번호), 로그 이벤트 ID는 유형 자리 0 | 정수 코드 정책(ADR-0008)을 에러 · 로그에 일관 적용 | - |
 | 과거 ADR의 빈 근거는 보완 허용(결정 변경 없이, 하단에 보완 표기) | 과제 증빙 보강, 사용자 허용 | - |
 | 긴급 전파 같은 중복 위험 `POST`는 `Idempotency-Key` 필수 | 중복 전파 방지 | - |
+| .NET 8 유지 (지원 종료 2026-11-10을 인지한 상태에서) | 사용자 결정 | - |
 
 ## 이슈 / 배운 점
 
@@ -103,14 +104,13 @@ updated: 2026-09-27
 - 라이선스 변경: MediatR v13+, FluentAssertions v8+ 상용화 → 구현체 선택을 기반 구축 토픽으로 미뤘다.
 - 에이전트는 이 세션 안에서 바로 인식되었다(새 세션이 필요하다고 안내했던 것은 틀림).
 - 로깅 문서의 예시 이벤트 ID(11001)가 새 에러 코드 체계에서 Identity 범위와 겹쳐 20001로 고쳤다.
-- .NET 8 LTS 지원이 2026-11-10에 끝난다. .NET 10 업그레이드 ADR 검토가 필요하다.
+- .NET 8 LTS 지원이 2026-11-10에 끝난다. 사용자가 현재 버전(.NET 8) 유지로 결정했다.
 
 ## 다음 할 일
 
 - [ ] `/prd`로 **PRD-001 기반 구축** 토픽 시험 운영: 솔루션 구조, BuildingBlocks(Result, 마커, `AddConventionalServices`, 읽기 전용 DbContext 기반), `.editorconfig` · `Directory.Build.props` · `Directory.Packages.props`, 아키텍처 테스트, CI(GitHub Actions)
 - [ ] 기반 구축 토픽에서 미정 항목을 ADR로 결정: Mediator 구현체, 단언 라이브러리, UUID v7 생성, API 스타일(Minimal API 기본안), 타입 검색 구현(Scrutor / 직접), 로그 수집기
 - [ ] 첫 스프린트 후 에이전트 프롬프트 · 스킬 절차 보완 (회고 개선안 흐름)
-- [ ] .NET 8 지원 종료(2026-11-10) 대응: .NET 10 LTS 업그레이드 ADR 검토 (기반 구축 전에 판단 권장)
 - [ ] 남은 `todo` 문서: 기반 구축 때(local-setup, troubleshooting, ci-cd, containers, configuration, environments), 도메인 PRD 이후(02-domain 5개, glossary, api-reference, event-catalog, runbook)
 - [ ] 프로젝트 범위(In / Out of Scope)와 이해관계자 정의 (PRD-001 인터뷰에서 함께)
 - [ ] 커밋 작성자 이메일 확인 (현재 전역 설정 `taehoon365@gmail.com`)

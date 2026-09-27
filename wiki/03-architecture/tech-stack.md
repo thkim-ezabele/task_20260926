@@ -18,7 +18,7 @@ updated: 2026-09-27
 
 | 항목 | 선택 | 상태 | 비고 |
 |---|---|---|---|
-| 런타임 | .NET 8 (LTS) / C# 12 | 🟢 확정 | [ADR-0001](adr/0001-use-dotnet8.md). LTS 지원 종료 2026-11-10 → .NET 10 업그레이드 검토 필요 |
+| 런타임 | .NET 8 (LTS) / C# 12 | 🟢 확정 | [ADR-0001](adr/0001-use-dotnet8.md). LTS 지원 종료(2026-11-10)를 알고 **현재 버전 유지**로 결정(2026-09-27, 사용자) |
 | 아키텍처 스타일 | MSA | 🟢 확정 | [ADR-0002](adr/0002-adopt-msa.md) |
 | 서비스 내부 구조 | Clean Architecture + DDD | 🟢 확정 | [ADR-0003](adr/0003-clean-architecture-and-ddd.md) |
 | 서비스 간 통신 | Event-Driven Architecture (Outbox / Inbox) | 🟢 확정 | [ADR-0004](adr/0004-adopt-event-driven-architecture.md) |
@@ -95,4 +95,5 @@ updated: 2026-09-27
 | 날짜 | 작성자 | 내용 |
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 (확정 사항 + 초안 기본값) |
+| 2026-09-27 | - | .NET 8 유지 결정 기록 |
 | 2026-09-27 | - | ADR 0007~0010과 기준 문서 결정 반영: CQRS, EF Core, 정수 코드, Serilog, NSubstitute, Testcontainers 등 확정 / MediatR · FluentAssertions 라이선스로 후보 전환 |
