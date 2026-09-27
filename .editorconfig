@@ -223,3 +223,9 @@ dotnet_naming_rule.async_methods_end_with_async.severity = none
 [**/Persistence/Migrations/*.cs]
 generated_code = true
 dotnet_diagnostic.CS1591.severity = none
+
+# 마이그레이션 · 스냅샷 sealed partial 선언(직접 작성, database.md 마이그레이션 규칙). 위 섹션보다 뒤에 두어 덮어쓴다:
+# 생성 코드로 분류하지 않아 분석기 · 스타일 규칙과 CS1591을 그대로 적용한다.
+[**/Persistence/Migrations/*.Sealed.cs]
+generated_code = false
+dotnet_diagnostic.CS1591.severity = warning

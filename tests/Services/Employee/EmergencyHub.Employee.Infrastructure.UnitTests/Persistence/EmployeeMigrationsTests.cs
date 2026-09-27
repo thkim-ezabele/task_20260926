@@ -21,6 +21,32 @@ public sealed class EmployeeMigrationsTests : IDisposable
         _context.Database.GetMigrations().Should().ContainSingle().Which.Should().EndWith("_InitialCreate");
     }
 
+    // coding-conventions "클래스는 기본 sealed"(ConventionRules.ClassesAreSealed): 생성 파일은 고치지 않고 *.Sealed.cs partial 선언으로 봉인한다.
+    // 대상이 0개면 검사가 무의미하므로 개수(마이그레이션 1 + 스냅샷 1)를 함께 단언한다.
+    [Fact]
+    public void MigrationAndSnapshotTypes_InInfrastructureAssembly_AreAllSealed()
+    {
+        var types = EmployeeInfrastructureAssembly.Assembly.GetTypes()
+            .Where(type => typeof(Migration).IsAssignableFrom(type) || typeof(ModelSnapshot).IsAssignableFrom(type))
+            .ToList();
+
+        types.Should().HaveCount(2);
+        types.Should().OnlyContain(type => type.IsSealed);
+    }
+
+    // 엣지: sealed여도 EF가 마이그레이션 형식을 찾아 인스턴스를 만든다(MigrateAsync · script 경로와 같은 IMigrationsAssembly).
+    [Fact]
+    public void SealedInitialCreate_IsDiscoveredAndCreatedByMigrationsAssembly()
+    {
+        var migrationsAssembly = _context.GetService<IMigrationsAssembly>();
+        var migrationType = migrationsAssembly.Migrations.Should().ContainSingle().Which.Value;
+
+        var migration = migrationsAssembly.CreateMigration(migrationType, _context.Database.ProviderName!);
+
+        migrationType.IsSealed.Should().BeTrue();
+        migration.TargetModel.Should().NotBeNull();
+    }
+
     [Fact]
     public void ModelSnapshot_HasNoDifferencesFromCurrentModel()
     {

@@ -368,7 +368,7 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 | 분석기 | `AnalysisLevel = latest-recommended`, 경고는 오류로 처리 |
 | 빌드 강제 | `옵션 = 값:심각도`의 심각도는 빌드에서 적용되지 않으므로 강제할 IDE 규칙은 `dotnet_diagnostic.<ID>.severity`로 다시 지정한다(IDE0161 · IDE0011 · IDE0065 · IDE0055 · IDE1006 등) |
 | 테스트 예외 | `tests/**.cs`는 CA1707(밑줄 이름) · CA1822 · `Async` 접미사 규칙을 끈다(`<메서드>_<조건>_<기대 결과>`) |
-| 생성 코드 | `**/Persistence/Migrations/*.cs`는 `generated_code = true`와 **`dotnet_diagnostic.CS1591.severity = none`을 함께** 둔다. `generated_code`는 분석기 · 스타일 규칙만 끄고 컴파일러 경고 CS1591은 끄지 못한다. `WarningsAsErrors`에 CS1591을 넣으면 이 설정보다 우선하므로 넣지 않는다(`TreatWarningsAsErrors`로 충분) |
+| 생성 코드 | `**/Persistence/Migrations/*.cs`는 `generated_code = true`와 **`dotnet_diagnostic.CS1591.severity = none`을 함께** 둔다. `generated_code`는 분석기 · 스타일 규칙만 끄고 컴파일러 경고 CS1591은 끄지 못한다. `WarningsAsErrors`에 CS1591을 넣으면 이 설정보다 우선하므로 넣지 않는다(`TreatWarningsAsErrors`로 충분). 직접 작성하는 sealed partial 선언 `*.Sealed.cs`는 뒤따르는 섹션에서 `generated_code = false`로 되돌려 분석 대상에 둔다([데이터베이스](database.md#마이그레이션-규칙)) |
 
 ## 로깅
 
@@ -397,3 +397,4 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 | 2026-09-27 | developer | DI 규칙에 BuildingBlocks 공통 등록 진입점 표, `IIdGenerator` 명시 등록 결정, `AddConventionalServices` 1회 호출 · 서비스 인터페이스 1개 검사 · keyed 데코레이터 등록 추가, Handler 예시 주석의 `NewId()` 확정 (S02-T03) |
 | 2026-09-27 | developer | Repository 규칙에 영속성 기반 형식 절 추가(DbContext 기반 · 모델 정의 · 강타입 ID · `ux_` / `ck_` 도우미 · shadow property 이름), DI 예시의 `RepositoryBase` 제약을 `WriteDbContextBase`로 정정 (S02-T04) |
 | 2026-09-27 | developer | 공통 등록 진입점 표에 `AddBuildingBlocksApi` / `UseBuildingBlocksApi` 추가, 코드값 검증 규칙 `MustBeDefinedEnum()`(1002) (S02-T06) |
+| 2026-09-27 | developer | `.editorconfig` 생성 코드 행에 직접 작성하는 sealed partial 선언(`*.Sealed.cs`)을 분석 대상으로 되돌리는 섹션 추가 (S03-T02 재작업) |
