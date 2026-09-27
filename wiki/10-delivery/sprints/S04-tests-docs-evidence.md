@@ -94,6 +94,7 @@ updated: 2026-09-28
 | 2026-09-28 | S04-T04 | 계획 변경 | 승인 | 오케스트레이션 세션 결정: 이 PC 개발 인증서 미신뢰(--check --trust exit 7)라 T04 재현 · FR-03 대시보드 증빙은 http 프로필, dev-certs --trust 실행 안 함, https는 한 번 띄워 OTLP 0건 확인(실측 못 하면 미실측), 사용자 https 재확인 절차는 결과 리뷰 사용자 확인 사항에. PRD 변경 이력 · 인수 조건 대비 변경 표 FR-03 보충 |
 | 2026-09-28 | S04-T04 | dba | PASS | 재현 절차 · 판정 기준 확정(명령 미실행): 로컬 저장소 clone(원격이 24커밋 뒤처짐) → C:\eh-s04에서 local-setup 초기화 ①~③ 한 번 → http 1회차(새 볼륨 psql 1~11, 42P04 0 기대) → 2회차 재시작(42P04 한 쌍 1, 등록 id 조회 200) → https 회차 선택. 삭제 대상: 볼륨 emergency-hub-postgres-data, UserSecretsId 4264c4b6-… 키 전부(이름만 기록). 보호 대상 3시점 diff. psql은 Git Bash heredoc · 컨테이너 환경 변수 비밀번호. 새 BL-115 · 116(판정 문구 · psql 명령 틀 보완) |
 | 2026-09-28 | S04-T04 | developer | PASS | 스프린트 문서 '## 증빙' 절 틀: T04 하위 절 10개(환경 · 시작 조건, 삭제 전 대상 목록, 실행 절차 1~14단계, psql 1~11, 회차별 서버 로그, HTTP, 대시보드, https 확인, 재현 차이점, 정리 확인), 값 칸 '(tester 기록)', T06 자리. check-docs 4건 |
+| 2026-09-28 | S04-T04 | reviewer | REJECT → developer | 반려 1회(형식). 증빙 틀에 FR-03 시작 순서(PostgreSQL → 마이그레이션 종료 코드 0 → Api) 판정 칸 없음, 회차별 employee-migrations 종료 코드 · 앱 리소스 Error · Critical 수 칸 없음. 나머지(기대값 ↔ 원본, 비밀 칸 없음, http 결정 · 인수 조건 대비 변경 반영, check-docs 4) 통과 |
 
 ## 계획 리뷰
 
