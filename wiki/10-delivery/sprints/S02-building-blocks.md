@@ -82,6 +82,7 @@ updated: 2026-09-27
 | 2026-09-27 | S02-T02 | reviewer | PASS | 진입 점검 15개 통과(-warnaserror 빌드, test 363, format, 레이어 의존, 로그 템플릿 · 값 미기록, dba 조건 11개). 경고 억제 승인: CA1812 5건(Logging Command:17 · Query:14, Validation Command:18 · Query:17, Transaction:23), 새 NoWarn · pragma 없음, 누적 CA1812 7건. RequestValidator는 ADR-0018:44가 이 작업에 맡긴 범위 안, AbstractValidator 상속이라 충돌 없음(문구 정리는 BL-066). handoff: T03 · T05 |
 | 2026-09-27 | S02-T02 | tester | PASS | dba 조건 · 권장 시나리오는 developer 테스트로 충족 확인. 수동 조립 체인 인수 테스트 11건 추가(DecoratorChainAcceptanceTests: Received.InOrder 순서, 경과 시간에 커밋 포함, 검증 · Handler · 커밋 실패 각각 102 1건 · 커밋 0회, 예외 시 로그 0건, 토큰, 동시 32건, Query 104 · BL-053). -warnaserror 빌드 경고 0, test 374 통과, format 통과, check-docs 기준선 2건. handoff: T03 DI로 순서 재확인해야 FR-05 순서 조건 닫힘 |
 | 2026-09-27 | S02-T03 | dba | PASS | 해당 없음(DB 변경 없음). handoff → developer: NewDatabaseFriendly(Database.PostgreSql)만, 정렬 단언은 ToString("D") Ordinal 또는 ToByteArray(bigEndian: true)(Guid.CompareTo 금지), 버전 7 · variant 8/9/a/b, 타임스탬프는 허용 오차, 1만 건 연속 생성 단조성, 병렬은 중복만, DB 검증은 S03-T05. handoff → S03-T05: ORDER BY id 정렬 · uuid 타입 · 기본값 없음 |
+| 2026-09-27 | S02 | 운영 변경 | 승인 | T04부터 적용(사용자 결정): (1) 작업별 파이프라인 표에서 dba가 '해당 없음'인 작업은 dba를 호출하지 않고 진행 기록 한 줄만 남겨 developer 단계 커밋에 포함 (2) reviewer PASS는 따로 커밋하지 않고 tester 단계 커밋에 포함(REJECT · BLOCKED는 즉시 커밋). 작업당 커밋 5 → 3(developer, tester, 완료). developer 테스트 범위를 완료 조건 중심으로 제한할지는 S02 회고에서 결정 |
 
 ## 계획 리뷰
 
