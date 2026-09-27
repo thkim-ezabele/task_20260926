@@ -31,6 +31,8 @@ updated: 2026-09-27
 | TD-002 | .NET 8(2026-11-10) · Aspire 9.x 지원 종료에 따른 메이저 업그레이드(EF Core / Npgsql 포함) | 인프라 | | S01 계획 리뷰 | | new |
 | TD-003 | Npgsql.EFCore 8.0.11의 EF 의존에 상한이 없음: `CentralPackageTransitivePinningEnabled`로 EF 8.0.31 고정해야 EF9 유입 방지 | 인프라 | | S01-T01 | | new |
 | TD-004 | Testcontainers `PostgreSqlBuilder` 매개변수 없는 생성자는 CS0618로 빌드 실패: 이미지 인자 필수 | 테스트 | | S01-T01 | | new |
+| TD-005 | Aspire 9.x 지원 종료(NuGet out of support) 상태로 9.5.2 사용: 보안 패치 없음. .NET 8 지원 종료와 함께 해소(재검토 BL-002) | 인프라 | | S01-T01 | | new |
+| TD-006 | 클라이언트 통합을 쓰고 OpenTelemetry.Api만 1.15.3으로 고정하면 OpenTelemetry 1.9.0과 혼재: OTel 계열 전체 동일 버전 고정 필요(BL-004 결과에 따라 발생) | 인프라 | | S01-T01 | | new |
 
 ---
 

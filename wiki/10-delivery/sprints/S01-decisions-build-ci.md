@@ -75,6 +75,7 @@ updated: 2026-09-27
 | 2026-09-27 | - | 계획 리뷰 | 승인 | 4개 에이전트 리뷰 + orchestrator 통합. 작업 7개 · 순서 · ADR 13건 유지, 완료 조건 보강, N1 · 문서 작업 운영 확정, Q1~Q5 추천안 승인 |
 | 2026-09-27 | - | 계획 변경 | - | N1 반영: `/sprint` 스킬 · 에이전트 정의 · agents.md 수정을 토픽 브랜치에 `chore(agents)` 커밋 (토픽 밖 작업 규칙의 예외, Q5) |
 | 2026-09-27 | S01-T01 | dba | BLOCKED | EF 계열 8.0.31 정합(Npgsql.EFCore 8.0.11, NamingConventions 8.0.3), Aspire `AddDatabase` 실제 생성 · `WithCreationScript`는 9.2.0+, 클라이언트 통합 net8.0에 EF9 유입 없음, PG 17 양쪽 명시 필수(Testcontainers 기본 생성자 Obsolete), 상용 라이선스 0건. 막힘: Aspire 9.x 전 버전 NuGet 폐기(out of support), 클라이언트 통합 9.5.2의 NU1902(OpenTelemetry.Api 1.9.0). Docker 꺼짐으로 생성 스크립트 동작 미실측 |
+| 2026-09-27 | S01-T01 | dba | PASS | 사용자 결정: Aspire 9.5.2 유지(지원 종료는 Aspire ADR 명시 + TD-005, 재검토 BL-002). NU1902는 T02(BL-004), 생성 스크립트 실측은 BL-003으로 이관 후 재판정 |
 
 ## 계획 리뷰
 
@@ -119,6 +120,8 @@ updated: 2026-09-27
 | BL-004 | 클라이언트 통합 판단 근거에 NU1902 추가 | S01-T01 | |
 | TD-003 | Npgsql.EFCore EF 의존 상한 없음 → 전이 고정 필수 | S01-T01 | |
 | TD-004 | Testcontainers `PostgreSqlBuilder` 이미지 인자 필수(CS0618) | S01-T01 | |
+| TD-005 | Aspire 9.x 지원 종료 상태로 9.5.2 사용 | S01-T01 | |
+| TD-006 | 클라이언트 통합 사용 시 OpenTelemetry 계열 버전 혼재 | S01-T01 | |
 
 ## 회고
 
