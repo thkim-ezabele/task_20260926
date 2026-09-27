@@ -2,10 +2,10 @@
 title: "S04: 테스트 보강 · 문서 · 인수 증빙"
 type: sprint
 sprint: "S04"
-status: active
+status: done
 prd: [PRD-001]
 started: 2026-09-28
-finished:
+finished: 2026-09-28
 adrs: []
 worklogs: []
 aliases: [S04]
@@ -51,10 +51,10 @@ updated: 2026-09-28
 
 ## 완료 기준 (DoD)
 
-- [ ] 모든 작업이 `done`이거나 백로그로 이관되었다
-- [ ] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다
-- [ ] 관련 위키 문서(API, DB)를 갱신했다. 이벤트 문서는 해당 없음(도메인 이벤트는 수집만, 디스패치는 이후 토픽)
-- [ ] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
+- [x] 모든 작업이 `done`이거나 백로그로 이관되었다
+- [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다
+- [x] 관련 위키 문서(API, DB)를 갱신했다. 이벤트 문서는 해당 없음(도메인 이벤트는 수집만, 디스패치는 이후 토픽)
+- [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
 - [ ] 토픽 PR CI 통과와 소요 시간 10분 이내를 기록했다(NFR-07). 같은 측정으로 BL-059를 판단했다
 - [ ] T06 증빙 표의 "종료 push 뒤 판정" 행을 채웠다
 - [ ] 토픽 브랜치를 push하고 `sprint/S04` 태그를 붙였다
@@ -255,7 +255,7 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 
 | 회차 | 프로필 | 42P04 쌍 | 3D000 | 25006 탐침 | 42710 | 기타 ERROR · FATAL · PANIC | `employee-migrations` 종료 코드 | `employee-migrations` · `employee-api` Error · Critical 수 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | `http` | 0 | 1(20:38:24 UTC, 기록 · 제외) | 1(기록 · 제외) | 0 | 0 | `0`(DCP API `Finished` · `exitCode 0`, InitialCreate 적용 로그) | `employee-migrations` 0 · `employee-api` Error 2(Critical 0): 첫 `/health/ready` 요청(20:38:47 UTC)에서 `Health check "EmployeeReadDbContext"`(95ms) · `"EmployeeDbContext"`(948ms) `with status Unhealthy ... with message 'null'`(EventId 103, `DefaultHealthCheckService`). 같은 시각 서버 로그에 연결 오류 없음. 다음 요청부터 Healthy | 서버 로그 통과, 앱 리소스 불일치(Error 2) |
+| 1 | `http` | 0 | 1(20:38:24 UTC, 기록 · 제외) | 1(기록 · 제외) | 0 | 0 | `0`(DCP API `Finished` · `exitCode 0`, InitialCreate 적용 로그) | `employee-migrations` 0 · `employee-api` Error 2(Critical 0): 첫 `/health/ready` 요청(20:38:47 UTC)에서 `Health check "EmployeeReadDbContext"`(95ms) · `"EmployeeDbContext"`(948ms) `with status Unhealthy ... with message 'null'`(EventId 103, `DefaultHealthCheckService`). 같은 시각 서버 로그에 연결 오류 없음. 다음 요청부터 Healthy | 서버 로그 통과, 앱 리소스 불일치(Error 2). 틀 기준 불일치는 기록 유지, 인수 판정은 완료 조건 기준(재시작 회차 오류 0으로 충족), 원인 조사 BL-117 |
 | 2 | `http` | 1(ERROR 1 + STATEMENT 1) | 0 | 0 | 0 | 0 | `0`(적용할 마이그레이션 없음: CREATE 문 없이 이력 조회만) | 0(대시보드 Error 행 0, 파일 로그 Error 수 1회차 뒤와 같음) | 통과 |
 | 3 | `https` | 1(ERROR 1 + STATEMENT 1) | 0 | 0 | 0 | 0 | `0`(DCP API) | 0(대시보드는 OTLP 0건이라 앱 파일 로그 `logs/*.json`으로 확인, Error · Fatal 증가 0) | 통과(앱 리소스는 파일 로그 기준) |
 
@@ -378,29 +378,108 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 
 ## 결과 리뷰
 
-> 스프린트 종료 시 orchestrator의 결과 리뷰(계획 대비 실제, 완료 조건 · FR 충족, 반려 분석)를 요약합니다.
+> 스프린트 종료 시 orchestrator의 결과 리뷰(계획 대비 실제, 완료 조건 · FR 충족, 반려 분석)를 요약합니다. 오케스트레이션 세션 승인 2026-09-28.
 
--
+### 계획 대비 실제
+
+- 작업 6개(계획 확정 때 4 → 6) 모두 `done`. 백로그 이관 0, BLOCKED 0, 반려 6회(작업당 최대 2회, T02).
+- 코드 변경은 T01(`d699f27`: 커버리지 Include 6개, MigrationService Development 주입 + AppHost 테스트 4건, `Error.cs` remarks)과 T02(`bab2cd9`: `DependencyRules.cs` Source 문자열)뿐이고 나머지는 문서 · 증빙.
+- 계획에 없던 판단 1건: T04 http 프로필 사용(이 PC 개발 인증서 미신뢰, 오케스트레이션 세션 승인, PRD 변경 이력 기록).
+- 원격 토픽 브랜치가 로컬보다 뒤처져 있어 재현은 로컬 저장소 clone으로 했다(재현 차이점 표).
+- DoD 빌드 · 테스트(메인 세션 재실행): `dotnet build -c Release -warnaserror` 오류 0, `dotnet test` 13개 프로젝트 1537 통과 · 실패 0 · 건너뜀 1(원래 있던 ArchitectureTests 1건, `DOCKER_API_VERSION=1.43`).
+
+### FR 충족
+
+[증빙 표](#fr--nfr-증빙-표) 18행, 빈 칸 0.
+
+| 구분 | 충족 | 부분 | 비고 |
+|---|---|---|---|
+| FR | 10 | 1 | FR-10: 실패 표시 확인 완료(run 36350200891, PR #9 CLOSED · merged false). S04 HEAD 토픽 PR 통과는 종료 push 뒤 DoD |
+| NFR | 6 | 1 | NFR-07: 참고치 3분 28초~4분 12초. S04 HEAD 판정은 종료 push 뒤 DoD. NFR-03 대상 6개 모두 80% 이상(합계 라인 99.4% · 분기 94.6%) |
+
+### 반려 분석
+
+| 작업 | 단계 | 유형 | 원인 |
+|---|---|---|---|
+| S04-T02 | reviewer | 범위 밖 추가 | testing-strategy에 완료 조건에 없는 "부정 범위" 해석 문단. 계획 인계 메모의 "선택" 제안을 그대로 반영(→ BL-113) |
+| S04-T02 | tester | 사실 불일치 | database.md 443행 따옴표 식별자 문장이 idempotent SQL 실측과 다름. 이전 기록 문장을 다시 실측하지 않고 옮김 |
+| S04-T05 | reviewer | 문장 정확성 | 예시 도입 문장이 실제 발췌 범위와 다름, 경고 억제 승인 절차의 주체 · 순서 판정 불가 |
+| S04-T03 | reviewer | 사실 불일치 | local-setup 등록 명령의 email과 기대 결과가 다름 |
+| S04-T04 | reviewer | 누락 | 증빙 틀에 FR-03 시작 순서 칸, 회차별 앱 리소스 칸 없음 |
+| S04-T06 | reviewer | 누락 | 증빙 표 FR-03 행에 PRD 선택 항목(스모크) 처리 누락 |
+
+반려 6회 모두 문서 · 증빙 작업에서 나왔고 코드 작업(T01)은 0. 공통 원인은 완료 조건 문장을 산출물(틀 · 표 행)로 옮길 때 항목 대응을 점검하지 않은 것과, 사실 문장을 실측 없이 옮긴 것. 모두 1회 재작업으로 해소.
+
+### 결과 리뷰에서 정한 판단
+
+- **S04-T04 1회차 편차(BL-117)**: T04는 PASS 유지. 새 볼륨 1회차 `employee-api` 첫 헬스 검사 Unhealthy(Error 2건, 서버 로그 오류 없음, 이후 Healthy)는 증빙 틀의 1회차 앱 리소스 기준 불일치로 기록을 유지한다. 판정 방식: **틀 기준 불일치는 기록 유지, 인수 판정은 완료 조건 기준**(완료 조건 "재시작 때 42P04 한 쌍 외 리소스 로그 오류 0"과 FR-03은 충족). 원인이 확인되지 않아 "첫 실행 잡음"으로 제외하지 않고 BL-117(중) open으로 조사한다.
+
+### ADR 후보 (파일은 만들지 않음, /retro에서 판단)
+
+1. 불변식 위반은 예외, 입력 검증 실패는 Result라는 실패 처리 경계(BL-089, coding-conventions S04-T05 문장이 원본)
+2. ADR-0018 보충: 공통 기반 `RequestValidator<TRequest>`(RuleLevelCascadeMode = Stop)(BL-066)
+3. 경고 억제 규칙: `[SuppressMessage]` + Justification, 전역 NoWarn 금지, 승인 절차(BL-055, S01 후보와 병합)
+4. ADR-0011 보충: 42P04 · 3D000 잡음 판정 기준, GenerateParameterDefault + persist(BL-096 · BL-115, BL-117 원인에 따라 첫 실행 헬스 편차 포함 여부)
+5. 누적 후보: S03의 ADR-0012 이력 컬럼 조항 대체, ADR-0020 BL-023 조항 대체, (선택) Api DB 재시도 · 제한 시간. S01의 액션 SHA 고정, 공급망 정책, SDK 고정, 테스트 프로젝트 이름 규칙, ErrorType · Result 계약
+
+### 사용자 확인 사항
+
+1. **(선택) 신뢰된 https 프로필 OTLP 수신 재확인** — FR-03 판정에는 영향 없음. 절차:
+   1. PowerShell: `dotnet dev-certs https --trust` (Windows 사용자 인증서 저장소를 바꾸므로 사용자가 판단, 확인 창에서 "예")
+   2. `dotnet dev-certs https --check --trust` 종료 코드가 `0`인지 확인(현재 `7`)
+   3. 저장소 루트에서 `dotnet run --project src/Aspire/EmergencyHub.AppHost` (기본 https 프로필)
+   4. 콘솔의 `https://localhost:17180/login?t=<토큰>`으로 로그인 → `employee-api` Running · Healthy 확인
+   5. [local-setup](../../01-getting-started/local-setup.md) "등록 → 조회" 명령 1회(새 email) → 10초 이상 기다린 뒤 Structured logs · Traces에 `employee-api` 항목이 0건이 아닌지 확인
+   6. 중지 후 결과(종료 코드, 로그 · 추적 건수)를 이 문서 "https 프로필 확인" 표에 한 행 추가하거나 /retro 자료로 전달
+2. **대시보드 스크린샷 추가** — http 또는 신뢰된 https 실행 중 Resources, Structured logs, Traces 3장을 캡처해 `wiki/10-delivery/evidence/S04-T04/`에 넣고, 대시보드 증빙 표의 "(사용자 추가)"를 링크로 바꾼다. 토큰이 든 주소창은 가린다.
+3. ~~BL-117 판정 방식 승인~~ → 오케스트레이션 세션 승인으로 처리(위 "결과 리뷰에서 정한 판단").
+4. **BL-099 후속: 기본 프로필(https 우선) 유지 확인** — 권고는 유지(.NET 표준 개발 흐름이 dev-certs 신뢰를 전제로 하고, http 대안이 local-setup에 있음).
 
 ## 생긴 백로그 / 기술부채
 
 | ID | 제목 | 발생 작업 | 정리 결과 |
 |---|---|---|---|
-| | | | open / planned:SNN / dropped |
+| BL-111 | Aspire 스모크 테스트 도입(재도입 조건: AppHost 테스트 모드, CI 3회 연속 통과, 추가 시간 최대 7분) | S04-T01 | open(중) |
+| BL-112 | 아키텍처 문서 3개의 보류 아닌 🟡 표기 통일 | S04-T02 | open(하) |
+| BL-113 | 설정 · 구성 코드의 "실패" 테스트 해석 기준 | S04-T02 | open(하), /retro 개선안에서 사용자 결정 |
+| BL-114 | PowerShell 5.1 409 응답 본문 확인 방법 안내 | S04-T03 | open(하) |
+| BL-115 | database.md 42P04 판정 문구 풀이 · psql 명령 틀 보완(BL-116 병합) | S04-T04 | open(하) |
+| BL-116 | database.md psql 확인 절 명령 틀 | S04-T04 | dropped(BL-115에 병합) |
+| BL-117 | 새 볼륨 첫 실행 첫 헬스 검사 Unhealthy(Error 2건) 원인 조사 | S04-T04 | open(중) |
+| BL-118 | 증빙 도구 문서화(CDP DOM 덤프, DCP API 종료 코드 조회) | S04-T04 | open(하), 범위 확장 |
+
+planned:S04 정리: BL 21건(017 · 038 · 039 · 048 · 049 · 055 · 062 · 063 · 066 · 068 · 069 · 087 · 089 · 091 · 092 · 097 · 099 · 100 · 102 · 105 · 110) `done`. TD-016 · TD-024 `resolved`, TD-026 open 유지(직접 참조 여부는 TD-002 때). BL-059는 DoD에서 판단.
 
 ## 회고
 
+> 기록만 한다. 스킬 · 에이전트 파일 반영은 /retro에서 한다(오케스트레이션 세션 지시).
+
 ### 잘된 점
 
--
+- 계획 리뷰에서 작업을 4 → 6개로 나눠 코드(T01)와 문서(T02 · T05 · T03)를 분리했다. 코드 작업 반려 0, 전체 BLOCKED 0.
+- FR 11 · NFR 7 증빙 표 18행에 빈 칸이 없고, Trait 재집계 · CI 실행 링크 · 문서 경로 · 재현 기록이 한 표에 연결된다.
+- 대조를 스크립트로 했다: error-codes 양방향(음성 대조 3건 검출), 저장소 트리 경로 94개, 아키텍처 규칙 25개 1:1, 경고 억제 20건 = 승인 목록.
+- 새 clone 재현에서 T03의 미실측 3건을 모두 해소했고, 보호 대상 볼륨 · 컨테이너를 3시점 diff로 확인했다.
+- 임시 브랜치 CI 실패 확인(FR-10)을 실패 확인 5항목 · 정리 확인 5항목으로 닫았고 토픽 브랜치에 흔적이 없다.
+- 누적 인계 메모 파일로 작업 간 인계가 전달됐다.
 
 ### 문제
 
--
+- 반려 6회가 모두 문서 · 증빙 작업에서 나왔다. 사실 문장을 실측 없이 옮김(T02 SQL, T03 email), 완료 조건을 증빙 틀 · 표로 옮기다 누락(T04, T06).
+- 계획 인계 메모의 "선택" 제안이 완료 조건 밖 추가로 이어져 반려됐다(T02 → BL-113).
+- 증빙 틀의 1회차 기준이 완료 조건보다 엄격하게 만들어져 판정 불일치가 생겼다(BL-117). S03 회고의 "판정 기준이 작업 중에 늘어남"과 같은 유형.
+- 원격 토픽 브랜치가 뒤처져 GitHub clone 재현을 못 했다. 새 환경 증빙이 로컬 clone과 warm 캐시에 한정된다.
+- clone과 원래 트리가 같은 UserSecretsId · 볼륨 이름을 공유해, 재현 초기화가 원래 트리 상태까지 지웠다.
+- 이 PC의 개발 인증서가 신뢰되지 않아 기본 https 프로필의 대시보드 수신을 검증하지 못했다(사용자 확인 사항).
 
 ### 다음에 바꿀 것
 
--
+- 증빙 틀 · 표를 만드는 developer 자가 점검에 "완료 조건 문장 ↔ 틀 칸 · 행 대응 표"를 넣는다. 틀의 판정 기준이 완료 조건보다 엄격하면 계획 리뷰나 메인 세션 판단으로 명시한다.
+- 인계 메모의 "선택" 제안이 완료 조건 밖이면 문서에 넣지 말고 BL로 올린다(agents.md handoff 규칙 반영 후보).
+- 문서의 사실 문장(SQL 인용, 명령 기대 출력)에는 실측 명령과 출력 발췌를 붙이고, 이전 기록을 옮길 때는 다시 실측한다.
+- 재현 증빙이 필요한 스프린트는 시작 전에 원격 브랜치를 맞추는 방안을 사전 합의에 넣는다.
+- 첫 실행 · 재시작 잡음 목록(42P04, 3D000, 25006 탐침, 필요하면 BL-117)을 한 문서에 모아 판정 기준 원본으로 쓴다(BL-115 · BL-096).
+- 반복되는 증빙 도구(CDP DOM 덤프, DCP API 종료 코드 조회)를 스크립트로 만들거나 문서화한다(BL-118).
 
 ---
 
@@ -410,3 +489,4 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 |---|---|---|
 | 2026-09-27 | - | 스프린트 계획 (`/prd` PRD-001 분할) |
 | 2026-09-28 | orchestrator | 계획 확정: 작업 4 → 6(T05 · T06 추가), 완료 조건 · 파이프라인 · DoD 수정, BL / TD 편입 (오케스트레이션 세션 승인) |
+| 2026-09-28 | orchestrator | 스프린트 종료: 결과 리뷰, 생긴 백로그 / 기술부채 정리, 회고, DoD (오케스트레이션 세션 승인) |
