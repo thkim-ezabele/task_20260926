@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [development]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 코딩 컨벤션
@@ -48,7 +48,7 @@ CQRS 타입 이름
 
 ## 파일 및 네임스페이스 규칙
 
-- **파일 하나에 최상위 타입 하나**, 파일 이름 = 타입 이름.
+- **파일 하나에 최상위 타입 하나**, 파일 이름 = 타입 이름. **테스트 코드(`tests/**`)에도 예외 없이 적용한다**: 테스트 클래스, `Samples/`의 샘플 형식, 테스트 대역(fake · stub), fixture, 테스트 전용 `record`도 형식마다 파일을 나눈다. 시나리오 묶음 파일 같은 예외는 두지 않는다(BL-069).
 - **file-scoped namespace**를 쓴다: `namespace EmergencyHub.Employee.Domain.Employees;`
 - 네임스페이스 = 프로젝트 루트 네임스페이스 + 폴더 경로.
 - 공통 `using`은 프로젝트별 `GlobalUsings.cs`에 둔다. `ImplicitUsings`를 켠다.
@@ -58,7 +58,7 @@ CQRS 타입 이름
 | 규칙 | 설명 |
 |---|---|
 | Nullable 참조 형식 | 전 프로젝트 `enable`. `!`(null-forgiving)는 테스트 외에는 쓰지 않는다. |
-| 클래스는 기본 `sealed` | 상속을 의도한 타입만 `sealed`를 뺀다(`abstract` 기반 클래스 등). BuildingBlocks.Domain의 예외: `Entity<TId>` · `AggregateRoot<TId>`(`abstract`), `Error`(non-sealed `record`, `ValidationError`가 파생), `Result`(non-sealed 클래스, `Result<T>`가 파생). 파생을 같은 어셈블리로 막으려고 생성자를 `private protected`로 둔다. |
+| 클래스는 기본 `sealed` | 상속을 의도한 타입만 `sealed`를 뺀다(`abstract` 기반 클래스 등). 아키텍처 테스트가 검사하는 예외 목록과 검사 범위의 원본은 [테스트 전략 · 아키텍처 테스트](testing-strategy.md#아키텍처-테스트)(`ClassesAreSealed` 범위)다. `Error`(non-sealed `record`, `ValidationError`가 파생)는 값을 받는 생성자가 `private protected`라 어셈블리 밖에서는 유형별 팩토리로만 새 값을 만든다. 다만 non-sealed `record`의 컴파일러 생성 복사 생성자는 `protected`여야 하므로(더 좁히면 CS8878) **어셈블리 밖에서도 복사 생성자로 파생할 수 있다**. 이때도 이미 검증된 인스턴스에서 복사하고 `init` 접근자가 없어 코드 · 메시지 · 유형 불변식은 유지된다(`Error.cs` remarks와 같은 내용, TD-016). |
 | `record` | **데이터를 담는 모델 클래스는 모두 `record`로 만든다**: DTO, API Request / Response, Command, Query, 조회 모델(Read Model), 도메인 / 통합 이벤트, Value Object. 위치 기반 생성자(positional record)를 기본으로 하고 불변으로 둔다. 모델에 `class`를 쓰면 반려 사유다. |
 | `record struct` | 강타입 ID에 쓴다: `public readonly record struct EmployeeId(Guid Value);` |
 | primary constructor | DI를 받는 서비스와 Handler에 쓴다. Entity / Aggregate에는 쓰지 않는다(불변식 검증이 필요하므로 팩토리 메서드 사용). |
@@ -77,6 +77,7 @@ DB의 코드값 규칙([데이터베이스 · 코드값](database.md#코드값-�
 - 코드는 `enum`으로 정의하고 **모든 멤버에 값을 명시**한다. 한 번 배포된 값은 바꾸거나 재사용하지 않는다.
 - 기반 형식을 명시한다. 일반 코드는 `short`, 비트 플래그는 `int`(31개까지) 또는 `long`(63개까지).
 - `0`은 `None` / `Unknown` 용도로 예약한다. 유효한 업무 값으로 쓰지 않는다.
+  - 예외: 외부 규약이 `0`의 의미를 정해 둔 **`internal` enum**은 그 규약을 따른다. 예: 프로세스 종료 코드 `MigrationExitCode`(`Succeeded = 0`, 운영체제 · AppHost `WaitForCompletion`이 0을 성공으로 봄). 기반 형식 명시 · 모든 멤버 값 명시 규칙은 그대로 적용한다(BL-091).
 - API 요청 / 응답과 이벤트에서도 코드는 **정수로 직렬화**한다. `JsonStringEnumConverter`는 쓰지 않는다.
 - 외부에서 들어온 정수는 `Enum.IsDefined`(일반 코드) 또는 정의된 비트 마스크 범위 검사(플래그)로 검증한다. 요청 검증은 Validator의 `MustBeDefinedEnum()`(1002)으로 한다.
 
@@ -133,7 +134,7 @@ Application 레이어는 **Command(상태 변경)와 Query(조회)를 분리**�
 - Handler 하나는 요청 하나만 처리한다.
 - Command Handler는 다른 Command를 직접 호출하지 않는다. Handler는 `ISender`를 주입받지 않는다(중첩 `SendAsync`는 커밋이 두 번 일어남). 후속 처리는 도메인 이벤트 / 통합 이벤트로 연결한다.
 - 공통 관심사(로깅, 검증, 트랜잭션)는 **Handler 데코레이터 파이프라인**으로 처리한다. 순서는 Command가 로깅 → 검증 → 트랜잭션 → Handler, Query가 로깅 → 검증 → Handler다(트랜잭션은 Command에만).
-- Validator는 `internal sealed class <요청>Validator : RequestValidator<요청>`(BuildingBlocks.Application.Validation)으로 만든다. 공통 기반이 한 속성의 규칙 체인을 첫 실패에서 멈추게 한다(`RuleLevelCascadeMode = Stop`, [ADR-0018](../03-architecture/adr/0018-use-fluentvalidation.md)). 규칙마다 `WithError(Error)`로 정수 코드를 붙이고(검증 실패 유형만), 붙이지 않은 규칙의 실패는 1001로 담긴다. 코드값(enum) 속성은 `MustBeDefinedEnum()`으로 정의되지 않은 값을 1002로 거부한다(일반 enum은 0도 거부, `[Flags]`는 정의된 비트의 조합과 0 허용). FluentValidation의 문자열 `ErrorCode`는 쓰지 않는다.
+- Validator는 `internal sealed class <요청>Validator : RequestValidator<요청>`(BuildingBlocks.Application.Validation)으로 만든다. 공통 기반의 동작 설명 원본은 [테스트 전략 · 단위 테스트](testing-strategy.md#단위-테스트-domain--application)의 "Validator 기반"이다([ADR-0018](../03-architecture/adr/0018-use-fluentvalidation.md)). 규칙마다 `WithError(Error)`로 정수 코드를 붙이고(검증 실패 유형만), 붙이지 않은 규칙의 실패는 1001로 담긴다. 코드값(enum) 속성은 `MustBeDefinedEnum()`으로 정의되지 않은 값을 1002로 거부한다(일반 enum은 0도 거부, `[Flags]`는 정의된 비트의 조합과 0 허용). FluentValidation의 문자열 `ErrorCode`는 쓰지 않는다.
 - **Handler와 Repository는 `SaveChanges`를 부르지 않는다.** Handler가 성공 `Result`를 돌려주면 트랜잭션 데코레이터가 `IUnitOfWork.CommitAsync`를 부르고, 실패 `Result`면 저장하지 않는다. Handler는 DbContext를 받지 않는다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)).
 - Application 코드는 BuildingBlocks의 추상화(`ICommand`, `ICommand<TResponse>`, `IQuery<TResponse>`, `ICommandHandler<,>`, `IQueryHandler<,>`, `ISender`)에만 의존한다. 반환 값 없는 Command는 `ICommand : ICommand<Unit>`이고 `Result<Unit>`을 돌려준다.
 
@@ -154,46 +155,48 @@ EmergencyHub.Employee.Application/
     │       ├── GetEmployeeByIdQuery.cs
     │       ├── GetEmployeeByIdQueryHandler.cs
     │       └── EmployeeResponse.cs
+    ├── EmployeeLogs.cs
     └── IEmployeeReadRepository.cs
 ```
 
+아래 예시는 `src/Services/Employee/EmergencyHub.Employee.Application/Employees/Commands/RegisterEmployee/`의 실제 코드에서 XML 문서 주석과 `[SuppressMessage]`(CA1812, [경고 억제 규칙](#경고-억제-규칙))만 뺀 것이다.
+
 ```csharp
-public sealed record RegisterEmployeeCommand(string Name, string Email, NotificationChannels Channels)
+public sealed record RegisterEmployeeCommand(string DisplayName, string Email, EmployeeStatus? EmployeeStatus)
     : ICommand<EmployeeId>;
 
-// 저장 · 커밋은 이 Handler가 아니라 트랜잭션 데코레이터 → IUnitOfWork가 한다(ADR-0014).
+// 저장 · 커밋은 이 Handler가 아니라 트랜잭션 데코레이터 → IUnitOfWork가 한다(ADR-0014). Handler는 SaveChanges를 부르지 않는다.
 // ID는 Handler가 IIdGenerator.NewId()로 만든다(ADR-0013).
 internal sealed class RegisterEmployeeCommandHandler(
     IEmployeeRepository repository,
     IIdGenerator idGenerator,
-    TimeProvider timeProvider) : ICommandHandler<RegisterEmployeeCommand, EmployeeId>
+    ILogger<RegisterEmployeeCommandHandler> logger) : ICommandHandler<RegisterEmployeeCommand, EmployeeId>
 {
     public async Task<Result<EmployeeId>> Handle(RegisterEmployeeCommand command, CancellationToken cancellationToken)
     {
-        var email = Email.Create(command.Email);
-        if (email.IsFailure)
+        // 누락(21006)은 검증 데코레이터가 먼저 막는다. 여기까지 null이 오면 예약 값 0으로 넘겨 도메인 불변식이 예외로 막게 한다.
+        var employee = Domain.Employees.Employee.Register(
+            new EmployeeId(idGenerator.NewId()),
+            command.DisplayName,
+            command.Email,
+            command.EmployeeStatus ?? EmployeeStatus.Unknown);
+
+        if (await repository.ExistsByEmailAsync(employee.Email, cancellationToken))
         {
-            return email.Error;
+            return EmployeeErrors.DuplicateEmail;
         }
 
-        // 사전 조회는 1차 방어이고, 동시 요청 경합은 유니크 인덱스(ux_employees_email) → 23505 변환이 막는다.
-        if (await repository.ExistsByEmailAsync(email.Value, cancellationToken))
-        {
-            return EmployeeErrors.EmailAlreadyInUse;
-        }
+        repository.Add(employee);
+        logger.EmployeeRegistered(employee.Id.Value);
 
-        var id = new EmployeeId(idGenerator.NewId());
-        var result = Employee.Register(id, command.Name, email.Value, command.Channels, timeProvider.GetUtcNow());
-        if (result.IsFailure)
-        {
-            return result.Error;
-        }
-
-        repository.Add(result.Value);
-        return result.Value.Id;
+        return employee.Id;
     }
 }
 ```
+
+- `Employee.Register`는 `Result`가 아니라 `Employee`를 돌려주고, 불변식을 어기면 예외를 던진다([DDD 구현 규칙](#ddd-구현-규칙-aggregate--value-object)). 입력 오류는 Validator가 먼저 `Result`로 걸러 Handler까지 오지 않는다.
+- 이메일은 값 객체가 아니라 Aggregate가 정규화한 `string`(`employee.Email`)이다. 사전 중복 검사는 정규화한 값으로 하고, 동시 요청 경합은 유니크 인덱스 `ux_employees_email` → 23505 → Infrastructure 매핑이 같은 `EmployeeErrors.DuplicateEmail` 인스턴스로 막는다.
+- 시각이 필요한 Handler는 `TimeProvider`를 주입받는다. 이 Handler는 시각을 쓰지 않는다(감사 시각은 Infrastructure 감사 인터셉터가 채움).
 
 ## Repository 규칙 (EF Core)
 
@@ -215,39 +218,47 @@ internal sealed class RegisterEmployeeCommandHandler(
 - LINQ 쿼리 구문(`from x in ... select`)과 원시 SQL(`FromSql`, `ExecuteSql`)은 쓰지 않는다. 원시 SQL이 꼭 필요하면 작업 문서에 사유를 남기고 사용자 승인을 받는다.
 - 선택적 조건은 코드 분기가 아니라 **람다 안의 조건식**으로 쓴다(SQL로 번역됨).
 
+실제 코드(`src/Services/Employee/EmergencyHub.Employee.Infrastructure/Persistence/Repositories/EmployeeRepository.cs`, `.../ReadRepositories/EmployeeReadRepository.cs`, XML 문서 주석 제외):
+
 ```csharp
-internal sealed class EmployeeRepository(EmployeeDbContext db)
-    : RepositoryBase<EmployeeDbContext>(db), IEmployeeRepository
+using EmployeeAggregate = EmergencyHub.Employee.Domain.Employees.Employee;
+
+internal sealed class EmployeeRepository(EmployeeDbContext db) : RepositoryBase<EmployeeDbContext>(db), IEmployeeRepository
 {
-    public Task<Employee?> GetByIdAsync(EmployeeId id, CancellationToken cancellationToken) =>
-        Db.Employees.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+    public Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken) =>
+        Db.Set<EmployeeAggregate>().AnyAsync(employee => employee.Email == email, cancellationToken);
 
-    public Task<bool> ExistsByEmailAsync(Email email, CancellationToken cancellationToken) =>
-        Db.Employees.AnyAsync(e => e.Email == email, cancellationToken);
-
-    public void Add(Employee employee) => Db.Employees.Add(employee);
+    public void Add(EmployeeAggregate employee) => Db.Set<EmployeeAggregate>().Add(employee);
 }
 
 internal sealed class EmployeeReadRepository(EmployeeReadDbContext db)
     : ReadRepositoryBase<EmployeeReadDbContext>(db), IEmployeeReadRepository
 {
     public Task<EmployeeResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
-        Db.Employees
-            .Where(e => e.Id == new EmployeeId(id))
-            .Select(e => new EmployeeResponse(e.Id.Value, e.Name, e.EmployeeStatus, e.NotificationChannels))
+        Db.Set<EmployeeAggregate>()
+            .Where(employee => employee.Id == new EmployeeId(id))
+            .Select(employee => new EmployeeResponse(
+                employee.Id.Value,
+                employee.DisplayName,
+                employee.Email,
+                employee.EmployeeStatus,
+                EF.Property<DateTimeOffset>(employee, ShadowPropertyNames.CreatedAt),
+                EF.Property<DateTimeOffset>(employee, ShadowPropertyNames.UpdatedAt)))
             .FirstOrDefaultAsync(cancellationToken);
-
-    public Task<List<EmployeeSummaryResponse>> SearchAsync(EmployeeSearchCondition condition, CancellationToken cancellationToken) =>
-        Db.Employees
-            .Where(e => condition.Status == null || e.EmployeeStatus == condition.Status)   // 선택 조건은 람다 안에서
-            .Where(e => condition.Channels == NotificationChannels.None
-                        || (e.NotificationChannels & condition.Channels) != 0)
-            .OrderBy(e => e.Name)
-            .Skip(condition.Offset)
-            .Take(condition.Limit)
-            .Select(e => new EmployeeSummaryResponse(e.Id.Value, e.Name))
-            .ToListAsync(cancellationToken);
 }
+```
+
+선택 조건을 람다 안에 쓰는 형태(설명용, 현재 코드에는 검색 쿼리가 없음):
+
+```csharp
+public Task<List<EmployeeSummaryResponse>> SearchAsync(EmployeeSearchCondition condition, CancellationToken cancellationToken) =>
+    Db.Set<EmployeeAggregate>()
+        .Where(employee => condition.Status == null || employee.EmployeeStatus == condition.Status)   // 분기 대신 조건식
+        .OrderBy(employee => employee.DisplayName)
+        .Skip(condition.Offset)
+        .Take(condition.Limit)
+        .Select(employee => new EmployeeSummaryResponse(employee.Id.Value, employee.DisplayName))
+        .ToListAsync(cancellationToken);
 ```
 
 ### 영속성 기반 형식 (BuildingBlocks.Infrastructure.Persistence)
@@ -279,6 +290,7 @@ BuildingBlocks에 등록 기준이 되는 **마커 인터페이스와 기반 클
 | Read Repository | 인터페이스: `IReadRepository` 상속 / 구현: `ReadRepositoryBase<TContext>`(`TContext : ReadDbContextBase`) 상속 | Scoped |
 | 서비스 (도메인 서비스, 외부 연동 어댑터 등) | 인터페이스: `IService` 상속 | Scoped |
 | Command / Query Handler, Validator | `ICommandHandler<,>` / `IQueryHandler<,>` / `AbstractValidator<T>` | `AddConventionalServices` 안에서 Scoped 등록(Handler는 Scrutor `Scan`, Validator는 `AddValidatorsFromAssemblies`). 데코레이터는 Scrutor `TryDecorate` |
+| 호스티드 서비스 (`IHostedService` / `BackgroundService`) | 마커 없음 | 호스트 `Program`에서 `builder.Services.AddHostedService<T>()`로 **명시 등록한다**(허용, 수명은 프레임워크가 정한 Singleton). 예: MigrationService `Program.Configure`의 `AddHostedService<MigrationWorker>()`. 어셈블리 검색 대상이 아니다(BL-092) |
 
 ```csharp
 // BuildingBlocks: 마커와 기반 클래스
@@ -306,7 +318,7 @@ builder.Services.AddConventionalServices(
 - `AddConventionalServices`는 BuildingBlocks가 제공한다. 지정한 어셈블리에서 **추상이 아닌 클래스 중 마커를 상속한 인터페이스를 구현한 타입**을 찾아, 그 인터페이스(마커 제외)로 `Scoped` 등록한다. `internal` 클래스도 찾는다.
 - 구현 클래스는 `sealed`, 인터페이스 이름은 `I` + 구현 클래스 이름을 원칙으로 한다(`EmployeeRepository` ↔ `IEmployeeRepository`).
 - 구현 클래스가 서비스 인터페이스를 **하나만** 구현하도록 한다. 두 개 이상이면 등록이 모호해지므로 설계를 나눈다.
-- `Singleton` / `Transient`가 필요한 인프라 요소(`TimeProvider`, `HttpClient` 등)는 BuildingBlocks의 공통 등록 코드에서만 등록한다. 서비스 코드에서 직접 등록하지 않는다.
+- `Singleton` / `Transient`가 필요한 인프라 요소(`TimeProvider`, `HttpClient` 등)는 BuildingBlocks의 공통 등록 코드에서만 등록한다. 서비스 코드에서 직접 등록하지 않는다(예외: 위 표의 호스티드 서비스 `AddHostedService<T>()`).
 - 등록 누락은 통합 테스트(모든 마커 구현 타입이 컨테이너에서 해석되는지)로 검증하고, `ValidateOnBuild` / `ValidateScopes`를 개발 환경에서 켠다.
 
 > **타입 검색은 Scrutor로 구현한다**([ADR-0017](../03-architecture/adr/0017-scrutor-for-convention-based-di.md), ADR-0010 구체화). Scrutor는 BuildingBlocks.Infrastructure만 참조한다. 같은 서비스 인터페이스를 두 구현이 등록하면 시작 시 실패한다(`RegistrationStrategy.Throw`). Handler는 두 제네릭 인자 형태(`ICommandHandler<,>` / `IQueryHandler<,>`)로만 등록해 데코레이터를 우회하는 경로를 만들지 않는다.
@@ -337,7 +349,7 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 ## 예외 처리 규칙
 
 - **예상 가능한 실패는 예외가 아니라 `Result`로 반환한다.** 비즈니스 규칙 위반, 검증 실패, 대상 없음, 충돌이 여기에 해당한다.
-- 예외는 예상하지 못한 오류(인프라 장애, 프로그래밍 오류)에만 쓴다.
+- 예외는 예상하지 못한 오류(인프라 장애, 프로그래밍 오류)에만 쓴다. Validator를 거친 뒤의 Aggregate 불변식 위반은 프로그래밍 오류라 예외다([DDD 구현 규칙](#ddd-구현-규칙-aggregate--value-object)의 실패 처리 경계).
 - `Error`는 **정수 코드**와 메시지, 유형(`ErrorType`: 검증 / 없음 / 충돌 / 규칙 위반 / 인증 / 권한 / 내부 / 외부 연동 / 일시 장애)을 가진다. 유형별 팩토리(`Error.NotFound(22001, "...")`)로만 만들고, 코드 규칙(범위, T ↔ `ErrorType`)을 어기면 생성 시 예외가 난다. 코드 범위는 서비스별로 나누며 [에러 코드](../05-api/error-codes.md)에서 관리한다.
 - `Result` / `Result<T>`: 성공은 `Result.Success()` / `Result.Success(value)`, 실패는 `Result.Failure(error)`. `Error` → `Result` / `Result<T>`, 값 → `Result<T>` 암시적 변환이 있어 `return EmployeeErrors.NotFound;`, `return result.Error;`, `return result.Value.Id;`로 쓴다. 성공 값은 `null`일 수 없다(대상이 없으면 NotFound 실패). 실패 결과의 `Value`, 성공 결과의 `Error`를 읽으면 `InvalidOperationException`이므로 `IsFailure`를 먼저 확인한다. `Error.None` 같은 빈 오류 값은 두지 않는다.
 - API는 `Result`를 RFC 9457 `ProblemDetails`로 변환한다. 전역 예외 처리(`IExceptionHandler`)는 예상하지 못한 예외만 500으로 변환하고 로그를 남긴다.
@@ -347,10 +359,13 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 
 - Aggregate Root는 **팩토리 메서드**(`Register`, `Create`)로만 생성한다. 생성자는 `private`.
 - 속성 setter는 `private`. 상태는 의미 있는 도메인 메서드(`ChangeStatus`, `AssignTo`)로만 바꾼다.
-- 불변식은 Aggregate 안에서 검증하고, 위반 시 `Result` 실패를 반환한다.
+- **실패 처리 경계: Aggregate 불변식 위반은 예외, 입력 검증 실패는 Validator가 돌려주는 `Result`다.** 판정 기준은 "요청 값만으로 판정할 수 있는 규칙인가"다.
+  - 요청 값만으로 판정할 수 있는 규칙(필수 · 길이 · 형식 · 정의된 코드값)은 Validator가 먼저 `ValidationError`(1001 + 필드 코드) `Result`로 돌려주고, Aggregate는 같은 규칙을 불변식으로 다시 검사해 어기면 예외(`ArgumentException` 계열)를 던진다. 요청 값이 아닌 인자(Handler가 만든 ID가 비어 있음 등)의 불변식 위반도 예외다. Validator를 통과한 값이 Aggregate 예외를 일으키면 Validator 누락 · 기준 불일치인 프로그래밍 오류다(전역 예외 처리기 → 9001). 그래서 두 곳은 같은 판정 코드를 쓴다(예: `EmployeeEmail.Normalize` · `IsWellFormed`, `Employee.DisplayNameMaxLength`).
+  - 저장된 데이터나 현재 상태에 따라 달라지는 실패(대상 없음, 중복, 허용되지 않은 상태 전이 같은 업무 규칙 위반)는 Handler 또는 Aggregate 메서드가 `Result`(유형 2 · 3 · 4)로 돌려준다([예외 처리 규칙](#예외-처리-규칙)).
+  - 예: `Employee.Register(id, displayName, email, status)`는 `Employee`를 돌려주고 불변식 위반이면 예외를 던진다. 이메일 중복(23001)은 Handler가 `Result`로 돌려준다.
 - 다른 Aggregate는 **ID로만** 참조한다.
 - ID는 강타입 `record struct`(`EmployeeId`)를 쓴다.
-- Value Object는 `record`로 만들고, 생성 시 검증한다(`Email.Create(string)` → `Result<Email>`).
+- Value Object는 `record`로 만든다. 이메일처럼 정규화 규칙만 있는 값은 값 객체로 만들지 않고 Aggregate가 정규화한 `string` 속성으로 둘 수 있다(`Employee.Email`, 정규화는 `EmployeeEmail.Normalize` = Trim + `ToLowerInvariant`, S03 결정).
 - 도메인 이벤트는 Aggregate가 발생시켜 수집한다. 지금은 **수집까지만** 하고 커밋 뒤 UnitOfWork가 `ClearDomainEvents`로 비운다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)). 디스패치는 이후 토픽, 다른 서비스로 알릴 통합 이벤트 · Outbox는 도입 보류다([ADR-0023](../03-architecture/adr/0023-deferred-adoptions.md), [ADR-0004](../03-architecture/adr/0004-adopt-event-driven-architecture.md) 유지).
 - Domain 프로젝트는 EF Core, ASP.NET Core 등 프레임워크를 참조하지 않는다(데이터 어노테이션 금지).
 
@@ -369,6 +384,31 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 | 빌드 강제 | `옵션 = 값:심각도`의 심각도는 빌드에서 적용되지 않으므로 강제할 IDE 규칙은 `dotnet_diagnostic.<ID>.severity`로 다시 지정한다(IDE0161 · IDE0011 · IDE0065 · IDE0055 · IDE1006 등) |
 | 테스트 예외 | `tests/**.cs`는 CA1707(밑줄 이름) · CA1822 · `Async` 접미사 규칙을 끈다(`<메서드>_<조건>_<기대 결과>`) |
 | 생성 코드 | `**/Persistence/Migrations/*.cs`는 `generated_code = true`와 **`dotnet_diagnostic.CS1591.severity = none`을 함께** 둔다. `generated_code`는 분석기 · 스타일 규칙만 끄고 컴파일러 경고 CS1591은 끄지 못한다. `WarningsAsErrors`에 CS1591을 넣으면 이 설정보다 우선하므로 넣지 않는다(`TreatWarningsAsErrors`로 충분). 직접 작성하는 sealed partial 선언 `*.Sealed.cs`는 뒤따르는 섹션에서 `generated_code = false`로 되돌려 분석 대상에 둔다([데이터베이스](database.md#마이그레이션-규칙)) |
+
+## 경고 억제 규칙
+
+빌드는 `TreatWarningsAsErrors`라 경고 하나가 빌드 실패입니다. 경고는 코드를 고쳐 없애는 것이 기본이고, 억제는 규칙이 이 코드에 맞지 않는 이유를 적을 수 있을 때만 합니다(BL-055, S02 reviewer 판정 기준을 명문화).
+
+- 억제는 경고가 난 선언에 **`[SuppressMessage("<범주>", "<ID>:<제목>", Justification = "<이유>")]`**를 붙여서만 한다. `Justification`은 필수이고, 이 코드가 규칙의 전제와 다른 이유(예: "DI가 만든다")를 적는다. 같은 이유를 여러 곳에 쓰면 문자열 상수로 둘 수 있다(예: ArchitectureTests `SampleSuppressions.MetadataOnly`).
+- 다음은 쓰지 않는다: 전역 `NoWarn` · `WarningsNotAsErrors`(프로젝트 · `Directory.Build.props`), `#pragma warning disable`, `.editorconfig`의 `dotnet_diagnostic.<ID>.severity` 낮추기.
+  - 기존 설정만 예외다: `.editorconfig`의 `tests/**.cs` CA1707 · CA1822 · `Async` 접미사 규칙 끄기와 `**/Persistence/Migrations/*.cs`의 `generated_code = true` · CS1591 none([코드 스타일](#코드-스타일-editorconfig)), EF Core 도구가 생성한 마이그레이션 · 스냅샷 `Designer`의 `#pragma warning disable 612, 618`(생성 코드라 직접 고치지 않음).
+- 새 억제는 reviewer가 작업 진행 기록에 승인을 남기고, 같은 작업에서 아래 승인 목록에 행을 추가한다. 목록에 없는 억제는 반려 사유다.
+
+승인 목록 (2026-09-28 현재 코드 전수, 20건 = 제품 14 + 테스트 6)
+
+| ID | 위치 (파일) | 사유 요약 | 승인 기록 |
+|---|---|---|---|
+| CA1716 | BuildingBlocks.Domain `Errors/Error.cs` | `Error`는 PRD-001 FR-04 · ADR-0018이 정한 도메인 용어, VB 소비자 없음 | S01-T06 reviewer |
+| CA1812 | BuildingBlocks.Application `Cqrs/CommandInvoker{TCommand,TResponse}.cs`, `Cqrs/QueryInvoker{TQuery,TResponse}.cs` | `RequestInvokerCache`가 `MakeGenericType` + `Activator`로 생성 | S02-T01 reviewer |
+| CA1812 | BuildingBlocks.Application `Pipeline/`의 `LoggingCommandHandlerDecorator.cs`, `LoggingQueryHandlerDecorator.cs`, `ValidationCommandHandlerDecorator.cs`, `ValidationQueryHandlerDecorator.cs`, `TransactionCommandHandlerDecorator.cs` | Scrutor `TryDecorate`로 DI가 생성 | S02-T02 reviewer |
+| CA1812 | BuildingBlocks.Infrastructure `Persistence/Conventions/StronglyTypedIdValueConverter.cs` | EF Core가 형식으로 받아 생성 | S02-T04 reviewer |
+| CA1032, CA1064 | BuildingBlocks.Api `Exceptions/RedactedException.cs` | 던지지 않는 로그 전용 내부 사본(메시지 제거가 목적) | S02-T06 reviewer |
+| CA1812 | Employee.Application `RegisterEmployeeCommandHandler.cs`, `RegisterEmployeeCommandValidator.cs`, `GetEmployeeByIdQueryHandler.cs` | `AddConventionalServices` 어셈블리 검색으로 DI가 생성 | S03-T01 reviewer PASS(진입 점검 통과, 억제 개별 기록 없음) |
+| CA1812 | 테스트 BuildingBlocks.Infrastructure.UnitTests `Samples/InternalSampleService.cs`, `Samples/CreateSampleCommandValidator.cs` | 어셈블리 검색 등록을 검증하는 샘플, DI가 생성 | S02-T03 reviewer |
+| EF1001 | 테스트 BuildingBlocks.Infrastructure.UnitTests `Samples/Persistence/SamplePostgresExceptions.cs` | `DbUpdateConcurrencyException` 모양 재현에 EF 내부 엔트리 필요(테스트 전용) | S02-T07 reviewer |
+| CA1812 | 테스트 ArchitectureTests `Samples/ImplementationVisibility/InternalSampleClassifier.cs`, `InternalSampleCommandHandler.cs`, `Samples/ValidatorBases/InternalSampleCommandValidator.cs` | 아키텍처 규칙 검증용 샘플, 인스턴스를 만들지 않음 | S02-T05 reviewer |
+
+목록 대조 명령(Git Bash): `git ls-files src tests | grep '\.cs$' | xargs grep -c "SuppressMessage(" | grep -v ':0$'`(파일별 건수), `git ls-files | grep -v '^wiki/' | xargs grep -n -E "NoWarn|WarningsNotAsErrors|#pragma warning"`(생성 마이그레이션 2개 파일의 `612, 618`만 나와야 함).
 
 ## 로깅
 
@@ -398,3 +438,4 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 | 2026-09-27 | developer | Repository 규칙에 영속성 기반 형식 절 추가(DbContext 기반 · 모델 정의 · 강타입 ID · `ux_` / `ck_` 도우미 · shadow property 이름), DI 예시의 `RepositoryBase` 제약을 `WriteDbContextBase`로 정정 (S02-T04) |
 | 2026-09-27 | developer | 공통 등록 진입점 표에 `AddBuildingBlocksApi` / `UseBuildingBlocksApi` 추가, 코드값 검증 규칙 `MustBeDefinedEnum()`(1002) (S02-T06) |
 | 2026-09-27 | developer | `.editorconfig` 생성 코드 행에 직접 작성하는 sealed partial 선언(`*.Sealed.cs`)을 분석 대상으로 되돌리는 섹션 추가 (S03-T02 재작업) |
+| 2026-09-28 | developer | S03 결정 · 실제 코드에 맞춤: DDD 실패 처리 경계(불변식 위반 예외 · 입력 검증 실패 Result, BL-089), Email 값 객체 예시 제거(정규화한 `string`), CQRS Handler · Repository 예시를 실제 코드로(`IIdGenerator.NewId()`, SaveChanges 미호출, BL-039), 경고 억제 규칙 · 승인 목록 20건(BL-055), 한 파일 한 형식 테스트 코드 적용(BL-069), 외부 규약 0 의미 internal enum 예외(BL-091), `AddHostedService` 명시 등록 허용(BL-092), `Error` 파생 문구 CS8878 정정(TD-016 문서분), sealed · Validator 기반 설명은 testing-strategy 링크로 (S04-T05) |

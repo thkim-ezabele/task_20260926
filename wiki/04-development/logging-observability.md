@@ -62,6 +62,21 @@ flowchart LR
 3. Serilog는 `writeToProviders: false`(기본)로 등록한다.
 4. 대시보드에서 같은 이벤트가 한 번만 보이는지는 S03-T04에서 확인한다.
 
+### Aspire 연동 (Serilog → OTLP, ADR-0020)
+
+로컬에서는 AppHost가 띄운 Aspire 대시보드가 로그 · 트레이스 · 메트릭을 모두 받습니다. 경로는 신호마다 하나입니다.
+
+| 신호 | 경로 | 켜는 조건 |
+|---|---|---|
+| 로그 | `ILogger<T>` → Serilog → **Serilog OTLP 싱크**(`Serilog.Sinks.OpenTelemetry`) → 대시보드 구조화 로그 | `OtlpEndpoint.IsConfigured`(`OTEL_EXPORTER_OTLP_ENDPOINT` 값이 있음). `SerilogDefaults.Configure`가 마지막에 붙인다 |
+| 트레이스 | OpenTelemetry SDK(ASP.NET Core · HttpClient · Npgsql 계측) → `WithTracing` 안의 `AddOtlpExporter()` → 대시보드 추적 | 같은 조건(`ServiceDefaultsExtensions`) |
+| 메트릭 | OpenTelemetry SDK → `WithMetrics` 안의 `AddOtlpExporter()` → 대시보드 메트릭 | 같은 조건 |
+
+- 로그는 **Serilog OTLP 싱크 한 경로로만** 나간다. OpenTelemetry 로그 공급자는 등록하지 않는다(위 중복 방지 1 ~ 3). 싱크가 `OTEL_*` 환경 변수를 읽으므로 로그와 트레이스가 대시보드에서 같은 서비스 · TraceId로 묶인다.
+- `OTEL_EXPORTER_OTLP_ENDPOINT` 등 `OTEL_*` 값은 AppHost가 프로젝트 리소스(Api · MigrationService)에 주입한다. 서비스 코드 · `appsettings*.json`에 엔드포인트를 적지 않는다. 테스트 · CI 호스트에는 값이 없어 OTLP 연결을 시도하지 않는다.
+- 대시보드 OTLP 수신 주소는 AppHost `launchSettings.json` 프로필이 정한다: `https` 프로필(기본) `ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL` = `https://localhost:21180`, `http` 프로필 `http://localhost:19180`(+ `ASPIRE_ALLOW_UNSECURED_TRANSPORT=true`).
+- **`https` 프로필은 ASP.NET Core 개발 인증서를 신뢰해야 대시보드에 로그 · 트레이스가 보인다.** 신뢰하지 않으면 OTLP 전송이 TLS에서 실패해 구조화 로그 · 추적이 0건이고, 앱 파일 로그와 HTTP 동작은 정상이다(S03-T05 실측, [증빙](../10-delivery/evidence/S03-T05/README.md), BL-099). 확인 · 신뢰 명령과 `http` 프로필 대안은 [로컬 개발 환경 구성](../01-getting-started/local-setup.md)에서 다룬다(S04-T03).
+
 ### 콘솔 출력 (텍스트)
 
 ```
@@ -69,13 +84,13 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 ```
 
 ```
-[14:03:12.418 INF] employee EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandHandler (4bf92f3577b34da6a3ce929d0e0e4736) Employee 0192a1b3-... registered with channels 3
+[14:03:12.418 INF] employee EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandHandler (4bf92f3577b34da6a3ce929d0e0e4736) Employee 0192a1b3-... registered
 ```
 
 ### 파일 출력 (JSON)
 
 ```json
-{"@t":"2026-09-27T05:03:12.4181234Z","@mt":"Employee {EmployeeId} registered with channels {NotificationChannels}","@m":"Employee 0192a1b3-... registered with channels 3","@i":"a1b2c3d4","@l":"Information","@tr":"4bf92f3577b34da6a3ce929d0e0e4736","@sp":"00f067aa0ba902b7","EventId":{"Id":20001,"Name":"EmployeeRegistered"},"EmployeeId":"0192a1b3-...","NotificationChannels":3,"SourceContext":"EmergencyHub.Employee.Application...RegisterEmployeeCommandHandler","ServiceName":"employee","Environment":"Development","MachineName":"dev-01"}
+{"@t":"2026-09-27T05:03:12.4181234Z","@mt":"Employee {EmployeeId} registered","@m":"Employee 0192a1b3-... registered","@i":"a1b2c3d4","@l":"Information","@tr":"4bf92f3577b34da6a3ce929d0e0e4736","@sp":"00f067aa0ba902b7","EventId":{"Id":20001,"Name":"EmployeeRegistered"},"EmployeeId":"0192a1b3-...","SourceContext":"EmergencyHub.Employee.Application...RegisterEmployeeCommandHandler","ServiceName":"employee","Environment":"Development","MachineName":"dev-01"}
 ```
 
 - 시각(`@t`)은 **UTC ISO 8601**
@@ -100,13 +115,14 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 | 레벨 | 쓰는 경우 | 예 |
 |---|---|---|
 | `Critical` | 서비스가 계속 동작할 수 없음 | DB 연결 불가로 시작 실패, 메시지 브로커 영구 단절 |
-| `Error` | 요청 / 작업 하나가 **예상하지 못한 이유로** 실패 | 처리되지 않은 예외, Outbox 발행 최종 실패 |
-| `Warning` | 비정상이지만 스스로 회복했거나 곧 문제가 될 상황 | 외부 발송 재시도, 동시성 충돌, 느린 쿼리 |
+| `Error` | 요청 / 작업 하나가 **예상하지 못한 이유로** 실패 | 처리되지 않은 예외(이벤트 1 → 9001), 마이그레이션 실패(20902), Outbox 발행 최종 실패(도입 보류) |
+| `Warning` | 비정상이지만 스스로 회복했거나 곧 문제가 될 상황 | 외부 발송 재시도, 동시성 충돌, 느린 쿼리, DB 재시도 한도 초과로 분류된 예외(이벤트 301 → 9003) |
 | `Information` | 업무 흐름의 주요 사건 (운영에서 기본으로 보는 수준) | 긴급 상황 전파 시작 / 완료, 직원 등록, 요청 로그 |
 | `Debug` | 개발 중 흐름 확인 | Handler 진입 / 결과, 쿼리 조건 |
 | `Trace` | 아주 상세한 내부 상태 | 운영에서 켜지 않음 |
 
 - **예상 가능한 실패(`Result` 실패)는 `Error`가 아니다.** 검증 실패 · 대상 없음 · 규칙 위반은 요청 로그의 상태 코드로 충분하고, 업무상 의미가 있을 때만 `Information` / `Warning`으로 남긴다.
+- **재시도 한도 초과(9003)는 `Warning`, 최종 실패는 `Error`로 나눈다(BL-105).** EF Core 실행 전략의 `RetryLimitExceededException`은 예외 분류기(`PersistenceExceptionClassifier`)가 9003(`Unavailable`, 503)으로 분류하고, 전역 예외 처리기가 이벤트 301 `ExceptionClassified`(`Warning`)로 한 번 남긴다([에러 코드 · API 로그 이벤트](../05-api/error-codes.md#api-로그-이벤트)). 원인이 일시 장애로 알려져 있고 클라이언트가 재시도할 수 있으므로 `Error`가 아니다. 반면 Outbox 발행처럼 재시도를 다 쓴 뒤 **다시 시도할 주체가 없는** 최종 실패는 작업이 유실되므로 `Error`다. 분류기가 모두 `null`을 돌려준 예외는 원인을 알 수 없으므로 이벤트 1(`Error`, 9001)이다.
 - 프레임워크 로그는 `Microsoft`, `System`을 `Warning`으로 낮추고 `Microsoft.Hosting.Lifetime`만 `Information`으로 둔다. `Microsoft.AspNetCore` = `Warning`으로 ASP.NET Core 자체 요청 로그를 낮춰 `UseSerilogRequestLogging()`과 중복되지 않게 한다.
 - EF Core 로그 수준(`Serilog:MinimumLevel:Override`): 기본 `Microsoft.EntityFrameworkCore` = `Warning`, `Microsoft.EntityFrameworkCore.Database.Command` = `Warning`. `appsettings.Development.json`에서만 `Microsoft.EntityFrameworkCore.Database.Command` = `Information`(SQL 문장 · 소요 시간, 파라미터 값은 `?`). Npgsql 자체 로그는 켜지 않는다(SQL 로그는 EF Core 범주 하나로, [ADR-0020](../03-architecture/adr/0020-logging-with-serilog-and-otlp.md)).
 - EF Core 실패 이벤트 `CommandError` · `SaveChangesFailed` · `TransactionError`는 `Debug`로 낮춘다(BL-023 결정, S03-T06). 정상 경합(`23505` → 서비스 코드)과 재시도로 회복한 일시 오류에 `Error`가 남지 않게 하고, 예상 밖 DB 오류는 경계(전역 예외 처리기 이벤트 1, MigrationService Worker)에서 한 번만 남긴다. 설정 위치는 공통 옵션 구성 `UseBuildingBlocksNpgsql` 한 곳이다(`Serilog:MinimumLevel:Override`로 하지 않음, 범주가 아니라 이벤트 단위이기 때문). 근거와 실측은 [데이터베이스 · 영속성 예외 변환](database.md#영속성-예외-변환).
@@ -126,15 +142,15 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
   - 요청 로그 미들웨어는 `options.Logger`가 없으면 정적 `Serilog.Log`에 쓰는데, ServiceDefaults는 정적 로거를 바꾸지 않는다(`preserveStaticLogger: true`). 그래서 `AddServiceDefaults`가 `IOptions<RequestLoggingOptions>`의 `Logger`를 DI의 Serilog 로거로 채운다(S03-T05 발견 · S03-T07 수정). 서비스 코드는 `options.Logger`를 따로 주지 않는다(주면 그 값이 이긴다).
 
 ```csharp
+// 실제 정의: src/Services/Employee/EmergencyHub.Employee.Application/Employees/EmployeeLogs.cs (XML 문서 주석 제외)
 internal static partial class EmployeeLogs
 {
-    [LoggerMessage(EventId = 20001, Level = LogLevel.Information,
-        Message = "Employee {EmployeeId} registered with channels {NotificationChannels}")]
-    public static partial void EmployeeRegistered(this ILogger logger, Guid employeeId, NotificationChannels notificationChannels);
+    [LoggerMessage(EventId = 20001, Level = LogLevel.Information, Message = "Employee {EmployeeId} registered")]
+    public static partial void EmployeeRegistered(this ILogger logger, Guid employeeId);
 }
 
-// 사용
-logger.EmployeeRegistered(employee.Id.Value, employee.NotificationChannels);
+// 사용 (RegisterEmployeeCommandHandler)
+logger.EmployeeRegistered(employee.Id.Value);
 
 // 금지
 logger.LogInformation($"Employee {employee.Id} registered");          // 문자열 보간
@@ -155,7 +171,8 @@ logger.LogInformation("Employee {Email} registered", employee.Email); // 개인�
 EF Core · Npgsql 민감 데이터 규칙([ADR-0020](../03-architecture/adr/0020-logging-with-serilog-and-otlp.md)):
 
 - `EnableSensitiveDataLogging`은 **Development에서만, 설정 플래그로 켤 수 있고 기본은 꺼짐**이다(`IHostEnvironment.IsDevelopment() && Database:EnableSensitiveDataLogging`). Testing · CI · Staging · Production에서는 설정과 무관하게 끈다. 판단은 DbContext 공용 등록 확장 메서드 한 곳에서만 한다.
-- `EnableDetailedErrors`는 Development에서만 켠다.
+  - **현재 상태(2026-09-28): opt-in 경로는 구현되지 않았고 모든 환경에서 꺼져 있다**(BL-094, 안전 쪽). `src`에 `EnableSensitiveDataLogging` 호출이 없고 `Database:EnableSensitiveDataLogging` 키도 읽지 않는다. Employee Api `Program`은 이 값을 판단 · 설정하지 않으며, 단위 테스트 `ProgramTests.ConfigureServices_Development_DoesNotEnableSensitiveDataLogging`이 Development에서도 꺼져 있음을 고정한다. 구현(공용 등록 확장 한 곳 + 환경별 단위 테스트)은 로컬 SQL 파라미터 디버깅이 필요해질 때 한다.
+- `EnableDetailedErrors`는 Development에서만 켠다. 현재 `src`에 `EnableDetailedErrors` 호출은 없다(모든 환경에서 꺼짐).
 - SQL 파라미터 값은 기록하지 않는다: Npgsql `parameterLoggingEnabled` · `EnableParameterLogging`을 쓰지 않는다.
 - 연결 문자열에 `Include Error Detail=true`(제약 위반 예외에 값 노출) · `Persist Security Info=true`를 쓰지 않는다. 제약 위반 변환 로그에는 SqlState, 제약 이름, 엔티티 형식 이름만 남긴다.
 - `IConfiguration`, `ConnectionStrings` 절, `ConnectionStrings__*` 환경 변수를 통째로 로그에 쓰지 않는다. 시작 로그는 호스트 · DB 이름 · 사용자까지만 남긴다.
@@ -189,6 +206,7 @@ ServiceDefaults의 `MapDefaultEndpoints`가 매핑합니다(S03-T03, BL-030). �
 - **노출 환경: 모든 환경**에 매핑한다. Aspire 템플릿은 `/health` · `/alive`를 Development에서만 매핑하지만, 대시보드 · 오케스트레이터의 준비 판단이 환경과 무관하게 같은 경로를 써야 하므로 바꿨다(템플릿과의 차이, TD-012). 템플릿 경로 `/health` · `/alive`는 매핑하지 않는다.
 - **응답 본문은 상태 문자열만**(`Healthy` / `Degraded` / `Unhealthy`, 기본 작성기)이다. 검사 이름 · 설명 · 예외 · 소요 시간을 싣는 JSON 작성기는 쓰지 않는다. 모든 환경에 인증 없이 노출되므로 DB 호스트 · 연결 오류 메시지 같은 내부 정보가 나가지 않게 하기 위해서다. 상태 코드는 `Healthy` · `Degraded` 200, `Unhealthy` 503(기본값)이다.
 - 검사 실패 원인은 응답이 아니라 로그 · 추적에서 본다.
+- **DB 정지 때 응답 시간(S03-T07 실측, BL-108 기록)**: PostgreSQL을 멈춘 상태에서 `/health/ready`는 약 15.0초 뒤 503을 돌려주고 `/health/live`는 200이며, DB를 다시 켜면 `/health/ready`가 곧바로 200으로 돌아왔다. 15초는 DbContext 검사가 연결 제한 시간만큼 기다리기 때문이고, 헬스 검사 전용 제한 시간은 두지 않았다. 프로브 제한 시간 · 주기와 함께 배포 토픽에서 정한다(BL-108).
 - ServiceDefaults는 EF Core를 참조하지 않는다. DB 검사(`AddDbContextCheck`)는 서비스 Api가 등록한다. MigrationService는 Worker라 헬스 엔드포인트가 없고, 준비 판단은 AppHost `WaitForCompletion`(종료 코드)이 한다([데이터베이스 · 마이그레이션 규칙](database.md#마이그레이션-규칙)).
 - 헬스체크 요청은 추적(ASP.NET Core 계측 `Filter`)과 요청 로그에서 제외한다(로그 잡음 방지). 판별은 `HealthEndpoints.IsHealthPath`(`/health` 아래)로 한다.
 
@@ -210,3 +228,4 @@ ServiceDefaults의 `MapDefaultEndpoints`가 매핑합니다(S03-T03, BL-030). �
 | 2026-09-27 | developer | 헬스체크 경로 · 노출 환경(모든 환경) · 응답 본문(상태 문자열만), ServiceDefaults Serilog 구성(`ReadFrom.Services`, ExceptionHandlerMiddleware 범주 `MinimumLevel.Override` 끄기) (S03-T03) |
 | 2026-09-28 | developer | EF 실패 이벤트 3개 `Debug`(BL-023 결정), 설정 위치 한 곳과 경계 로그 (S03-T06) |
 | 2026-09-28 | developer | 요청 로그 로거를 DI Serilog 로거로 채우는 위치(ServiceDefaults `RequestLoggingOptions`, 정적 `Log` 무음 결함 수정) (S03-T07) |
+| 2026-09-28 | developer | Aspire 연동 절(Serilog → OTLP 로그 한 경로, 트레이스 · 메트릭 exporter, 프로필별 OTLP 주소, https 프로필 dev-certs 신뢰 필요 BL-099), 20001 예시를 실제 템플릿(`Employee {EmployeeId} registered`)으로(BL-089), 수준 기준에 9003 = `Warning`(301)과 최종 실패 `Error` 차이(BL-105), `EnableSensitiveDataLogging` opt-in 미구현 · 꺼짐(BL-094 기록), DB 정지 때 `/health/ready` 약 15.0초 뒤 503 실측(BL-108 기록) (S04-T05) |
