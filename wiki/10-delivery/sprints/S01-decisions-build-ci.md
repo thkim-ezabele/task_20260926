@@ -105,6 +105,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T05 | tester | PASS | 짧은 경로 clone(8b4c0dd): SDK 8.0.425 선택, tool restore · ef 8.0.31, build 경고 0 · test 1/1 · format · 취약 0. 부정 점검 5종 기대대로(CS0219 · CS1591 오류, Migrations · 테스트는 무오류, IDE0161 · IDE0011 오류), IVT는 Domain만, check-ignore 비밀 파일 제외, ADR 커밋 선행, i/crlf 0 |
 | 2026-09-27 | S01-T06 | dba | PASS | 해당 없음(DB 변경 없음). EF 매핑 주의점 6건 참고로 전달(강타입 ID 값 변환, DomainEvents Ignore, Id 기본값 동등성, 바인딩 생성자, Error 비저장, 동시성 토큰은 매핑 계층) |
 | 2026-09-27 | S01-T06 | developer | PASS | TDD(Red 확인 후 구현). Entity · AggregateRoot · IDomainEvent · IRepository · ErrorType(2자리, None=0 예약) · Error(get 전용, private protected 생성자 + 팩토리 9개, 생성 시 검증) · ValidationError · FieldError · CommonErrors(11) · Result / Result<T>(Error.None 없음, 암시적 변환 3종). 테스트 197/197, 경고 0, format 통과, Domain 패키지 0건, 라인 98.2% · 분기 100%. error-codes.md ErrorType 표 갱신. BL-040 · BL-050 해결 |
+| 2026-09-27 | S01-T06 | reviewer | PASS | 점검 15개 통과(#4 해당 없음). 직접 build 경고 0 · test 197/197 · format 0, Domain 패키지 0건. developer 판단 사항(Error.None 없음, private protected, None=0 예약 등) 기준 문서 · Q1/Q2와 충돌 없음, CA1716 억제는 규칙 부재로 사유 명시 조건 허용 |
 
 ## 계획 리뷰
 
@@ -212,6 +213,8 @@ updated: 2026-09-27
 | BL-054 | 아키텍처 테스트 후보: Error/Result 파생 금지, Entity 파생 sealed | S01-T06 | |
 | TD-016 | Error 복사 생성자로 외부 파생 가능 | S01-T06 | |
 | TD-017 | Result<T> notnull 제약 없음(런타임 거부만) | S01-T06 | |
+| BL-055 | coding-conventions 경고 억제 규칙 명문화 | S01-T06 | |
+| BL-056 | "ValidationError는 sealed" 명시(ADR 0018 문구 오해 방지) | S01-T06 | |
 
 ## 회고
 
