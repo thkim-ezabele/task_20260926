@@ -11,6 +11,7 @@ namespace EmergencyHub.BuildingBlocks.Api.UnitTests.Acceptance;
 // 공개 진입점 2: UseBuildingBlocksApi(ADR-0024). 실제 WebApplication 파이프라인(ExceptionHandlerMiddleware + 전역 예외 처리기,
 // Swagger 미들웨어)을 서버 없이 RequestDelegate로 실행한다. HTTP 전 구간(Kestrel · 라우팅 · Controller 실행)은 S03-T05.
 // 범위 구분: 처리기 규칙 하나하나는 GlobalExceptionHandlerTests, 여기서는 등록 · 파이프라인 결합만 본다.
+[Trait("FR", "PRD-001/FR-07")]
 public sealed class ApiPipelineAcceptanceTests
 {
     private const string ThrowPath = "/throw";
