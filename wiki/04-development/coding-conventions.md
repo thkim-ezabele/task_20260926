@@ -159,14 +159,12 @@ EmergencyHub.Employee.Application/
     └── IEmployeeReadRepository.cs
 ```
 
-아래 예시는 `src/Services/Employee/EmergencyHub.Employee.Application/Employees/Commands/RegisterEmployee/`의 실제 코드에서 XML 문서 주석과 `[SuppressMessage]`(CA1812, [경고 억제 규칙](#경고-억제-규칙))만 뺀 것이다.
+아래 예시는 `src/Services/Employee/EmergencyHub.Employee.Application/Employees/Commands/RegisterEmployee/`의 `RegisterEmployeeCommand.cs`와 `RegisterEmployeeCommandHandler.cs` 두 파일을 이어 붙이고, using · namespace · XML 문서 주석 · `[SuppressMessage]`(CA1812, [경고 억제 규칙](#경고-억제-규칙))를 뺀 것이다. 남은 줄은 소스와 같다.
 
 ```csharp
 public sealed record RegisterEmployeeCommand(string DisplayName, string Email, EmployeeStatus? EmployeeStatus)
     : ICommand<EmployeeId>;
 
-// 저장 · 커밋은 이 Handler가 아니라 트랜잭션 데코레이터 → IUnitOfWork가 한다(ADR-0014). Handler는 SaveChanges를 부르지 않는다.
-// ID는 Handler가 IIdGenerator.NewId()로 만든다(ADR-0013).
 internal sealed class RegisterEmployeeCommandHandler(
     IEmployeeRepository repository,
     IIdGenerator idGenerator,
@@ -194,6 +192,8 @@ internal sealed class RegisterEmployeeCommandHandler(
 }
 ```
 
+- 저장 · 커밋은 이 Handler가 아니라 트랜잭션 데코레이터 → `IUnitOfWork`가 한다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)). Handler는 `SaveChanges`를 부르지 않는다.
+- ID는 Handler가 `IIdGenerator.NewId()`로 만든다([ADR-0013](../03-architecture/adr/0013-uuid-v7-with-uuidnext.md)).
 - `Employee.Register`는 `Result`가 아니라 `Employee`를 돌려주고, 불변식을 어기면 예외를 던진다([DDD 구현 규칙](#ddd-구현-규칙-aggregate--value-object)). 입력 오류는 Validator가 먼저 `Result`로 걸러 Handler까지 오지 않는다.
 - 이메일은 값 객체가 아니라 Aggregate가 정규화한 `string`(`employee.Email`)이다. 사전 중복 검사는 정규화한 값으로 하고, 동시 요청 경합은 유니크 인덱스 `ux_employees_email` → 23505 → Infrastructure 매핑이 같은 `EmployeeErrors.DuplicateEmail` 인스턴스로 막는다.
 - 시각이 필요한 Handler는 `TimeProvider`를 주입받는다. 이 Handler는 시각을 쓰지 않는다(감사 시각은 Infrastructure 감사 인터셉터가 채움).
@@ -218,7 +218,7 @@ internal sealed class RegisterEmployeeCommandHandler(
 - LINQ 쿼리 구문(`from x in ... select`)과 원시 SQL(`FromSql`, `ExecuteSql`)은 쓰지 않는다. 원시 SQL이 꼭 필요하면 작업 문서에 사유를 남기고 사용자 승인을 받는다.
 - 선택적 조건은 코드 분기가 아니라 **람다 안의 조건식**으로 쓴다(SQL로 번역됨).
 
-실제 코드(`src/Services/Employee/EmergencyHub.Employee.Infrastructure/Persistence/Repositories/EmployeeRepository.cs`, `.../ReadRepositories/EmployeeReadRepository.cs`, XML 문서 주석 제외):
+실제 코드(`src/Services/Employee/EmergencyHub.Employee.Infrastructure/Persistence/Repositories/EmployeeRepository.cs`, `.../ReadRepositories/EmployeeReadRepository.cs` 두 파일을 이어 붙이고, using(별칭 `EmployeeAggregate`만 남김) · namespace · XML 문서 주석을 뺀 것. 남은 줄은 소스와 같다):
 
 ```csharp
 using EmployeeAggregate = EmergencyHub.Employee.Domain.Employees.Employee;
@@ -392,7 +392,7 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 - 억제는 경고가 난 선언에 **`[SuppressMessage("<범주>", "<ID>:<제목>", Justification = "<이유>")]`**를 붙여서만 한다. `Justification`은 필수이고, 이 코드가 규칙의 전제와 다른 이유(예: "DI가 만든다")를 적는다. 같은 이유를 여러 곳에 쓰면 문자열 상수로 둘 수 있다(예: ArchitectureTests `SampleSuppressions.MetadataOnly`).
 - 다음은 쓰지 않는다: 전역 `NoWarn` · `WarningsNotAsErrors`(프로젝트 · `Directory.Build.props`), `#pragma warning disable`, `.editorconfig`의 `dotnet_diagnostic.<ID>.severity` 낮추기.
   - 기존 설정만 예외다: `.editorconfig`의 `tests/**.cs` CA1707 · CA1822 · `Async` 접미사 규칙 끄기와 `**/Persistence/Migrations/*.cs`의 `generated_code = true` · CS1591 none([코드 스타일](#코드-스타일-editorconfig)), EF Core 도구가 생성한 마이그레이션 · 스냅샷 `Designer`의 `#pragma warning disable 612, 618`(생성 코드라 직접 고치지 않음).
-- 새 억제는 reviewer가 작업 진행 기록에 승인을 남기고, 같은 작업에서 아래 승인 목록에 행을 추가한다. 목록에 없는 억제는 반려 사유다.
+- 새 억제는 developer가 억제를 추가한 같은 작업에서 아래 승인 목록에 행을 추가하고(승인 기록 칸은 해당 작업 reviewer), reviewer가 진행 기록에 승인을 남긴다. 목록에 행이 없거나 reviewer 승인 기록이 없는 억제는 반려 사유다.
 
 승인 목록 (2026-09-28 현재 코드 전수, 20건 = 제품 14 + 테스트 6)
 
@@ -403,7 +403,7 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 | CA1812 | BuildingBlocks.Application `Pipeline/`의 `LoggingCommandHandlerDecorator.cs`, `LoggingQueryHandlerDecorator.cs`, `ValidationCommandHandlerDecorator.cs`, `ValidationQueryHandlerDecorator.cs`, `TransactionCommandHandlerDecorator.cs` | Scrutor `TryDecorate`로 DI가 생성 | S02-T02 reviewer |
 | CA1812 | BuildingBlocks.Infrastructure `Persistence/Conventions/StronglyTypedIdValueConverter.cs` | EF Core가 형식으로 받아 생성 | S02-T04 reviewer |
 | CA1032, CA1064 | BuildingBlocks.Api `Exceptions/RedactedException.cs` | 던지지 않는 로그 전용 내부 사본(메시지 제거가 목적) | S02-T06 reviewer |
-| CA1812 | Employee.Application `RegisterEmployeeCommandHandler.cs`, `RegisterEmployeeCommandValidator.cs`, `GetEmployeeByIdQueryHandler.cs` | `AddConventionalServices` 어셈블리 검색으로 DI가 생성 | S03-T01 reviewer PASS(진입 점검 통과, 억제 개별 기록 없음) |
+| CA1812 | Employee.Application `RegisterEmployeeCommandHandler.cs`, `RegisterEmployeeCommandValidator.cs`, `GetEmployeeByIdQueryHandler.cs` | `AddConventionalServices` 어셈블리 검색으로 DI가 생성 | S04-T05 reviewer(사후 승인, S03-T01 도입) |
 | CA1812 | 테스트 BuildingBlocks.Infrastructure.UnitTests `Samples/InternalSampleService.cs`, `Samples/CreateSampleCommandValidator.cs` | 어셈블리 검색 등록을 검증하는 샘플, DI가 생성 | S02-T03 reviewer |
 | EF1001 | 테스트 BuildingBlocks.Infrastructure.UnitTests `Samples/Persistence/SamplePostgresExceptions.cs` | `DbUpdateConcurrencyException` 모양 재현에 EF 내부 엔트리 필요(테스트 전용) | S02-T07 reviewer |
 | CA1812 | 테스트 ArchitectureTests `Samples/ImplementationVisibility/InternalSampleClassifier.cs`, `InternalSampleCommandHandler.cs`, `Samples/ValidatorBases/InternalSampleCommandValidator.cs` | 아키텍처 규칙 검증용 샘플, 인스턴스를 만들지 않음 | S02-T05 reviewer |
@@ -439,3 +439,4 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 | 2026-09-27 | developer | 공통 등록 진입점 표에 `AddBuildingBlocksApi` / `UseBuildingBlocksApi` 추가, 코드값 검증 규칙 `MustBeDefinedEnum()`(1002) (S02-T06) |
 | 2026-09-27 | developer | `.editorconfig` 생성 코드 행에 직접 작성하는 sealed partial 선언(`*.Sealed.cs`)을 분석 대상으로 되돌리는 섹션 추가 (S03-T02 재작업) |
 | 2026-09-28 | developer | S03 결정 · 실제 코드에 맞춤: DDD 실패 처리 경계(불변식 위반 예외 · 입력 검증 실패 Result, BL-089), Email 값 객체 예시 제거(정규화한 `string`), CQRS Handler · Repository 예시를 실제 코드로(`IIdGenerator.NewId()`, SaveChanges 미호출, BL-039), 경고 억제 규칙 · 승인 목록 20건(BL-055), 한 파일 한 형식 테스트 코드 적용(BL-069), 외부 규약 0 의미 internal enum 예외(BL-091), `AddHostedService` 명시 등록 허용(BL-092), `Error` 파생 문구 CS8878 정정(TD-016 문서분), sealed · Validator 기반 설명은 testing-strategy 링크로 (S04-T05) |
+| 2026-09-28 | developer | S04-T05 재작업(reviewer 반려 1회): CQRS · Repository 예시 도입 문장을 실제로 뺀 범위(두 파일 합침, using · namespace · XML 문서 주석 · `[SuppressMessage]`)에 맞추고 소스에 없는 설명 주석 2줄을 코드 블록 밖 목록으로 이동, 경고 억제 승인 절차의 주체 · 순서 명시, Employee CA1812 3건 승인 기록을 S04-T05 reviewer 사후 승인으로 (S04-T05) |
