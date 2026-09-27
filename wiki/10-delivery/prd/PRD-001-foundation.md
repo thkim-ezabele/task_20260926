@@ -6,7 +6,7 @@ status: stable
 received: 2026-09-27
 sprints: [S01, S02, S03, S04]
 branch: "feature/prd-001-foundation"
-pr:
+pr: 7
 release: "v0.1.0"
 retro:
 aliases: [PRD-001]
@@ -19,7 +19,7 @@ updated: 2026-09-27
 
 - 받은 날: 2026-09-27
 - 스프린트: [S01](../sprints/S01-decisions-build-ci.md), [S02](../sprints/S02-building-blocks.md), [S03](../sprints/S03-aspire-employee.md), [S04](../sprints/S04-tests-docs-evidence.md)
-- 토픽 브랜치: `feature/prd-001-foundation` · PR: # · 릴리스: `v0.1.0` · 회고: -
+- 토픽 브랜치: `feature/prd-001-foundation` · PR: [#7](https://github.com/thkim-ezabele/task_20260926/pull/7) · 릴리스: `v0.1.0` · 회고: -
 
 ## 원문
 

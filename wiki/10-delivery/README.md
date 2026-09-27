@@ -119,7 +119,7 @@ gitGraph
 
 | ID | 제목 | 상태 | 스프린트 | 브랜치 / PR | 릴리스 |
 |---|---|---|---|---|---|
-| [PRD-001](prd/PRD-001-foundation.md) | 기반 구축 (인프라 · .NET 8 솔루션 기본 설계) | stable | S01~S04 | `feature/prd-001-foundation` / # | `v0.1.0` |
+| [PRD-001](prd/PRD-001-foundation.md) | 기반 구축 (인프라 · .NET 8 솔루션 기본 설계) | stable | S01~S04 | `feature/prd-001-foundation` / [#7](https://github.com/thkim-ezabele/task_20260926/pull/7) | `v0.1.0` |
 
 ## 스프린트 목록
 
