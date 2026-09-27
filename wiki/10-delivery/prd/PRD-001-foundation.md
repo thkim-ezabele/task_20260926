@@ -2,7 +2,7 @@
 title: "PRD-001: 기반 구축 (인프라 · .NET 8 솔루션 기본 설계)"
 type: prd
 prd: "001"
-status: stable
+status: done
 received: 2026-09-27
 sprints: [S01, S02, S03, S04]
 branch: "feature/prd-001-foundation"
@@ -156,3 +156,4 @@ updated: 2026-09-28
 | 2026-09-28 | orchestrator | S04 계획 확정: 인수 조건 해석 기록(결론 본문 불변). FR-03 스크린샷은 실행 기록 · 대시보드 DOM 덤프 · dev-certs 출력으로 대체(스크린샷은 사용자 추가 항목), 선택 스모크는 미도입 · BL. FR-10 실패 표시는 임시 Draft PR로 확인. FR-11 재현 기록 위치는 S04 스프린트 문서 증빙 절. NFR-03 "BuildingBlocks"는 Domain · Application · Infrastructure · Api 4개. NFR-04 같은 머신 재현의 warm 한계 기록. NFR-07은 S04 DoD에서 판정 |
 | 2026-09-28 | orchestrator | S04-T04 인수 조건 해석 보충: FR-03 대시보드 증빙은 http 프로필 사용(이 PC dev-certs 미신뢰, BL-099). https 프로필은 dev-certs 확인 출력과 OTLP 0건 여부를 재현 차이점으로 기록, 사용자 https 재확인 절차는 S04 결과 리뷰 사용자 확인 사항 |
 | 2026-09-28 | orchestrator | 토픽 회고 [RETRO-PRD-001](../retros/RETRO-PRD-001.md) 링크 추가 |
+| 2026-09-28 | orchestrator | 토픽 완료: 회고 뒤 `done` |

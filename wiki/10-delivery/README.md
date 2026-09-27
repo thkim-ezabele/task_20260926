@@ -119,7 +119,7 @@ gitGraph
 
 | ID | 제목 | 상태 | 스프린트 | 브랜치 / PR | 릴리스 |
 |---|---|---|---|---|---|
-| [PRD-001](prd/PRD-001-foundation.md) | 기반 구축 (인프라 · .NET 8 솔루션 기본 설계) | stable | S01~S04 | `feature/prd-001-foundation` / [#7](https://github.com/thkim-ezabele/task_20260926/pull/7) | `v0.1.0` · [회고](retros/RETRO-PRD-001.md) |
+| [PRD-001](prd/PRD-001-foundation.md) | 기반 구축 (인프라 · .NET 8 솔루션 기본 설계) | done | S01~S04 | `feature/prd-001-foundation` / [#7](https://github.com/thkim-ezabele/task_20260926/pull/7) | `v0.1.0` · [회고](retros/RETRO-PRD-001.md) |
 
 ## 스프린트 목록
 
@@ -140,3 +140,4 @@ gitGraph
 | 2026-09-27 | - | 토픽 브랜치 방식(토픽 = 릴리스), `/prd` · `/sprint` · `/retro` 흐름, 토픽 회고 추가 |
 | 2026-09-27 | - | PRD-001 토픽 생성, 스프린트 S01~S04 계획 |
 | 2026-09-28 | orchestrator | PRD-001 회고 링크 추가 |
+| 2026-09-28 | orchestrator | PRD-001 완료(`done`) |
