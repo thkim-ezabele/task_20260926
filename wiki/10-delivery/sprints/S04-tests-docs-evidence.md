@@ -55,8 +55,8 @@ updated: 2026-09-28
 - [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다
 - [x] 관련 위키 문서(API, DB)를 갱신했다. 이벤트 문서는 해당 없음(도메인 이벤트는 수집만, 디스패치는 이후 토픽)
 - [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
-- [ ] 토픽 PR CI 통과와 소요 시간 10분 이내를 기록했다(NFR-07). 같은 측정으로 BL-059를 판단했다
-- [ ] T06 증빙 표의 "종료 push 뒤 판정" 행을 채웠다
+- [x] 토픽 PR CI 통과와 소요 시간 10분 이내를 기록했다(NFR-07). 같은 측정으로 BL-059를 판단했다
+- [x] T06 증빙 표의 "종료 push 뒤 판정" 행을 채웠다
 - [ ] 토픽 브랜치를 push하고 `sprint/S04` 태그를 붙였다
 
 ## 진행 기록
@@ -104,6 +104,7 @@ updated: 2026-09-28
 | 2026-09-28 | S04-T06 | developer | PASS | 재작업: FR-03 행 인수 조건 요지에 스모크 선택, 판정에 '스모크 미도입, 재도입 조건은 BL-111(S04-T01)', 표 머리말 Trait 수 단위 한 문장. check-docs 4건 |
 | 2026-09-28 | S04-T06 | reviewer | PASS | 재판정: FR-03 행 스모크 처리 반영으로 반려 사유 해소, 다른 부분 불변, 표 8열 18행, check-docs 4건 |
 | 2026-09-28 | S04-T06 | tester | PASS | CI 실패 표시 확인: 임시 브랜치 ci-check/s04-fail(1ce433a, 부모 77ca927) Draft PR #9 → run 36350200891 failure(약 3분 28초). Build · Format success, 실패 테스트 CiFailureCheckTests 1건뿐(Domain Failed 1 · Passed 215), Test (coverage) failure, Coverage report skipped, test-results · container-logs 아티팩트, PR 체크 fail. 정리: PR #9 닫음(CLOSED, merged false), 원격 · 로컬 ci-check/* 0, 토픽 브랜치에 1ce433a 없음. 증빙 절 기록 채움, 빈 칸 0. check-docs 4건 |
+| 2026-09-28 | S04 | DoD | PASS | 토픽 브랜치 push(`0be7345`) → 토픽 PR #7 CI [run 36350983261](https://github.com/thkim-ezabele/task_20260926/actions/runs/36350983261) success, 4분 7초(21:14:36Z~21:18:43Z), 러너 SDK 8.0.425, Coverage report Assemblies 6 · 라인 99.4% · 분기 94.6%. NFR-07 충족, BL-059는 7분 이하라 open 유지(트리거: CI 7분 초과). 증빙 표 FR-10 · NFR-03 · NFR-07 행 채움 |
 
 ## 계획 리뷰
 
@@ -366,15 +367,15 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 | FR-07 | 공통 API 처리 | 실패 `Result` · 바인딩 오류 · 정의되지 않은 enum · 처리되지 않은 예외가 ProblemDetails(`code` 포함)로 응답 | FR-07 Trait 8(`ResultResponseAcceptanceTests`, `ExceptionResponseAcceptanceTests`, `ApiPipelineAcceptanceTests`, `ProblemDetailsHttpTests`, `OpenApiContractHttpTests`, `EmployeesControllerTests` 등) | CI-A · CI-B `Test (coverage)` success | [API 설계](../../04-development/api-guidelines.md), [에러 코드](../../05-api/error-codes.md)(S04-T05 대조: 에러 코드 20 · 로그 이벤트 15 누락 0 · 초과 0), S02 · S03 결과 리뷰 FR-07 | S03-T05 증빙(Kestrel 경로 바인딩 · 본문 초과 curl, 400 · 1001) | 충족 |
 | FR-08 | Employee 샘플 서비스 | Aspire에서 HTTP 등록 → 조회, 통합 테스트로 등록 → 조회 · 이메일 중복 충돌 · 체크 제약 거부 · 동시성 충돌 · 읽기 연결 쓰기 거부 · UUID v7 DB 정렬 | FR-08 Trait 12(`EmployeeRegistrationHttpTests`, `ReadOnlyWriteRejectionHttpTests`, `UnitOfWorkConflictTests`, `EmployeeSchemaTests`, `MigrationReapplyTests`, `EmployeeRepositoryTests`, `EmployeeReadRepositoryTests` 등) | CI-A · CI-B `Test (coverage)` success | [Employee API](../../05-api/employee-api.md), [데이터베이스](../../04-development/database.md), S03 결과 리뷰 FR-08(InitialCreate idempotent SQL 검토) | 이 문서 증빙 절 S04-T04(HTTP 증빙 201 · 200, psql 1~11 · 11번 read-only 거부), S03-T05 증빙 | 충족 |
 | FR-09 | 테스트 프로젝트 | `dotnet test` 전부 통과, 아키텍처 테스트가 의존성 규칙마다 검증 | FR-09 Trait 20(`DependencyRuleTests`, `ConventionRuleTests`, `ArchitectureAssemblyCoverageTests`, `EmployeeDatabaseFixtureTests`, `RespawnHistoryTableTests`, `EmployeeMigrationsTests`, `MigrationWorkerTests` 등). 전체 1537 통과 · 1 건너뜀(S04-T01), 아키텍처 규칙 25개(의존성 10 · 컨벤션 12 · 주입 3, S04-T02) | CI-A 13개 테스트 어셈블리 통과 · 통합 129건, CI-B success | [테스트 전략](../../04-development/testing-strategy.md), [Clean Architecture](../../03-architecture/clean-architecture.md)(의존성 규칙 표 ↔ 규칙 목록 1:1, S04-T02) | 해당 없음(테스트 실행) | 충족(S04 HEAD CI는 FR-10 행 종료 push 뒤 판정) |
-| FR-10 | CI | 토픽 PR에서 워크플로 통과, 실패 테스트를 넣은 임시 브랜치에서 실패 표시 1회 확인 · 기록 | 실패 확인용 `CiFailureCheckTests`(임시 브랜치 전용, 토픽 브랜치 미포함) | 통과: S01 [run 36303017840](https://github.com/thkim-ezabele/task_20260926/actions/runs/36303017840), S02 [run 36318766373](https://github.com/thkim-ezabele/task_20260926/actions/runs/36318766373), CI-A, CI-B. 실패 표시: [run 36350200891](https://github.com/thkim-ezabele/task_20260926/actions/runs/36350200891)(임시 브랜치 `ci-check/s04-fail`, PR #9 fail, 실패 1건만 · Coverage report skipped, 확인 뒤 PR 닫고 브랜치 삭제). S04 HEAD 토픽 PR: 종료 push 뒤 판정 | [CI / CD](../../06-deployment/ci-cd.md), `.github/workflows/ci.yml` | 이 문서 증빙 절 "S04-T06 CI 실패 표시 확인" | 종료 push 뒤 판정 |
+| FR-10 | CI | 토픽 PR에서 워크플로 통과, 실패 테스트를 넣은 임시 브랜치에서 실패 표시 1회 확인 · 기록 | 실패 확인용 `CiFailureCheckTests`(임시 브랜치 전용, 토픽 브랜치 미포함) | 통과: S01 [run 36303017840](https://github.com/thkim-ezabele/task_20260926/actions/runs/36303017840), S02 [run 36318766373](https://github.com/thkim-ezabele/task_20260926/actions/runs/36318766373), CI-A, CI-B. 실패 표시: [run 36350200891](https://github.com/thkim-ezabele/task_20260926/actions/runs/36350200891)(임시 브랜치 `ci-check/s04-fail`, PR #9 fail, 실패 1건만 · Coverage report skipped, 확인 뒤 PR 닫고 브랜치 삭제). S04 HEAD 토픽 PR #7: [run 36350983261](https://github.com/thkim-ezabele/task_20260926/actions/runs/36350983261)(head `0be7345`, success, 4분 7초) | [CI / CD](../../06-deployment/ci-cd.md), `.github/workflows/ci.yml` | 이 문서 증빙 절 "S04-T06 CI 실패 표시 확인" | 충족(토픽 PR 통과 · 실패 표시 1회 확인) |
 | FR-11 | 문서 갱신 | 해당 문서 `draft` 이상, 새 환경 실행은 CI 클린 러너 통과 + local-setup 수동 재현 기록 | FR-11 Trait 2(`RequestLogLevelsTests`, `ProgramTests`) | CI-A · CI-B(클린 러너 통과) | 결정 반영(`draft`): [Clean Architecture](../../03-architecture/clean-architecture.md), [기술 스택](../../03-architecture/tech-stack.md), [데이터베이스](../../04-development/database.md), [로깅](../../04-development/logging-observability.md), [에러 코드](../../05-api/error-codes.md), [코딩 컨벤션](../../04-development/coding-conventions.md). `todo` 문서(`draft`): [local-setup](../../01-getting-started/local-setup.md), [configuration](../../06-deployment/configuration.md), [environments](../../06-deployment/environments.md), [ci-cd](../../06-deployment/ci-cd.md), [troubleshooting](../../01-getting-started/troubleshooting.md) | 이 문서 증빙 절 S04-T04(재현 기록 위치는 PRD 변경 이력대로 worklog 대신 이 문서) | 충족 |
 | NFR-01 | 빌드 품질 | `TreatWarningsAsErrors`에서 경고 0, 생성 코드 분석 제외 | 해당 없음(빌드 결과가 증빙, Trait 0). S04-T01 build 경고 0 · format 통과 | CI-A · CI-B `Build` success | [코딩 컨벤션](../../04-development/coding-conventions.md)(경고 억제 규칙 · 승인 목록, S04-T05), `Directory.Build.props`, `.editorconfig`(`Migrations/**` generated_code) | S01 결과 리뷰 NFR-01(부정 점검 5종) | 충족 |
 | NFR-02 | 레이어 규칙 준수 | 아키텍처 테스트 통과(CI 필수) | NFR-02 Trait 4(`DependencyRuleTests`, `ConventionRuleTests`, `DeclaredReferenceTests`, `ArchitectureAssemblyCoverageTests`). ArchitectureTests 99 통과 · 1 건너뜀(S04-T02) | CI-A · CI-B `Test (coverage)` success(ArchitectureTests 포함) | [Clean Architecture](../../03-architecture/clean-architecture.md)(의존성 규칙), [테스트 전략](../../04-development/testing-strategy.md)(아키텍처 테스트 절), S02 · S03 결과 리뷰 NFR-02(위반 재현) | 해당 없음(테스트 실행) | 충족 |
-| NFR-03 | 테스트 커버리지 | BuildingBlocks · Employee Domain / Application 라인 80% 목표, CI 측정 · 보고만(필수 체크 없음) | 해당 없음(Trait 0). S04-T01 커버리지: 대상 6개 어셈블리 라인 98.0~100%, 합계 라인 99.4% · 분기 94.6%, cobertura 12 = 수집 프로젝트 12 | CI-A `Coverage report` success(S03 대상 기준 라인 100%). S04 대상 6개 CI 보고는 종료 push 뒤 CI에서 확인 | [테스트 전략](../../04-development/testing-strategy.md)(커버리지 절), [CI / CD](../../06-deployment/ci-cd.md), `coverlet.runsettings` | 이 문서 진행 기록 S04-T01 tester(CI와 같은 명령 로컬 실행) | 충족 |
+| NFR-03 | 테스트 커버리지 | BuildingBlocks · Employee Domain / Application 라인 80% 목표, CI 측정 · 보고만(필수 체크 없음) | 해당 없음(Trait 0). S04-T01 커버리지: 대상 6개 어셈블리 라인 98.0~100%, 합계 라인 99.4% · 분기 94.6%, cobertura 12 = 수집 프로젝트 12 | CI-A `Coverage report` success(S03 대상 기준 라인 100%). S04 HEAD [run 36350983261](https://github.com/thkim-ezabele/task_20260926/actions/runs/36350983261) `Coverage report` Assemblies 6, 라인 99.4% · 분기 94.6%(333/352), 로컬 측정과 같음 | [테스트 전략](../../04-development/testing-strategy.md)(커버리지 절), [CI / CD](../../06-deployment/ci-cd.md), `coverlet.runsettings` | 이 문서 진행 기록 S04-T01 tester(CI와 같은 명령 로컬 실행) | 충족 |
 | NFR-04 | 로컬 실행 용이성 | 사전 준비(.NET 8 SDK, Docker)만 된 새 환경에서 clone → 명령 1개로 전체 실행(마이그레이션 자동 적용) | 해당 없음(Trait 0, AppHost 구성은 FR-03 Trait) | CI-A · CI-B(클린 러너 빌드 · 테스트) | [로컬 개발 환경 구성](../../01-getting-started/local-setup.md), [사전 준비](../../01-getting-started/prerequisites.md) | 이 문서 증빙 절 S04-T04(`C:\eh-s04` clone, 명령 1개, `employee-migrations` 종료 코드 0, 재현 차이점 표의 warm 한계), S03-T05 증빙 | 충족(같은 머신 warm 한계 기록, PRD 변경 이력 해석) |
 | NFR-05 | 라이선스 | 상용 라이선스 패키지 금지, 패키지마다 라이선스 기록 | 해당 없음(Trait 0) | 해당 없음 | [패키지 버전 · 라이선스](../../03-architecture/package-versions.md)(상용 0건), S01 · S02 결과 리뷰 NFR-05 | 해당 없음 | 충족 |
 | NFR-06 | 비밀 정보 | DB 비밀번호 등 비밀 값 미커밋(Aspire 매개변수 / user-secrets) | NFR-06 Trait 2(`PostgresResourceTests`, `ServiceResourceTests`) | 해당 없음(워크플로 비밀 0, S01 결과 리뷰 NFR-06) | [configuration](../../06-deployment/configuration.md), [로컬 개발 환경 구성](../../01-getting-started/local-setup.md)(user-secrets · 자리표시자), S03 결과 리뷰 NFR-06 | S03-T05 증빙(비밀 점검 6개 실제 비밀 0), 이 문서 증빙 절 S04-T04(user-secrets 키 이름만 · 토큰 가림) | 충족 |
-| NFR-07 | CI 소요 시간 | PR 워크플로 10분 이내(이미지 pull 포함) | 해당 없음 | 참고치: CI-A 4분 12초, CI-B 3분 52초. S04 HEAD: 종료 push 뒤 판정 | [CI / CD](../../06-deployment/ci-cd.md) | 해당 없음 | 종료 push 뒤 판정 |
+| NFR-07 | CI 소요 시간 | PR 워크플로 10분 이내(이미지 pull 포함) | 해당 없음 | 참고치: CI-A 4분 12초, CI-B 3분 52초. S04 HEAD: [run 36350983261](https://github.com/thkim-ezabele/task_20260926/actions/runs/36350983261) 4분 7초(2026-09-27T21:14:36Z~21:18:43Z, 러너 SDK 8.0.425) | [CI / CD](../../06-deployment/ci-cd.md) | 해당 없음 | 충족(4분 7초 ≤ 10분) |
 
 ## 결과 리뷰
 
@@ -394,8 +395,8 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 
 | 구분 | 충족 | 부분 | 비고 |
 |---|---|---|---|
-| FR | 10 | 1 | FR-10: 실패 표시 확인 완료(run 36350200891, PR #9 CLOSED · merged false). S04 HEAD 토픽 PR 통과는 종료 push 뒤 DoD |
-| NFR | 6 | 1 | NFR-07: 참고치 3분 28초~4분 12초. S04 HEAD 판정은 종료 push 뒤 DoD. NFR-03 대상 6개 모두 80% 이상(합계 라인 99.4% · 분기 94.6%) |
+| FR | 11 | 0 | FR-10: 실패 표시 확인(run 36350200891, PR #9 CLOSED · merged false), S04 HEAD 토픽 PR 통과(run 36350983261) |
+| NFR | 7 | 0 | NFR-07: S04 HEAD 토픽 PR CI 4분 7초. NFR-03 대상 6개 모두 80% 이상(CI 보고 합계 라인 99.4% · 분기 94.6%) |
 
 ### 반려 분석
 

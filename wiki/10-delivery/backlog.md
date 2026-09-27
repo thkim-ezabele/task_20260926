@@ -85,7 +85,7 @@ updated: 2026-09-28
 | BL-056 | error-codes.md 또는 coding-conventions에 "ValidationError는 sealed"(non-sealed는 Error) 명시 — ADR 0018:22 문구 오해 방지 | S01-T06 | 하 | dropped | TD-016으로 병합(문서 문구 정리) |
 | BL-057 | S03 CI 통합 테스트 대비: 통합 테스트 잡은 ubuntu 러너 고정 · services: 대신 Testcontainers, 이미지 pull 시간 단축(선 pull 또는 변형 검토, NFR-07), 컨테이너는 컬렉션 fixture로 공유(ADR-0022) | S01-T07 | 상 | done | S03-T06 d2263d6 CI 변경, S03 종료 PR CI 통과(run 36340112141, 약 4분 12초, 통합 129건 25초) |
 | BL-058 | Dependabot(github-actions 생태계)으로 액션 SHA · 버전 주석 자동 갱신 검토 | S01-T07 | 중 | open | 액션 SHA 고정 ADR 후보와 함께 결정(security.md:85) |
-| BL-059 | CI 소요 시간이 NFR-07 10분에 가까워지면(S03 Testcontainers 뒤) NuGet 캐시 재판단(packages.lock.json 또는 actions/cache) | S01-T07 | 하 | open | S03-T05 · S04-T01 소요 시간 측정 뒤 재판단 (기존: S03) |
+| BL-059 | CI 소요 시간이 NFR-07 10분에 가까워지면(S03 Testcontainers 뒤) NuGet 캐시 재판단(packages.lock.json 또는 actions/cache) | S01-T07 | 하 | open | S04 DoD 판단: S04 HEAD CI 4분 7초로 7분 이하라 open 유지, 트리거는 CI 7분 초과. S03-T05 · S04-T01 소요 시간 측정 뒤 재판단 (기존: S03) |
 | BL-060 | ReportGenerator 무료판 MarkdownSummaryGithub의 메서드 커버리지 "sponsors only" 표시(라인 · 분기는 정상, 기록만) | S01-T07 | 하 | dropped | 기록 목적. NFR-03 판정 영향 없음, S04-T03 ci-cd에 한 줄 언급 |
 | BL-061 | AggregateRoot<TId> protected 매개변수 없는 생성자 미실행: EF용이면 S03에서 커버리지 제외 여부 판단 | S01-T07 | 하 | dropped | NFR-03 영향 없음. S03 EF 매핑에서 자연 해소, 80% 미만 시 재등록 (기존: S03) |
 | BL-062 | ci.yml Coverage report 단계는 테스트 실패 시 건너뜀: 의도라면 testing-strategy CI 절에 명시 | S01-T07 | 하 | done | S04 종료 정리: S04 반영 완료(스프린트 문서 결과 리뷰). S04-T03 ci-cd 워크플로 단계 설명 |
