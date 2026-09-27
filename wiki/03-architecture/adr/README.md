@@ -38,3 +38,9 @@ updated: 2026-09-27
 | [0012](0012-migration-apply-and-pre-production-reset.md) | 마이그레이션 적용 방식과 운영 전 리셋 정책 | 승인 | 2026-09-27 |
 | [0013](0013-uuid-v7-with-uuidnext.md) | UUID v7 식별자 (IIdGenerator + UUIDNext) | 승인 | 2026-09-27 |
 | [0014](0014-command-transaction-boundary-and-unit-of-work.md) | Command 트랜잭션 경계와 Unit of Work | 승인 | 2026-09-27 |
+| [0015](0015-custom-mediator-pipeline.md) | Mediator 직접 구현과 데코레이터 파이프라인 | 승인 | 2026-09-27 |
+| [0016](0016-use-controllers-for-api.md) | API 스타일로 Controller 사용 | 승인 | 2026-09-27 |
+| [0017](0017-scrutor-for-convention-based-di.md) | Scrutor로 규칙 기반 DI 자동 등록 구체화 | 승인 | 2026-09-27 |
+| [0018](0018-use-fluentvalidation.md) | 입력 검증에 FluentValidation 사용 | 승인 | 2026-09-27 |
+| [0019](0019-use-swashbuckle-openapi.md) | OpenAPI 문서에 Swashbuckle 사용 | 승인 | 2026-09-27 |
+| [0020](0020-logging-with-serilog-and-otlp.md) | 로깅 · 관측 구현 (Serilog + OTLP) | 승인 | 2026-09-27 |

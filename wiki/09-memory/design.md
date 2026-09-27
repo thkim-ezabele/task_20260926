@@ -28,16 +28,22 @@ updated: 2026-09-27
 | [0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md) | 마이그레이션 적용 · 리셋 | MigrationService 1개가 `MigrateAsync`만(Api는 `WaitForCompletion`), 운영은 번들 / 스크립트, Phase 4 전 전체 리셋 허용(`InitialCreate` 재생성 + 볼륨 삭제, 리셋 전용 커밋), `__EFMigrationsHistory` snake_case 예외 |
 | [0013](../03-architecture/adr/0013-uuid-v7-with-uuidnext.md) | UUID v7 | `IIdGenerator` + UUIDNext `NewDatabaseFriendly(PostgreSql)`, Handler가 생성 · `ValueGeneratedNever`, 프로세스 내 밀리초 단조성, DB 기본값 미사용 |
 | [0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md) | 트랜잭션 경계 · UoW | Handler 1회 실행, 실행 전략 안에서 Read Committed 트랜잭션 → SaveChanges(accept false) → [Outbox 지점] → 커밋, 23505 → Result는 Infrastructure(제약 이름 매핑), 23514는 미변환 |
+| [0015](../03-architecture/adr/0015-custom-mediator-pipeline.md) | Mediator 직접 구현 | `ICommand : ICommand<Unit>`, `ISender`(Handler 타입 캐시, 누락 시 예외), Handler 데코레이터 로깅 → 검증 → 트랜잭션(Command만) → Handler, 실패 Result면 미커밋, 중첩 Send 금지 |
+| [0016](../03-architecture/adr/0016-use-controllers-for-api.md) | Controller | 얇은 `[ApiController]`(`ISender`만), `api/v1`, 바인딩 오류 1001, `SuppressImplicitRequired...=true`(필수 값은 Validator), 정수 enum JSON |
+| [0017](../03-architecture/adr/0017-scrutor-for-convention-based-di.md) | Scrutor(0010 구체화, 대체 아님) | `AddConventionalServices` = Scrutor `Scan`(internal 포함, Scoped, `RegistrationStrategy.Throw`) + `TryDecorate`, Validator는 FluentValidation 검색 |
+| [0018](../03-architecture/adr/0018-use-fluentvalidation.md) | FluentValidation | 검증 데코레이터에서만 실행 → `ValidationError`(1001 + 필드별 정수 코드), `WithError(Error)`로 `CustomState`, enum 1002, Validator DB 접근 금지 |
+| [0019](../03-architecture/adr/0019-use-swashbuckle-openapi.md) | Swashbuckle | 10.2.3, Development에서만 노출, 문서 `v1`, 정수 enum 설명 필터, ProblemDetails 스키마 |
+| [0020](../03-architecture/adr/0020-logging-with-serilog-and-otlp.md) | Serilog + OTLP | 로그는 Serilog OTLP 싱크 단일 경로(OTel 로그 공급자 없음, 신호별 exporter, `writeToProviders: false`), OTel 1.19.x, EF 계측 미추가, `EnableSensitiveDataLogging`은 Development opt-in, SQL 파라미터 값 미기록 |
 
 형상관리는 GitHub로 확정했습니다(ADR 없음).
 
-## 방향 결정 (PRD-001, S01에서 ADR로 확정 예정)
+## 방향 결정 (PRD-001, 남은 항목은 S01-T04에서 ADR로 확정 예정)
 
 원본: [PRD-001 질문과 답변](../10-delivery/prd/PRD-001-foundation.md#질문과-답변)
 
 - **로컬 인프라 · 마이그레이션 · UUID · 트랜잭션 · 리셋 정책**: ADR 0011~0014로 확정(위 표)
+- **애플리케이션**(Mediator, Controller, Scrutor, FluentValidation, Serilog + OTLP, Swashbuckle): ADR 0015~0020으로 확정(위 표)
 - **도입 보류**: 메시지 브로커, Outbox / Inbox, API Gateway, 로그 수집기(로컬 관측은 Aspire 대시보드)
-- **애플리케이션**: Mediator 직접 구현(로깅 → 검증 → 트랜잭션 → Handler), Controller, Scrutor(0010 구체화), FluentValidation, Serilog + OTLP, Swashbuckle (S01-T03)
 - **테스트**: AwesomeAssertions, Respawn, coverlet + ReportGenerator (S01-T04)
 - **정책**: 도메인 이벤트는 수집만
 - 해소: 고정할 Aspire 9.x 마이너 버전 → 9.5.2 (S01-T01)
