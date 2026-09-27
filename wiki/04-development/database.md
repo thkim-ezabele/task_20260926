@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [development]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 데이터베이스 (PostgreSQL)
@@ -56,6 +56,56 @@ updated: 2026-09-27
 - 두 DbContext는 같은 엔티티 매핑(`IEntityTypeConfiguration<T>`)을 공유한다(`ApplyConfigurationsFromAssembly`).
 - 읽기 DbContext에는 `SaveChanges`를 쓰지 않는다. BuildingBlocks의 읽기 전용 기반 클래스가 `SaveChanges` 오버로드 4개(`SaveChanges()`, `SaveChanges(bool)`, `SaveChangesAsync(CancellationToken)`, `SaveChangesAsync(bool, CancellationToken)`)를 모두 `sealed override`로 막아 `InvalidOperationException`을 던진다. 추적 기본값은 `NoTracking`이다.
 - 복제 지연이 생기면 "쓰고 바로 읽기"가 틀릴 수 있다. Command 직후 결과가 필요하면 Command가 필요한 값(ID 등)을 반환하게 한다.
+
+## 로컬 DB 구성 (AppHost)
+
+[ADR-0011](../03-architecture/adr/0011-use-aspire-local-orchestration.md)의 AppHost DB 구성 사양입니다(S03-T05). 값과 이름은 아래 표를 그대로 씁니다.
+
+| 항목 | 값 |
+|---|---|
+| 서버 리소스 | `AddPostgres("postgres", password: postgres-password 매개변수)`. 사용자 이름 매개변수는 두지 않는다(기본값 `postgres`) |
+| 이미지 | `postgres:17`. AppHost는 `.WithImageTag("17")`(9.5.2 기본값 17.6을 덮어씀), 통합 테스트는 `new PostgreSqlBuilder("postgres:17")`. 태그 `17`은 저장소에 **한 곳**만 둔다(권장: `Directory.Build.props` 속성 → 두 프로젝트에 `AssemblyMetadata`로 전달, [PostgreSQL 이미지](../03-architecture/package-versions.md#postgresql-이미지)) |
+| 데이터 볼륨 | `.WithDataVolume("emergency-hub-postgres-data")`. 이름은 AppHost의 상수 한 곳. 복구 때는 **이 볼륨만** 지운다(다른 프로젝트 볼륨 금지) |
+| 초기화 스크립트 | `src/Aspire/EmergencyHub.AppHost/postgres-init/01-create-employee-app-role.sh`. AppHost는 `.WithInitFiles("postgres-init")`(AppHost 디렉터리 기준 경로), 통합 테스트 fixture는 같은 파일을 Testcontainers `WithResourceMapping`으로 `/docker-entrypoint-initdb.d/`에 넣는다. 폴더에는 초기화 스크립트만 둔다(폴더 전체가 복사됨) |
+| 롤 비밀번호 전달 | 서버 리소스에 `.WithEnvironment("EMPLOYEE_APP_PASSWORD", employee-app-password 매개변수)`. 스크립트가 `psql -v`로 받아 `:'employee_app_password'`로 인용한다 |
+| Database 리소스 | `postgres.AddDatabase("employee-db", databaseName: "emergency_hub_employee").WithCreationScript("CREATE DATABASE emergency_hub_employee OWNER employee_app")`. 문장 하나만(롤 생성 · 여러 문장 금지) |
+| 매개변수 2개 | `postgres-password`, `employee-app-password`: 둘 다 `builder.AddParameter(name, new GenerateParameterDefault { MinLength = 32, Special = false }, secret: true, persist: true)`. user-secrets 키 `Parameters:postgres-password` · `Parameters:employee-app-password`. AppHost csproj에 `UserSecretsId`가 있어야 저장된다 |
+| 연결 주입 | `WithReference(employeeDb)` · `WithReference(postgres)` 금지. 아래 연결 식을 `WithEnvironment("ConnectionStrings__Write" / "ConnectionStrings__Read", 식)`로 넣는다 |
+| 시작 순서 | `migrations.WaitFor(employeeDb)`, `api.WaitForCompletion(migrations)`, `api.WithHttpHealthCheck("/health/ready")`. MigrationService는 1개(`WithReplicas` 없음) |
+
+- **비밀번호 생성 규칙**: `Special = false`라 영문 대소문자 · 숫자만 나온다(연결 문자열의 `;` · `'`가 생기지 않아 이스케이프가 필요 없다). 32자면 약 185비트다. 9.5.2에 `GenerateParameterDefault`와 `AddParameter(name, ParameterDefault, secret, persist)` 오버로드가 있다(패키지 XML 문서로 확인, 대시보드 입력 fallback 불필요). 사전 명령(`dotnet user-secrets set`)으로 넣는 방식은 쓰지 않는다.
+- **비밀번호와 볼륨**: 두 비밀번호는 빈 볼륨을 처음 초기화할 때 서버에 저장된다. 볼륨이 남아 있는데 user-secrets만 지우면 새 값이 생성되어 **인증이 실패**한다(`28P01`, MigrationService 종료 코드 1, Api 미시작). 복구: AppHost를 멈추고 → `docker volume rm emergency-hub-postgres-data`(이 볼륨만) → 다시 실행. 비밀번호를 바꿀 때도 같은 절차다.
+- **초기화 스크립트 규칙**: 빈 볼륨에서 한 번만 실행되므로 멱등 처리를 넣지 않는다. LF 줄바꿈, `psql -v ON_ERROR_STOP=1`, `CREATE ROLE employee_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD :'employee_app_password'`만 둔다. `CREATE SCHEMA` · `CREATE DATABASE` · `GRANT`는 넣지 않는다([Database per Service 원칙](#database-per-service-원칙)). 세션에서 `log_statement = 'none'` · `log_min_error_statement = 'panic'`로 서버 로그에 비밀번호 리터럴이 남지 않게 한다. `EMPLOYEE_APP_PASSWORD`가 비어 있으면 초기화가 실패한다(컨테이너 종료 1). 실행 비트가 없으면 엔트리포인트가 `source`로 실행하므로 `exit` · `set`을 쓰지 않는다.
+
+연결 식(`ReferenceExpression.Create`, `ep = postgres.Resource.PrimaryEndpoint`, `pw` = employee-app-password 매개변수):
+
+| 대상 | 환경 변수 | 식 |
+|---|---|---|
+| MigrationService | `ConnectionStrings__Write` | `Host={ep.Property(EndpointProperty.Host)};Port={ep.Property(EndpointProperty.Port)};Database=emergency_hub_employee;Username=employee_app;Password={pw};Application Name=employee-migration` |
+| Api | `ConnectionStrings__Write` | 위와 같고 `Application Name=employee-api-write` |
+| Api | `ConnectionStrings__Read` | Api Write 식과 같고 `Application Name=employee-api-read;Options=-c default_transaction_read_only=on` |
+
+- `Options`는 **Read에만** 넣는다. `Application Name`은 선택이지만 넣으면 `pg_stat_activity`로 슈퍼유저 연결이 없음을 확인할 수 있다. `Include Error Detail` · `Persist Security Info` · `Timeout` · `Command Timeout`은 넣지 않는다.
+- 연결 식의 호스트 · 포트는 서버 엔드포인트에서 얻고 고정 포트를 쓰지 않는다. `Database` · `Username` 값은 생성 스크립트 · 초기화 스크립트와 같은 이름이다(`emergency_hub_employee`, `employee_app`).
+
+**psql 확인 항목**(S03-T05 증빙 (d) · BL-014). 컨테이너 안에서 `sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -X -h 127.0.0.1 -U postgres -d emergency_hub_employee ...'`처럼 컨테이너 환경 변수를 써서 비밀번호가 호스트 명령 · 로그에 나오지 않게 한다(앱 롤은 `$EMPLOYEE_APP_PASSWORD`, 컨테이너는 `docker ps --filter volume=emergency-hub-postgres-data`로 찾는다).
+
+| # | 접속 | 쿼리 | 기대값 |
+|---|---|---|---|
+| 1 | postgres | `SELECT datname, pg_get_userbyid(datdba) FROM pg_database WHERE datname = 'emergency_hub_employee';` | `employee_app` |
+| 2 | postgres | `SELECT rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls, rolcanlogin FROM pg_roles WHERE rolname = 'employee_app';` | `f f f f f t` |
+| 3 | postgres | `SELECT rolpassword LIKE 'SCRAM-SHA-256$%' FROM pg_authid WHERE rolname = 'employee_app';` | `t`(해시는 출력하지 않음) |
+| 4 | postgres | `SHOW server_version;` | `17.x` |
+| 5 | employee_app | `SELECT pg_get_userbyid(nspowner) FROM pg_namespace WHERE nspname = 'public';` | `pg_database_owner` |
+| 6 | employee_app | `\dn` 와 `SELECT count(*) FROM pg_namespace WHERE nspname = 'employee_app';` | `public`만, `0` |
+| 7 | employee_app | `SELECT to_regclass('public."__EFMigrationsHistory"') IS NOT NULL;` 와 `SELECT count(*) FROM pg_class WHERE relname = '__EFMigrationsHistory' AND relkind = 'r';` | `t`, `1` |
+| 8 | employee_app | `SELECT migration_id, product_version FROM public."__EFMigrationsHistory" ORDER BY migration_id;` | 1행, `<ID>_InitialCreate` · `8.0.31` |
+| 9 | employee_app | `SELECT tablename, tableowner FROM pg_tables WHERE schemaname = 'public' ORDER BY 1;` | `__EFMigrationsHistory` · `employees` 모두 `employee_app` |
+| 10 | employee_app | `SELECT usename, application_name, count(*) FROM pg_stat_activity WHERE datname = 'emergency_hub_employee' AND backend_type = 'client backend' AND pid <> pg_backend_pid() GROUP BY 1, 2;`(Api 호출 직후) | `usename`은 `employee_app`만, `application_name`은 `employee-api-*`, 연결 수가 헬스 주기마다 늘지 않음 |
+| 11 | employee_app, `options='-c default_transaction_read_only=on'` | `SHOW default_transaction_read_only;` 뒤 `CREATE TABLE read_only_probe (id int);` | `on`, 그다음 `25006` |
+
+- 11번은 Read 연결 식과 같은 `Options`로 연 psql 세션이다. Api 읽기 DbContext 자체의 `read_only`는 `/health/ready` 200(읽기 연결 `CanConnect` 통과)과 통합 테스트 S2(S03-T06)로 확인한다.
+- 재시작 확인: 두 번째 실행부터 `postgres` 리소스 로그(서버 로그)에 생성 스크립트 때문에 `ERROR:  database "emergency_hub_employee" already exists`와 `STATEMENT:  CREATE DATABASE emergency_hub_employee OWNER employee_app`가 **실행마다 한 쌍** 남는다(`42P04`, 임시 postgres:17 실측). Aspire는 이 오류를 무시하고 진행한다(ADR-0011). PostgreSQL에는 `CREATE DATABASE IF NOT EXISTS`가 없고 트랜잭션 · `DO` 블록 안에서 실행할 수 없어 스크립트로 없앨 수 없으며, 서버 로그 수준을 낮추면 다른 오류도 가려지므로 바꾸지 않는다. 판정: 이 한 쌍을 뺀 `ERROR` · `FATAL` · `already exists`가 0건이고, 한 쌍의 개수가 (실행 횟수 − 1)과 같아야 한다. `employee_app`의 `already exists`(`42710`)는 초기화 스크립트가 다시 실행됐다는 뜻이므로 1건이라도 있으면 실패다.
 
 ## 테이블 / 컬럼 네이밍 규칙 (snake_case)
 
@@ -388,3 +438,4 @@ erDiagram
 | 2026-09-27 | developer | 마이그레이션 · 스냅샷 sealed partial 선언 규칙(`*.Sealed.cs`, 새 마이그레이션 · 리셋 때 함께 추가, 생성 코드 분류 제외) (S03-T02 재작업) |
 | 2026-09-27 | dba | MigrationService 동작 사양(쓰기 전용 등록 · 기본 재시도, 실행 전략 안 `MigrateAsync`만, 트랜잭션 끄는 마이그레이션 금지, 종료 코드 명시 · 실패 로그 필드, `/health` 없음, `Application Name`은 AppHost 연결 식) (S03-T03) |
 | 2026-09-27 | dba | Api 등록 사양(연결 키 Write · Read만 · appsettings에 연결 문자열 없음, 재시도 임시값 3회 · 5초 명시, `/health/ready` DbContext 검사 2개 기본 검사 · ready 태그, `EnableSensitiveDataLogging` 미사용 · opt-in 경로 미구현 기록, Migrate 호출 금지) (S03-T04) |
+| 2026-09-28 | dba | 로컬 DB 구성(AppHost) 절 추가: 리소스 · 이미지 태그 한 곳 · 볼륨 `emergency-hub-postgres-data` · 초기화 스크립트 위치(AppHost `postgres-init/`, fixture 공유) · 생성 스크립트 한 문장 · 매개변수 2개(`GenerateParameterDefault` 32자 · 특수문자 없음 · persist) · 비밀번호와 볼륨 복구 절차, Write / Read 연결 식(`Application Name`, Read에만 `Options`), psql 확인 항목 11개, 재시작 때 `42P04` 서버 로그 판정 기준 (S03-T05) |
