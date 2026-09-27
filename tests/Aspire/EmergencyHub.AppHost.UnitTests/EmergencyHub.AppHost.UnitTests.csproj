@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    OutputType=Exe · IsTestProject=true는 Directory.Build.props가 이름 규칙(*Tests)으로 지정한다(ADR-0021).
+    xunit.runner.visualstudio · coverlet.collector의 PrivateAssets=all은 Directory.Build.targets가 적용한다.
+    AppHost 구성을 DCP · Docker 없이 Aspire 애플리케이션 모델 수준으로 확인한다(리소스 · 이미지 태그 · 볼륨 · 환경 변수 · 대기 · 연결 식, S03-T05).
+    빌더만 만들고 Build · Run은 하지 않으므로 매개변수 값 생성 · user-secrets 저장이 일어나지 않는다. 실제 실행 증빙은 tester 단계.
+    ServiceDefaults 참조는 AppHost의 헬스 경로가 HealthEndpoints.ReadyPath와 같은지 대조하는 테스트만 쓴다(AppHost는 ServiceDefaults를 참조하지 않음).
+  -->
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Aspire\EmergencyHub.AppHost\EmergencyHub.AppHost.csproj" />
+    <ProjectReference Include="..\..\..\src\Aspire\EmergencyHub.ServiceDefaults\EmergencyHub.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>

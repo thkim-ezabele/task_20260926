@@ -78,5 +78,6 @@ reject_to: null                      # dba는 첫 단계이므로 REJECT를 쓰�
 reasons: ["한 일 / 막힌 이유"]
 changed_files: ["..."]
 commit_message: "feat(<scope>): <내용> (SNN-TNN)"   # 스킬이 커밋에 사용
-candidates: { backlog: ["..."], tech_debt: ["..."] }
+candidates: { backlog: ["..."], tech_debt: ["..."] }   # 스프린트 밖에서 처리할 것만
+handoff: [{ to: "SNN-TNN", note: "..." }]               # 같은 스프린트의 다음 작업에서 반영할 메모 (백로그 아님)
 ```

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    공통 설정은 Directory.Build.props. Infrastructure는 자기 서비스 Application(→ Domain)과 BuildingBlocks.Infrastructure만 참조한다(ADR-0003).
+    EF Core · Npgsql · snake_case 규칙은 BuildingBlocks.Infrastructure에서 전이된다.
+    EF Design은 dotnet-ef 설계 시점 전용이라 이 프로젝트에만 두고, PrivateAssets=all은 Directory.Build.targets가 적용한다(BL-046). Api에는 두지 않는다.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\EmergencyHub.BuildingBlocks.Infrastructure\EmergencyHub.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\EmergencyHub.Employee.Application\EmergencyHub.Employee.Application.csproj" />
+  </ItemGroup>
+
+</Project>

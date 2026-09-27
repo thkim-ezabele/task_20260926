@@ -1,0 +1,79 @@
+# 앱 파일 로그(logs/*.json, RenderedCompactJson) 요약. 열: 시각 | 수준 | 이벤트 ID | SourceContext | TraceId | 메시지 첫 줄
+
+===== employee-migrations: employee-migration-20260928.json (1 · 2 · 3 · 4 · 5회차) =====
+2026-09-27T15:59:40.0729457Z | Information | - | Microsoft.Hosting.Lifetime | - | Application started. Press Ctrl+C to shut down.
+2026-09-27T15:59:40.0889905Z | Information | - | Microsoft.Hosting.Lifetime | - | Hosting environment: "Production"
+2026-09-27T15:59:40.0894188Z | Information | - | Microsoft.Hosting.Lifetime | - | Content root path: "C:\00. src\02. src\emergency-hub\src\Services\Employee\EmergencyHub.Employee.MigrationService"
+2026-09-27T15:59:41.0411717Z | Information | 20901:MigrationsApplied | EmergencyHub.Employee.MigrationService.MigrationWorker | - | Migrations applied for "EmployeeDbContext" in 964.4128 ms
+2026-09-27T15:59:41.0432346Z | Information | - | Microsoft.Hosting.Lifetime | - | Application is shutting down...
+2026-09-27T16:07:36.1072637Z | Information | - | Microsoft.Hosting.Lifetime | - | Application started. Press Ctrl+C to shut down.
+2026-09-27T16:07:36.1233746Z | Information | - | Microsoft.Hosting.Lifetime | - | Hosting environment: "Production"
+2026-09-27T16:07:36.1238197Z | Information | - | Microsoft.Hosting.Lifetime | - | Content root path: "C:\00. src\02. src\emergency-hub\src\Services\Employee\EmergencyHub.Employee.MigrationService"
+2026-09-27T16:07:36.7942169Z | Information | 20901:MigrationsApplied | EmergencyHub.Employee.MigrationService.MigrationWorker | - | Migrations applied for "EmployeeDbContext" in 683.2593 ms
+2026-09-27T16:07:36.7962190Z | Information | - | Microsoft.Hosting.Lifetime | - | Application is shutting down...
+2026-09-27T16:11:54.6717522Z | Information | - | Microsoft.Hosting.Lifetime | - | Application started. Press Ctrl+C to shut down.
+2026-09-27T16:11:54.6982371Z | Information | - | Microsoft.Hosting.Lifetime | - | Hosting environment: "Production"
+2026-09-27T16:11:54.6991010Z | Information | - | Microsoft.Hosting.Lifetime | - | Content root path: "C:\00. src\02. src\emergency-hub\src\Services\Employee\EmergencyHub.Employee.MigrationService"
+2026-09-27T16:11:56.0040126Z | Information | 20901:MigrationsApplied | EmergencyHub.Employee.MigrationService.MigrationWorker | - | Migrations applied for "EmployeeDbContext" in 1313.1525 ms
+2026-09-27T16:11:56.0094864Z | Information | - | Microsoft.Hosting.Lifetime | - | Application is shutting down...
+2026-09-27T16:12:53.4666765Z | Information | - | Microsoft.Hosting.Lifetime | - | Application started. Press Ctrl+C to shut down.
+2026-09-27T16:12:53.4978586Z | Information | - | Microsoft.Hosting.Lifetime | - | Hosting environment: "Production"
+2026-09-27T16:12:53.4987129Z | Information | - | Microsoft.Hosting.Lifetime | - | Content root path: "C:\00. src\02. src\emergency-hub\src\Services\Employee\EmergencyHub.Employee.MigrationService"
+2026-09-27T16:12:54.5177334Z | Error | 20902:MigrationsFailed | EmergencyHub.Employee.MigrationService.MigrationWorker | - | Migrations failed for "EmployeeDbContext" with exception "Npgsql.PostgresException" and SqlState "28P01" after 1040.3663 ms, exit code 1 | @x: Npgsql.PostgresException (0x80004005): 28P01: password authentication failed for user "employee_app"
+2026-09-27T16:12:54.5705543Z | Information | - | Microsoft.Hosting.Lifetime | - | Application is shutting down...
+2026-09-27T16:14:26.4545807Z | Information | - | Microsoft.Hosting.Lifetime | - | Application started. Press Ctrl+C to shut down.
+2026-09-27T16:14:26.4885577Z | Information | - | Microsoft.Hosting.Lifetime | - | Hosting environment: "Production"
+2026-09-27T16:14:26.4893818Z | Information | - | Microsoft.Hosting.Lifetime | - | Content root path: "C:\00. src\02. src\emergency-hub\src\Services\Employee\EmergencyHub.Employee.MigrationService"
+2026-09-27T16:14:27.7919629Z | Information | 20901:MigrationsApplied | EmergencyHub.Employee.MigrationService.MigrationWorker | - | Migrations applied for "EmployeeDbContext" in 1333.1077 ms
+2026-09-27T16:14:27.7958256Z | Information | - | Microsoft.Hosting.Lifetime | - | Application is shutting down...
+
+===== employee-api: employee-20260928.json (1 · 2 · 3 · 5회차) =====
+2026-09-27T15:59:43.4929925Z | Information | 14:ListeningOnAddress | Microsoft.Hosting.Lifetime | - | Now listening on: "http://localhost:61803"
+2026-09-27T15:59:43.5069641Z | Information | - | Microsoft.Hosting.Lifetime | - | Application started. Press Ctrl+C to shut down.
+2026-09-27T15:59:43.5074061Z | Information | - | Microsoft.Hosting.Lifetime | - | Hosting environment: "Development"
+2026-09-27T15:59:43.5074682Z | Information | - | Microsoft.Hosting.Lifetime | - | Content root path: "C:\00. src\02. src\emergency-hub\src\Services\Employee\EmergencyHub.Employee.Api"
+2026-09-27T16:00:13.1955408Z | Debug | 304:ModelBindingFailed | EmergencyHub.BuildingBlocks.Api.Validation.InvalidModelStateResponses | 0af7651916cd43dd8448eb211c80319c | Request model binding failed for fields "displayName", returned error 1001
+2026-09-27T16:00:23.4193699Z | Information | 20101:Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted | Microsoft.EntityFrameworkCore.Database.Command | 4bf92f3577b34da6a3ce929d0e0e4736 | Executed DbCommand ("37"ms) [Parameters=["@__email_0='?'"], CommandType='Text', CommandTimeout='30']"
+2026-09-27T16:00:23.4850900Z | Information | 20001:EmployeeRegistered | EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandHandler | 4bf92f3577b34da6a3ce929d0e0e4736 | Employee 01a0e398-96ac-731e-a0d7-eabec1a1c432 registered
+2026-09-27T16:00:23.5585340Z | Information | 20101:Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted | Microsoft.EntityFrameworkCore.Database.Command | 4bf92f3577b34da6a3ce929d0e0e4736 | Executed DbCommand ("7"ms) [Parameters=["@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?', @p3='?', @p4='?' (DbType = Int16), @p5='?' (DbType = DateTime)"], CommandType='Text', CommandTim
+2026-09-27T16:00:23.5841854Z | Debug | 101:CommandSucceeded | EmergencyHub.BuildingBlocks.Application.Pipeline.LoggingCommandHandlerDecorator | 4bf92f3577b34da6a3ce929d0e0e4736 | Command "RegisterEmployeeCommand" succeeded in 387.6159 ms
+2026-09-27T16:00:23.8285420Z | Information | 20101:Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted | Microsoft.EntityFrameworkCore.Database.Command | 6b059072a2f563cbfa029306f1df5aa7 | Executed DbCommand ("2"ms) [Parameters=["@__p_0='?' (DbType = Guid)"], CommandType='Text', CommandTimeout='30']"
+2026-09-27T16:00:23.8371599Z | Debug | 103:QuerySucceeded | EmergencyHub.BuildingBlocks.Application.Pipeline.LoggingQueryHandlerDecorator | 6b059072a2f563cbfa029306f1df5aa7 | Query "GetEmployeeByIdQuery" succeeded in 49.9107 ms
+2026-09-27T16:02:16.4005565Z | Debug | 304:ModelBindingFailed | EmergencyHub.BuildingBlocks.Api.Validation.InvalidModelStateResponses | 11111111111111111111111111111111 | Request model binding failed for fields "id", returned error 1001
+2026-09-27T16:02:16.4548844Z | Debug | 304:ModelBindingFailed | EmergencyHub.BuildingBlocks.Api.Validation.InvalidModelStateResponses | 11111111111111111111111111111111 | Request model binding failed for fields "id", returned error 1001
+2026-09-27T16:02:16.5070574Z | Debug | 304:ModelBindingFailed | EmergencyHub.BuildingBlocks.Api.Validation.InvalidModelStateResponses | 11111111111111111111111111111111 | Request model binding failed for fields "id", returned error 1001
+2026-09-27T16:02:16.5609911Z | Debug | 304:ModelBindingFailed | EmergencyHub.BuildingBlocks.Api.Validation.InvalidModelStateResponses | 11111111111111111111111111111111 | Request model binding failed for fields "id", returned error 1001
+2026-09-27T16:02:16.6183097Z | Debug | 304:ModelBindingFailed | EmergencyHub.BuildingBlocks.Api.Validation.InvalidModelStateResponses | 40123c03a257fb16a77500dd726f8483 | Request model binding failed for fields "id", returned error 1001
+2026-09-27T16:02:16.8378088Z | Information | 302:BadHttpRequestRejected | EmergencyHub.BuildingBlocks.Api.Exceptions.GlobalExceptionHandler | 33333333333333333333333333333333 | Bad HTTP request rejected with status 413, returned error 1001
+2026-09-27T16:02:17.0345471Z | Information | 302:BadHttpRequestRejected | EmergencyHub.BuildingBlocks.Api.Exceptions.GlobalExceptionHandler | 55555555555555555555555555555555 | Bad HTTP request rejected with status 413, returned error 1001
+2026-09-27T16:07:38.7723347Z | Information | 14:ListeningOnAddress | Microsoft.Hosting.Lifetime | - | Now listening on: "http://localhost:56737"
+2026-09-27T16:07:38.7888769Z | Information | - | Microsoft.Hosting.Lifetime | - | Application started. Press Ctrl+C to shut down.
+2026-09-27T16:07:38.7892458Z | Information | - | Microsoft.Hosting.Lifetime | - | Hosting environment: "Development"
+2026-09-27T16:07:38.7892839Z | Information | - | Microsoft.Hosting.Lifetime | - | Content root path: "C:\00. src\02. src\emergency-hub\src\Services\Employee\EmergencyHub.Employee.Api"
+2026-09-27T16:07:53.8232242Z | Information | 20101:Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted | Microsoft.EntityFrameworkCore.Database.Command | e006a475f5183c971bd14de6d5bb8f54 | Executed DbCommand ("35"ms) [Parameters=["@__email_0='?'"], CommandType='Text', CommandTimeout='30']"
+2026-09-27T16:07:53.8850455Z | Information | 20001:EmployeeRegistered | EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandHandler | e006a475f5183c971bd14de6d5bb8f54 | Employee 01a0e39f-75e1-7168-baa0-60f46d857f54 registered
+2026-09-27T16:07:53.9477773Z | Information | 20101:Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted | Microsoft.EntityFrameworkCore.Database.Command | e006a475f5183c971bd14de6d5bb8f54 | Executed DbCommand ("5"ms) [Parameters=["@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?', @p3='?', @p4='?' (DbType = Int16), @p5='?' (DbType = DateTime)"], CommandType='Text', CommandTim
+2026-09-27T16:07:53.9765651Z | Debug | 101:CommandSucceeded | EmergencyHub.BuildingBlocks.Application.Pipeline.LoggingCommandHandlerDecorator | e006a475f5183c971bd14de6d5bb8f54 | Command "RegisterEmployeeCommand" succeeded in 420.7389 ms
+2026-09-27T16:07:54.2219993Z | Information | 20101:Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted | Microsoft.EntityFrameworkCore.Database.Command | f5e7a711f0e6195da2586082b763a79c | Executed DbCommand ("2"ms) [Parameters=["@__p_0='?' (DbType = Guid)"], CommandType='Text', CommandTimeout='30']"
+2026-09-27T16:07:54.2326320Z | Debug | 103:QuerySucceeded | EmergencyHub.BuildingBlocks.Application.Pipeline.LoggingQueryHandlerDecorator | f5e7a711f0e6195da2586082b763a79c | Query "GetEmployeeByIdQuery" succeeded in 52.0194 ms
+2026-09-27T16:07:54.3039475Z | Information | 20101:Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted | Microsoft.EntityFrameworkCore.Database.Command | ca46ec139af22e41711f141b05fc7db9 | Executed DbCommand ("2"ms) [Parameters=["@__p_0='?' (DbType = Guid)"], CommandType='Text', CommandTimeout='30']"
+2026-09-27T16:07:54.3070113Z | Information | 104:QueryFailed | EmergencyHub.BuildingBlocks.Application.Pipeline.LoggingQueryHandlerDecorator | ca46ec139af22e41711f141b05fc7db9 | Query "GetEmployeeByIdQuery" failed with error 22001 of type 20 in 5.1824 ms
+2026-09-27T16:07:54.3937899Z | Information | 20101:Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted | Microsoft.EntityFrameworkCore.Database.Command | bd1b08585cccff6dee44815de217cd56 | Executed DbCommand ("2"ms) [Parameters=["@__p_0='?' (DbType = Guid)"], CommandType='Text', CommandTimeout='30']"
+2026-09-27T16:07:54.3941601Z | Debug | 103:QuerySucceeded | EmergencyHub.BuildingBlocks.Application.Pipeline.LoggingQueryHandlerDecorator | bd1b08585cccff6dee44815de217cd56 | Query "GetEmployeeByIdQuery" succeeded in 2.8282 ms
+2026-09-27T16:11:11.5718800Z | Information | - | Microsoft.Hosting.Lifetime | - | Application is shutting down...
+2026-09-27T16:11:59.1966087Z | Information | 14:ListeningOnAddress | Microsoft.Hosting.Lifetime | - | Now listening on: "http://localhost:57489"
+2026-09-27T16:11:59.2201062Z | Information | - | Microsoft.Hosting.Lifetime | - | Application started. Press Ctrl+C to shut down.
+2026-09-27T16:11:59.2207094Z | Information | - | Microsoft.Hosting.Lifetime | - | Hosting environment: "Development"
+2026-09-27T16:11:59.2207733Z | Information | - | Microsoft.Hosting.Lifetime | - | Content root path: "C:\00. src\02. src\emergency-hub\src\Services\Employee\EmergencyHub.Employee.Api"
+2026-09-27T16:12:00.9856292Z | Information | 20101:Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted | Microsoft.EntityFrameworkCore.Database.Command | 2819545788eda29a62f8a54edbafa579 | Executed DbCommand ("59"ms) [Parameters=["@__p_0='?' (DbType = Guid)"], CommandType='Text', CommandTimeout='30']"
+2026-09-27T16:12:01.0384778Z | Debug | 103:QuerySucceeded | EmergencyHub.BuildingBlocks.Application.Pipeline.LoggingQueryHandlerDecorator | 2819545788eda29a62f8a54edbafa579 | Query "GetEmployeeByIdQuery" succeeded in 433.4789 ms
+2026-09-27T16:12:04.5569547Z | Information | - | Microsoft.Hosting.Lifetime | - | Application is shutting down...
+2026-09-27T16:14:30.6520756Z | Information | 14:ListeningOnAddress | Microsoft.Hosting.Lifetime | - | Now listening on: "http://localhost:56983"
+2026-09-27T16:14:30.6741123Z | Information | - | Microsoft.Hosting.Lifetime | - | Application started. Press Ctrl+C to shut down.
+2026-09-27T16:14:30.6746869Z | Information | - | Microsoft.Hosting.Lifetime | - | Hosting environment: "Development"
+2026-09-27T16:14:30.6747557Z | Information | - | Microsoft.Hosting.Lifetime | - | Content root path: "C:\00. src\02. src\emergency-hub\src\Services\Employee\EmergencyHub.Employee.Api"
+2026-09-27T16:14:46.7361178Z | Information | 20101:Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted | Microsoft.EntityFrameworkCore.Database.Command | 590a741fc0bb93d746050c0b2b564ddf | Executed DbCommand ("40"ms) [Parameters=["@__email_0='?'"], CommandType='Text', CommandTimeout='30']"
+2026-09-27T16:14:46.8107823Z | Information | 20001:EmployeeRegistered | EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandHandler | 590a741fc0bb93d746050c0b2b564ddf | Employee 01a0e3a5-c2c2-770c-999b-562a1643856f registered
+2026-09-27T16:14:46.8832096Z | Information | 20101:Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted | Microsoft.EntityFrameworkCore.Database.Command | 590a741fc0bb93d746050c0b2b564ddf | Executed DbCommand ("4"ms) [Parameters=["@p0='?' (DbType = Guid), @p1='?' (DbType = DateTime), @p2='?', @p3='?', @p4='?' (DbType = Int16), @p5='?' (DbType = DateTime)"], CommandType='Text', CommandTim
+2026-09-27T16:14:46.9137833Z | Debug | 101:CommandSucceeded | EmergencyHub.BuildingBlocks.Application.Pipeline.LoggingCommandHandlerDecorator | 590a741fc0bb93d746050c0b2b564ddf | Command "RegisterEmployeeCommand" succeeded in 461.1971 ms
+2026-09-27T16:14:48.1624863Z | Information | - | Microsoft.Hosting.Lifetime | - | Application is shutting down...

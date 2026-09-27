@@ -14,7 +14,7 @@ updated: 2026-09-27
 >
 > [위키 홈](../README.md)
 
-> 🟡 API 스타일(Minimal API / Controller)과 OpenAPI 도구는 기반 구축 토픽에서 정합니다. 아래 규칙은 어느 쪽이든 같습니다.
+> API 스타일은 `[ApiController]` Controller([ADR-0016](../03-architecture/adr/0016-use-controllers-for-api.md)), OpenAPI 도구는 Swashbuckle([ADR-0019](../03-architecture/adr/0019-use-swashbuckle-openapi.md))입니다.
 
 ## URL 및 리소스 네이밍
 
@@ -106,6 +106,22 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 - 확장 필드 `code`(정수 에러 코드)와 `traceId`는 **항상** 넣는다. 클라이언트는 `code`로 분기한다.
 - `detail`에 개인정보, 내부 구현(스택 트레이스, SQL)을 넣지 않는다.
 
+공통 변환 규칙 (BuildingBlocks.Api, [ADR-0024](../03-architecture/adr/0024-building-blocks-api-for-common-http-handling.md), S02-T06)
+
+| 항목 | 규칙 |
+|---|---|
+| `status` | `ErrorType`으로 정한다([에러 코드 체계](../05-api/error-codes.md#에러-코드-체계)). 예약 값 `None` · 정의되지 않은 값은 `500` |
+| `type` / `title` | `https://httpstatuses.io/{status}` / 상태 코드의 표준 문구(`Conflict` 등) |
+| `detail` | `Error.Message`. 전역 예외 처리기는 오류의 고정 메시지만 쓴다(예외 메시지 · 스택 미노출) |
+| `instance` | 요청 경로(`PathBase + Path`). 쿼리 문자열은 넣지 않는다(개인정보가 들어갈 수 있음) |
+| `code` | JSON 숫자 |
+| `traceId` | W3C trace-id(`Activity.Current.TraceId`, 32자리 16진수). `Activity`가 없거나 W3C 형식이 아니면 `HttpContext.TraceIdentifier` |
+| `errors` | `ValidationError`일 때만. 키는 속성 경로를 `.` 조각마다 camelCase로 바꾼 값(`Items[0].Name` → `items[0].name`, 객체 수준은 `""`), 값은 `{ code, message }` 배열(생성 순서 유지) |
+| 바인딩 오류 | `InvalidModelStateResponseFactory` → `400` · `1001`. 필드마다 코드 `1001`, 메시지는 `1001`의 고정 문구(프레임워크 메시지에 입력 값이 들어가므로). 모델 상태 키의 JSON 경로 접두사 `$.`는 떼고 `$`는 `""` |
+| 예외 | `BadHttpRequestException` → `400` · `1001`. 예외 분류기(`IExceptionClassifier`) 결과가 있으면 그 오류(예: 재시도 한도 초과 → `503` · `9003`), 없으면 `500` · `9001`. 변환되지 않은 DB 예외(23514 · 25006)도 `9001` |
+
+- Controller는 실패 `Result`를 `return result.Error.ToProblemResult();`로 돌려준다(`ErrorProblemResult`, `ActionResult<T>`로 암시적 변환).
+
 ## 페이징 / 정렬 / 필터링
 
 - 목록 조회는 **offset / limit** 페이징을 기본으로 한다: `?offset=0&limit=20` (기본 20, 최대 100). 대량 목록에는 커서 페이징을 검토한다(🟡 필요 시).
@@ -136,3 +152,5 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 기본 규칙 초안: URL, 메서드 · 상태 코드(CQRS), 멱등성(`Idempotency-Key`), 버저닝, 정수 코드 직렬화, ProblemDetails(`code`, `traceId`), 페이징 · 정렬 · 필터, 인증 헤더 |
+| 2026-09-27 | developer | API 스타일(Controller, ADR-0016) · OpenAPI 도구(Swashbuckle, ADR-0019) 확정 반영 (S01-T04) |
+| 2026-09-27 | developer | 에러 응답 공통 변환 규칙 표(status · type · instance · traceId · errors 키 · 바인딩 오류 · 예외 판정), `ToProblemResult` (S02-T06) |

@@ -3,7 +3,7 @@ title: "세션 이력"
 type: memory
 tags: [memory]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 세션 이력
@@ -12,20 +12,24 @@ updated: 2026-09-27
 
 ## 현재 상태
 
-- 위키 뼈대(00~10), ADR 0001~0010(모두 승인, 0001~0006 근거 보완 완료). 기준 문서(코딩, DB, 테스트, TDD, API, 에러 코드, 로깅, Clean Architecture, tech-stack)와 아키텍처 개요 · EDA · 통신 · 로드맵 · 사전 준비 · 보안은 `draft`.
-- 남은 `todo` 15개: 기반 구축 때 쓸 것(local-setup, troubleshooting, ci-cd, containers, configuration, environments), 도메인 PRD 이후 쓸 것(02-domain 5개, glossary, api-reference, event-catalog, runbook).
-- Git Flow 운영 중: `main` / `develop`(GitHub 기본 브랜치). 브랜치 보호 없음(Free private) → 직접 push 금지는 규칙. 로컬 `gitflow.*` 설정 완료.
-- 개발 흐름과 에이전트 워크플로우 구현 완료: `.claude/agents/` 5개, 스킬 `/prd` · `/sprint` · `/retro` (**아직 한 번도 실행하지 않음**).
-- 진행 중인 토픽 없음. 코드는 아직 없다.
-- git: `develop` = `origin/develop`(`f4d4758`, PR #1~#4 병합). `main`은 `54d0347`(릴리스 없음). 이 세션 worklog와 위키 정비분은 `feature/wiki-baseline-docs` 브랜치.
+- **진행 중 토픽: [PRD-001 기반 구축](../10-delivery/prd/PRD-001-foundation.md)**. 브랜치 `feature/prd-001-foundation`, [Draft PR #7](https://github.com/thkim-ezabele/task_20260926/pull/7). **S01~S04 모두 done**(태그 `sprint/S01`~`sprint/S04`, S04 PR CI 통과 4분 7초). 다음은 `/retro PRD-001`.
+- S04 결과: FR 11 · NFR 7 모두 충족, 증빙은 [S04 증빙 절](../10-delivery/sprints/S04-tests-docs-evidence.md#증빙)(FR / NFR 증빙 표, 새 clone 재현, CI 실패 표시 확인 run 36350200891). 기준 문서 갱신과 `todo` 문서 5개(local-setup · configuration · environments · ci-cd · troubleshooting) `draft`.
+- ADR 0001~0024 승인. ADR 후보는 S01 6 · S02 4 · S03 3 · S04 4건(목록은 [S04 결과 리뷰](../10-delivery/sprints/S04-tests-docs-evidence.md#adr-후보-파일은-만들지-않음-retro에서-판단))을 `/retro`에서 판단.
+- 코드: BuildingBlocks 4계층 + Employee 샘플 5계층 + Aspire AppHost · ServiceDefaults. 테스트 1,537 통과 + 1 건너뜀. 커버리지 대상 6개(BB 4 + Employee Domain / Application) 합계 라인 99.4% · 분기 94.6%. MigrationService는 AppHost가 Development로 주입.
+- 백로그 / 기술부채: S04 종료 때 정리(`new` 0). 새 open: BL-111(스모크, 중) · 112~115 · 117(첫 실행 헬스 검사 Error 2건 원인, 중) · 118. 상 우선순위 open: BL-002(.NET 10 전환), BL-024.
+- 오케스트레이션 세션(emergency-hub-a2)이 승인 지점 처리. S02~S04 회고 개선안은 `/retro`에서 스킬 · 에이전트에 반영(진행 중 변경 금지).
+- 로컬: 이 PC 개발 인증서 미신뢰(`--check --trust` 7), 로컬 Docker Engine API 1.43(통합 테스트는 `DOCKER_API_VERSION=1.43`). S04-T04가 볼륨 `emergency-hub-postgres-data` · user-secrets를 초기화했고 원래 트리는 그때 만든 새 비밀번호 쌍 · 새 볼륨을 쓴다(복구 불필요, 5키 일치).
+- git: 토픽 브랜치 원격은 12c5cb6까지. 이 세션 worklog 커밋만 push 대상.
 
 ## 다음 할 일
 
-- [ ] `/prd`로 **PRD-001 기반 구축** 시험 운영 (솔루션 구조, BuildingBlocks, 빌드 설정, 아키텍처 테스트, CI)
-- [ ] 기반 구축에서 ADR로 결정: Mediator 구현체, 단언 라이브러리, UUID v7 생성, API 스타일, 타입 검색 구현, 로그 수집기
-- [ ] 첫 스프린트 후 에이전트 · 스킬 보완
+- [ ] PRD-001 `/retro`: ADR 후보(S01~S04) 판단, S02~S04 회고 개선안 스킬 · 에이전트 반영, BL-113 결정, 토픽 PR 병합 · `v0.1.0`
+- [ ] (선택) 사용자 확인: 개발 인증서 신뢰 후 https 프로필 OTLP 수신 재확인, 대시보드 스크린샷 3장(S04 결과 리뷰 사용자 확인 사항)
+- [ ] 출처 미상 익명 Docker 볼륨 2개(2024-01-02, `fff0aa…`) 확인 후 삭제 여부 결정
+- [ ] BL-018(raw-log frontmatter) 토픽 밖 작업으로 해결해 check-docs 결함 0 기준선 확보
+- [ ] .NET 10 · Aspire 13 전환(BL-002 · TD-002) 토픽 여부 결정(.NET 8 지원 종료 2026-11-10)
 - [ ] 프로젝트 범위(In / Out of Scope)와 이해관계자 정의
-- [ ] 커밋 작성자 이메일 확인 (현재 전역 설정 `taehoon365@gmail.com`)
+- [ ] 커밋 작성자 이메일 확인 (전역 설정 `taehoon365@gmail.com`, S03 시작 전 사용자 결정으로 유지)
 
 ## 이력
 
@@ -34,3 +38,8 @@ updated: 2026-09-27
 | [WL-2026-09-27-01](../08-worklog/2026-09/2026-09-27-01-wiki-structure.md) | 2026-09-27 | 위키 기본 구조와 ADR 0001~0006 작성 (드라이브 고장으로 사후 복원) |
 | [WL-2026-09-27-02](../08-worklog/2026-09/2026-09-27-02-worklog-convention.md) | 2026-09-27 | worklog 체계, 프롬프트 hook, GitHub 저장소 구성 → 개발 흐름 방향 확정, 장기기억(09-memory), Obsidian 재구성 |
 | [WL-2026-09-27-03](../08-worklog/2026-09/2026-09-27-03-dev-workflow-and-agents.md) | 2026-09-27 | Git Flow 구성, 개발 흐름(토픽 → 스프린트 → 회고) 설계, 기준 문서 기본판, ADR 0007~0010, 에이전트 5개 · 스킬 3개 구현, 위키 미구축 항목 정비 |
+| [WL-2026-09-27-04](../08-worklog/2026-09/2026-09-27-04-prd-001-foundation.md) | 2026-09-27 | `/prd` 첫 운영: PRD-001 기반 구축(FR 11 / NFR 7), 기술 방향 결정, 병렬 리뷰 반영, S01~S04 분할, 토픽 브랜치 · Draft PR #7 |
+| [WL-2026-09-27-05](../08-worklog/2026-09/2026-09-27-05-sprint-s01.md) | 2026-09-27 | `/sprint` 첫 운영: S01 완료(ADR 0011~0023, 빌드 설정, BuildingBlocks.Domain, CI), 반려 1 · BLOCKED 1, BL · TD 정리, 태그 `sprint/S01`, 회고 반영 스킬 개선 |
+| [WL-2026-09-27-06](../08-worklog/2026-09/2026-09-27-06-sprint-s02.md) | 2026-09-27 | `/sprint S02`: BuildingBlocks Application · Infrastructure · Api와 아키텍처 테스트(테스트 202 → 1033), ADR-0024, 반려 3 · BLOCKED 0, 운영 변경(dba 생략 · reviewer 커밋 병합), BL · TD 정리, 태그 `sprint/S02`, 회고 반영 스킬 개선 |
+| [WL-2026-09-28-01](../08-worklog/2026-09/2026-09-28-01-sprint-s03.md) | 2026-09-28 | `/sprint S03`(오케스트레이션 세션 지시): Aspire AppHost · ServiceDefaults · Employee 샘플 5계층 · 통합 테스트(테스트 1,033 → 1,533), 작업 5 → 7 재구성, 반려 1 · BLOCKED 0, 결정 A(이력 컬럼), BL-023 · 073 확정, 요청 로그 결함 수정, 실행 증빙, BL · TD 정리, 태그 `sprint/S03` |
+| [WL-2026-09-28-02](../08-worklog/2026-09/2026-09-28-02-sprint-s04.md) | 2026-09-28 | `/sprint S04`(오케스트레이션 세션 지시): 작업 4 → 6, 커버리지 대상 6개 · MigrationService Development, 기준 문서 갱신 · todo 문서 5개 draft, 새 clone 재현(http 프로필) · CI 실패 표시 확인 · FR / NFR 증빙 표, 반려 6 · BLOCKED 0, BL · TD 정리, 태그 `sprint/S04` |

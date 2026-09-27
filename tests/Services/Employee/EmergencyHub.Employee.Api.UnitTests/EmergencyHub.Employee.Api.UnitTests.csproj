@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    OutputType=Exe · IsTestProject=true는 Directory.Build.props가 이름 규칙(*Tests)으로 지정한다(ADR-0021).
+    xunit.runner.visualstudio · coverlet.collector · NSubstitute.Analyzers.CSharp의 PrivateAssets=all은 Directory.Build.targets가 적용한다.
+    DB · 서버 없이 Controller(ISender 대역)와 Program 구성(등록 · 헬스 검사 · 요청 로그 수준 · Development 한정 Swagger)을 확인한다(S03-T04).
+    HTTP 전 구간(Kestrel · 라우팅 · 실제 DB)은 S03-T05(curl) · S03-T07(WebApplicationFactory) 범위다.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="NSubstitute.Analyzers.CSharp" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\Services\Employee\EmergencyHub.Employee.Api\EmergencyHub.Employee.Api.csproj" />
+  </ItemGroup>
+
+</Project>

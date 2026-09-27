@@ -34,3 +34,17 @@ updated: 2026-09-27
 | [0008](0008-integer-codes-and-bitmask.md) | 코드값 정수화와 비트 마스킹 | 승인 | 2026-09-27 |
 | [0009](0009-separate-read-write-db-context.md) | 읽기 / 쓰기 DB 연결 분리와 Repository 규칙 | 승인 | 2026-09-27 |
 | [0010](0010-convention-based-di-registration.md) | 규칙 기반 DI 자동 등록 | 승인 | 2026-09-27 |
+| [0011](0011-use-aspire-local-orchestration.md) | .NET Aspire 로컬 오케스트레이션 | 승인 | 2026-09-27 |
+| [0012](0012-migration-apply-and-pre-production-reset.md) | 마이그레이션 적용 방식과 운영 전 리셋 정책 | 승인 | 2026-09-27 |
+| [0013](0013-uuid-v7-with-uuidnext.md) | UUID v7 식별자 (IIdGenerator + UUIDNext) | 승인 | 2026-09-27 |
+| [0014](0014-command-transaction-boundary-and-unit-of-work.md) | Command 트랜잭션 경계와 Unit of Work | 승인 | 2026-09-27 |
+| [0015](0015-custom-mediator-pipeline.md) | Mediator 직접 구현과 데코레이터 파이프라인 | 승인 | 2026-09-27 |
+| [0016](0016-use-controllers-for-api.md) | API 스타일로 Controller 사용 | 승인 | 2026-09-27 |
+| [0017](0017-scrutor-for-convention-based-di.md) | Scrutor로 규칙 기반 DI 자동 등록 구체화 | 승인 | 2026-09-27 |
+| [0018](0018-use-fluentvalidation.md) | 입력 검증에 FluentValidation 사용 | 승인 | 2026-09-27 |
+| [0019](0019-use-swashbuckle-openapi.md) | OpenAPI 문서에 Swashbuckle 사용 | 승인 | 2026-09-27 |
+| [0020](0020-logging-with-serilog-and-otlp.md) | 로깅 · 관측 구현 (Serilog + OTLP) | 승인 | 2026-09-27 |
+| [0021](0021-test-tooling-xunit-v3-and-awesomeassertions.md) | 테스트 도구 (xUnit v3 · AwesomeAssertions와 주변 도구 고정) | 승인 | 2026-09-27 |
+| [0022](0022-respawn-and-coverage-tooling.md) | 통합 테스트 DB 초기화(Respawn)와 커버리지 도구(coverlet + ReportGenerator) | 승인 | 2026-09-27 |
+| [0023](0023-deferred-adoptions.md) | 도입 보류 (메시지 브로커, Outbox / Inbox, API Gateway, 로그 수집기) | 승인 | 2026-09-27 |
+| [0024](0024-building-blocks-api-for-common-http-handling.md) | 공통 API 처리 계층 BuildingBlocks.Api 신설 | 승인 | 2026-09-27 |

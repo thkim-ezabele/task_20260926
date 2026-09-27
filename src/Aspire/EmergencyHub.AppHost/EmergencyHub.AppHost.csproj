@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    로컬 오케스트레이션 AppHost(ADR-0011, database.md "로컬 DB 구성 (AppHost)", S03-T05).
+    Aspire.AppHost.Sdk는 MSBuild SDK라 여기에 버전을 적는다(CPM 밖). Dashboard · DCP 패키지는 SDK가 CPM의 Aspire.Hosting.AppHost 버전으로 암묵 추가한다.
+    Aspire.Hosting 9.5.2 전이 MessagePack 취약 버전은 Directory.Packages.props 전이 고정(2.5.305)으로 막는다(TD-007).
+    UserSecretsId: 매개변수 postgres-password · employee-app-password를 첫 실행 때 생성해 이 저장소(user-secrets)에 저장한다(persist). 값은 저장소에 커밋하지 않는다(NFR-06).
+    PostgreSQL 이미지 태그는 Directory.Build.props 한 곳이 원본이고 EmergencyHubUsesPostgresImage로 어셈블리 메타데이터를 받는다.
+    ServiceDefaults는 IsAspireSharedProject라 리소스로 추가하지 않는다(참조하지 않음).
+  -->
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.5.2" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>4264c4b6-2b53-4765-93fd-f38191980ff4</UserSecretsId>
+    <EmergencyHubUsesPostgresImage>true</EmergencyHubUsesPostgresImage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Services\Employee\EmergencyHub.Employee.Api\EmergencyHub.Employee.Api.csproj" />
+    <ProjectReference Include="..\..\Services\Employee\EmergencyHub.Employee.MigrationService\EmergencyHub.Employee.MigrationService.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -4,12 +4,13 @@ type: doc
 status: draft
 tags: [architecture]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 이벤트 기반 아키텍처 (EDA)
 
 > 서비스 간 비동기 이벤트 통신의 구조와 규칙을 정의합니다. 결정 근거: [ADR-0004](adr/0004-adopt-event-driven-architecture.md)
+> **도입 보류**: 메시지 브로커 · 메시징 추상화 · Outbox / Inbox 구현은 보류 중이며 재검토 시점은 [ADR-0023](adr/0023-deferred-adoptions.md)이 원본입니다. 이 문서는 도입 때 따를 설계안이고, ADR-0004(EDA)는 유지합니다. 지금은 도메인 이벤트를 수집만 하고 커밋 뒤 비웁니다.
 > 이벤트 목록은 [이벤트 카탈로그](../05-api/event-catalog.md), Outbox 테이블 구조는 [데이터베이스 · Outbox](../04-development/database.md#outbox-테이블)를 따릅니다.
 >
 > [위키 홈](../README.md)
@@ -49,7 +50,7 @@ updated: 2026-09-27
 
 ## 메시지 브로커 선정
 
-> 🟡 **미정**: RabbitMQ / Kafka 중 선택하고, 추상화는 MassTransit(🟡)를 검토합니다. 결정은 ADR로 남깁니다.
+> **보류**([ADR-0023](adr/0023-deferred-adoptions.md)): 브로커는 RabbitMQ(재검토 추천안) / Kafka, 추상화는 MassTransit 8.x / 브로커 클라이언트 직접 사용 중에서 도입 토픽에 ADR로 정합니다. MassTransit v9+는 상용 라이선스라 제외합니다.
 
 | 기준 | RabbitMQ | Kafka |
 |---|---|---|
@@ -86,14 +87,14 @@ flowchart LR
 1. Command 처리 중 발생한 통합 이벤트를 비즈니스 데이터와 **같은 트랜잭션**으로 `outbox_messages`에 저장한다.
 2. Outbox 처리기(백그라운드 작업)가 `processed_at IS NULL`인 메시지를 발생 순서(`occurred_at`, UUID v7 순)로 읽어 발행한다.
 3. 발행 성공 시 `processed_at`을 기록하고, 실패 시 `retry_count`와 `last_error`를 갱신한다.
-4. 처리된 메시지는 보관 기간(🟡 미정) 후 정리한다.
+4. 처리된 메시지는 보관 기간 후 정리한다(기간은 Outbox 도입 때 정함, 보류 [ADR-0023](adr/0023-deferred-adoptions.md)).
 
 **Inbox (소비 측)**
 
 - 소비한 메시지의 `message_id`를 `inbox_messages`에 저장하고, 비즈니스 처리와 **같은 트랜잭션**으로 커밋한다.
 - 같은 `message_id`가 다시 오면 처리하지 않고 확인(ack)만 한다.
 
-> 🟡 MassTransit 도입이 확정되면 MassTransit의 EF Core Outbox / Inbox로 대체할 수 있습니다([데이터베이스 · Outbox](../04-development/database.md#outbox-테이블)).
+> 보류([ADR-0023](adr/0023-deferred-adoptions.md)): MassTransit 도입이 확정되면 MassTransit의 EF Core Outbox / Inbox로 대체할 수 있습니다([데이터베이스 · Outbox](../04-development/database.md#outbox-테이블)).
 
 ## 멱등성 (Idempotency) 처리
 
@@ -106,24 +107,24 @@ flowchart LR
 
 | 구분 | 정책 |
 |---|---|
-| 발행 재시도 (Outbox) | 처리기가 주기적으로 재시도. `retry_count` 상한(🟡) 초과 시 `Error` 로그와 알림 대상 |
-| 소비 재시도 | 일시 오류(DB 연결, 타임아웃)는 지수 백오프로 즉시 재시도(🟡 횟수) |
+| 발행 재시도 (Outbox) | 처리기가 주기적으로 재시도. `retry_count` 상한(도입 때 정함, 보류 [ADR-0023](adr/0023-deferred-adoptions.md)) 초과 시 `Error` 로그와 알림 대상 |
+| 소비 재시도 | 일시 오류(DB 연결, 타임아웃)는 지수 백오프로 즉시 재시도(횟수는 도입 때 정함, 보류 [ADR-0023](adr/0023-deferred-adoptions.md)) |
 | DLQ | 재시도 후에도 실패하거나 역직렬화 불가한 메시지는 DLQ로 보낸다. 자동 폐기하지 않는다 |
-| DLQ 처리 | 원인 수정 후 재주입. 절차는 [운영 런북](../07-operations/runbook.md)에 정리 (🟡) |
+| DLQ 처리 | 원인 수정 후 재주입. 절차는 브로커 도입 때 [운영 런북](../07-operations/runbook.md)에 정리 (보류 [ADR-0023](adr/0023-deferred-adoptions.md)) |
 
 - 비즈니스 규칙 위반(재시도해도 같은 결과)은 재시도하지 않고 결과를 기록한다.
 - 재시도 · DLQ 이동은 `Warning` / `Error` 로그로 남기고 `message_id`, `message_type`, `retry_count`를 속성으로 포함한다.
 
 ## 순서 보장
 
-- **전체 순서는 보장하지 않는다.** 순서가 필요한 이벤트는 같은 Aggregate(키) 단위로만 순서를 기대한다(🟡 브로커 선택에 따라 큐 / 파티션 키 설계).
+- **전체 순서는 보장하지 않는다.** 순서가 필요한 이벤트는 같은 Aggregate(키) 단위로만 순서를 기대한다(큐 / 파티션 키 설계는 브로커 선택과 함께, 보류 [ADR-0023](adr/0023-deferred-adoptions.md)).
 - Consumer는 순서가 뒤바뀌어 도착할 수 있음을 고려한다: 이벤트에 Aggregate 버전 또는 `occurred_at`을 두고, 오래된 이벤트는 무시하거나 최신 상태만 반영한다.
 
 ## 분산 트랜잭션 (Saga / Choreography)
 
 - 분산 트랜잭션(2PC)은 쓰지 않는다. 여러 서비스에 걸친 업무는 **Choreography**(이벤트 연쇄)를 기본으로 한다.
 - 실패 시 보상 이벤트(예: `...CancelledIntegrationEvent`)로 되돌린다.
-- 흐름이 복잡해져 추적이 어려우면 Orchestration Saga(🟡 MassTransit State Machine 등)를 검토하고 ADR로 남긴다.
+- 흐름이 복잡해져 추적이 어려우면 Orchestration Saga(MassTransit State Machine 등, 메시징 추상화 보류 [ADR-0023](adr/0023-deferred-adoptions.md))를 검토하고 ADR로 남긴다.
 - 🟡 긴급 전파 흐름(Emergency → ContactNetwork → Notification)의 구체적인 이벤트 연쇄는 해당 PRD에서 정합니다.
 
 ## 이벤트 버저닝
@@ -148,3 +149,4 @@ flowchart LR
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 초안 작성: 적용 원칙, 도메인 / 통합 이벤트, 메시지 봉투, 브로커 비교(미정), Outbox / Inbox, 멱등성, 재시도 · DLQ, 순서, Saga, 버저닝 |
+| 2026-09-28 | developer | 브로커 · 메시징 추상화 · Outbox / Inbox 관련 미정 표시를 보류([ADR-0023](adr/0023-deferred-adoptions.md) 링크)로 교체, 문서 머리에 도입 보류 안내 (S04-T02, BL-038) |

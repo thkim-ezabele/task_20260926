@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 공통 설정은 Directory.Build.props. Domain은 프레임워크 패키지를 참조하지 않는다(ADR-0003, FR-04). -->
+
+</Project>

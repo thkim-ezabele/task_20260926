@@ -37,7 +37,8 @@ flowchart LR
 | 레이어 | 먼저 쓰는 테스트 | Test Double | 비고 |
 |---|---|---|---|
 | **Domain** | Aggregate / Value Object의 동작: 생성, 불변식, 상태 전이, 도메인 이벤트 | 없음 | 가장 먼저, 가장 많이. 순수 단위 테스트 |
-| **Application · Command** | Handler 흐름: Repository 조회 → 도메인 호출 → 저장 → `Result` | Repository, 포트 → NSubstitute | 도메인 규칙은 Domain 테스트에서 이미 검증했으므로 흐름과 분기만 본다 |
+| **Application · Command** | Handler 흐름: Repository 조회 → 도메인 호출 → Repository에 추가 → `Result` | Repository, `IIdGenerator` 등 포트 → NSubstitute | 도메인 규칙은 Domain 테스트에서 이미 검증했으므로 흐름과 분기만 본다. Handler는 저장하지 않는다(`SaveChanges` · `CommitAsync`는 트랜잭션 데코레이터 → `IUnitOfWork`, [ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)) |
+| **Application · 파이프라인** | 데코레이터 순서, 검증 실패 시 Handler 미호출, 성공 시 커밋 · 실패 `Result` 시 미커밋 | 안쪽 Handler, `IUnitOfWork` → NSubstitute | BuildingBlocks 작업에서 한 번 작성([ADR-0015](../03-architecture/adr/0015-custom-mediator-pipeline.md)) |
 | **Application · Validator** | 규칙마다 통과 / 실패 | 없음 | FluentValidation `TestValidate` |
 | **Application · Query** | (단위 테스트 생략 가능) | - | 핵심이 DB 프로젝션이므로 tester의 통합 테스트로 검증 |
 | **Infrastructure** | - | - | Repository · 매핑 · 마이그레이션은 tester가 Testcontainers 통합 테스트로 검증 |
@@ -86,14 +87,14 @@ public void Register_WithDuplicateEmail_ReturnsConflictError()
 - 테스트와 무관한 값은 Test Data Builder의 기본값에 맡기고, 테스트가 말하려는 값만 드러낸다.
 - 시간은 `FakeTimeProvider`로 고정하고, 무작위 값(`Guid.NewGuid()` 등)에 결과가 좌우되지 않게 한다.
 
-> 위 예의 단언 문법은 설명용입니다. 단언 라이브러리는 기반 구축 토픽에서 정합니다(🟡, [테스트 전략 · 도구](testing-strategy.md#도구)).
+> 위 예의 단언 문법은 AwesomeAssertions(`Should()`)입니다([ADR-0021](../03-architecture/adr/0021-test-tooling-xunit-v3-and-awesomeassertions.md), [테스트 전략 · 도구](testing-strategy.md#도구)).
 
 ## Test Double 사용 기준
 
 | 종류 | 쓰는 경우 | 도구 |
 |---|---|---|
 | **Stub** | 의존 대상이 **값을 돌려주기만** 하면 될 때 (Repository 조회 결과) | NSubstitute `Returns` |
-| **Mock** | **호출 여부 자체가 결과**일 때 (저장이 호출됐는가, 메시지가 발행됐는가) | NSubstitute `Received` |
+| **Mock** | **호출 여부 자체가 결과**일 때 (Repository `Add`가 호출됐는가, 트랜잭션 데코레이터가 `CommitAsync`를 불렀는가) | NSubstitute `Received` |
 | **Fake** | 가벼운 실제 구현이 더 읽기 쉬울 때 | `FakeTimeProvider`, 메모리 기반 테스트 구현 |
 
 - **Domain 테스트에는 Test Double을 쓰지 않는다.** 필요해 보이면 도메인 설계(외부 의존이 도메인에 들어왔는지)를 먼저 의심한다.
@@ -121,3 +122,4 @@ public void Register_WithDuplicateEmail_ReturnsConflictError()
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 기본 가이드 초안: 사이클, 레이어별 적용, 네이밍, AAA, Test Double 기준, 예시 |
+| 2026-09-27 | developer | ADR 0014 · 0015 · 0021 반영: Command Handler 흐름에서 "저장" 제거, 파이프라인 테스트 행 추가, Mock 예시 수정, 단언 라이브러리 AwesomeAssertions 명시 (S01-T04) |

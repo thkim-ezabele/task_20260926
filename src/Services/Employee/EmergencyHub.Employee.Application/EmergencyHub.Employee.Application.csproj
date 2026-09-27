@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    공통 설정은 Directory.Build.props. Application은 자기 서비스 Domain과 BuildingBlocks.Application만 참조하고
+    EF Core · Scrutor · ASP.NET Core는 참조하지 않는다(ADR-0003, ADR-0024).
+    Logging.Abstractions는 [LoggerMessage] 소스 생성기(분석기 자산은 전이되지 않음), FluentValidation은 Validator 때문에 직접 참조한다.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\EmergencyHub.BuildingBlocks.Application\EmergencyHub.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\EmergencyHub.Employee.Domain\EmergencyHub.Employee.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
