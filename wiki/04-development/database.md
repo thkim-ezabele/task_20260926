@@ -107,6 +107,15 @@ updated: 2026-09-28
 - 11번은 Read 연결 식과 같은 `Options`로 연 psql 세션이다. Api 읽기 DbContext 자체의 `read_only`는 `/health/ready` 200(읽기 연결 `CanConnect` 통과)과 통합 테스트 S2(S03-T06)로 확인한다.
 - 재시작 확인: 두 번째 실행부터 `postgres` 리소스 로그(서버 로그)에 생성 스크립트 때문에 `ERROR:  database "emergency_hub_employee" already exists`와 `STATEMENT:  CREATE DATABASE emergency_hub_employee OWNER employee_app`가 **실행마다 한 쌍** 남는다(`42P04`, 임시 postgres:17 실측). Aspire는 이 오류를 무시하고 진행한다(ADR-0011). PostgreSQL에는 `CREATE DATABASE IF NOT EXISTS`가 없고 트랜잭션 · `DO` 블록 안에서 실행할 수 없어 스크립트로 없앨 수 없으며, 서버 로그 수준을 낮추면 다른 오류도 가려지므로 바꾸지 않는다. 판정: 이 한 쌍을 뺀 `ERROR` · `FATAL` · `already exists`가 0건이고, 한 쌍의 개수가 (실행 횟수 − 1)과 같아야 한다. `employee_app`의 `already exists`(`42710`)는 초기화 스크립트가 다시 실행됐다는 뜻이므로 1건이라도 있으면 실패다.
 
+**로컬 실행 요약**(S03-T05 구현, 상세 절차는 S04 [로컬 개발 환경 구성](../01-getting-started/local-setup.md)):
+
+- 준비: Docker 실행, .NET SDK(`global.json`). 사전 명령(비밀번호 설정 · DB 생성 · 마이그레이션)은 없다.
+- 실행: `dotnet run --project src/Aspire/EmergencyHub.AppHost`. 첫 launch profile은 `https`(대시보드 `https://localhost:17180`, 로그인 URL `login?t=…`은 콘솔에 나온다. 개발 인증서가 신뢰되지 않았으면 브라우저 경고가 난다), 인증서 없이 쓰려면 `--launch-profile http`(`http://localhost:15180`). Api는 `http://localhost:5180`(Api launchSettings, Aspire 프록시 포트)다.
+- 순서: `postgres` → `employee-db`(생성 스크립트) → `employee-migrations`(종료 코드 0) → `employee-api`(`/health/ready` Healthy). 리소스 이름은 [ADR-0011](../03-architecture/adr/0011-use-aspire-local-orchestration.md) 표를 따른다(연결의 `Application Name`은 `employee-migration`).
+- 구현 위치: 리소스 구성은 AppHost `EmergencyHubApplication.AddEmergencyHub`, 이름 · 값 상수는 `EmergencyHubResourceNames` · `EmployeeDatabaseSettings` · `EmployeeConnectionStrings`. 이미지 태그는 `Directory.Build.props`의 `EmergencyHubPostgresImageTag` 하나가 원본이고, csproj에 `EmergencyHubUsesPostgresImage=true`를 두면 어셈블리 메타데이터(키 `EmergencyHubPostgresImageTag`)로 들어가 `PostgresImageTag.Read`가 읽는다(통합 테스트 fixture도 같은 방식, S03-T06).
+- 중지: 콘솔에서 Ctrl+C. 컨테이너는 세션 수명이라 지워지고 볼륨 `emergency-hub-postgres-data`와 user-secrets(`Parameters:postgres-password` · `Parameters:employee-app-password`)는 남는다. 초기 상태로 되돌리려면 이 볼륨만 지우고(`docker volume rm emergency-hub-postgres-data`) `dotnet user-secrets clear --project src/Aspire/EmergencyHub.AppHost`를 함께 한다(한쪽만 지우면 위 "비밀번호와 볼륨"의 인증 실패).
+- 로컬 관찰(2026-09-28 스모크): `employee-db` 헬스 검사가 생성 스크립트보다 먼저 접속해 첫 실행 서버 로그에 `FATAL:  database "emergency_hub_employee" does not exist`(`3D000`)가 남을 수 있다. `pg_stat_activity`에는 Aspire 헬스 검사의 `postgres` 연결(`application_name` 비어 있음, `postgres` · `emergency_hub_employee` DB)이 보인다. 앱 연결이 아니므로 확인 10번은 `application_name LIKE 'employee-%'` 행으로 판정한다(판정 기준 확정은 tester · 메인 세션).
+
 ## 테이블 / 컬럼 네이밍 규칙 (snake_case)
 
 모든 식별자는 **소문자 snake_case**로 합니다. 따옴표가 필요한 이름은 만들지 않습니다(예외: 테이블 이름 `__EFMigrationsHistory` 하나, 그 컬럼과 기본 키는 snake_case, [마이그레이션 규칙](#마이그레이션-규칙) 참고). EF Core에서는 `EFCore.NamingConventions`의 `UseSnakeCaseNamingConvention()`으로 자동 변환합니다.
@@ -439,3 +448,4 @@ erDiagram
 | 2026-09-27 | dba | MigrationService 동작 사양(쓰기 전용 등록 · 기본 재시도, 실행 전략 안 `MigrateAsync`만, 트랜잭션 끄는 마이그레이션 금지, 종료 코드 명시 · 실패 로그 필드, `/health` 없음, `Application Name`은 AppHost 연결 식) (S03-T03) |
 | 2026-09-27 | dba | Api 등록 사양(연결 키 Write · Read만 · appsettings에 연결 문자열 없음, 재시도 임시값 3회 · 5초 명시, `/health/ready` DbContext 검사 2개 기본 검사 · ready 태그, `EnableSensitiveDataLogging` 미사용 · opt-in 경로 미구현 기록, Migrate 호출 금지) (S03-T04) |
 | 2026-09-28 | dba | 로컬 DB 구성(AppHost) 절 추가: 리소스 · 이미지 태그 한 곳 · 볼륨 `emergency-hub-postgres-data` · 초기화 스크립트 위치(AppHost `postgres-init/`, fixture 공유) · 생성 스크립트 한 문장 · 매개변수 2개(`GenerateParameterDefault` 32자 · 특수문자 없음 · persist) · 비밀번호와 볼륨 복구 절차, Write / Read 연결 식(`Application Name`, Read에만 `Options`), psql 확인 항목 11개, 재시작 때 `42P04` 서버 로그 판정 기준 (S03-T05) |
+| 2026-09-28 | developer | 로컬 DB 구성(AppHost) 절에 로컬 실행 요약 추가: 실행 · launch profile · 시작 순서, 구현 위치(AddEmergencyHub, 이름 상수, 이미지 태그 `EmergencyHubPostgresImageTag` 메타데이터), 중지와 초기화(볼륨 + user-secrets 함께), 스모크 관찰(첫 실행 `3D000` · Aspire 헬스 검사 `postgres` 연결) (S03-T05) |

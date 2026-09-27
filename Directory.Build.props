@@ -50,6 +50,19 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <!--
+    PostgreSQL 이미지 태그의 저장소 유일 원본(database.md "로컬 DB 구성 (AppHost)", package-versions.md "PostgreSQL 이미지").
+    AppHost(WithImageTag)와 통합 테스트(PostgreSqlBuilder, S03-T06)가 csproj에 EmergencyHubUsesPostgresImage=true를 두면
+    아래 항목이 어셈블리 메타데이터(키 EmergencyHubPostgresImageTag)로 넣고, 코드는 그 메타데이터만 읽는다(코드에 태그 리터럴 금지).
+  -->
+  <PropertyGroup Label="PostgreSQL 이미지 태그">
+    <EmergencyHubPostgresImageTag>17</EmergencyHubPostgresImageTag>
+  </PropertyGroup>
+
+  <ItemGroup Label="PostgreSQL 이미지 태그 메타데이터" Condition="'$(EmergencyHubUsesPostgresImage)' == 'true'">
+    <AssemblyMetadata Include="EmergencyHubPostgresImageTag" Value="$(EmergencyHubPostgresImageTag)" />
+  </ItemGroup>
+
   <!-- 항목 조건은 모든 속성 평가 뒤에 계산되므로 csproj에서 지정한 IsTestProject도 반영된다. -->
   <ItemGroup Label="InternalsVisibleTo (테스트 프로젝트가 아닌 프로젝트만)" Condition="'$(IsTestProject)' != 'true'">
     <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />

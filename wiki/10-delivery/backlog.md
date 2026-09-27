@@ -123,6 +123,7 @@ updated: 2026-09-27
 | BL-094 | ADR-0020 EnableSensitiveDataLogging Development opt-in 경로 미구현: 공용 등록 확장 한 곳의 IsDevelopment() && Database:EnableSensitiveDataLogging 판단과 환경별 단위 테스트(ADR-0020 82행은 S02-T04 검증으로 적었으나 누락). 현재 모든 환경에서 꺼져 있어 안전 쪽 | S03-T04 dba | | new | 트리거: 로컬 SQL 파라미터 디버깅 필요 시 또는 결과 리뷰 |
 | BL-095 | 요청 로그 구성(UseSerilogRequestLogging + 헬스 경로 제외, Employee.Api RequestLogLevels)을 ServiceDefaults 공용 확장으로 이동 | S03-T04 developer | | new | 트리거: 두 번째 서비스 Api가 생길 때(중복 방지) |
 | BL-096 | ADR-0011 롤 생성 조항 보충 후보: 재시작 때 생성 스크립트 42P04가 서버 로그에 ERROR로 남는다는 사실과 BL-014 리소스 로그 오류 0의 판정 기준(42P04 한 쌍 제외) | S03-T05 dba | | new | 결과 리뷰 ADR 후보 목록에서 판단 |
+| BL-097 | Aspire 9.5.2 AppHost가 실행할 때마다 버전 확인으로 네트워크에 접속하고 user-secrets에 Aspire:VersionCheck:* 키를 씀: ASPIRE_VERSION_CHECK_DISABLED 사용 여부 결정 | S03-T05 developer | | new | S04 local-setup 후보 |
 
 ---
 

@@ -65,6 +65,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.Employee.Api",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.Employee.Api.UnitTests", "tests\Services\Employee\EmergencyHub.Employee.Api.UnitTests\EmergencyHub.Employee.Api.UnitTests.csproj", "{6E5C28C1-82B7-4567-8815-89896D9D6537}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.AppHost", "src\Aspire\EmergencyHub.AppHost\EmergencyHub.AppHost.csproj", "{340FA9B7-4333-48FF-B57A-E5967119E9A2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.AppHost.UnitTests", "tests\Aspire\EmergencyHub.AppHost.UnitTests\EmergencyHub.AppHost.UnitTests.csproj", "{127D6D1F-4A2C-4FD9-A6FE-10C60DDAB162}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -158,6 +162,14 @@ Global
 		{6E5C28C1-82B7-4567-8815-89896D9D6537}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E5C28C1-82B7-4567-8815-89896D9D6537}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E5C28C1-82B7-4567-8815-89896D9D6537}.Release|Any CPU.Build.0 = Release|Any CPU
+		{340FA9B7-4333-48FF-B57A-E5967119E9A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{340FA9B7-4333-48FF-B57A-E5967119E9A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{340FA9B7-4333-48FF-B57A-E5967119E9A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{340FA9B7-4333-48FF-B57A-E5967119E9A2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{127D6D1F-4A2C-4FD9-A6FE-10C60DDAB162}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{127D6D1F-4A2C-4FD9-A6FE-10C60DDAB162}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{127D6D1F-4A2C-4FD9-A6FE-10C60DDAB162}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{127D6D1F-4A2C-4FD9-A6FE-10C60DDAB162}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{52869930-5044-4418-B2FA-8BD075033B70} = {D9B1C4DB-69E0-4939-8D3D-8C94181D667E}
@@ -189,5 +201,7 @@ Global
 		{3700BB6D-F22C-4BCE-A1E3-EDF73119A037} = {81CDF134-34E6-4383-9804-F8166CA2C26E}
 		{2E5EC9B6-DCAE-49A2-9D86-AC539539B71B} = {7A373D14-0277-4507-B9C4-C89E5A4AD494}
 		{6E5C28C1-82B7-4567-8815-89896D9D6537} = {81CDF134-34E6-4383-9804-F8166CA2C26E}
+		{340FA9B7-4333-48FF-B57A-E5967119E9A2} = {2A2E555C-752C-44F3-AD14-DBDCDC3F18F2}
+		{127D6D1F-4A2C-4FD9-A6FE-10C60DDAB162} = {A6B46E25-767B-43BF-823F-8E2E3ABF1ABF}
 	EndGlobalSection
 EndGlobal
