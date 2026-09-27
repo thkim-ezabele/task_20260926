@@ -71,6 +71,9 @@ updated: 2026-09-27
 | BL-042 | clean-architecture.md:91 서비스 카탈로그 🟡(도메인 항목)를 02-domain 토픽에서 정리할지(BL-038 범위 편입 여부) | S01-T04 | | new | |
 | BL-043 | service-catalog.md:24 "API Gateway 🟡 검토 중"을 BL-038 또는 BL-042 범위에 넣어 ADR-0023 "보류"로 정리 | S01-T04 | | new | |
 | BL-044 | security.md:71 "마이그레이션 전용 계정 🟡"를 ADR-0012 · database.md 롤 모델과 대조해 표시 정리 | S01-T04 | | new | |
+| BL-045 | 첫 마이그레이션 생성 뒤 `[**/Persistence/Migrations/*.cs]` 섹션(generated_code + CS1591 none)이 실제 EF 생성 파일에서 빌드 경고 0 · format 통과하는지 재확인 | S01-T05 | | new | S03-T02 |
+| BL-046 | EF Design을 IDesignTimeDbContextFactory가 있는 Employee.Infrastructure에만 PrivateAssets=all로 참조하고 `dotnet ef --project/--startup-project` 통일 결정 | S01-T05 | | new | S03 |
+| BL-047 | coding-conventions `.editorconfig` 표 · database.md 마이그레이션 규칙에 "CS1591은 generated_code로 꺼지지 않으므로 severity none 병기" 추가 | S01-T05 | | new | S01-T05 / S04-T02 |
 
 ---
 
