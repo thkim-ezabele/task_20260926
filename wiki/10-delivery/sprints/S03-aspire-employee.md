@@ -57,7 +57,7 @@ updated: 2026-09-28
 - [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (로컬: Release 경고 0, 1,533 통과 · 건너뜀 1 · 실패 0. CI는 아래 DoD 기록)
 - [x] 관련 위키 문서(API, 이벤트, DB)를 갱신했다 (이벤트 명세는 해당 없음)
 - [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
-- [ ] 토픽 브랜치를 push하고 `sprint/S03` 태그를 붙였다
+- [x] 토픽 브랜치를 push하고 `sprint/S03` 태그를 붙였다 (PR #7 CI 통과 약 4분 12초, 진행 기록 참고)
 
 ## 진행 기록
 
@@ -96,6 +96,7 @@ updated: 2026-09-28
 | 2026-09-28 | S03-T07 | developer | PASS | WebApplicationFactory 도우미 EmployeeApiFactory(T06 fixture 공유, ConnectionStrings UseSetting, OTLP 비움, 설정 사본에서 Serilog:WriteTo만 제거, 수집 싱크 · TimeProvider 교체 · 쓰기 인터셉터 재등록). Mvc.Testing 8.0.31(MIT, 취약점 없음) CPM · package-versions 등록. 결함 수정(S03-T05 발견 1, ADR-0020 요청 로그): ServiceDefaults가 RequestLoggingOptions.Logger를 DI Serilog 로거로 채움, TDD Red(완료 로그 0건) → Green(비헬스 요청당 1줄, 헬스 0줄). testing-strategy 보완 2건 + 도우미 사용법, logging-observability 기록. 테스트 22건 추가 · 통과 1,511 · 건너뜀 1 · 실패 0(통합 107건 약 22초), 경고 0, format 통과. 출처 미상 익명 볼륨 2개(2024-01-02, 2026-09-27T14:30Z)는 건드리지 않음 |
 | 2026-09-28 | S03-T07 | reviewer | PASS | 진입 점검 15항목 통과(경고 0, 통과 1,511 · 건너뜀 1). 확인 요청 판정: (1) 결함 수정 위치 ServiceDefaults는 ADR-0024 53행 책임 표 · ADR-0020 43행(정적 로거 금지) 준수, 호출 쪽 Logger 우선은 테스트로 고정 (2) 설정 사본은 매번 원본에서 WriteTo만 빼 생성, 주요 키 동일성 검사 있음(전체 비교는 선택) (3) Mvc.Testing 8.0.31 CPM 고정 · MIT · 취약점 없음 · package-versions 등록. 메인 세션 판단(H4 · S2 로그 단언 기준): Development는 EF Command 범주가 Information이라 SQL 문(파라미터 값 없음)이 수집되므로, 25006 → 500 · 9001 시나리오는 Environment=Production 팩터리에서 수집 로그 전체에 SQL · 제약 이름 · 25006 · ExceptionHandlerMiddleware 원본 메시지 없음을 단언 |
 | 2026-09-28 | S03-T07 | tester | PASS | 주 작성자로 HTTP 인수 22건 추가(통합 107 → 129): 등록 → 조회(201 Location = GET 경로, 정규화 이메일, 404 · 22001), 중복 409 · 23001(경합은 인터셉터로 순서 고정, EF Error 0, 102가 20001 뒤), 1001(JSON 파싱 · 형식 불일치 · Guid 경로 → id 키), 1002(0 · 99), 21006(누락 · null), 9001(원본 메시지 미노출, 이벤트 1 Error 1회 + 요청 완료 Error 1줄), traceparent = traceId, 25006 → 500 · 9001(Production, 본문 · 수집 로그에 SQL · 제약 이름 · 25006 · 원본 메시지 · 이메일 없음), swagger 대조(응답 키, EmployeeStatus 정수 enum), 경계값(이모지 50 · 51, 254자 이메일), DB 정지 ready 약 15.0초 후 503 · live 200 · 재개 후 즉시 200. 제품 결함 없음. 전체 1,533 통과 · 건너뜀 1 · 실패 0, 경고 0, format 통과. 커버리지(보고): BuildingBlocks.Domain · Application, Employee.Domain · Application 라인 100%(411/411). AppHost 재확인: 'HTTP … responded …'가 파일 · 콘솔 · 대시보드에 모두 보임(헬스 0줄) → evidence/S03-T05 발견 1 해결 표시. 후보 BL-106 · 107 · 108 |
+| 2026-09-28 | S03 | 종료 | CI PASS | 토픽 PR #7 CI 통과(run 36340112141, https://github.com/thkim-ezabele/task_20260926/actions/runs/36340112141, head f0180bf): 전체 약 4분 12초(NFR-07 10분 이내), 러너 ubuntu-24.04 · SDK 8.0.425. 단계: Restore 20초 · Build 46초 · Format 77초 · Pull PostgreSQL image 9초 · Test(coverage) 83초. 13개 테스트 어셈블리 통과, 건너뜀 1(서비스 격리), 통합 129건 25초, 커버리지 라인 100%. S03-T06 · T07의 CI 조건, FR-09 · NFR-02 · 03 · 07의 CI 부분 충족 → BL-057 done |
 
 ## 계획 리뷰
 
@@ -186,14 +187,14 @@ updated: 2026-09-28
 | FR-06 | 충족 | S1(+09:00 → UTC), S3(같은 밀리초 ORDER BY id), P5(xmin 3001, updated_at 갱신)(T06) |
 | FR-07 | 충족 | 1001 · 1002 · 21006 · 9001 · 404 22001 · 409 23001이 ProblemDetails + code + traceId(= traceparent)(T07). Kestrel H1 · H2는 T05 curl |
 | FR-08 | 충족 | Aspire HTTP 등록 → 조회(T05), 통합: 등록 → 조회 · 중복 409 · ck_ 23514 · 동시성 3001 · 읽기 연결 25006 · UUID v7 정렬(T06 · T07), InitialCreate idempotent SQL 검토(T02) |
-| FR-09 | 부분 → push 뒤 | 로컬 13개 어셈블리 통과, Testcontainers · 실제 마이그레이션 · Respawn · WebApplicationFactory. CI 클린 러너 통과는 DoD 기록에서 닫음 |
+| FR-09 | 충족(PR CI 통과) | 로컬 13개 어셈블리 통과, Testcontainers · 실제 마이그레이션 · Respawn · WebApplicationFactory. CI 클린 러너 통과는 DoD 기록에서 닫음 |
 | FR-11 | 부분 | database.md · logging-observability · error-codes · employee-api.md · testing-strategy · clean-architecture 갱신. 나머지는 S04-T02 · T03(PRD 분할대로) |
 | NFR-01 | 충족 | Release 빌드 경고 0 · 오류 0, 모든 작업 `-warnaserror` · format 통과 |
-| NFR-02 | 부분 → push 뒤 | Employee 5개 레이어 편입, 서비스 전용 규칙 건너뜀 0, 안전장치, 위반 3종 재현(T04). CI 필수 부분은 push 뒤 |
-| NFR-03 | 부분 → push 뒤 | 로컬 커버리지 보고 포함 확인. CI 보고 포함은 push 뒤, BuildingBlocks.Infrastructure 포함 여부(BL-068)는 S04-T01 |
+| NFR-02 | 충족(PR CI 통과) | Employee 5개 레이어 편입, 서비스 전용 규칙 건너뜀 0, 안전장치, 위반 3종 재현(T04). CI 필수 부분은 push 뒤 |
+| NFR-03 | 충족(PR CI 통과) | 로컬 커버리지 보고 포함 확인. CI 보고 포함은 push 뒤, BuildingBlocks.Infrastructure 포함 여부(BL-068)는 S04-T01 |
 | NFR-04 | 부분 | 새 볼륨 · 빈 user-secrets에서 명령 1개로 기동(T05). 새 clone 재현은 S04-T04(BL-099 · BL-102가 전제) |
 | NFR-06 | 충족 | 비밀 점검 6개 실제 비밀 0, user-secrets 값 대조 종료 1, 증빙 토큰 가림(T05 · T07) |
-| NFR-07 | 부분 → push 뒤 | CI 변경(이미지 선 pull, 단계별 시간, 실패 시 컨테이너 로그). PR 워크플로 10분 이내는 DoD 기록에서 판정 |
+| NFR-07 | 충족(PR CI 통과) | CI 변경(이미지 선 pull, 단계별 시간, 실패 시 컨테이너 로그). PR 워크플로 10분 이내는 DoD 기록에서 판정 |
 
 ### 반려 분석
 

@@ -83,7 +83,7 @@ updated: 2026-09-27
 | BL-054 | 아키텍처 테스트 후보: 서비스 코드에서 Error / Result 파생 금지, Entity/AggregateRoot 파생 클래스는 sealed | S01-T06 | 중 | dropped | BL-029로 병합 (기존: S02-T05) |
 | BL-055 | coding-conventions에 경고 억제 규칙 명문화([SuppressMessage] + Justification 필수, 전역 NoWarn 금지, 승인 목록) | S01-T06 | 중 | planned:S04 | S02 동안 reviewer 기준으로 운영(억제 승인 목록 기록). S04-T02에서 coding-conventions 명문화 |
 | BL-056 | error-codes.md 또는 coding-conventions에 "ValidationError는 sealed"(non-sealed는 Error) 명시 — ADR 0018:22 문구 오해 방지 | S01-T06 | 하 | dropped | TD-016으로 병합(문서 문구 정리) |
-| BL-057 | S03 CI 통합 테스트 대비: 통합 테스트 잡은 ubuntu 러너 고정 · services: 대신 Testcontainers, 이미지 pull 시간 단축(선 pull 또는 변형 검토, NFR-07), 컨테이너는 컬렉션 fixture로 공유(ADR-0022) | S01-T07 | 상 | planned:S03 | S03-T06 d2263d6 CI 변경 완료(ubuntu 기존 잡, Testcontainers, 선 pull, 컬렉션 fixture, 실패 로그 아티팩트). 종료 push 뒤 CI 통과 · 10분 이내면 done, 아니면 S04-T01 |
+| BL-057 | S03 CI 통합 테스트 대비: 통합 테스트 잡은 ubuntu 러너 고정 · services: 대신 Testcontainers, 이미지 pull 시간 단축(선 pull 또는 변형 검토, NFR-07), 컨테이너는 컬렉션 fixture로 공유(ADR-0022) | S01-T07 | 상 | done | S03-T06 d2263d6 CI 변경, S03 종료 PR CI 통과(run 36340112141, 약 4분 12초, 통합 129건 25초) |
 | BL-058 | Dependabot(github-actions 생태계)으로 액션 SHA · 버전 주석 자동 갱신 검토 | S01-T07 | 중 | open | 액션 SHA 고정 ADR 후보와 함께 결정(security.md:85) |
 | BL-059 | CI 소요 시간이 NFR-07 10분에 가까워지면(S03 Testcontainers 뒤) NuGet 캐시 재판단(packages.lock.json 또는 actions/cache) | S01-T07 | 하 | open | S03-T05 · S04-T01 소요 시간 측정 뒤 재판단 (기존: S03) |
 | BL-060 | ReportGenerator 무료판 MarkdownSummaryGithub의 메서드 커버리지 "sponsors only" 표시(라인 · 분기는 정상, 기록만) | S01-T07 | 하 | dropped | 기록 목적. NFR-03 판정 영향 없음, S04-T03 ci-cd에 한 줄 언급 |
