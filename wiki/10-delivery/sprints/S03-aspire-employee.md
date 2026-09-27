@@ -2,16 +2,16 @@
 title: "S03: Aspire와 Employee 샘플 서비스 전 구간"
 type: sprint
 sprint: "S03"
-status: active
+status: done
 prd: [PRD-001]
 started: 2026-09-27
-finished:
+finished: 2026-09-28
 adrs: []
 worklogs: []
 aliases: [S03]
 tags: [delivery, sprint]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # S03: Aspire와 Employee 샘플 서비스 전 구간
@@ -53,10 +53,10 @@ updated: 2026-09-27
 
 ## 완료 기준 (DoD)
 
-- [ ] 모든 작업이 `done`이거나 백로그로 이관되었다
-- [ ] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다
-- [ ] 관련 위키 문서(API, 이벤트, DB)를 갱신했다
-- [ ] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
+- [x] 모든 작업이 `done`이거나 백로그로 이관되었다
+- [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (로컬: Release 경고 0, 1,533 통과 · 건너뜀 1 · 실패 0. CI는 아래 DoD 기록)
+- [x] 관련 위키 문서(API, 이벤트, DB)를 갱신했다 (이벤트 명세는 해당 없음)
+- [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
 - [ ] 토픽 브랜치를 push하고 `sprint/S03` 태그를 붙였다
 
 ## 진행 기록
@@ -168,27 +168,120 @@ updated: 2026-09-27
 
 > 스프린트 종료 시 orchestrator의 결과 리뷰(계획 대비 실제, 완료 조건 · FR 충족, 반려 분석)를 요약합니다.
 
--
+### 계획 대비 실제
+
+- 계획 리뷰에서 5개 → 7개로 재구성한 작업(T01 → T07)을 모두 `done`으로 끝냈다. 이관 0, 추가 작업 0, 반려 1, BLOCKED 0. T06 분할안(T06a / T06b)은 쓰지 않았다.
+- 커밋 1c3dd83..HEAD 29개(종료 정리 전 기준). 테스트 1,033 → 1,533건 통과 + 1건 건너뜀(ServicesDoNotDependOnOtherServices, 서비스 2개부터). 통합 테스트 129건 28초.
+- 작업 밖 변경 1건: S03-T05 실행 증빙에서 요청 완료 로그 누락(ADR-0020 위반)을 발견했고, 같은 스프린트 S03-T07 developer가 Red → Green으로 고친 뒤(431510e) AppHost로 다시 확인했다(인계 메모로 처리, 새 작업 없음).
+- 계획 리뷰에서 뺀 항목은 편입 표대로다: P9 → TD-010, S5 · S4 Flags · P5 owned → BL-088, BL-065 → open.
+- 커버리지(보고만, NFR-03): BuildingBlocks.Domain · Application, Employee.Domain · Application 라인 100%(411/411).
+
+### FR 충족
+
+| FR / NFR | 결과 | 근거 · 남은 것 |
+|---|---|---|
+| FR-02 | 충족 | 생성 코드 포함 `-warnaserror` 경고 0, format 통과(BL-045), EF Design은 Infrastructure에만(BL-046). 새 clone 재현은 S04-T04 |
+| FR-03 | 충족 | `dotnet run` 1회로 postgres → employee-migrations(종료 0) → api(ready 200), Write / Read 주입, 대시보드 로그 · 트레이스 캡처([증빙](../evidence/S03-T05/README.md)). Aspire.Hosting.Testing 스모크는 S04-T01에서 판단 |
+| FR-05 | 충족 | 실제 PostgreSQL에서 P1(Read Committed) · P2(커밋 시점 40001 재시도) · P3(PreCommitHook 롤백) · P7(T06) |
+| FR-06 | 충족 | S1(+09:00 → UTC), S3(같은 밀리초 ORDER BY id), P5(xmin 3001, updated_at 갱신)(T06) |
+| FR-07 | 충족 | 1001 · 1002 · 21006 · 9001 · 404 22001 · 409 23001이 ProblemDetails + code + traceId(= traceparent)(T07). Kestrel H1 · H2는 T05 curl |
+| FR-08 | 충족 | Aspire HTTP 등록 → 조회(T05), 통합: 등록 → 조회 · 중복 409 · ck_ 23514 · 동시성 3001 · 읽기 연결 25006 · UUID v7 정렬(T06 · T07), InitialCreate idempotent SQL 검토(T02) |
+| FR-09 | 부분 → push 뒤 | 로컬 13개 어셈블리 통과, Testcontainers · 실제 마이그레이션 · Respawn · WebApplicationFactory. CI 클린 러너 통과는 DoD 기록에서 닫음 |
+| FR-11 | 부분 | database.md · logging-observability · error-codes · employee-api.md · testing-strategy · clean-architecture 갱신. 나머지는 S04-T02 · T03(PRD 분할대로) |
+| NFR-01 | 충족 | Release 빌드 경고 0 · 오류 0, 모든 작업 `-warnaserror` · format 통과 |
+| NFR-02 | 부분 → push 뒤 | Employee 5개 레이어 편입, 서비스 전용 규칙 건너뜀 0, 안전장치, 위반 3종 재현(T04). CI 필수 부분은 push 뒤 |
+| NFR-03 | 부분 → push 뒤 | 로컬 커버리지 보고 포함 확인. CI 보고 포함은 push 뒤, BuildingBlocks.Infrastructure 포함 여부(BL-068)는 S04-T01 |
+| NFR-04 | 부분 | 새 볼륨 · 빈 user-secrets에서 명령 1개로 기동(T05). 새 clone 재현은 S04-T04(BL-099 · BL-102가 전제) |
+| NFR-06 | 충족 | 비밀 점검 6개 실제 비밀 0, user-secrets 값 대조 종료 1, 증빙 토큰 가림(T05 · T07) |
+| NFR-07 | 부분 → push 뒤 | CI 변경(이미지 선 pull, 단계별 시간, 실패 시 컨테이너 로그). PR 워크플로 10분 이내는 DoD 기록에서 판정 |
+
+### 반려 분석
+
+| 작업 | 단계 | 원인 분류 | 내용 |
+|---|---|---|---|
+| S03-T02 | reviewer | 누락(컨벤션 적용 범위) | EF 생성 `InitialCreate`(public partial)가 ClassesAreSealed 위반. T01~T03용 임시 목록 확장 점검이 T04 편입 전에 잡았고, 재작업 1회(`*.Sealed.cs`)로 해소. 원인은 규칙 설계 때 생성 형식을 고려하지 않은 것(BL-090) |
+
+- 오케스트레이션 세션 결정 1건: ADR-0012 이력 컬럼(결정 A, 테이블 이름만 snake_case 예외). T06에서 Respawn · to_regclass가 테이블 이름 기준임을 테스트로 고정.
+- 메인 세션 판단(진행 기록)은 모두 적절로 판정: T02 반려 조치 (a), T04 건너뜀 기대값 정정, T05 42P04 · 3D000 잡음 제외(개수 기록), 비밀 점검 가짜 값 제외, 리소스 이름 employee-migrations, BL-073 3회 · 5초 확정, BL-103 범위 제외, T07 H4 · S2 Production 판정. 다만 판정 기준이 작업 중에 두 번 늘어난 점은 회고 문제로 남긴다.
+
+### ADR 후보 (파일은 사용자 확인 후)
+
+PRD-001 `/retro`에서 S01 · S02 후보와 함께 목록으로 다룬다(오케스트레이션 세션 결정).
+
+1. **ADR-0012 이력 컬럼 조항 대체**: `__EFMigrationsHistory`는 테이블 이름만 snake_case 예외, 컬럼 · PK는 `migration_id` · `product_version` · `pk___ef_migrations_history`. ADR-0012 48행과 ADR-0022 22행을 함께 대체(Respawn 제외 결정은 유지)
+2. **ADR-0020 BL-023 조항 대체**: 75행을 확정 결정으로. `UseBuildingBlocksNpgsql` 한 곳에서 CommandError · SaveChangesFailed · TransactionError를 Debug로, 변환되지 않는 DB 예외는 전역 처리기 Error 1회, 재시도 한도 초과는 301 Warning(9003). BL-104 연결
+3. **ADR-0011 보충(BL-096)**: 재시작 때 42P04 · 첫 실행 3D000은 알려진 잡음(개수 기록 후 판정에서 제외), `GenerateParameterDefault` + `persist` 비밀번호 공급
+4. (선택) Api DB 재시도 3회 · 5초와 요청 제한 시간 없음: 배포 토픽에서 요청 · 프로브 제한 시간을 정할 때(BL-108과 짝)
+
+### 결과 리뷰에서 넘긴 판단
+
+- MigrationService가 Aspire에서 `Environment=Production`으로 뜸 → BL-110(planned:S04, S04-T03에서 Development로)
+- DB 정지 상태 `/health/ready` 약 15초 → 503 → S04-T02에서 logging-observability 헬스체크 절에 기록, 제한 시간 설정은 BL-108(배포 토픽)
+- fixture `ApplyMigrationsAsync` 복제 · `OpenAsync` 중복 → TD-027(BL-103과 함께 상환)
+- 출처 미상 익명 Docker 볼륨 2개(2024-01-02, fff0aa… 2026-09-27T14:30Z) → 에이전트는 건드리지 않음, 사용자 확인 사항
 
 ## 생긴 백로그 / 기술부채
 
 | ID | 제목 | 발생 작업 | 정리 결과 |
 |---|---|---|---|
-| | | | open / planned:SNN / dropped |
+| BL-088 | Flags · owned 실측 이관 | 계획 리뷰 | open |
+| BL-089 | 기준 문서가 S03 결정과 어긋남(DDD 규칙 · Email · 20001 템플릿) | S03-T01 | planned:S04 |
+| BL-090 | ClassesAreSealed 범위 · EF 생성 형식 기준 | S03-T02 | open |
+| BL-091 | 0 예약 규칙의 internal enum 예외 | S03-T03 | planned:S04 |
+| BL-092 | AddHostedService 명시 등록 허용 | S03-T03 | planned:S04 |
+| BL-093 | tdd-guide 레이어 표에 호스트 구성 행 | S03-T03 | open |
+| BL-094 | EnableSensitiveDataLogging Development opt-in 미구현 | S03-T04 | open |
+| BL-095 | 요청 로그 구성 공용 확장 이동 | S03-T04 | open |
+| BL-096 | ADR-0011 보충(42P04 · 3D000 판정) | S03-T05 | open |
+| BL-097 | Aspire 버전 확인 네트워크 접속 | S03-T05 | planned:S04 |
+| BL-098 | 초기화 스크립트 비밀번호 명령줄 인자 | S03-T05 | open |
+| BL-099 | dev-certs 미신뢰 시 https 대시보드 로그 · 추적 0건 | S03-T05 | planned:S04 |
+| BL-100 | user-secrets AppHost:OtlpApiKey 기록 | S03-T05 | planned:S04 |
+| BL-101 | 운영 PostgreSQL 서버 로그 DETAIL 노출 | S03-T06 | open |
+| BL-102 | 로컬 Docker API 1.43 · Testcontainers | S03-T06 | planned:S04 |
+| BL-103 | MigrationService 실제 호스트 통합 시나리오 | S03-T03 · T06 | open |
+| BL-104 | 알림 조건에 301 · 9003 | S03-T06 | open |
+| BL-105 | 수준 표에 9003 = Warning 예시 | S03-T06 | planned:S04 |
+| BL-106 | 500 응답 Content-Type charset | S03-T07 | open |
+| BL-107 | swagger 500 · 503 미선언 | S03-T07 | open |
+| BL-108 | DB 정지 /health/ready 약 15초 | S03-T07 | open |
+| BL-109 | 비밀 점검 스크립트화 | 결과 리뷰 | open |
+| BL-110 | MigrationService Environment=Production | 결과 리뷰 | planned:S04 |
+| TD-026 | Employee.Infrastructure IConfiguration 전이 참조 | S03-T02 | open |
+| TD-027 | fixture 마이그레이션 적용 코드 복제 · OpenAsync 중복 | 결과 리뷰 | open |
+
+S03 편입분: BL-014 · 023 · 030 · 033 · 036 · 045 · 046 · 073 · 075 · 081 · 082 · 083 · 084 · 085 · 086 done, TD-004 resolved, TD-020 resolved(TD-008 병합). BL-057은 CI 판정 뒤 확정.
 
 ## 회고
 
 ### 잘된 점
 
--
+- 계획 리뷰에서 작업을 5개 → 7개로 재구성하고 Api를 ServiceDefaults · MigrationService 뒤로 옮긴 것이 효과를 봤다(반려 1, BLOCKED 0, T06 분할 불필요).
+- T04 편입 전 임시 목록 확장 점검이 T02 생성 형식의 sealed 위반을 두 작업 앞에서 잡았다.
+- 실제 AppHost 실행 증빙이 단위 · TestServer로 안 보이던 요청 완료 로그 누락을 찾았고, 같은 스프린트에서 Red → Green 뒤 AppHost로 다시 확인해 증빙을 닫았다.
+- 결정을 실측으로 내렸다: BL-023(Error 2 → 0), BL-073(4.3초 vs 57초), 결정 A(Respawn · to_regclass 테스트).
+- 장애 주입 도우미로 P1~P8을 결정적으로 재현했고, 통합 테스트가 반복 실행에도 안정적이었다. 비밀 점검 6개 실제 비밀 0.
 
 ### 문제
 
--
+- T05 · T06 · T07 완료 조건이 5~7문장 규칙을 넘었다(세부를 인계 메모로 넘겼는데도 본문이 길었다).
+- 판정 기준이 작업 중에 늘었다(42P04 → 3D000 추가, 비밀 점검 제외 행 6 → 7). 사전 인계 메모에 '알려진 잡음' 범주가 없었다.
+- 파이프라인 표 기대값 오류(T04 'Skipped 0')와 재구성 전 작업 번호가 남은 BL · TD 비고가 판정 혼선을 만들었다.
+- CI로만 판정할 수 있는 조건이 작업 완료 조건에 섞여, 작업이 모두 done인데도 종료 push 전까지 열려 있었다.
+- 인계 메모 원본이 한 파일에 계속 쌓여 비대해졌다.
+- 기준 문서 · ADR과 실제가 어긋난 항목이 여러 건 나왔다(BL-089 · 094 · 096, ADR 후보 2건). 구현 전에 쓴 ADR 전제가 실측과 달랐다.
+- 로컬 환경 차이(Docker API 1.43, dev-certs 미신뢰)를 작업 중에야 발견했다.
 
 ### 다음에 바꿀 것
 
--
+> 스킬 · 에이전트 수정은 PRD-001 `/retro`에서 한꺼번에 반영한다(S04가 같은 스킬을 쓰는 중이라 도중에 바꾸지 않음, 오케스트레이션 세션 결정).
+
+- 계획 리뷰 인계 메모에 '알려진 잡음 · 제외 기준' 절을 두고 증빙 작업 전에 확정한다.
+- CI로만 판정할 조건은 작업 완료 조건 대신 '스프린트 종료 판정' 항목으로 분리하거나 '(종료 push 뒤 판정)'을 표시한다.
+- 작업을 재구성하면 BL · TD 비고의 작업 번호도 같은 커밋에서 갱신한다.
+- 인계 메모를 작업별 파일로 나누거나, done 작업의 인계는 결과 리뷰 대상만 남기고 압축한다.
+- `/sprint` 환경 점검에 Docker Engine API 버전과 `dotnet dev-certs https --check --trust`를 추가한다.
+- 구현 전 결정을 담은 ADR에는 '실측 뒤 확정' 가정을 결과 절에 명시하고, 실측 작업에 해당 ADR 대조 항목을 넣는다.
 
 ---
 
@@ -198,3 +291,4 @@ updated: 2026-09-27
 |---|---|---|
 | 2026-09-27 | - | 스프린트 계획 (`/prd` PRD-001 분할) |
 | 2026-09-27 | orchestrator | 계획 리뷰 반영: 작업 7개로 재구성, employees 확정안, 백로그 / 기술부채 편입, `active` |
+| 2026-09-28 | orchestrator | 스프린트 종료: 결과 리뷰, 백로그 / 기술부채 정리, 회고, `done` |
