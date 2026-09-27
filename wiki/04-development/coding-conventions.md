@@ -9,7 +9,7 @@ updated: 2026-09-27
 
 # 코딩 컨벤션
 
-> C# 12 / .NET 8 코드 작성 규칙입니다. reviewer 에이전트가 진입 점검의 기준으로 사용합니다.
+> C# 12 / .NET 8 코드 작성 규칙입니다. **developer 에이전트는 이 문서를 반드시 준수**하고, reviewer 에이전트는 이 문서를 기준으로 판정합니다(위반은 반려 사유).
 > 솔루션 구조와 레이어 의존 규칙은 [Clean Architecture](../03-architecture/clean-architecture.md), DB 규칙은 [데이터베이스](database.md)를 따릅니다.
 >
 > [위키 홈](../README.md)
@@ -59,7 +59,7 @@ CQRS 타입 이름
 |---|---|
 | Nullable 참조 형식 | 전 프로젝트 `enable`. `!`(null-forgiving)는 테스트 외에는 쓰지 않는다. |
 | 클래스는 기본 `sealed` | 상속을 의도한 타입만 `sealed`를 뺀다(`abstract` 기반 클래스 등). |
-| `record` | Command, Query, DTO, 이벤트, Value Object에 쓴다. 불변(`init`)으로 둔다. |
+| `record` | **데이터를 담는 모델 클래스는 모두 `record`로 만든다**: DTO, API Request / Response, Command, Query, 조회 모델(Read Model), 도메인 / 통합 이벤트, Value Object. 위치 기반 생성자(positional record)를 기본으로 하고 불변으로 둔다. 모델에 `class`를 쓰면 반려 사유다. |
 | `record struct` | 강타입 ID에 쓴다: `public readonly record struct EmployeeId(Guid Value);` |
 | primary constructor | DI를 받는 서비스와 Handler에 쓴다. Entity / Aggregate에는 쓰지 않는다(불변식 검증이 필요하므로 팩토리 메서드 사용). |
 | `required` | DTO / 옵션 클래스의 필수 속성에 쓴다. |
@@ -125,7 +125,8 @@ Application 레이어는 **Command(상태 변경)와 Query(조회)를 분리**�
 | 목적 | 상태 변경 | 데이터 조회 |
 | 반환 | `Result` 또는 `Result<TId>` (생성한 ID 정도만) | `Result<TResponse>` (DTO) |
 | 부작용 | 있음 | **없음** |
-| 도메인 모델 | Repository로 Aggregate를 불러와 도메인 메서드 호출 | 도메인 모델을 거치지 않는다. `DbContext` + `AsNoTracking()` 프로젝션으로 DTO를 바로 만든다 |
+| 도메인 모델 | Repository로 Aggregate를 불러와 도메인 메서드 호출 | 도메인 모델을 거치지 않는다. **Read Repository**가 읽기 전용 DbContext에서 DTO로 바로 프로젝션한다 |
+| DB 연결 | 쓰기 DbContext (`ConnectionStrings:Write`) | 읽기 전용 DbContext (`ConnectionStrings:Read`) |
 | 트랜잭션 | Command 하나 = 트랜잭션 하나 = Aggregate 하나 | 없음 |
 | 검증 | FluentValidation Validator (파이프라인에서 자동 실행) | 필요 시 Validator |
 
@@ -146,11 +147,12 @@ EmergencyHub.Employee.Application/
     │       ├── RegisterEmployeeCommand.cs
     │       ├── RegisterEmployeeCommandHandler.cs
     │       └── RegisterEmployeeCommandValidator.cs
-    └── Queries/
-        └── GetEmployeeById/
-            ├── GetEmployeeByIdQuery.cs
-            ├── GetEmployeeByIdQueryHandler.cs
-            └── EmployeeResponse.cs
+    ├── Queries/
+    │   └── GetEmployeeById/
+    │       ├── GetEmployeeByIdQuery.cs
+    │       ├── GetEmployeeByIdQueryHandler.cs
+    │       └── EmployeeResponse.cs
+    └── IEmployeeReadRepository.cs
 ```
 
 ```csharp
@@ -176,6 +178,103 @@ internal sealed class RegisterEmployeeCommandHandler(
     }
 }
 ```
+
+## Repository 규칙 (EF Core)
+
+데이터 접근은 EF Core로 하고, Repository는 **쿼리만** 담습니다.
+
+| 구분 | Write Repository | Read Repository |
+|---|---|---|
+| 용도 | Command: Aggregate 조회 · 추가 · 삭제 | Query: DTO 조회 |
+| 인터페이스 위치 | Domain (`IEmployeeRepository`) | Application (`IEmployeeReadRepository`) |
+| 구현 위치 | Infrastructure | Infrastructure |
+| DbContext | 쓰기 (`EmployeeDbContext`) | 읽기 전용 (`EmployeeReadDbContext`) |
+| 반환 | Aggregate | 응답 `record` (Select 프로젝션) |
+
+**Repository 클래스에 허용하는 것은 EF Core 쿼리뿐이다.**
+
+- 메서드 하나 = **식 본문(`=>`) 하나의 LINQ 메서드 체인**. 쿼리는 **람다식(메서드 구문)**으로 작성한다.
+- 다음은 Repository에 두지 않는다: `if` / `switch` / 삼항 · null 병합 연산자 같은 분기, 반복문, `try` / `catch`, 로깅, 검증, 매핑 코드, 여러 쿼리 조합, `SaveChangesAsync` 호출(Unit of Work가 담당).
+- 판단과 분기는 Handler(Application) 또는 Aggregate(Domain)가 한다.
+- LINQ 쿼리 구문(`from x in ... select`)과 원시 SQL(`FromSql`, `ExecuteSql`)은 쓰지 않는다. 원시 SQL이 꼭 필요하면 작업 문서에 사유를 남기고 사용자 승인을 받는다.
+- 선택적 조건은 코드 분기가 아니라 **람다 안의 조건식**으로 쓴다(SQL로 번역됨).
+
+```csharp
+internal sealed class EmployeeRepository(EmployeeDbContext db)
+    : RepositoryBase<EmployeeDbContext>(db), IEmployeeRepository
+{
+    public Task<Employee?> GetByIdAsync(EmployeeId id, CancellationToken cancellationToken) =>
+        Db.Employees.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+    public Task<bool> ExistsByEmailAsync(Email email, CancellationToken cancellationToken) =>
+        Db.Employees.AnyAsync(e => e.Email == email, cancellationToken);
+
+    public void Add(Employee employee) => Db.Employees.Add(employee);
+}
+
+internal sealed class EmployeeReadRepository(EmployeeReadDbContext db)
+    : ReadRepositoryBase<EmployeeReadDbContext>(db), IEmployeeReadRepository
+{
+    public Task<EmployeeResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
+        Db.Employees
+            .Where(e => e.Id == new EmployeeId(id))
+            .Select(e => new EmployeeResponse(e.Id.Value, e.Name, e.EmployeeStatus, e.NotificationChannels))
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public Task<List<EmployeeSummaryResponse>> SearchAsync(EmployeeSearchCondition condition, CancellationToken cancellationToken) =>
+        Db.Employees
+            .Where(e => condition.Status == null || e.EmployeeStatus == condition.Status)   // 선택 조건은 람다 안에서
+            .Where(e => condition.Channels == NotificationChannels.None
+                        || (e.NotificationChannels & condition.Channels) != 0)
+            .OrderBy(e => e.Name)
+            .Skip(condition.Offset)
+            .Take(condition.Limit)
+            .Select(e => new EmployeeSummaryResponse(e.Id.Value, e.Name))
+            .ToListAsync(cancellationToken);
+}
+```
+
+## 의존성 주입 (DI) 규칙
+
+**서비스와 Repository는 `Scoped`로, 타입 검색(assembly scanning)을 통해 자동 등록**합니다. `Program.cs`나 `DependencyInjection.cs`에서 구현 타입을 하나씩 등록하지 않습니다.
+
+BuildingBlocks에 등록 기준이 되는 **마커 인터페이스와 기반 클래스**를 둡니다.
+
+| 종류 | 상속 대상 | 등록 |
+|---|---|---|
+| Write Repository | 인터페이스: `IRepository` 상속 / 구현: `RepositoryBase<TDbContext>` 상속 | Scoped |
+| Read Repository | 인터페이스: `IReadRepository` 상속 / 구현: `ReadRepositoryBase<TDbContext>` 상속 | Scoped |
+| 서비스 (도메인 서비스, 외부 연동 어댑터 등) | 인터페이스: `IService` 상속 | Scoped |
+| Command / Query Handler, Validator | `ICommandHandler<,>` / `IQueryHandler<,>` / `AbstractValidator<T>` | Mediator / FluentValidation의 어셈블리 검색으로 등록 |
+
+```csharp
+// BuildingBlocks: 마커와 기반 클래스
+public interface IRepository;
+public interface IReadRepository;
+public interface IService;
+
+public abstract class RepositoryBase<TDbContext>(TDbContext db) where TDbContext : DbContext
+{
+    protected TDbContext Db { get; } = db;
+}
+
+// Domain / Application: 인터페이스가 마커를 상속
+public interface IEmployeeRepository : IRepository { /* ... */ }
+public interface IEmployeeReadRepository : IReadRepository { /* ... */ }
+
+// 서비스 초기화: 어셈블리만 넘기면 마커를 구현한 타입을 찾아 Scoped로 등록
+builder.Services.AddConventionalServices(
+    typeof(EmployeeApplicationAssembly).Assembly,
+    typeof(EmployeeInfrastructureAssembly).Assembly);
+```
+
+- `AddConventionalServices`는 BuildingBlocks가 제공한다. 지정한 어셈블리에서 **추상이 아닌 클래스 중 마커를 상속한 인터페이스를 구현한 타입**을 찾아, 그 인터페이스(마커 제외)로 `Scoped` 등록한다. `internal` 클래스도 찾는다.
+- 구현 클래스는 `sealed`, 인터페이스 이름은 `I` + 구현 클래스 이름을 원칙으로 한다(`EmployeeRepository` ↔ `IEmployeeRepository`).
+- 구현 클래스가 서비스 인터페이스를 **하나만** 구현하도록 한다. 두 개 이상이면 등록이 모호해지므로 설계를 나눈다.
+- `Singleton` / `Transient`가 필요한 인프라 요소(`TimeProvider`, `HttpClient` 등)는 BuildingBlocks의 공통 등록 코드에서만 등록한다. 서비스 코드에서 직접 등록하지 않는다.
+- 등록 누락은 통합 테스트(모든 마커 구현 타입이 컨테이너에서 해석되는지)로 검증하고, `ValidateOnBuild` / `ValidateScopes`를 개발 환경에서 켠다.
+
+> 🟡 타입 검색 구현: Scrutor(`services.Scan`)를 쓸지, BuildingBlocks에서 리플렉션으로 직접 구현할지 기반 구축 토픽에서 정합니다.
 
 ## 비동기 프로그래밍 규칙
 
@@ -232,3 +331,4 @@ internal sealed class RegisterEmployeeCommandHandler(
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 기본 컨벤션 초안: 네이밍, C# 12 기능, 정수 코드 / 비트 마스킹, CQRS, 비동기, Result 기반 예외 처리, DDD |
+| 2026-09-27 | - | 모델은 모두 `record`, Repository 규칙(쿼리만, 람다 식), 읽기 / 쓰기 DbContext 분리, DI 자동 등록(마커 + Scoped) 추가 |

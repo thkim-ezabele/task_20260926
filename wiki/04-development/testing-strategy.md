@@ -109,6 +109,12 @@ NetArchTest(또는 ArchUnitNET)로 검증합니다. 규칙 상세는 [Clean Arch
 - Application은 Infrastructure / Api를 참조하지 않는다.
 - Command / Query / Handler / Validator 이름 규칙, Handler는 `sealed`
 - 서비스끼리 서로의 프로젝트를 참조하지 않는다.
+- Repository 구현은 `RepositoryBase` / `ReadRepositoryBase`를 상속하고 `sealed`이며, 인터페이스는 `IRepository` / `IReadRepository`를 상속한다.
+- 서비스 구현의 인터페이스는 `IService`를 상속한다.
+- Application / Domain / Api에는 모델용 `class`가 아니라 `record`를 쓴다(`*Command`, `*Query`, `*Response`, `*Request`, `*Dto`, `*Event` 이름 규칙으로 검사).
+- Repository에 분기 · 로직이 없는지는 아키텍처 테스트로 잡기 어려우므로 reviewer가 판정한다.
+
+DI 등록 검증(통합 테스트): 마커를 구현한 모든 타입이 `Scoped`로 등록되어 컨테이너에서 해석되는지 확인한다.
 
 ## 테스트 네이밍과 구조
 
@@ -144,3 +150,4 @@ NetArchTest(또는 ArchUnitNET)로 검증합니다. 규칙 상세는 [Clean Arch
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 기본 전략 초안: 피라미드, 필수 테스트 케이스(성공 / 실패 / 엣지 체크리스트), 단위 · 통합 · 인수 · 아키텍처 테스트, 도구 |
+| 2026-09-27 | - | 아키텍처 테스트에 Repository · DI 마커 · record 규칙, DI 등록 검증 추가 |

@@ -37,20 +37,22 @@ flowchart LR
 - 의존은 **안쪽(Domain)으로만** 향한다. Domain은 아무것도 참조하지 않는다(BuildingBlocks.Domain 제외).
 - Domain은 EF Core, ASP.NET Core, 직렬화 라이브러리 등 **프레임워크에 의존하지 않는다**.
 - Application은 Infrastructure를 모른다. DB · 외부 시스템은 Application(또는 Domain)에 정의한 인터페이스로만 사용한다.
-- Api는 Infrastructure를 DI 등록(`AddInfrastructure()`)에만 쓰고, 엔드포인트에서 직접 쓰지 않는다.
+- Api는 Infrastructure를 DI 등록에만 쓰고, 엔드포인트에서 직접 쓰지 않는다.
+- 서비스와 Repository는 마커 인터페이스 / 기반 클래스를 상속하고, 초기화 코드는 **어셈블리 검색으로 자동 등록(Scoped)**한다. 구현 타입을 하나씩 등록하지 않는다([코딩 컨벤션 · DI 규칙](../04-development/coding-conventions.md#의존성-주입-di-규칙)).
 - **서비스끼리는 프로젝트를 참조하지 않는다.** 공유는 BuildingBlocks만 허용하며, 서비스 간 데이터 교환은 API / 통합 이벤트로 한다.
 - 이 규칙은 [아키텍처 테스트](../04-development/testing-strategy.md#아키텍처-테스트)로 빌드마다 검증한다.
 
 ## CQRS 적용
 
-**적용한다.** 같은 Database 안에서 Command 모델과 Query 모델을 분리하는 수준으로 시작합니다(읽기 전용 DB 분리는 하지 않음).
+**적용한다.** 읽기 전용 DB(복제본)는 두지 않지만, **연결 문자열과 DbContext는 읽기 / 쓰기로 나눠** 두고 지금은 둘 다 같은 Database를 가리킵니다([데이터베이스 · 읽기 / 쓰기 연결 분리](../04-development/database.md#읽기--쓰기-연결-분리)).
 
 | 흐름 | 경로 |
 |---|---|
-| Command | Api → Command → (검증 · 트랜잭션 파이프라인) → Handler → Repository → **Aggregate(도메인 규칙)** → Unit of Work 저장 → Outbox |
-| Query | Api → Query → Handler → **DbContext `AsNoTracking` 프로젝션** → DTO (도메인 모델을 거치지 않음) |
+| Command | Api → Command → (검증 · 트랜잭션 파이프라인) → Handler → Write Repository(쓰기 DbContext) → **Aggregate(도메인 규칙)** → Unit of Work 저장 → Outbox |
+| Query | Api → Query → Handler → **Read Repository(읽기 DbContext) 프로젝션** → 응답 `record` (도메인 모델을 거치지 않음) |
 
-- Query Handler 구현은 DbContext가 필요하므로, Application에는 Query와 응답 DTO와 조회 인터페이스를 두고 구현은 Infrastructure에 둔다. 🟡 대안: Application이 읽기 전용 `IQueryDbContext` 추상화를 통해 직접 조회. 기반 구축 토픽에서 정합니다.
+- Query Handler는 Application에 두고, 조회는 Application에 정의한 **Read Repository 인터페이스**(`IEmployeeReadRepository`)로 한다. 구현은 Infrastructure에 둔다.
+- Write Repository 인터페이스는 Domain, Read Repository 인터페이스는 Application에 둔다.
 - 코드 규칙은 [코딩 컨벤션 · CQRS 규칙](../04-development/coding-conventions.md#cqrs-규칙)을 따른다.
 
 ## 저장소 디렉터리 구조
@@ -97,26 +99,28 @@ EmergencyHub.Employee.Domain/
 │   ├── EmployeeId.cs
 │   ├── EmployeeStatus.cs        # 코드 enum (short)
 │   ├── EmployeeErrors.cs
-│   ├── IEmployeeRepository.cs
+│   ├── IEmployeeRepository.cs   # Write Repository 인터페이스 (IRepository 상속)
 │   └── Events/
 └── ValueObjects/                # 여러 Aggregate가 쓰는 Value Object
 
 EmergencyHub.Employee.Application/
 ├── Employees/
 │   ├── Commands/<UseCase>/      # Command, Handler, Validator
-│   └── Queries/<UseCase>/       # Query, Handler, Response
-├── Abstractions/                # 포트 인터페이스
-└── DependencyInjection.cs
+│   ├── Queries/<UseCase>/       # Query, Handler, Response
+│   └── IEmployeeReadRepository.cs  # Read Repository 인터페이스 (IReadRepository 상속)
+├── Abstractions/                # 포트 인터페이스 (IService 상속)
+└── EmployeeApplicationAssembly.cs  # 어셈블리 검색용 마커
 
 EmergencyHub.Employee.Infrastructure/
 ├── Persistence/
-│   ├── EmployeeDbContext.cs
-│   ├── Configurations/          # IEntityTypeConfiguration<T>
-│   ├── Repositories/
-│   ├── Queries/
-│   └── Migrations/
+│   ├── EmployeeDbContext.cs          # 쓰기 (ConnectionStrings:Write)
+│   ├── EmployeeReadDbContext.cs      # 읽기 전용 (ConnectionStrings:Read)
+│   ├── Configurations/               # IEntityTypeConfiguration<T> (두 DbContext 공유)
+│   ├── Repositories/                 # Write Repository (RepositoryBase 상속)
+│   ├── ReadRepositories/             # Read Repository (ReadRepositoryBase 상속)
+│   └── Migrations/                   # 쓰기 DbContext 기준
 ├── Outbox/
-└── DependencyInjection.cs
+└── EmployeeInfrastructureAssembly.cs  # 어셈블리 검색용 마커
 
 EmergencyHub.Employee.Api/
 ├── Endpoints/                   # 기능별 엔드포인트 그룹
@@ -133,9 +137,9 @@ EmergencyHub.Employee.Api/
 
 | 프로젝트 | 담는 것 |
 |---|---|
-| `BuildingBlocks.Domain` | `Entity<TId>`, `AggregateRoot<TId>`(도메인 이벤트 수집), `IDomainEvent`, `Result` / `Result<T>`, `Error`(정수 코드) |
-| `BuildingBlocks.Application` | `ICommand` / `IQuery` / Handler 인터페이스, 파이프라인 동작(검증 · 로깅 · 트랜잭션), `IUnitOfWork`, 통합 이벤트 기반 타입 |
-| `BuildingBlocks.Infrastructure` | EF Core 공통 설정(snake_case, 감사 컬럼, 강타입 ID 변환), Outbox / Inbox, 메시징 연결 |
+| `BuildingBlocks.Domain` | `Entity<TId>`, `AggregateRoot<TId>`(도메인 이벤트 수집), `IDomainEvent`, `Result` / `Result<T>`, `Error`(정수 코드), 마커 `IRepository` |
+| `BuildingBlocks.Application` | `ICommand` / `IQuery` / Handler 인터페이스, 파이프라인 동작(검증 · 로깅 · 트랜잭션), `IUnitOfWork`, 통합 이벤트 기반 타입, 마커 `IReadRepository` / `IService` |
+| `BuildingBlocks.Infrastructure` | EF Core 공통 설정(snake_case, 감사 컬럼, 강타입 ID 변환), `RepositoryBase` / `ReadRepositoryBase` / 읽기 전용 DbContext 기반 클래스, **`AddConventionalServices`(어셈블리 검색 자동 등록)**, 공통 인프라 등록(`TimeProvider` 등), Outbox / Inbox, 메시징 연결 |
 
 - BuildingBlocks에는 **업무 개념을 넣지 않는다.** 여러 서비스가 쓰는 업무 개념이 생기면 먼저 서비스 경계를 다시 본다.
 - BuildingBlocks의 변경은 모든 서비스에 영향을 주므로, 변경 작업은 스프린트 계획에서 별도 작업으로 드러낸다.
@@ -165,3 +169,4 @@ EmergencyHub.Employee.Api/
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 기본 구조 초안: 레이어 책임, 의존성 규칙, CQRS 적용, 저장소 · 프로젝트 구조, BuildingBlocks, 공통 빌드 설정 |
+| 2026-09-27 | - | 읽기 / 쓰기 DbContext 분리, Read Repository로 Query 구현 위치 확정, DI 자동 등록 구조 반영 |

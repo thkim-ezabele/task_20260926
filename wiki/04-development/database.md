@@ -21,6 +21,34 @@ updated: 2026-09-27
 - 서비스별 DB 계정을 따로 두고, 계정은 자기 Database에만 권한을 갖는다.
 - 테이블은 기본 스키마 `public`을 쓴다.
 
+## 읽기 / 쓰기 연결 분리
+
+**읽기 전용 DB(복제본)는 지금 두지 않지만, 설정과 코드에서는 처음부터 읽기와 쓰기를 나눕니다.** 나중에 복제본을 붙일 때 연결 문자열만 바꾸면 되도록 하기 위해서입니다.
+
+| 구분 | 쓰기 (Command) | 읽기 (Query) |
+|---|---|---|
+| 연결 문자열 키 | `ConnectionStrings:Write` | `ConnectionStrings:Read` |
+| 현재 대상 | 서비스 Database | **같은 서비스 Database** (복제본 도입 시 교체) |
+| DbContext | `<Service>DbContext` | `<Service>ReadDbContext` |
+| 추적 | 기본(변경 추적) | `QueryTrackingBehavior.NoTracking` 기본값 |
+| 사용처 | Write Repository, Unit of Work, Outbox | Read Repository |
+| 마이그레이션 | **여기서만** 생성 · 적용 | 만들지 않음 |
+
+```json
+// appsettings.json (서비스별)
+{
+  "ConnectionStrings": {
+    "Write": "Host=localhost;Database=emergency_hub_employee;Username=employee_app",
+    "Read":  "Host=localhost;Database=emergency_hub_employee;Username=employee_app;Options=-c default_transaction_read_only=on"
+  }
+}
+```
+
+- 읽기 연결은 `default_transaction_read_only=on`으로 열어, 읽기 DbContext로 실수로 쓰기를 하면 DB가 거부하도록 한다. 복제본을 도입하면 읽기 전용 계정으로 바꾼다.
+- 두 DbContext는 같은 엔티티 매핑(`IEntityTypeConfiguration<T>`)을 공유한다(`ApplyConfigurationsFromAssembly`).
+- 읽기 DbContext에는 `SaveChanges`를 쓰지 않는다. BuildingBlocks의 읽기 전용 기반 클래스가 `SaveChanges` 호출 시 예외를 던지게 한다.
+- 복제 지연이 생기면 "쓰고 바로 읽기"가 틀릴 수 있다. Command 직후 결과가 필요하면 Command가 필요한 값(ID 등)을 반환하게 한다.
+
 ## 테이블 / 컬럼 네이밍 규칙 (snake_case)
 
 모든 식별자는 **소문자 snake_case**로 합니다. 따옴표가 필요한 이름은 만들지 않습니다. EF Core에서는 `EFCore.NamingConventions`의 `UseSnakeCaseNamingConvention()`으로 자동 변환합니다.
@@ -122,8 +150,10 @@ var smsEnabled = await db.Employees
 - 강타입 ID는 값 변환기(`HasConversion`)로 `uuid`에 매핑한다.
 - Value Object는 Owned Type 또는 Complex Type(EF Core 8)으로 매핑한다.
 - Lazy Loading은 쓰지 않는다. 필요한 연관은 `Include`로 명시한다.
-- **Query(CQRS)는 `AsNoTracking()` + `Select` 프로젝션**으로 DTO를 바로 만든다. 엔티티 전체를 불러와 변환하지 않는다.
-- Command는 Repository로 Aggregate를 불러오고, `SaveChangesAsync`는 Unit of Work(파이프라인)에서 한 번만 호출한다.
+- 데이터 접근은 **Repository**로만 한다. Repository에는 람다식 LINQ 쿼리만 두고 분기 · 로직을 넣지 않는다([코딩 컨벤션 · Repository 규칙](coding-conventions.md#repository-규칙-ef-core)).
+- **Query(CQRS)는 Read Repository가 읽기 DbContext에서 `Select` 프로젝션**으로 응답 `record`를 바로 만든다. 엔티티 전체를 불러와 변환하지 않는다.
+- Command는 Write Repository로 Aggregate를 불러오고, `SaveChangesAsync`는 Unit of Work(파이프라인)에서 한 번만 호출한다.
+- DbContext는 `AddDbContext`로 `Scoped` 등록한다.
 - 연결 문자열은 설정 / 시크릿으로 주입한다([설정 & 시크릿 관리](../06-deployment/configuration.md)).
 
 ## 마이그레이션 규칙
@@ -177,3 +207,4 @@ var smsEnabled = await db.Employees
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 기본 규칙 초안: 네이밍, 타입(UUID v7, timestamptz), 정수 코드값(문자열 금지), 비트 마스킹, EF Core, 마이그레이션, 동시성(xmin), Outbox |
+| 2026-09-27 | - | 읽기 / 쓰기 연결 분리(연결 문자열 · DbContext 분리, 현재는 같은 DB), Repository 경유 원칙 추가 |
