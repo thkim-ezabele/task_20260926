@@ -119,13 +119,16 @@ gitGraph
 
 | ID | 제목 | 상태 | 스프린트 | 브랜치 / PR | 릴리스 |
 |---|---|---|---|---|---|
-| - | - | - | - | - | - |
+| [PRD-001](prd/PRD-001-foundation.md) | 기반 구축 (인프라 · .NET 8 솔루션 기본 설계) | stable | S01~S04 | `feature/prd-001-foundation` / # | `v0.1.0` |
 
 ## 스프린트 목록
 
 | ID | 제목 | PRD | 상태 |
 |---|---|---|---|
-| - | - | - | - |
+| [S01](sprints/S01-decisions-build-ci.md) | 기술 결정 확정과 빌드 · CI 기반 | PRD-001 | planned |
+| [S02](sprints/S02-building-blocks.md) | BuildingBlocks Application · Infrastructure와 공통 API 처리 | PRD-001 | planned |
+| [S03](sprints/S03-aspire-employee.md) | Aspire와 Employee 샘플 서비스 전 구간 | PRD-001 | planned |
+| [S04](sprints/S04-tests-docs-evidence.md) | 테스트 보강 · 문서 · 인수 증빙 | PRD-001 | planned |
 
 ---
 
@@ -135,3 +138,4 @@ gitGraph
 |---|---|---|
 | 2026-09-27 | - | 문서 생성: 개발 흐름, 운영 원칙, ID 체계 |
 | 2026-09-27 | - | 토픽 브랜치 방식(토픽 = 릴리스), `/prd` · `/sprint` · `/retro` 흐름, 토픽 회고 추가 |
+| 2026-09-27 | - | PRD-001 토픽 생성, 스프린트 S01~S04 계획 |
