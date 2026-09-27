@@ -330,6 +330,9 @@ builder.Services.AddConventionalServices(
 | `using` | 네임스페이스 밖, `System` 먼저 정렬 |
 | namespace | file-scoped (`csharp_style_namespace_declarations = file_scoped:error`) |
 | 분석기 | `AnalysisLevel = latest-recommended`, 경고는 오류로 처리 |
+| 빌드 강제 | `옵션 = 값:심각도`의 심각도는 빌드에서 적용되지 않으므로 강제할 IDE 규칙은 `dotnet_diagnostic.<ID>.severity`로 다시 지정한다(IDE0161 · IDE0011 · IDE0065 · IDE0055 · IDE1006 등) |
+| 테스트 예외 | `tests/**.cs`는 CA1707(밑줄 이름) · CA1822 · `Async` 접미사 규칙을 끈다(`<메서드>_<조건>_<기대 결과>`) |
+| 생성 코드 | `**/Persistence/Migrations/*.cs`는 `generated_code = true`와 **`dotnet_diagnostic.CS1591.severity = none`을 함께** 둔다. `generated_code`는 분석기 · 스타일 규칙만 끄고 컴파일러 경고 CS1591은 끄지 못한다. `WarningsAsErrors`에 CS1591을 넣으면 이 설정보다 우선하므로 넣지 않는다(`TreatWarningsAsErrors`로 충분) |
 
 ## 로깅
 
@@ -352,3 +355,4 @@ builder.Services.AddConventionalServices(
 | 2026-09-27 | - | 기본 컨벤션 초안: 네이밍, C# 12 기능, 정수 코드 / 비트 마스킹, CQRS, 비동기, Result 기반 예외 처리, DDD |
 | 2026-09-27 | - | 모델은 모두 `record`, Repository 규칙(쿼리만, 람다 식), 읽기 / 쓰기 DbContext 분리, DI 자동 등록(마커 + Scoped) 추가 |
 | 2026-09-27 | developer | ADR 0013~0015 · 0017 · 0023 반영: Handler 예시에서 `SaveChanges` 제거, Command 반환 `Result<Unit>`, Mediator 직접 구현 · Scrutor 확정, 파이프라인 순서, 도메인 이벤트 수집만 (S01-T04) |
+| 2026-09-27 | developer | `.editorconfig` 표에 빌드 강제 · 테스트 예외 · 생성 코드(CS1591 none 병기, BL-047) 행 추가 (S01-T05) |

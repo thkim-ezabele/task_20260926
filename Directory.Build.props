@@ -1,0 +1,60 @@
+<Project>
+
+  <!--
+    공통 빌드 설정. 원본: wiki/03-architecture/clean-architecture.md "공통 빌드 설정",
+    PRD-001 FR-02 · NFR-01, package-versions.md "스크래치 restore 검증".
+  -->
+
+  <PropertyGroup Label="언어 · 프레임워크">
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <PropertyGroup Label="빌드 품질 (NFR-01)">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <PropertyGroup Label="NuGet 감사 (BL-006)">
+    <!-- .NET 8 SDK 기본값은 직접 참조만 감사해 전이 취약점을 놓친다(package-versions.md 스크래치 검증). -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+  </PropertyGroup>
+
+  <!--
+    테스트 프로젝트 판별. csproj 본문은 이 파일보다 늦게 평가되므로 속성 조건에 쓸 수 있도록
+    이름 규칙(*.UnitTests, *.IntegrationTests, *.ArchitectureTests)으로 여기서 먼저 정한다.
+  -->
+  <PropertyGroup Label="테스트 프로젝트 판별">
+    <IsTestProject Condition="'$(IsTestProject)' == '' And $(MSBuildProjectName.EndsWith('Tests'))">true</IsTestProject>
+    <IsTestProject Condition="'$(IsTestProject)' == ''">false</IsTestProject>
+  </PropertyGroup>
+
+  <PropertyGroup Label="테스트 프로젝트 (ADR-0021)" Condition="'$(IsTestProject)' == 'true'">
+    <!-- xUnit v3는 실행 파일. .NET 8 SDK dotnet test(VSTest) 경로를 쓰고 Microsoft Testing Platform 모드는 켜지 않는다. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!--
+    BuildingBlocks의 public API는 XML 문서 주석 필수(FR-02, coding-conventions "주석 및 문서화").
+    CS1591은 위 TreatWarningsAsErrors로 오류가 된다. WarningsAsErrors에 CS1591을 따로 넣으면
+    .editorconfig의 Migrations 섹션 "CS1591.severity = none"보다 우선해 생성 코드까지 오류가 되므로 넣지 않는다(실측).
+  -->
+  <PropertyGroup Label="XML 문서 (BuildingBlocks만)"
+                 Condition="'$(IsTestProject)' != 'true' And $(MSBuildProjectName.StartsWith('EmergencyHub.BuildingBlocks.'))">
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- 항목 조건은 모든 속성 평가 뒤에 계산되므로 csproj에서 지정한 IsTestProject도 반영된다. -->
+  <ItemGroup Label="InternalsVisibleTo (테스트 프로젝트가 아닌 프로젝트만)" Condition="'$(IsTestProject)' != 'true'">
+    <InternalsVisibleTo Include="$(AssemblyName).UnitTests" />
+    <!-- NSubstitute(Castle DynamicProxy)가 internal 타입을 대체할 수 있도록 한다. -->
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
+</Project>

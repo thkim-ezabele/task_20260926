@@ -74,6 +74,10 @@ updated: 2026-09-27
 | BL-045 | 첫 마이그레이션 생성 뒤 `[**/Persistence/Migrations/*.cs]` 섹션(generated_code + CS1591 none)이 실제 EF 생성 파일에서 빌드 경고 0 · format 통과하는지 재확인 | S01-T05 | | new | S03-T02 |
 | BL-046 | EF Design을 IDesignTimeDbContextFactory가 있는 Employee.Infrastructure에만 PrivateAssets=all로 참조하고 `dotnet ef --project/--startup-project` 통일 결정 | S01-T05 | | new | S03 |
 | BL-047 | coding-conventions `.editorconfig` 표 · database.md 마이그레이션 규칙에 "CS1591은 generated_code로 꺼지지 않으므로 severity none 병기" 추가 | S01-T05 | | new | S01-T05 / S04-T02 |
+| BL-048 | clean-architecture 저장소 구조 트리에 tests/BuildingBlocks/, Directory.Build.targets, .config/dotnet-tools.json, .gitattributes 추가, 공통 빌드 설정 표에 IsTestProject 이름 규칙 · NuGetAudit · IVT · PrivateAssets 일괄 적용 반영 | S01-T05 | | new | S04-T02 |
+| BL-049 | local-setup / troubleshooting: Windows 깊은 경로 clone 시 MAX_PATH 초과로 MSB3101/MSB3030 실패 → 짧은 경로 또는 LongPathsEnabled 안내 | S01-T05 | | new | S04 |
+| BL-050 | BuildingBlocks.Domain 첫 코드 도입 시 골격 확인 테스트(BuildingBlocksDomainAssemblyTests) 대체 또는 삭제 | S01-T05 | | new | S01-T06 |
+| BL-051 | IDE0005(사용하지 않는 using) 빌드 강제 여부 결정(GenerateDocumentationFile 필요) | S01-T05 | | new | |
 
 ---
 

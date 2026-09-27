@@ -100,6 +100,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T04 | reviewer(재판정) | PASS | 반려 사유 2건 해결 확인, 5b94975 이후 변경은 package-versions · backlog · 스프린트 문서뿐이라 이전 통과 항목 재사용, check-docs 결함은 BL-018뿐 |
 | 2026-09-27 | S01-T04 | tester | PASS | 대상 6개 🟡 0건(Node 검색), wiki 전체 🟡 대조: FR-01 항목이 처리 방식 표 · BL-038 밖에 남은 곳 0건, 0021~0023 accepted, 0001~0020 불변, check-docs 결함은 BL-018뿐, 버전 5종 문서 간 일치, ADR 충돌 수정 확인, design.md 확정 표 0011~0023 13건 |
 | 2026-09-27 | S01-T05 | dba | PASS | DB 패키지 · 전이 고정 4건 확정(EF · Relational 8.0.31, OpenTelemetry.Api 1.19.1 — 빼면 NU1902 실측, MessagePack 2.5.305), dotnet-ef 8.0.31 = EF 런타임. `generated_code`만으로는 CS1591이 안 꺼짐(실측) → Migrations 섹션에 `CS1591.severity = none` 필요 |
+| 2026-09-27 | S01-T05 | developer | PASS | sln · global.json(8.0.400 latestFeature) · Directory.Build.props/targets · Directory.Packages.props(전이 고정 4건) · .editorconfig · .gitattributes · 도구 매니페스트 · .gitignore 보강, 빈 골격 2개. build 경고 0 · test 1/1 · format · 취약 0. 실측 수정: WarningsAsErrors에 CS1591을 넣으면 editorconfig none보다 우선 → 제외, `옵션:error`는 빌드 미적용 → `dotnet_diagnostic` 심각도로 강제. renormalize 불필요(LF 102/105). BL-047 문서 반영 |
 
 ## 계획 리뷰
 
@@ -196,6 +197,11 @@ updated: 2026-09-27
 | BL-045 | S03-T02: 실제 EF 생성 파일에서 Migrations 섹션 경고 0 · format 재확인 | S01-T05 | |
 | BL-046 | S03: EF Design 참조 위치 · dotnet ef 프로젝트 인자 통일 | S01-T05 | |
 | BL-047 | 문서: generated_code + CS1591 none 병기 | S01-T05 | |
+| BL-048 | clean-architecture 저장소 구조 · 공통 빌드 설정 표 갱신(S04-T02) | S01-T05 | |
+| BL-049 | local-setup: Windows MAX_PATH(MSB3101/MSB3030) 안내 | S01-T05 | |
+| BL-050 | T06: 골격 확인 테스트 대체 · 삭제 | S01-T05 | |
+| BL-051 | IDE0005 빌드 강제 여부 | S01-T05 | |
+| TD-014 | 테스트 프로젝트 판별이 이름 규칙(*Tests)에 의존 | S01-T05 | |
 
 ## 회고
 

@@ -1,0 +1,225 @@
+# Emergency Hub 코드 스타일
+# 원본: wiki/04-development/coding-conventions.md "코드 스타일 (.editorconfig)" · "네이밍 규칙" · "C# 언어 기능"
+# 빌드(EnforceCodeStyleInBuild)와 CI(dotnet format --verify-no-changes)에서 검사한다.
+root = true
+
+# ---------------------------------------------------------------------------
+# 모든 파일
+# ---------------------------------------------------------------------------
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# XML / JSON / YAML은 2칸
+[*.{xml,csproj,props,targets,config,nuspec,resx,runsettings,json,yml,yaml}]
+indent_size = 2
+
+[*.sln]
+indent_style = tab
+
+# Markdown 줄 끝 공백 두 칸은 줄바꿈 의미가 있으므로 지우지 않는다.
+[*.md]
+trim_trailing_whitespace = false
+
+# ---------------------------------------------------------------------------
+# C#
+# ---------------------------------------------------------------------------
+[*.cs]
+
+# using: 네임스페이스 밖, System 먼저
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_using_directive_placement = outside_namespace:error
+
+# namespace: file-scoped
+csharp_style_namespace_declarations = file_scoped:error
+
+# 중괄호: Allman(새 줄), 한 줄 if도 필수
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+csharp_prefer_braces = true:error
+
+# 들여쓰기 · 공백
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_labels = one_less_than_current
+csharp_indent_block_contents = true
+csharp_indent_braces = false
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_space_around_binary_operators = before_and_after
+csharp_preserve_single_line_statements = false
+csharp_preserve_single_line_blocks = true
+
+# this. 한정자 쓰지 않음, 언어 키워드 형식 사용
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
+dotnet_style_predefined_type_for_locals_parameters_members = true:warning
+dotnet_style_predefined_type_for_member_access = true:warning
+
+# 접근 한정자 명시, readonly 필드
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+dotnet_style_readonly_field = true:warning
+csharp_preferred_modifier_order = public,private,protected,internal,file,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async:warning
+
+# var: 우변에서 타입이 드러날 때만
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# 패턴 매칭: is null / is not null
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:warning
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_prefer_not_pattern = true:warning
+csharp_style_pattern_matching_over_is_with_cast_check = true:warning
+csharp_style_pattern_matching_over_as_with_null_check = true:warning
+
+# 식 본문 멤버: 한 줄로 끝나는 멤버
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_expression_bodied_accessors = true:suggestion
+csharp_style_expression_bodied_constructors = false:suggestion
+
+# C# 12 기능
+csharp_style_prefer_primary_constructors = true:suggestion
+dotnet_style_prefer_collection_expression = when_types_loosely_match:suggestion
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+
+# 기타
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+dotnet_style_coalesce_expression = true:warning
+dotnet_style_null_propagation = true:warning
+csharp_style_throw_expression = true:suggestion
+dotnet_code_quality_unused_parameters = all:warning
+
+# 빌드 강제: "옵션 = 값:심각도"의 심각도는 빌드에서 적용되지 않으므로(실측) 규칙 ID로 다시 지정한다.
+# TreatWarningsAsErrors로 warning도 빌드 오류가 된다.
+# file-scoped namespace
+dotnet_diagnostic.IDE0161.severity = error
+# 중괄호 필수
+dotnet_diagnostic.IDE0011.severity = error
+# using 위치(네임스페이스 밖)
+dotnet_diagnostic.IDE0065.severity = error
+# 서식(Allman, using 정렬, 공백)
+dotnet_diagnostic.IDE0055.severity = warning
+# 네이밍 규칙
+dotnet_diagnostic.IDE1006.severity = warning
+# this. 한정자 제거
+dotnet_diagnostic.IDE0003.severity = warning
+# 언어 키워드 형식
+dotnet_diagnostic.IDE0049.severity = warning
+# 접근 한정자 명시
+dotnet_diagnostic.IDE0040.severity = warning
+# 한정자 순서
+dotnet_diagnostic.IDE0036.severity = warning
+# readonly 필드
+dotnet_diagnostic.IDE0044.severity = warning
+# is null
+dotnet_diagnostic.IDE0041.severity = warning
+# is not 패턴
+dotnet_diagnostic.IDE0083.severity = warning
+# is 패턴(캐스트 대신)
+dotnet_diagnostic.IDE0020.severity = warning
+# is 패턴(캐스트 대신)
+dotnet_diagnostic.IDE0038.severity = warning
+# as + null 검사 대신 패턴
+dotnet_diagnostic.IDE0019.severity = warning
+# ?? 사용
+dotnet_diagnostic.IDE0029.severity = warning
+# ?? 사용(nullable)
+dotnet_diagnostic.IDE0030.severity = warning
+# ?. 사용
+dotnet_diagnostic.IDE0031.severity = warning
+# 사용하지 않는 매개변수
+dotnet_diagnostic.IDE0060.severity = warning
+
+# ---------------------------------------------------------------------------
+# 네이밍 (coding-conventions "네이밍 규칙")
+# ---------------------------------------------------------------------------
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.prefix_i.capitalization = pascal_case
+dotnet_naming_style.prefix_i.required_prefix = I
+dotnet_naming_rule.interfaces_start_with_i.symbols = interfaces
+dotnet_naming_rule.interfaces_start_with_i.style = prefix_i
+dotnet_naming_rule.interfaces_start_with_i.severity = warning
+
+dotnet_naming_symbols.type_parameters.applicable_kinds = type_parameter
+dotnet_naming_style.prefix_t.capitalization = pascal_case
+dotnet_naming_style.prefix_t.required_prefix = T
+dotnet_naming_rule.type_parameters_start_with_t.symbols = type_parameters
+dotnet_naming_rule.type_parameters_start_with_t.style = prefix_t
+dotnet_naming_rule.type_parameters_start_with_t.severity = warning
+
+dotnet_naming_symbols.constants.applicable_kinds = field, local
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_style.pascal.capitalization = pascal_case
+dotnet_naming_rule.constants_pascal.symbols = constants
+dotnet_naming_rule.constants_pascal.style = pascal
+dotnet_naming_rule.constants_pascal.severity = warning
+
+dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
+dotnet_naming_rule.static_readonly_pascal.symbols = static_readonly_fields
+dotnet_naming_rule.static_readonly_pascal.style = pascal
+dotnet_naming_rule.static_readonly_pascal.severity = warning
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel
+dotnet_naming_rule.private_fields_underscore.severity = warning
+
+dotnet_naming_symbols.async_methods.applicable_kinds = method, local_function
+dotnet_naming_symbols.async_methods.required_modifiers = async
+dotnet_naming_style.async_suffix.capitalization = pascal_case
+dotnet_naming_style.async_suffix.required_suffix = Async
+dotnet_naming_rule.async_methods_end_with_async.symbols = async_methods
+dotnet_naming_rule.async_methods_end_with_async.style = async_suffix
+dotnet_naming_rule.async_methods_end_with_async.severity = warning
+
+dotnet_naming_symbols.types_and_members.applicable_kinds = class, struct, enum, delegate, method, property, event, local_function
+dotnet_naming_rule.types_and_members_pascal.symbols = types_and_members
+dotnet_naming_rule.types_and_members_pascal.style = pascal
+dotnet_naming_rule.types_and_members_pascal.severity = warning
+
+dotnet_naming_symbols.locals_and_parameters.applicable_kinds = parameter, local
+dotnet_naming_style.camel.capitalization = camel_case
+dotnet_naming_rule.locals_and_parameters_camel.symbols = locals_and_parameters
+dotnet_naming_rule.locals_and_parameters_camel.style = camel
+dotnet_naming_rule.locals_and_parameters_camel.severity = warning
+
+# ---------------------------------------------------------------------------
+# 테스트 프로젝트 예외 (testing-strategy "테스트 이름": <메서드>_<조건>_<기대 결과>)
+# ---------------------------------------------------------------------------
+[tests/**.cs]
+# 테스트 메서드 이름의 밑줄 허용
+dotnet_diagnostic.CA1707.severity = none
+# xUnit 테스트 메서드는 인스턴스 멤버여야 한다(static 제안 끔)
+dotnet_diagnostic.CA1822.severity = none
+# 테스트 메서드는 Async 접미사를 강제하지 않는다(<메서드>_<조건>_<기대 결과> 규칙 우선)
+dotnet_naming_rule.async_methods_end_with_async.severity = none
+
+# ---------------------------------------------------------------------------
+# EF Core 마이그레이션 (생성 코드, ADR-0012 · database.md)
+# generated_code = true는 분석기 · 스타일 규칙만 끈다. 컴파일러 경고 CS1591은 꺼지지 않으므로 함께 지정한다(BL-047).
+# ---------------------------------------------------------------------------
+[**/Persistence/Migrations/*.cs]
+generated_code = true
+dotnet_diagnostic.CS1591.severity = none

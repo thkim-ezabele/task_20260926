@@ -1,0 +1,76 @@
+<Project>
+
+  <!--
+    중앙 패키지 버전 관리. 프로젝트 파일에는 버전을 적지 않는다.
+    버전 · 라이선스 · 출처의 원본: wiki/03-architecture/package-versions.md (2026-09-27 확인).
+    확정된 패키지를 모두 여기에 등록해 버전을 한 곳에서 관리한다(참조하지 않는 항목은 영향 없음).
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- 여기 등록한 버전을 전이 의존에도 적용한다(아래 "전이 고정" 참고). -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Label="Aspire · ServiceDefaults (ADR-0011, ADR-0020)">
+    <!-- Aspire.AppHost.Sdk 9.5.2는 MSBuild SDK라 AppHost csproj의 <Sdk> 요소에 버전을 적는다. -->
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.5.2" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="9.5.2" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="9.5.2" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="9.9.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.19.1" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.19.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.19.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="데이터 (ADR-0005, ADR-0009, ADR-0012, ADR-0013)">
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="8.0.31" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.31" />
+    <!-- 참조하는 csproj에서 PrivateAssets=all로 쓴다(설계 시점 전용). -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.31" />
+    <PackageVersion Include="Npgsql" Version="8.0.9" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+    <PackageVersion Include="Npgsql.OpenTelemetry" Version="8.0.9" />
+    <PackageVersion Include="EFCore.NamingConventions" Version="8.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.31" />
+    <PackageVersion Include="UUIDNext" Version="4.2.4" />
+  </ItemGroup>
+
+  <ItemGroup Label="애플리케이션 (ADR-0017 ~ ADR-0020)">
+    <PackageVersion Include="Scrutor" Version="7.0.0" />
+    <PackageVersion Include="FluentValidation" Version="12.1.1" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
+    <PackageVersion Include="Serilog.Sinks.Async" Version="2.1.0" />
+    <PackageVersion Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+  </ItemGroup>
+
+  <ItemGroup Label="테스트 (ADR-0021, ADR-0022)">
+    <PackageVersion Include="xunit.v3" Version="4.0.1" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
+    <PackageVersion Include="NSubstitute" Version="6.2.0" />
+    <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.0.17" />
+    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
+    <PackageVersion Include="Respawn" Version="7.0.0" />
+    <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+  </ItemGroup>
+
+  <!--
+    전이 고정: 직접 참조하지 않아도 위 CentralPackageTransitivePinningEnabled로 이 버전이 적용된다.
+    - Microsoft.EntityFrameworkCore / .Relational 8.0.31: 위 "데이터"에 등록. Npgsql.EFCore의 EF 의존 상한이 없어 고정(TD-003).
+    - OpenTelemetry.Api 1.19.1: Npgsql.OpenTelemetry 8.0.9가 >= 1.6.0에 의존. 고정하지 않으면 NU1902(BL-037).
+    - MessagePack 2.5.305: Aspire.Hosting 9.5.2 → StreamJsonRpc 전이 2.5.192 취약점 해소(BL-006, TD-007).
+  -->
+  <ItemGroup Label="전이 고정">
+    <PackageVersion Include="OpenTelemetry.Api" Version="1.19.1" />
+    <PackageVersion Include="MessagePack" Version="2.5.305" />
+  </ItemGroup>
+
+</Project>
