@@ -139,6 +139,7 @@ updated: 2026-09-28
 | BL-110 | MigrationService가 Aspire에서 Environment=Production으로 뜸(launchSettings 없음): Api와 맞춰 Development로(AppHost DOTNET_ENVIRONMENT 주입 또는 launchSettings 추가) | S03 결과 리뷰 | 하 | planned:S04 | S04-T03 environments 문서에서 결정 · 기록(오케스트레이션 세션 승인: Development로). 동작 영향 없음 |
 | BL-111 | Aspire 스모크 테스트(Aspire.Hosting.Testing으로 AppHost 기동 → Api /health/ready · 마이그레이션 완료 확인) 도입. 재도입 조건: AppHost 테스트 모드(데이터 볼륨 · 매개변수 persist 끔) 마련, CI 3회 연속 통과, CI 추가 시간 최대 7분 | S04-T01 | | new | S04 미도입 근거: 스프린트 안에 CI 러너에서 AppHost 기동 시간을 측정할 경로가 없음, 현재 AppHost는 개발용 데이터 볼륨과 user-secrets persist를 테스트와 공유함, S03 CI 기준선 약 4분 12초(NFR-07 10분 안 여유 판단 근거 없음). PRD-001 FR-03 선택 스모크 해석은 S04 계획 확정(인수 조건 해석) |
 | BL-112 | 아키텍처 문서 3개(event-driven-architecture · service-communication · architecture-overview)에 남은 보류 아닌 🟡(Polly · Kubernetes = 이후 토픽, Identity · 사업자 · 서비스 후보 · 전파 속도 수치 · gRPC = PRD 결정) 표기를 tech-stack 처리 방식 표 기준으로 통일 | S04-T02 developer | 하 | new | BL-038(보류 항목)과 범위 분리 |
+| BL-113 | 설정 · 구성 코드(DI 등록, 호스트 환경 주입, 빌드 설정)의 "실패" 테스트 해석 기준(예: 부정 범위 확인)을 정할지 결정. 정하면 사용자 결정 후 agents.md 테스트 범위 절에 먼저 반영하고 testing-strategy는 요약 · 링크만 | S04-T02 reviewer | 하 | new | S04-T02에서 완료 조건 밖으로 추가된 해석 문단은 반려로 제거 |
 
 ---
 
