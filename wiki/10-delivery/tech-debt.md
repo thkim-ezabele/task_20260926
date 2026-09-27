@@ -46,6 +46,7 @@ updated: 2026-09-27
 | TD-017 | Result<T>는 성공 값 null을 런타임에만 거부하고 `where T : notnull` 제약 없음(Mediator 인터페이스 전파 부담) | 코드 | 하 | S01-T06 | S02-T01 Mediator 인터페이스 정의 때 notnull 제약 전파 재판단 | open |
 | TD-018 | GitHub Free private라 브랜치 보호 불가 → CI를 필수 체크로 걸 수 없음. "CI 미통과 PR 병합 금지"를 규칙으로만 지킴 | 인프라 | 중 | S01-T07 | 상환 수단 없음(요금제). "CI 통과 전 병합 금지"를 PR 체크리스트 · retro 점검으로 유지 | open |
 | TD-019 | 테스트 프로젝트에 Microsoft.Extensions.Logging · DependencyInjection 8.0.1(Diagnostics.Testing 전이)과 *.Abstractions 10.0.0이 섞여 해석됨(메이저 혼합) | 의존성 | 하 | S02-T02 | .NET 10 전환(BL-002 · TD-002) 때 함께 정리(TD-008 관찰 연장) | new |
+| TD-020 | Scrutor 7 Decorate가 keyed 서비스(IKeyedServiceProvider)에 의존: 앱 호스트 공유 프레임워크 DI 8.0과 Abstractions 10.0.0 혼합 런타임 호환 미확인 | 의존성 | 중 | S02-T03 | S03 호스트 실행 때 확인(TD-008 관찰 확장) | new |
 
 ---
 

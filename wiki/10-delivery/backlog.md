@@ -93,6 +93,8 @@ updated: 2026-09-27
 | BL-064 | 로컬(8.0.425)과 러너 setup-dotnet SDK 버전이 다를 수 있음: DoD에서 러너 `dotnet --info` 로그로 확인 | S01-T07 | 중 | done | PR #7 CI run 36303017840 러너 SDK 8.0.425(로컬과 같음) |
 | BL-065 | IService 마커가 BuildingBlocks.Application에 있어 Domain의 도메인 서비스 인터페이스가 상속할 수 없음(coding-conventions DI 표와 불일치): Domain용 마커를 둘지 문서를 고칠지 결정 | S02-T01 | 중 | new | Employee 도메인 서비스가 생기는 S03 전 결정 |
 | BL-066 | ADR-0018 본문의 Validator 형태(AbstractValidator<TRequest>)와 S02-T02에서 정한 공통 기반 RequestValidator<TRequest>(RuleLevelCascadeMode = Stop) 불일치: clean-architecture · testing-strategy 문구 정리, ADR 보충 여부 판단 | S02-T02 | 중 | new | S04-T02 기준 문서 정리 후보 |
+| BL-067 | ADR-0013 '자동 등록' 문구와 ADR-0017 '명시 등록' 불일치: S02-T03에서 ADR-0017(명시, Scoped)로 해석. 해석 기록 위치(결과 리뷰 / S04-T02 명문화) 판단 | S02-T03 | 하 | new |  |
+| BL-068 | coverlet.runsettings Include에 BuildingBlocks.Infrastructure(및 Api)가 없음: 80% 보고 대상 포함 여부 결정 | S02-T03 | 중 | new | NFR-03 대상 어셈블리 범위 |
 
 ---
 

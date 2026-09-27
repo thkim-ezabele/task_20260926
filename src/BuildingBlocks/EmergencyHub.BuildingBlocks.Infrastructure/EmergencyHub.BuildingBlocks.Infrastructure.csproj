@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    공통 설정은 Directory.Build.props. Infrastructure는 Application · Domain과 Scrutor(ADR-0017),
+    FluentValidation DI 확장(ADR-0018), UUIDNext(ADR-0013)를 참조한다.
+    ASP.NET Core · BuildingBlocks.Api는 참조하지 않는다(ADR-0024).
+  -->
+  <ItemGroup>
+    <PackageReference Include="Scrutor" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="UUIDNext" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EmergencyHub.BuildingBlocks.Application\EmergencyHub.BuildingBlocks.Application.csproj" />
+  </ItemGroup>
+
+</Project>

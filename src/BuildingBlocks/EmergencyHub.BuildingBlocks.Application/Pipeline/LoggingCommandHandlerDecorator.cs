@@ -17,7 +17,7 @@ namespace EmergencyHub.BuildingBlocks.Application.Pipeline;
 [SuppressMessage(
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
-    Justification = "AddBuildingBlocksApplication(S02-T03)이 open generic 데코레이터로 등록해 DI가 만든다(ADR-0015).")]
+    Justification = "PipelineDecorators 목록을 Infrastructure AddConventionalServices가 open generic TryDecorate로 등록해 DI가 만든다(ADR-0015, ADR-0017).")]
 internal sealed class LoggingCommandHandlerDecorator<TCommand, TResponse>(
     ICommandHandler<TCommand, TResponse> inner,
     ILogger<LoggingCommandHandlerDecorator<TCommand, TResponse>> logger,

@@ -5,7 +5,9 @@ namespace EmergencyHub.BuildingBlocks.Application.Identifiers;
 /// </summary>
 /// <remarks>
 /// 구현은 BuildingBlocks.Infrastructure에 두고 UUIDNext <c>Uuid.NewDatabaseFriendly(Database.PostgreSql)</c>를 씁니다.
-/// 단위 테스트에서는 대역을 씁니다. 등록 방식은 S02-T03에서 정합니다.
+/// 단위 테스트에서는 대역을 씁니다.
+/// DI 자동 등록 마커(<c>IService</c>)를 상속하지 않고, Infrastructure의 <c>AddBuildingBlocksInfrastructure()</c>가 Scoped로 명시 등록합니다
+/// (ADR-0017 "공통 인프라 등록", 수명은 ADR-0013. 구현이 서비스 어셈블리 밖에 있어 어셈블리 검색으로는 찾을 수 없음).
 /// </remarks>
 public interface IIdGenerator
 {

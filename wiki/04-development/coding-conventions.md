@@ -162,7 +162,7 @@ public sealed record RegisterEmployeeCommand(string Name, string Email, Notifica
     : ICommand<EmployeeId>;
 
 // 저장 · 커밋은 이 Handler가 아니라 트랜잭션 데코레이터 → IUnitOfWork가 한다(ADR-0014).
-// ID는 Handler가 IIdGenerator로 만든다(ADR-0013). IIdGenerator의 메서드 이름은 S02에서 확정한다.
+// ID는 Handler가 IIdGenerator.NewId()로 만든다(ADR-0013).
 internal sealed class RegisterEmployeeCommandHandler(
     IEmployeeRepository repository,
     IIdGenerator idGenerator,
@@ -261,7 +261,7 @@ BuildingBlocks에 등록 기준이 되는 **마커 인터페이스와 기반 클
 | Write Repository | 인터페이스: `IRepository` 상속 / 구현: `RepositoryBase<TDbContext>` 상속 | Scoped |
 | Read Repository | 인터페이스: `IReadRepository` 상속 / 구현: `ReadRepositoryBase<TDbContext>` 상속 | Scoped |
 | 서비스 (도메인 서비스, 외부 연동 어댑터 등) | 인터페이스: `IService` 상속 | Scoped |
-| Command / Query Handler, Validator | `ICommandHandler<,>` / `IQueryHandler<,>` / `AbstractValidator<T>` | `AddConventionalServices` 안에서 Scoped 등록(Handler는 Scrutor `Scan`, Validator는 `AddValidatorsFromAssemblies`). 데코레이터는 Scrutor `Decorate` |
+| Command / Query Handler, Validator | `ICommandHandler<,>` / `IQueryHandler<,>` / `AbstractValidator<T>` | `AddConventionalServices` 안에서 Scoped 등록(Handler는 Scrutor `Scan`, Validator는 `AddValidatorsFromAssemblies`). 데코레이터는 Scrutor `TryDecorate` |
 
 ```csharp
 // BuildingBlocks: 마커와 기반 클래스
@@ -291,6 +291,20 @@ builder.Services.AddConventionalServices(
 - 등록 누락은 통합 테스트(모든 마커 구현 타입이 컨테이너에서 해석되는지)로 검증하고, `ValidateOnBuild` / `ValidateScopes`를 개발 환경에서 켠다.
 
 > **타입 검색은 Scrutor로 구현한다**([ADR-0017](../03-architecture/adr/0017-scrutor-for-convention-based-di.md), ADR-0010 구체화). Scrutor는 BuildingBlocks.Infrastructure만 참조한다. 같은 서비스 인터페이스를 두 구현이 등록하면 시작 시 실패한다(`RegistrationStrategy.Throw`). Handler는 두 제네릭 인자 형태(`ICommandHandler<,>` / `IQueryHandler<,>`)로만 등록해 데코레이터를 우회하는 경로를 만들지 않는다.
+
+BuildingBlocks 공통 등록 진입점 (S02-T03)
+
+| 진입점 | 위치 | 등록 |
+|---|---|---|
+| `AddBuildingBlocksApplication()` | BuildingBlocks.Application | `ISender`(Scoped), `TimeProvider.System`(Singleton). `TryAdd`라 여러 번 불러도 하나, 먼저 등록한 대역(`FakeTimeProvider` 등)은 유지 |
+| `AddBuildingBlocksInfrastructure()` | BuildingBlocks.Infrastructure | `IIdGenerator`(UUID v7, Scoped) + `AddBuildingBlocksApplication()`. `TryAdd` |
+| `AddConventionalServices(어셈블리...)` | BuildingBlocks.Infrastructure | 마커 구현 · Handler · Validator(모두 Scoped), 데코레이터(`PipelineDecorators` 목록 순서로 `TryDecorate`) + `AddBuildingBlocksApplication()` |
+
+- `IIdGenerator`는 `IService`를 상속하지 않고 `AddBuildingBlocksInfrastructure()`가 **명시 등록**한다. ADR-0017이 공통 인프라(`TimeProvider`, `ISender`, `IIdGenerator`)를 공통 등록 코드에서 명시 등록한다고 정했고, 구현이 서비스 어셈블리 밖(BuildingBlocks.Infrastructure)에 있어 어셈블리 검색으로 찾을 수 없기 때문이다. 수명은 ADR-0013대로 Scoped다. `IUnitOfWork` · `IExceptionClassifier`도 마커를 상속하지 않는다(등록은 S02-T07).
+- `AddConventionalServices`는 **한 번만** 부르고 검색할 어셈블리를 한 번에 모두 넘긴다. 두 번 부르면 Handler가 두 겹으로 감싸져 커밋 · 로그가 중복되므로 두 번째 호출은 `InvalidOperationException`이다. 같은 어셈블리를 중복해 넘기는 것은 한 번으로 처리한다.
+- 마커를 구현한 클래스가 서비스 인터페이스(마커를 상속한 인터페이스)를 구현하지 않거나 둘 이상 구현하면, 등록 전에 `InvalidOperationException`으로 시작이 실패한다(위반 형식을 모두 메시지에 담음).
+- open generic 정의는 Handler로 등록하지 않는다(데코레이터 제외). 파이프라인 순서의 원본은 `PipelineDecorators`(BuildingBlocks.Application, 안쪽 → 바깥) 하나다.
+- Scrutor 7의 `Decorate`는 감싼 안쪽 단계를 같은 서비스 형식의 **keyed 등록**으로 남긴다. 등록을 세는 테스트는 키 없는 등록(가장 바깥) 하나와 전체 단계 수(Command 4, Query 3)를 나눠 확인한다.
 
 ## 비동기 프로그래밍 규칙
 
@@ -360,3 +374,4 @@ builder.Services.AddConventionalServices(
 | 2026-09-27 | developer | `.editorconfig` 표에 빌드 강제 · 테스트 예외 · 생성 코드(CS1591 none 병기, BL-047) 행 추가 (S01-T05) |
 | 2026-09-27 | developer | BuildingBlocks.Domain `sealed` 예외(Entity · AggregateRoot · Error · Result), `Error` 팩토리 · 생성 시 검증, `Result` 사용 규칙과 암시적 변환(BL-040) (S01-T06) |
 | 2026-09-27 | developer | CQRS 규칙에 Validator 공통 기반 `RequestValidator<T>` · `WithError` 규칙 추가 (S02-T02) |
+| 2026-09-27 | developer | DI 규칙에 BuildingBlocks 공통 등록 진입점 표, `IIdGenerator` 명시 등록 결정, `AddConventionalServices` 1회 호출 · 서비스 인터페이스 1개 검사 · keyed 데코레이터 등록 추가, Handler 예시 주석의 `NewId()` 확정 (S02-T03) |

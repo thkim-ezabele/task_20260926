@@ -19,6 +19,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.BuildingBlocks
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.BuildingBlocks.Application.UnitTests", "tests\BuildingBlocks\EmergencyHub.BuildingBlocks.Application.UnitTests\EmergencyHub.BuildingBlocks.Application.UnitTests.csproj", "{7AD433FB-515C-45DC-B2C1-404066051B0A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.BuildingBlocks.Infrastructure", "src\BuildingBlocks\EmergencyHub.BuildingBlocks.Infrastructure\EmergencyHub.BuildingBlocks.Infrastructure.csproj", "{58C3FF2E-2C48-4859-B236-961865D36C31}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.BuildingBlocks.Infrastructure.UnitTests", "tests\BuildingBlocks\EmergencyHub.BuildingBlocks.Infrastructure.UnitTests\EmergencyHub.BuildingBlocks.Infrastructure.UnitTests.csproj", "{D0BAEA27-6040-4689-9D56-9CAA8170E925}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,6 +48,14 @@ Global
 		{7AD433FB-515C-45DC-B2C1-404066051B0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7AD433FB-515C-45DC-B2C1-404066051B0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7AD433FB-515C-45DC-B2C1-404066051B0A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58C3FF2E-2C48-4859-B236-961865D36C31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58C3FF2E-2C48-4859-B236-961865D36C31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58C3FF2E-2C48-4859-B236-961865D36C31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58C3FF2E-2C48-4859-B236-961865D36C31}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0BAEA27-6040-4689-9D56-9CAA8170E925}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0BAEA27-6040-4689-9D56-9CAA8170E925}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0BAEA27-6040-4689-9D56-9CAA8170E925}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0BAEA27-6040-4689-9D56-9CAA8170E925}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{52869930-5044-4418-B2FA-8BD075033B70} = {D9B1C4DB-69E0-4939-8D3D-8C94181D667E}
@@ -52,5 +64,7 @@ Global
 		{D3E784B6-8645-4E42-9239-416595E8DC7B} = {96631316-6E41-40FF-82D7-F3E3042DF287}
 		{33F50C08-F60D-4A0A-B4F9-9F72D9E5D4F1} = {52869930-5044-4418-B2FA-8BD075033B70}
 		{7AD433FB-515C-45DC-B2C1-404066051B0A} = {96631316-6E41-40FF-82D7-F3E3042DF287}
+		{58C3FF2E-2C48-4859-B236-961865D36C31} = {52869930-5044-4418-B2FA-8BD075033B70}
+		{D0BAEA27-6040-4689-9D56-9CAA8170E925} = {96631316-6E41-40FF-82D7-F3E3042DF287}
 	EndGlobalSection
 EndGlobal
