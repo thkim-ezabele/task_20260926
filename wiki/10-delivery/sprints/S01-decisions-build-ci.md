@@ -110,6 +110,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T07 | dba | PASS | 해당 없음(DB 변경 없음). S03 CI 통합 테스트 대비 주의점 기록(BL-057) |
 | 2026-09-27 | S01-T07 | developer | PASS | `.github/workflows/ci.yml`(develop · main PR, Draft 포함, ubuntu-24.04, contents: read, 액션 SHA 고정, restore → build → format → test(커버리지) → ReportGenerator → 아티팩트), `coverlet.runsettings`. 로컬 Windows · Linux 컨테이너에서 같은 순서 성공(test 202, 커버리지 98.1%), actionlint 오류 0. 실측 수정 2건(runsettings 주석 `--`, cobertura 중복 합산 경로). 관련 문서 4개 갱신 |
 | 2026-09-27 | S01-T07 | reviewer | PASS | 직접 build 경고 0 · format · test 202, 트리거(develop · main, Draft 포함), 권한 contents: read · 비밀 0, global-json-file, 액션 SHA 3개 gh api 조회 일치, runsettings · ADR-0021/0022 · testing-strategy 정합, check-docs BL-018 외 0 |
+| 2026-09-27 | S01-T07 | tester | PASS | 새 clone(b8b155a)에서 ci.yml run 단계 순서대로: Windows 7단계 rc=0 합계 30초, Linux sdk:8.0 합계 52초(로컬 참고치). test 202, 보고서 생성 · 대상 어셈블리만 · 중복 합산 없음(라인 98.1% · 분기 100%), actionlint 0, SHA 일치 |
 
 ## 계획 리뷰
 
@@ -227,6 +228,7 @@ updated: 2026-09-27
 | TD-018 | 브랜치 보호 불가로 CI 필수 체크 미적용 | S01-T07 | |
 | BL-062 | 테스트 실패 시 커버리지 보고 생략 의도 명시 검토 | S01-T07 | |
 | BL-063 | reportgenerator 입력 패턴 합산 수 확인(S03) | S01-T07 | |
+| BL-064 | DoD: 러너 dotnet --info로 SDK 버전 확인 | S01-T07 | |
 
 ## 회고
 
