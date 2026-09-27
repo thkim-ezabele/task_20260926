@@ -109,6 +109,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T06 | tester | PASS | FR-04 인수 테스트 5건 추가(참조 어셈블리 System.* 뿐, Domain 전체 Error T ↔ ErrorType, FR-04 타입 · 마커, AggregateRoot 수집만, 시나리오). test 202/202, 경고 0, format 0, Domain 패키지 0건, CS1591 부정 점검 오류 확인, 커버리지 라인 98.22% · 분기 100%(보고만), error-codes.md 대조 일치. coverlet.runsettings는 T07 완료 조건으로 처리 |
 | 2026-09-27 | S01-T07 | dba | PASS | 해당 없음(DB 변경 없음). S03 CI 통합 테스트 대비 주의점 기록(BL-057) |
 | 2026-09-27 | S01-T07 | developer | PASS | `.github/workflows/ci.yml`(develop · main PR, Draft 포함, ubuntu-24.04, contents: read, 액션 SHA 고정, restore → build → format → test(커버리지) → ReportGenerator → 아티팩트), `coverlet.runsettings`. 로컬 Windows · Linux 컨테이너에서 같은 순서 성공(test 202, 커버리지 98.1%), actionlint 오류 0. 실측 수정 2건(runsettings 주석 `--`, cobertura 중복 합산 경로). 관련 문서 4개 갱신 |
+| 2026-09-27 | S01-T07 | reviewer | PASS | 직접 build 경고 0 · format · test 202, 트리거(develop · main, Draft 포함), 권한 contents: read · 비밀 0, global-json-file, 액션 SHA 3개 gh api 조회 일치, runsettings · ADR-0021/0022 · testing-strategy 정합, check-docs BL-018 외 0 |
 
 ## 계획 리뷰
 
@@ -224,6 +225,8 @@ updated: 2026-09-27
 | BL-060 | ReportGenerator 무료판 메서드 커버리지 표시 제한(기록) | S01-T07 | |
 | BL-061 | AggregateRoot protected 생성자 커버리지 제외 여부 | S01-T07 | |
 | TD-018 | 브랜치 보호 불가로 CI 필수 체크 미적용 | S01-T07 | |
+| BL-062 | 테스트 실패 시 커버리지 보고 생략 의도 명시 검토 | S01-T07 | |
+| BL-063 | reportgenerator 입력 패턴 합산 수 확인(S03) | S01-T07 | |
 
 ## 회고
 

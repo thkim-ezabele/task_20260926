@@ -88,6 +88,8 @@ updated: 2026-09-27
 | BL-059 | CI 소요 시간이 NFR-07 10분에 가까워지면(S03 Testcontainers 뒤) NuGet 캐시 재판단(packages.lock.json 또는 actions/cache) | S01-T07 | | new | S03 |
 | BL-060 | ReportGenerator 무료판 MarkdownSummaryGithub의 메서드 커버리지 "sponsors only" 표시(라인 · 분기는 정상, 기록만) | S01-T07 | | new | |
 | BL-061 | AggregateRoot<TId> protected 매개변수 없는 생성자 미실행: EF용이면 S03에서 커버리지 제외 여부 판단 | S01-T07 | | new | S03 |
+| BL-062 | ci.yml Coverage report 단계는 테스트 실패 시 건너뜀: 의도라면 testing-strategy CI 절에 명시 | S01-T07 | | new | |
+| BL-063 | reportgenerator 입력 패턴 `TestResults/*/coverage.cobertura.xml`이 결과 폴더 구조 변화 시 0건이 될 수 있음: 테스트 프로젝트 증가 시 합산 대상 수 확인 | S01-T07 | | new | S03 |
 
 ---
 
