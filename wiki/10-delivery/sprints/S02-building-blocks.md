@@ -59,7 +59,7 @@ updated: 2026-09-27
 - [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (로컬 -warnaserror 경고 0, 1033 통과 · 11 건너뜀(의도) · 실패 0. 통합 테스트는 S03-T05 범위)
 - [x] 관련 위키 문서(API, 이벤트, DB)를 갱신했다
 - [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
-- [ ] 토픽 브랜치를 push하고 `sprint/S02` 태그를 붙였다
+- [x] 토픽 브랜치를 push하고 `sprint/S02` 태그를 붙였다 (PR #7 CI run 36318766373 success)
 - [x] S03-T05로 이관한 DB 동작 검증 항목(실행 전략 + 트랜잭션, 감사 인터셉터 UTC, 읽기 연결 거부 25006, UUID DB 정렬, 23505 실제 발생과 제약 이름 → 3003 / 서비스 코드, RetryLimitExceeded → 9003, EF Error 로그 중복(BL-023))과 S03-T02 dba 검토 항목(idempotent SQL에 `xmin` 컬럼 생성 없음, `ux_` · `ck_` 이름 일치)을 결과 리뷰에 기록했다
 
 ## 진행 기록
@@ -108,6 +108,7 @@ updated: 2026-09-27
 | 2026-09-27 | S02-T05 | developer | PASS | 재작업(반려 1): (1) ControllersDoNotUseInfrastructureOrRepositories(형식 의존 IL + 시그니처 검사, 서비스 전용) (2) ArchitectureLayer.MigrationService = 5, MigrationServiceDoesNotDependOnApi + 선언 참조 분기 (3) ServiceRuleSet(MinimumServiceCount = 2) · ServiceDoesNotDependOnOtherServices + 선언 참조 서비스 격리(Domain 선언 허용은 BuildingBlocks.Domain만) (4) testing-strategy 규칙 목록 · 건너뜀 수 갱신. 새 규칙마다 표본 ShouldFlagExactly · FindViolations 테스트, 규칙 변형으로 실패 확인 후 되돌림, 테스트 어셈블리 임시 등록으로 서비스 전용 규칙 활성화 확인. RuleScope에 AssemblyOwnership enum. -warnaserror 경고 0, test 1033 통과 · 11 건너뜀(+31), format, check-docs 기준선. 새 억제 없음. 후보 TD-025 |
 | 2026-09-27 | S02-T05 | reviewer | PASS | 재판정: 반려 사유 3건 해결(ADR-0024 표 9행 + 표 아래 규칙과 테스트 1:1), -warnaserror 경고 0, test 1033 · 건너뜀 11(서비스 전용 10 + 서비스 격리 1, 의도), format. 경고 억제 승인: 테스트 CA1812 3건(Samples/ImplementationVisibility/InternalSampleClassifier.cs:9, InternalSampleCommandHandler.cs:9, Samples/ValidatorBases/InternalSampleCommandValidator.cs:8), 재작업 새 억제 없음. BL-078은 구현됨 → 종료 때 정리. 의견: ProductNames.ServiceOf 비서비스 프로젝트 제외 목록(S04) |
 | 2026-09-27 | S02-T05 | tester | PASS | 위반 재현 8종(제품 코드 임시 변형, 모두 되돌림 · src/tests 변경 없음 확인): M1 Domain → System.Text.Json, M2 Domain → EF Core 패키지, M3 Application → Scrutor, M4 Api → Infrastructure 참조 · DbUpdateException, M5 internal 구현 public, M6 sealed 제거, M7 Infrastructure → AspNetCore 형식, M8 Infrastructure → BuildingBlocks.Api — 각각 해당 규칙(과 선언 참조) 테스트만 실패. FR-09: 의존성 규칙 10개가 ADR-0024 표와 1:1. NFR-02: CI와 같은 Release + XPlat Code Coverage 명령에서 ArchitectureTests 74 통과 · 11 건너뜀(수집기 없음 메시지만). 전체 1033 통과 · 11 건너뜀. 테스트 추가 없음 |
+| 2026-09-27 | S02 | DoD | PASS | push b9ef628 → PR #7 CI https://github.com/thkim-ezabele/task_20260926/actions/runs/36318766373 success, 약 2분 10초(12:22:29~12:24:38Z), 러너 SDK 8.0.425. 테스트 Domain 215 · Application 224 · Api 154 · Infrastructure 366 통과, ArchitectureTests 수집기 없음으로 통과(건너뜀 11 의도). 태그 sprint/S02 |
 
 ## 계획 리뷰
 
