@@ -2,7 +2,7 @@ namespace EmergencyHub.BuildingBlocks.Infrastructure.UnitTests.Samples.Persisten
 
 /// <remarks>엣지: 정의된 비트가 없는 [Flags](마스크 0).</remarks>
 [Flags]
-public enum NoBitChannels
+public enum NoBitChannels : int
 {
     None = 0,
 }
