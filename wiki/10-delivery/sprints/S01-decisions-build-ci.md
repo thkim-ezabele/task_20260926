@@ -103,6 +103,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T05 | developer | PASS | sln · global.json(8.0.400 latestFeature) · Directory.Build.props/targets · Directory.Packages.props(전이 고정 4건) · .editorconfig · .gitattributes · 도구 매니페스트 · .gitignore 보강, 빈 골격 2개. build 경고 0 · test 1/1 · format · 취약 0. 실측 수정: WarningsAsErrors에 CS1591을 넣으면 editorconfig none보다 우선 → 제외, `옵션:error`는 빌드 미적용 → `dotnet_diagnostic` 심각도로 강제. renormalize 불필요(LF 102/105). BL-047 문서 반영 |
 | 2026-09-27 | S01-T05 | reviewer | PASS | 직접 build 경고 0 · format 0 · test 1/1, 공통 빌드 설정 표 · .editorconfig 표 일치, CS1591 · IVT 범위(msbuild 평가값), 전이 고정 · PrivateAssets · 도구 매니페스트 · .gitignore 비밀 파일, ADR 커밋 선행, 버전 표본 20종 일치, 취약 0 |
 | 2026-09-27 | S01-T05 | tester | PASS | 짧은 경로 clone(8b4c0dd): SDK 8.0.425 선택, tool restore · ef 8.0.31, build 경고 0 · test 1/1 · format · 취약 0. 부정 점검 5종 기대대로(CS0219 · CS1591 오류, Migrations · 테스트는 무오류, IDE0161 · IDE0011 오류), IVT는 Domain만, check-ignore 비밀 파일 제외, ADR 커밋 선행, i/crlf 0 |
+| 2026-09-27 | S01-T06 | dba | PASS | 해당 없음(DB 변경 없음). EF 매핑 주의점 6건 참고로 전달(강타입 ID 값 변환, DomainEvents Ignore, Id 기본값 동등성, 바인딩 생성자, Error 비저장, 동시성 토큰은 매핑 계층) |
 
 ## 계획 리뷰
 
@@ -204,6 +205,7 @@ updated: 2026-09-27
 | BL-050 | T06: 골격 확인 테스트 대체 · 삭제 | S01-T05 | |
 | BL-051 | IDE0005 빌드 강제 여부 | S01-T05 | |
 | TD-014 | 테스트 프로젝트 판별이 이름 규칙(*Tests)에 의존 | S01-T05 | |
+| TD-015 | 강타입 ID ValueConverter · DomainEvents Ignore 공통 처리 | S01-T06 | |
 
 ## 회고
 
