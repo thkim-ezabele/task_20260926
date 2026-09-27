@@ -9,6 +9,7 @@ public sealed class ProductNamesTests
     [InlineData("EmergencyHub.Employee.MigrationService", "EmergencyHub.Employee")]
     [InlineData("EmergencyHub.Employee.Domain.Tests", "EmergencyHub.Employee")]
     [InlineData("EmergencyHub.Employee", "EmergencyHub.Employee")]
+    [InlineData("EmergencyHub.AppHostile.Api", "EmergencyHub.AppHostile")]
     public void ServiceOf_ServiceProjectName_ReturnsFirstTwoSegments(string name, string expected) =>
         ProductNames.ServiceOf(name).Should().Be(expected);
 
@@ -16,6 +17,8 @@ public sealed class ProductNamesTests
     [InlineData("EmergencyHub.BuildingBlocks.Domain")]
     [InlineData("EmergencyHub.BuildingBlocks")]
     [InlineData("EmergencyHub.ServiceDefaults")]
+    [InlineData("EmergencyHub.AppHost")]
+    [InlineData("EmergencyHub.AppHost.Tests")]
     [InlineData("EmergencyHub")]
     [InlineData("EmergencyHubTools.Api")]
     [InlineData("Npgsql")]
@@ -26,6 +29,7 @@ public sealed class ProductNamesTests
     [InlineData("EmergencyHub.BuildingBlocks.Api", AssemblyOwnership.BuildingBlocks)]
     [InlineData("EmergencyHub.Employee.Infrastructure", AssemblyOwnership.Service)]
     [InlineData("EmergencyHub.ServiceDefaults", AssemblyOwnership.Unknown)]
+    [InlineData("EmergencyHub.AppHost", AssemblyOwnership.Unknown)]
     [InlineData("Npgsql", AssemblyOwnership.Unknown)]
     public void OwnershipOf_ProjectName_ClassifiesBuildingBlocksServiceOrUnknown(string name, AssemblyOwnership expected) =>
         ProductNames.OwnershipOf(name).Should().Be(expected);

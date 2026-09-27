@@ -15,6 +15,9 @@ public static class ProductNames
     /// <summary>서비스가 함께 쓰는 Aspire 서비스 기본값 프로젝트(ADR-0011). 서비스가 아니다.</summary>
     public const string ServiceDefaults = "EmergencyHub.ServiceDefaults";
 
+    /// <summary>로컬 오케스트레이션 호스트 프로젝트(ADR-0011, S03-T05). 서비스가 아니다(BL-086).</summary>
+    public const string AppHost = "EmergencyHub.AppHost";
+
     /// <summary>제품 프로젝트 이름의 소유를 판별한다.</summary>
     /// <param name="name">프로젝트 이름.</param>
     /// <returns>BuildingBlocks · 서비스 · 그 밖(<see cref="AssemblyOwnership.Unknown"/>).</returns>
@@ -32,7 +35,7 @@ public static class ProductNames
 
     /// <summary>서비스 프로젝트 이름의 서비스 접두사(<c>EmergencyHub.&lt;Service&gt;</c>).</summary>
     /// <param name="name">프로젝트 이름.</param>
-    /// <returns>서비스 접두사. BuildingBlocks · ServiceDefaults · 제품 밖 이름이면 <see langword="null"/>.</returns>
+    /// <returns>서비스 접두사. BuildingBlocks · ServiceDefaults · AppHost · 제품 밖 이름이면 <see langword="null"/>.</returns>
     public static string? ServiceOf(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -46,7 +49,7 @@ public static class ProductNames
 
         var service = $"{segments[0]}.{segments[1]}";
 
-        return service is BuildingBlocks or ServiceDefaults ? null : service;
+        return service is BuildingBlocks or ServiceDefaults or AppHost ? null : service;
     }
 
     /// <summary>이름이 접두사와 같거나 <c>접두사.</c>로 시작하면 <see langword="true"/>(점 단위 비교).</summary>

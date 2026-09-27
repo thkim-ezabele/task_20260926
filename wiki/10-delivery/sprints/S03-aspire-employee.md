@@ -46,7 +46,7 @@ updated: 2026-09-27
 | S03-T01 | 해당 없음(생략. `employees` 확정안은 계획 리뷰 결과) | TDD | 표준 진입 점검. 아키텍처 규칙은 커밋하지 않는 임시 목록 확장으로 대상이 있는 규칙만 판정 | 단위 테스트 실행, 인수 조건 대조 |
 | S03-T02 | 기준 SQL · 이름 상수 · 코드 표 입력, 생성 뒤 idempotent SQL 검토 · ERD | 매핑 · Repository 구현, 메타데이터 매핑 테스트 | 표준 진입 점검(아키텍처 규칙은 T01과 같은 방식) | 빌드 경고 0 · format · 매핑 테스트. 실제 적용은 T05 · T06 |
 | S03-T03 | MigrationService의 Write 연결 · MigrateAsync 적용 방식이 ADR-0011 · 0012와 같은지 검토 | 구현, 단위 테스트 | 표준 진입 점검 | 단위 테스트 실행, 인수 조건 대조 |
-| S03-T04 | 연결 문자열 키 · ready 검사가 ADR-0011 매핑과 같은지 확인 | TDD, Controller는 얇게, 아키텍처 목록 편입 | 표준 진입 점검(이 작업부터 아키텍처 규칙 자동 판정), 위반 재현 기록 확인 | 아키텍처 테스트(Skipped 0), 인수 조건 대조. HTTP 인수는 T07 |
+| S03-T04 | 연결 문자열 키 · ready 검사가 ADR-0011 매핑과 같은지 확인 | TDD, Controller는 얇게, 아키텍처 목록 편입 | 표준 진입 점검(이 작업부터 아키텍처 규칙 자동 판정), 위반 재현 기록 확인 | 아키텍처 테스트(서비스 전용 규칙 Skipped 0, 서비스 격리 규칙 1건은 서비스 2개부터라 Skipped 1), 인수 조건 대조. HTTP 인수는 T07 |
 | S03-T05 | DB 리소스 · 롤 스크립트 · 연결 식 작성 / 검토, psql 확인 항목 | AppHost 구현 | 비밀 점검 명령 실행, 설정 키 일치 | 볼륨 초기화 후 실행 기록, 재시작 2회, curl, Edge 캡처 · 마스킹 |
 | S03-T06 | 테스트 DB 구성(롤, read-only 연결, Respawn 제외 테이블), 테스트 전용 트리거 · 검증 쿼리 검토 | fixture · 장애 주입 도우미 · CI 변경 | 표준 진입 점검 | 주 작성자: P · S 시나리오 작성 · 실행, 실패 시 원인별 반려 |
 | S03-T07 | 해당 없음(생략. S2 대역 방식은 인계 메모) | WebApplicationFactory 도우미 | 표준 진입 점검 | 주 작성자: HTTP · 로그 시나리오 작성 · 실행 |
@@ -81,6 +81,7 @@ updated: 2026-09-27
 | 2026-09-27 | S03-T03 | reviewer | PASS | 진입 점검 15항목 통과(-warnaserror 경고 0, 통과 1,294 · 건너뜀 11 · 실패 0). TDD 순서 예외(ServiceDefaults 구현 먼저)는 ADR-0006 적용 범위(도메인 / 애플리케이션)와 기반 · 셋팅 테스트 범위상 허용. ADR-0020 · TD-012 주석 · package-versions 부합. 복사본 아키텍처 점검(4개 레이어) 위반 0, 대상 0개 실패는 Controller 규칙 1건. 후보 BL-091~093, TD-012는 이미 이행(결과 리뷰에서 상태 판단) |
 | 2026-09-27 | S03-T03 | tester | PASS | 인수 조건 대조 결과 빈 곳 없음(추가 0). 경고 0, 통과 1,294 · 건너뜀 11 · 실패 0. MigrationService 금지 호출 grep 0건, MigrateAsync는 실행 전략 안 1곳, 빌드 출력에 Api dll 없음. FR-03 · 08 · 09의 T03 범위 확인. handoff → T04(건너뜀 11 → 0) · T05(실패 경로 28P01) · T06(실제 호스트로 ApplyMigrationsAsync 실행) |
 | 2026-09-27 | S03-T04 | dba | PASS | DB 변경 없음. database.md '공통 DbContext 등록 > Api 등록 사양(S03-T04)' 추가: AddServiceDefaults 뒤 AddEmployeeInfrastructure 하나, 연결 키 Write · Read만(Api 설정 파일에 ConnectionStrings 없음), 재시도 임시값 3회 · 5초(BL-073, T06 실측 후 확정), AddDbContextCheck 2개 ReadyTag(읽기 검사는 CanConnect라 쓰기 없음), EnableSensitiveDataLogging 미사용, Migrate · EnsureCreated · EF Design 없음. 진입 점검에서 ADR-0020 Development opt-in 경로 미구현 발견 → 후보 BL-094 |
+| 2026-09-28 | S03-T04 | developer | PASS | Employee Api(Controller ISender만, POST 201 CreatedAtRoute + { id }, GET {id} 경로 제약 없음, Program: AddServiceDefaults → AddEmployeeInfrastructure(DbRetry 3회 · 5초 임시) → ready 검사 2개 → AddBuildingBlocksApi, 요청 로그 헬스 제외)와 아키텍처 테스트 Employee 5개 레이어 편입 · 안전장치(src 제품 프로젝트 누락 검사) · ProductNames AppHost 비서비스(BL-086). TDD Red(CS5001) → Green. 위반 3종 임시 재현: Controller Repository 주입 → ControllersDoNotUseInfrastructureOrRepositories 실패, MigrationService → BuildingBlocks.Api 참조 → DeclaredReferences · MigrationServiceDoesNotDependOnApi 실패, Handler ISender 주입 → HandlersDoNotDependOnSender 실패, 모두 되돌림(git status 확인). 05-api employee-api.md 작성, api-reference draft. 테스트 51건 추가 · 통과 1,360 · 건너뜀 1 · 실패 0, 경고 0, format 통과. 남은 건너뜀 1은 ServicesDoNotDependOnOtherServices(MinimumServiceCount=2 설계, 서비스 1개)이고 서비스 전용 규칙 10개는 건너뜀 0 → 메인 세션 판단: 완료 조건('서비스 전용 규칙 건너뜀 0') 충족, 파이프라인 표 tester 기대값을 'Skipped 1(서비스 격리, 서비스 2개부터)'로 정정. 후보 BL-095 |
 
 ## 계획 리뷰
 

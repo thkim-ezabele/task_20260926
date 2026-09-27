@@ -61,6 +61,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.Employee.Migra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.Employee.MigrationService.UnitTests", "tests\Services\Employee\EmergencyHub.Employee.MigrationService.UnitTests\EmergencyHub.Employee.MigrationService.UnitTests.csproj", "{3700BB6D-F22C-4BCE-A1E3-EDF73119A037}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.Employee.Api", "src\Services\Employee\EmergencyHub.Employee.Api\EmergencyHub.Employee.Api.csproj", "{2E5EC9B6-DCAE-49A2-9D86-AC539539B71B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.Employee.Api.UnitTests", "tests\Services\Employee\EmergencyHub.Employee.Api.UnitTests\EmergencyHub.Employee.Api.UnitTests.csproj", "{6E5C28C1-82B7-4567-8815-89896D9D6537}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -146,6 +150,14 @@ Global
 		{3700BB6D-F22C-4BCE-A1E3-EDF73119A037}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3700BB6D-F22C-4BCE-A1E3-EDF73119A037}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3700BB6D-F22C-4BCE-A1E3-EDF73119A037}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E5EC9B6-DCAE-49A2-9D86-AC539539B71B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E5EC9B6-DCAE-49A2-9D86-AC539539B71B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E5EC9B6-DCAE-49A2-9D86-AC539539B71B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E5EC9B6-DCAE-49A2-9D86-AC539539B71B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E5C28C1-82B7-4567-8815-89896D9D6537}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E5C28C1-82B7-4567-8815-89896D9D6537}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E5C28C1-82B7-4567-8815-89896D9D6537}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E5C28C1-82B7-4567-8815-89896D9D6537}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{52869930-5044-4418-B2FA-8BD075033B70} = {D9B1C4DB-69E0-4939-8D3D-8C94181D667E}
@@ -175,5 +187,7 @@ Global
 		{5D8D2EA8-3E8C-463B-A7E8-D687CD58E68A} = {A6B46E25-767B-43BF-823F-8E2E3ABF1ABF}
 		{6BA006F3-2F78-4E59-AE9E-4AA5A28EA39D} = {7A373D14-0277-4507-B9C4-C89E5A4AD494}
 		{3700BB6D-F22C-4BCE-A1E3-EDF73119A037} = {81CDF134-34E6-4383-9804-F8166CA2C26E}
+		{2E5EC9B6-DCAE-49A2-9D86-AC539539B71B} = {7A373D14-0277-4507-B9C4-C89E5A4AD494}
+		{6E5C28C1-82B7-4567-8815-89896D9D6537} = {81CDF134-34E6-4383-9804-F8166CA2C26E}
 	EndGlobalSection
 EndGlobal

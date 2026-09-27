@@ -5,7 +5,7 @@ status: stable
 tags: [home]
 aliases: [Home, 위키 홈]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # Emergency Hub Backend Wiki
@@ -61,6 +61,7 @@ updated: 2026-09-27
 
 ### 05. API & 이벤트 명세
 - [API 레퍼런스](05-api/api-reference.md)
+  - [직원 API (Employee)](05-api/employee-api.md)
 - [이벤트 카탈로그](05-api/event-catalog.md)
 - [에러 코드](05-api/error-codes.md)
 
