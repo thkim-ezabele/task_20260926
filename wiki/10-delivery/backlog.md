@@ -120,6 +120,7 @@ updated: 2026-09-27
 | BL-091 | coding-conventions 코드값 규칙 '0은 None/Unknown 예약'의 적용 범위 명시: 프로세스 종료 코드처럼 외부 규약상 0이 의미 있는 internal enum(MigrationExitCode Succeeded=0)은 예외 | S03-T03 reviewer | | new | 회고 판정 근거 |
 | BL-092 | coding-conventions DI 규칙에 IHostedService(AddHostedService)를 Program에서 명시 등록해도 되는지 명시(현재 표는 서비스 · Repository · Handler만) | S03-T03 reviewer | | new | |
 | BL-093 | ADR-0006 결과 36행(developer는 단위 테스트 먼저)과 결정 41행(도메인 / 애플리케이션 로직)의 적용 범위 차이를 tdd-guide 레이어 표에 호스트 구성(ServiceDefaults 등) 행으로 명시 | S03-T03 reviewer | | new | S03-T03에서 ServiceDefaults 구현 먼저 · 변형 5개로 테스트 실패 확인, reviewer가 허용 판정 |
+| BL-094 | ADR-0020 EnableSensitiveDataLogging Development opt-in 경로 미구현: 공용 등록 확장 한 곳의 IsDevelopment() && Database:EnableSensitiveDataLogging 판단과 환경별 단위 테스트(ADR-0020 82행은 S02-T04 검증으로 적었으나 누락). 현재 모든 환경에서 꺼져 있어 안전 쪽 | S03-T04 dba | | new | 트리거: 로컬 SQL 파라미터 디버깅 필요 시 또는 결과 리뷰 |
 
 ---
 
