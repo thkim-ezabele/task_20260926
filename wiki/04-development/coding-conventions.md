@@ -250,6 +250,23 @@ internal sealed class EmployeeReadRepository(EmployeeReadDbContext db)
 }
 ```
 
+### 영속성 기반 형식 (BuildingBlocks.Infrastructure.Persistence)
+
+DB 규칙의 원본은 [데이터베이스 · EF Core 공통 모델 규칙](database.md#ef-core-공통-모델-규칙-buildingblocksinfrastructure)이고, 아래는 서비스 코드가 쓰는 형식입니다(S02-T04).
+
+| 형식 | 서비스 코드에서 쓰는 방법 |
+|---|---|
+| `WriteDbContextBase` / `ReadDbContextBase` | `<Service>DbContext` / `<Service>ReadDbContext`가 상속하고 `ModelDefinition`만 재정의한다. `ConfigureConventions` · `OnModelCreating`은 봉인되어 있다. 읽기 기반은 `NoTracking` 기본값이고 `SaveChanges` 오버로드 4개가 `InvalidOperationException`을 던진다 |
+| `IDbModelDefinition` | 서비스 Infrastructure에 구현 하나를 두고 두 DbContext가 **같은 인스턴스**를 돌려준다. `StronglyTypedIdAssemblies`(보통 Domain), `ConfigureModel`(`ApplyConfigurationsFromAssembly`) |
+| `IStronglyTypedId<TSelf>`(Domain) | `public readonly record struct EmployeeId(Guid Value) : IStronglyTypedId<EmployeeId>;` 값 변환기 · 키 `ValueGeneratedNever`는 공통 규칙이 건다(엔티티마다 `HasConversion` 금지) |
+| `HasUniqueIndex(e => ..., 이름 상수)` · `UniqueIndexName` | 이름 상수는 `public static readonly UniqueIndexName EmployeesEmail = new("ux_employees_email");`처럼 서비스가 한 곳에 둔다(`ux_` 접두사 · 소문자 snake_case · 63바이트 검사) |
+| `HasCodeCheckConstraint()` / `HasFlagsCheckConstraint()` | `builder.Property(e => e.EmployeeStatus).HasCodeCheckConstraint();` 이름 · SQL은 공통 규칙이 enum 정의와 최종 컬럼 이름으로 만든다 |
+| `ShadowPropertyNames` | `CreatedAt` · `UpdatedAt` · `Version`. 프로젝션은 `EF.Property<DateTimeOffset>(e, ShadowPropertyNames.CreatedAt)` |
+
+- 강타입 ID는 `Guid` 하나를 받는 public 생성자가 있어야 한다(위치 기반 `record struct`면 자동). 없으면 그 형식을 쓰는 모델 생성이 실패한다.
+- 도메인 이벤트(`IDomainEvent` 구현 형식)는 속성 · 탐색에서 모두 빠진다. Aggregate에 구체 이벤트 형식의 속성을 두어도 매핑되지 않는다.
+- 감사 인터셉터 · snake_case · 실행 전략은 공통 등록 확장이 붙인다(S02-T07). 서비스 코드에서 직접 붙이지 않는다.
+
 ## 의존성 주입 (DI) 규칙
 
 **서비스와 Repository는 `Scoped`로, 타입 검색(assembly scanning)을 통해 자동 등록**합니다. `Program.cs`나 `DependencyInjection.cs`에서 구현 타입을 하나씩 등록하지 않습니다.
@@ -258,8 +275,8 @@ BuildingBlocks에 등록 기준이 되는 **마커 인터페이스와 기반 클
 
 | 종류 | 상속 대상 | 등록 |
 |---|---|---|
-| Write Repository | 인터페이스: `IRepository` 상속 / 구현: `RepositoryBase<TDbContext>` 상속 | Scoped |
-| Read Repository | 인터페이스: `IReadRepository` 상속 / 구현: `ReadRepositoryBase<TDbContext>` 상속 | Scoped |
+| Write Repository | 인터페이스: `IRepository` 상속 / 구현: `RepositoryBase<TContext>`(`TContext : WriteDbContextBase`) 상속 | Scoped |
+| Read Repository | 인터페이스: `IReadRepository` 상속 / 구현: `ReadRepositoryBase<TContext>`(`TContext : ReadDbContextBase`) 상속 | Scoped |
 | 서비스 (도메인 서비스, 외부 연동 어댑터 등) | 인터페이스: `IService` 상속 | Scoped |
 | Command / Query Handler, Validator | `ICommandHandler<,>` / `IQueryHandler<,>` / `AbstractValidator<T>` | `AddConventionalServices` 안에서 Scoped 등록(Handler는 Scrutor `Scan`, Validator는 `AddValidatorsFromAssemblies`). 데코레이터는 Scrutor `TryDecorate` |
 
@@ -269,9 +286,11 @@ public interface IRepository;
 public interface IReadRepository;
 public interface IService;
 
-public abstract class RepositoryBase<TDbContext>(TDbContext db) where TDbContext : DbContext
+// 쓰기 기반은 WriteDbContextBase, 읽기 기반은 ReadDbContextBase만 받는다(컴파일 시점에 섞이지 않음, S02-T04)
+public abstract class RepositoryBase<TContext> where TContext : WriteDbContextBase
 {
-    protected TDbContext Db { get; } = db;
+    protected RepositoryBase(TContext db) { ArgumentNullException.ThrowIfNull(db); Db = db; }
+    protected TContext Db { get; }
 }
 
 // Domain / Application: 인터페이스가 마커를 상속
@@ -375,3 +394,4 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 | 2026-09-27 | developer | BuildingBlocks.Domain `sealed` 예외(Entity · AggregateRoot · Error · Result), `Error` 팩토리 · 생성 시 검증, `Result` 사용 규칙과 암시적 변환(BL-040) (S01-T06) |
 | 2026-09-27 | developer | CQRS 규칙에 Validator 공통 기반 `RequestValidator<T>` · `WithError` 규칙 추가 (S02-T02) |
 | 2026-09-27 | developer | DI 규칙에 BuildingBlocks 공통 등록 진입점 표, `IIdGenerator` 명시 등록 결정, `AddConventionalServices` 1회 호출 · 서비스 인터페이스 1개 검사 · keyed 데코레이터 등록 추가, Handler 예시 주석의 `NewId()` 확정 (S02-T03) |
+| 2026-09-27 | developer | Repository 규칙에 영속성 기반 형식 절 추가(DbContext 기반 · 모델 정의 · 강타입 ID · `ux_` / `ck_` 도우미 · shadow property 이름), DI 예시의 `RepositoryBase` 제약을 `WriteDbContextBase`로 정정 (S02-T04) |

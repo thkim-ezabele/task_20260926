@@ -2,6 +2,7 @@ using System.Reflection;
 using EmergencyHub.BuildingBlocks.Domain.Entities;
 using EmergencyHub.BuildingBlocks.Domain.Errors;
 using EmergencyHub.BuildingBlocks.Domain.Events;
+using EmergencyHub.BuildingBlocks.Domain.Identifiers;
 using EmergencyHub.BuildingBlocks.Domain.Repositories;
 using EmergencyHub.BuildingBlocks.Domain.Results;
 
@@ -59,6 +60,7 @@ public sealed class DomainAssemblyAcceptanceTests
             typeof(Result),
             typeof(Result<>),
             typeof(IRepository),
+            typeof(IStronglyTypedId<>),
         ]);
         typeof(IDomainEvent).GetMembers().Should().BeEmpty("IDomainEvent는 마커 인터페이스다");
         typeof(IRepository).GetMembers().Should().BeEmpty("IRepository는 마커 인터페이스다");

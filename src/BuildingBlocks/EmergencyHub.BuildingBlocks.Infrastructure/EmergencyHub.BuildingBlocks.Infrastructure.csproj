@@ -2,13 +2,16 @@
 
   <!--
     공통 설정은 Directory.Build.props. Infrastructure는 Application · Domain과 Scrutor(ADR-0017),
-    FluentValidation DI 확장(ADR-0018), UUIDNext(ADR-0013)를 참조한다.
+    FluentValidation DI 확장(ADR-0018), UUIDNext(ADR-0013),
+    EF Core Npgsql 공급자 · EFCore.NamingConventions(ADR-0005, ADR-0009, database.md "EF Core 공통 모델 규칙")를 참조한다.
     ASP.NET Core · BuildingBlocks.Api는 참조하지 않는다(ADR-0024).
   -->
   <ItemGroup>
     <PackageReference Include="Scrutor" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="UUIDNext" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="EFCore.NamingConventions" />
   </ItemGroup>
 
   <ItemGroup>
