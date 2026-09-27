@@ -77,6 +77,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T01 | dba | BLOCKED | EF 계열 8.0.31 정합(Npgsql.EFCore 8.0.11, NamingConventions 8.0.3), Aspire `AddDatabase` 실제 생성 · `WithCreationScript`는 9.2.0+, 클라이언트 통합 net8.0에 EF9 유입 없음, PG 17 양쪽 명시 필수(Testcontainers 기본 생성자 Obsolete), 상용 라이선스 0건. 막힘: Aspire 9.x 전 버전 NuGet 폐기(out of support), 클라이언트 통합 9.5.2의 NU1902(OpenTelemetry.Api 1.9.0). Docker 꺼짐으로 생성 스크립트 동작 미실측 |
 | 2026-09-27 | S01-T01 | dba | PASS | 사용자 결정: Aspire 9.5.2 유지(지원 종료는 Aspire ADR 명시 + TD-005, 재검토 BL-002). NU1902는 T02(BL-004), 생성 스크립트 실측은 BL-003으로 이관 후 재판정 |
 | 2026-09-27 | S01-T01 | developer | PASS | `package-versions.md` 신규(패키지 · 라이선스 · 출처 표), PRD Q19 해소. Aspire 9.5 지원 종료 2025-11-11, global.json 8.0.400 + latestFeature 권장(로컬 SDK 8.0.202는 xunit.v3 빌드 실패 → 8.0.425 설치 필요), MessagePack 2.5.192 취약(AppHost 전이) → 2.5.305 고정 + `NuGetAuditMode=all`, OTel 1.19.x, 상용 0건. 스크래치(SDK 8.0.425)에서 restore · build 경고 0 · test 통과 |
+| 2026-09-27 | S01-T01 | reviewer | PASS | 코드 점검 15개 해당 없음. 출처 링크 · 버전 표기 · FR-01① · 완료 조건 전 항목 · frontmatter · 상대 링크 · ADR 불변 확인 |
 
 ## 계획 리뷰
 
@@ -131,6 +132,8 @@ updated: 2026-09-27
 | TD-007 | MessagePack 2.5.305 수동 고정 유지(Aspire.Hosting 전이 취약) | S01-T01 | |
 | TD-008 | net8.0 앱에 Microsoft.Extensions.* · DiagnosticSource 10.0.0 전이 유입 | S01-T01 | |
 | TD-009 | xUnit v2 선택 시 Legacy 폐기 상태 | S01-T01 | |
+| BL-010 | 클라이언트 통합의 net8.0 EF Core 의존 버전 · 하한 명시(T02) | S01-T01 | |
+| BL-011 | PostgreSQL 이미지 · .NET SDK 라이선스 행 추가 검토 | S01-T01 | |
 
 ## 회고
 
