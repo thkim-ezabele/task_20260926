@@ -84,6 +84,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T02 | 사용자 확인 | 승인 | 초안 4건 수정 없음. 클라이언트 통합 미사용, ServiceDiscovery · Http.Resilience 0011 포함, 23514 미변환, 리셋 기록 footer 없음, Q12 롤 생성은 init 스크립트 + 생성 스크립트로 구체화 |
 | 2026-09-27 | S01-T02 | developer 2차 | PASS | ADR 0011~0014 `accepted` 생성(초안과 diff 동일), ADR 목록 · design.md · PRD Q9/Q10/Q12/Q13 링크 갱신, 점검 결함 0 |
 | 2026-09-27 | S01-T02 | reviewer | PASS | 템플릿 · frontmatter · 링크(check-docs 결함 0), ADR 0005 / 0009 정합, 0001~0010 불변, PRD Q 결론 일치, 완료 조건 필수 항목 전부 확인 |
+| 2026-09-27 | S01-T02 | tester | PASS | Q9 · Q10 · Q12(승인된 구체화) · Q13 결론과 본문 grep 대조 일치, 0011~0014 accepted, check-docs 17개 결함 0, 스크립트 부정 점검 6종 exit 1 · 정상 exit 0, 완료 조건 필수 항목 전부 존재, 0001~0010 불변 |
 
 ## 계획 리뷰
 
