@@ -210,7 +210,7 @@ curl -s -i http://localhost:5180/health/ready
 PowerShell:
 
 ```powershell
-$body = '{"displayName":"Hong Gildong","email":"hong.gildong@example.com","employeeStatus":1}'
+$body = '{"displayName":"Hong Gildong","email":"Hong.Gildong@Example.com","employeeStatus":1}'
 $created = Invoke-RestMethod -Method Post -Uri http://localhost:5180/api/v1/employees -ContentType 'application/json' -Body $body
 $created | ConvertTo-Json
 Invoke-RestMethod "http://localhost:5180/api/v1/employees/$($created.id)" | ConvertTo-Json
@@ -219,7 +219,7 @@ Invoke-RestMethod "http://localhost:5180/api/v1/employees/$($created.id)" | Conv
 Git Bash(두 번째 명령의 `<id>`에 첫 응답의 `id`를 넣습니다):
 
 ```bash
-curl -s -i -X POST http://localhost:5180/api/v1/employees -H 'Content-Type: application/json' -d '{"displayName":"Hong Gildong","email":"hong.gildong@example.com","employeeStatus":1}'
+curl -s -i -X POST http://localhost:5180/api/v1/employees -H 'Content-Type: application/json' -d '{"displayName":"Hong Gildong","email":"Hong.Gildong@Example.com","employeeStatus":1}'
 curl -s -i http://localhost:5180/api/v1/employees/<id>
 ```
 
@@ -237,10 +237,10 @@ Location: http://localhost:5180/api/v1/employees/01a0e476-6e69-7265-b4ce-88b1310
 HTTP/1.1 200 OK
 Content-Type: application/json; charset=utf-8
 
-{"id":"01a0e476-6e69-7265-b4ce-88b1310f916f","displayName":"Hong Gildong","email":"hong.gildong.t03@example.com","employeeStatus":1,"createdAt":"2026-09-27T20:02:42.293017+00:00","updatedAt":"2026-09-27T20:02:42.293017+00:00"}
+{"id":"01a0e476-6e69-7265-b4ce-88b1310f916f","displayName":"Hong Gildong","email":"hong.gildong@example.com","employeeStatus":1,"createdAt":"2026-09-27T20:02:42.293017+00:00","updatedAt":"2026-09-27T20:02:42.293017+00:00"}
 ```
 
-- `email`은 소문자로 정규화되어 저장됩니다(위 예는 `Hong.Gildong.T03@Example.com`으로 등록). `employeeStatus`는 정수(`1` = Active), 시각은 UTC입니다. PowerShell은 같은 값을 `ConvertTo-Json` 형식으로 출력합니다.
+- `email`은 소문자로 정규화되어 저장됩니다(위 명령은 `Hong.Gildong@Example.com`으로 등록하고, 조회 응답은 `hong.gildong@example.com`). `employeeStatus`는 정수(`1` = Active), 시각은 UTC입니다. PowerShell은 같은 값을 `ConvertTo-Json` 형식으로 출력합니다.
 
 ### Swagger
 
@@ -295,7 +295,6 @@ dotnet ef migrations has-pending-model-changes --project src/Services/Employee/E
 | 생성된 마이그레이션 파일(`<ID>_<이름>.cs` · `.Designer.cs` · `ModelSnapshot.cs`) 직접 수정 | 생성 코드는 고치지 않는다. sealed 처리는 partial 선언 파일로 한다 | `*.Sealed.cs` partial 선언 |
 | 개별 마이그레이션 부분 수정 · 임의 재생성 | 운영 전 리셋(`InitialCreate` 재생성)만 예외이고 절차가 정해져 있다 | [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md) 리셋 절차 ①~⑤ |
 | 트랜잭션을 끄는 마이그레이션(`suppressTransaction: true`, `CREATE INDEX CONCURRENTLY` 등) | MigrationService 재시도가 `MigrateAsync` 전체를 다시 실행하므로 마이그레이션마다 트랜잭션이어야 안전하다 | 트랜잭션 안에서 실행되는 DDL로 설계 |
-
 
 ## 초기화 (볼륨 · user-secrets)
 
@@ -368,7 +367,6 @@ dotnet user-secrets list --project src/Aspire/EmergencyHub.AppHost | sed -E 's/ 
 - **볼륨만 지우는 경우**: 비밀번호 불일치(`28P01`) 복구나 생성 스크립트 실패 복구처럼 user-secrets는 그대로 두고 볼륨만 새로 만들면 되는 경우에는 ①, ②만 하고 다시 실행합니다. 남아 있는 비밀번호로 빈 볼륨이 초기화됩니다.
 - **버전 확인 끄기(선택, BL-097)**: `Aspire:VersionCheck:*` 기록을 원하지 않으면 실행하는 셸에 `ASPIRE_VERSION_CHECK_DISABLED=true`를 줍니다(키 이름은 Aspire.Hosting 9.5.2 어셈블리 문자열로 확인). 저장소 기본값은 켜짐이며 설정 파일에는 두지 않습니다. PowerShell: `$env:ASPIRE_VERSION_CHECK_DISABLED = 'true'`, Git Bash: `export ASPIRE_VERSION_CHECK_DISABLED=true`.
 
-
 ---
 
 ## 변경 이력
@@ -378,3 +376,4 @@ dotnet user-secrets list --project src/Aspire/EmergencyHub.AppHost | sed -E 's/ 
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-28 | dba | DB 마이그레이션 절(도구 매니페스트, `--context` 필수, 허용 명령 5개 · 금지 명령 표, 셸별 실행 예)과 초기화 (볼륨 · user-secrets) 절(이름 있는 볼륨만 삭제 + user-secrets clear 함께, 키 4종, 셸별 명령, 볼륨만 지우는 경우, 버전 확인 끄기) 작성. 나머지 절은 developer 단계에서 작성 (S04-T03) |
 | 2026-09-28 | developer | `draft`로 작성: 셸 표기 규칙, 사전 준비(SDK 8.0.400 이상 · `global.json`, Docker Engine API 1.44 / `DOCKER_API_VERSION=1.43`(BL-102), 도구 매니페스트, 개발 인증서 확인 · 신뢰 명령과 `http` 프로필 대안(BL-099)), 저장소 클론(짧은 경로 · MAX_PATH, BL-049), docker compose 제목을 "로컬 구성 (Aspire AppHost)"으로 바꿈, 로컬 설정(사전 설정 없음, 키 이름만 확인), 서비스 빌드 및 실행(명령 1개, 프로필 2개, 대시보드 확인, 중지 · 프로세스 종료 명령), 동작 확인(헬스, 등록 → 조회 두 셸 실측, Swagger). DB 마이그레이션 · 초기화 절은 dba 작성분 유지하고 절 순서만 뒤로 (S04-T03) |
+| 2026-09-28 | developer | 반려 1회째 재작업: 등록 → 조회 두 셸 명령의 `email`을 대소문자 섞인 `Hong.Gildong@Example.com`으로 바꾸고 기대 결과 조회 응답을 소문자 정규화 값 `hong.gildong@example.com`으로 맞춤(입력 → 출력 일치), 연속 빈 줄 2곳 정리 (S04-T03) |
