@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [development]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 로깅 & 관측성
@@ -109,7 +109,7 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 - **예상 가능한 실패(`Result` 실패)는 `Error`가 아니다.** 검증 실패 · 대상 없음 · 규칙 위반은 요청 로그의 상태 코드로 충분하고, 업무상 의미가 있을 때만 `Information` / `Warning`으로 남긴다.
 - 프레임워크 로그는 `Microsoft`, `System`을 `Warning`으로 낮추고 `Microsoft.Hosting.Lifetime`만 `Information`으로 둔다. `Microsoft.AspNetCore` = `Warning`으로 ASP.NET Core 자체 요청 로그를 낮춰 `UseSerilogRequestLogging()`과 중복되지 않게 한다.
 - EF Core 로그 수준(`Serilog:MinimumLevel:Override`): 기본 `Microsoft.EntityFrameworkCore` = `Warning`, `Microsoft.EntityFrameworkCore.Database.Command` = `Warning`. `appsettings.Development.json`에서만 `Microsoft.EntityFrameworkCore.Database.Command` = `Information`(SQL 문장 · 소요 시간, 파라미터 값은 `?`). Npgsql 자체 로그는 켜지 않는다(SQL 로그는 EF Core 범주 하나로, [ADR-0020](../03-architecture/adr/0020-logging-with-serilog-and-otlp.md)).
-- 정상 경합의 `23505`에서 EF Core가 남기는 `Error` 로그 2건의 수준 조정 여부는 S02-T04에서 정한다(BL-023).
+- EF Core 실패 이벤트 `CommandError` · `SaveChangesFailed` · `TransactionError`는 `Debug`로 낮춘다(BL-023 결정, S03-T06). 정상 경합(`23505` → 서비스 코드)과 재시도로 회복한 일시 오류에 `Error`가 남지 않게 하고, 예상 밖 DB 오류는 경계(전역 예외 처리기 이벤트 1, MigrationService Worker)에서 한 번만 남긴다. 설정 위치는 공통 옵션 구성 `UseBuildingBlocksNpgsql` 한 곳이다(`Serilog:MinimumLevel:Override`로 하지 않음, 범주가 아니라 이벤트 단위이기 때문). 근거와 실측은 [데이터베이스 · 영속성 예외 변환](database.md#영속성-예외-변환).
 
 ## 로그 작성 규칙
 
@@ -207,3 +207,4 @@ ServiceDefaults의 `MapDefaultEndpoints`가 매핑합니다(S03-T03, BL-030). �
 | 2026-09-27 | developer | ADR 0020 · 0023 반영: 등록 · 설정(`Logging:LogLevel` 미사용), OTLP 중복 방지, EF 로그 수준, EF · Npgsql 민감 데이터 규칙, 로그 수집기 · 추적 백엔드 보류 (S01-T04) |
 | 2026-09-27 | developer | 전역 예외 처리기의 예외 기록 방식(메시지를 뺀 사본, 이벤트 ID 1)과 프레임워크 예외 미들웨어 로그 끄기 (S02-T06) |
 | 2026-09-27 | developer | 헬스체크 경로 · 노출 환경(모든 환경) · 응답 본문(상태 문자열만), ServiceDefaults Serilog 구성(`ReadFrom.Services`, ExceptionHandlerMiddleware 범주 `MinimumLevel.Override` 끄기) (S03-T03) |
+| 2026-09-28 | developer | EF 실패 이벤트 3개 `Debug`(BL-023 결정), 설정 위치 한 곳과 경계 로그 (S03-T06) |

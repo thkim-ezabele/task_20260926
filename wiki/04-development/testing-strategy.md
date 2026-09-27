@@ -121,6 +121,12 @@ AppHost의 로컬 DB 구성([데이터베이스 · 로컬 DB 구성](database.md
 - **대기 전략**: Testcontainers.PostgreSql 4.15.0 기본 대기는 컨테이너 안에서 `pg_isready --host localhost`(TCP)를 반복한다. 초기화 스크립트가 도는 임시 서버는 유닉스 소켓만 열어 TCP 검사가 통과하지 않으므로, 초기화가 끝나고 최종 서버가 뜬 뒤에야 준비로 판정한다(실측: 임시 서버 로그에 `listening on Unix socket`만 있고 IPv4 · IPv6 수신은 최종 서버에서만 나옴). 로그 문구 대기(`database system is ready to accept connections`)로 바꾸지 않는다. 이 문구는 임시 서버와 최종 서버에서 **두 번** 나와 첫 번째에 준비로 판정하면 롤 · DB가 없는 상태에서 연결한다.
 - 첫 연결 확인: fixture 시작 직후 `employee_app`으로 연결해 `SELECT current_user`(= `employee_app`)와 `SELECT rolsuper FROM pg_roles WHERE rolname = current_user`(= `f`)를 단언하면 초기화 스크립트 공유 마운트가 동작한 것이다.
 - 정리: 컨테이너 폐기 뒤 `docker volume ls`에 테스트가 만든 익명 볼륨이 남지 않는지 tester가 한 번 확인한다(`postgres` 이미지는 데이터 경로에 익명 볼륨을 만든다).
+- **구현**(S03-T06, `tests/Services/Employee/EmergencyHub.Employee.IntegrationTests`):
+  - `Fixtures/EmployeeDatabaseFixture`(컬렉션 fixture, `EmployeeDatabaseCollectionDefinition.Name`): `WriteConnectionString` · `ReadConnectionString` · `ConnectionStringSettings`(`ConnectionStrings:Write` · `Read`, `WebApplicationFactory` 설정 주입용) · `WriteConnectionStringWith(...)`(P1 `Options` · 잘못된 비밀번호 등), `CreateServices(EmployeeServicesOptions?)`(운영 `AddEmployeeInfrastructure` + `FakeLogCollector` 전 수준), `ApplyMigrationsAsync`(MigrationService 등록 + 실행 전략 안 `MigrateAsync`, 재적용 테스트도 사용), `ResetAsync` · `RespawnDeleteSql`, `OpenWriteConnectionAsync` · `OpenReadConnectionAsync`.
+  - `Fixtures/EmployeeDatabaseTest`: 테스트마다 시작 전 `ResetAsync`를 부르는 기반 클래스(파생 클래스에 `[Collection(EmployeeDatabaseCollectionDefinition.Name)]`).
+  - 태그 · 생성 스크립트 대조: `PostgresImage`(메타데이터 `EmergencyHubPostgresImageTag`), `EmployeeDatabaseSettings` ↔ AppHost `EmployeeDatabaseSettings.cs` 원본 대조(`AppHostDatabaseSettingsSource`, AppHost 형식이 internal이라 파일을 읽음). 초기화 스크립트는 AppHost `postgres-init/`의 파일을 모두 `WithResourceMapping`으로 넣는다.
+  - 실패 진단: 환경 변수 `EMERGENCYHUB_CONTAINER_LOG_DIRECTORY`가 있으면 fixture가 폐기 직전 · 시작 실패 때 컨테이너 로그를 `<폴더>/employee-postgres-<ID 12자>.log`로 저장한다(`ContainerLogs`, CI는 실패 시 아티팩트). 서버 로그에는 23505 `DETAIL`의 테스트 이메일이 보일 수 있다(`example.com`만 사용).
+  - 로컬 Docker Engine이 API 1.44 미만(Docker Desktop 4.26 · Engine 24 등)이면 Testcontainers 4.15.0이 `client version 1.44 is too new`로 연결하지 못한다. 엔진을 올리거나 환경 변수 `DOCKER_API_VERSION=1.43`을 주고 실행한다(코드 · 설정 파일에 두지 않음, CI 러너는 해당 없음).
 
 ### 장애 주입
 
@@ -135,6 +141,19 @@ AppHost의 로컬 DB 구성([데이터베이스 · 로컬 DB 구성](database.md
 | P5 xmin 충돌 | 장애 주입 없음 | 스코프 2개에서 같은 행을 읽고 `Deactivate()` → 먼저 커밋한 쪽 `Success`, 나중 쪽 3001 · 로그 203(실측) |
 | P6 매번 일시 오류 | 트리거(`BEFORE INSERT`, 항상 `40001`) | 실행 전략이 `DbUpdateException` 안의 `40001`을 일시 오류로 보고 재시도 → `RetryLimitExceededException`(→ 9003). 시도 수 = `MaxRetryCount + 1`(실측: 2회 한도 → 3회, 약 60ms). 인터셉터(`DbCommandInterceptor`에서 `PostgresException` 생성)는 대안 |
 | P7 Deleted 이벤트 비움 · P8 로그 | 장애 주입 없음 | P8은 로그 수집 sink로 EF `Error` 건수와 이메일 · Detail 노출을 센다 |
+
+**도우미**(S03-T06, `FaultInjection/` · `Fixtures/`)
+
+| 도우미 | 쓰임 |
+|---|---|
+| `TestTriggers.CreateCommitFailureOnceAsync` · `CreateAlwaysFailAsync` · `CreateIsolationProbeAsync` → `TestTrigger` | 아래 SQL 원문(`TestTriggerSql`)으로 P2 · P6 · P1 트리거를 만든다. `await using`으로 감싸면 폐기 때 `DropAll`(finally DROP, 여러 번 불러도 됨). `ReadAttemptsAsync`(시퀀스 `is_called` 반영, 실행 전 0) · `ReadIsolationObservationsAsync` |
+| `TestTriggers.CountLeftoversAsync` → `TestObjectCounts` | 잔여 검사. 정리 뒤 `TestObjectCounts.None`(0, 0, 0) 단언 |
+| `CommandFaultInterceptor(failure, failures, shouldFail?)` | `DbCommandInterceptor`. 조건에 맞는 명령을 `failures`회(`int.MaxValue`면 항상) 실패시키고 `Attempts`를 센다 |
+| `TransactionProbeInterceptor(commitFailure?, commitFailures)` | `DbTransactionInterceptor`. 요청 격리 수준(`StartedIsolationLevels`, 보조) · `CommitAttempts` · `Commits`, 커밋 직전 실패 주입(P2 대안) |
+| `InjectedFailures.SerializationFailure()` · `TransientTimeout()` | 인터셉터가 던질 `PostgresException`(40001) · `NpgsqlException(new TimeoutException())`(둘 다 일시 오류) |
+| `EmployeeServicesOptions` | `CreateServices` 인자: `Retry`(재시도 한도 축소, 예: `new DbRetryOptions(2, 10ms)`) · `WriteConnectionString` / `ReadConnectionString` · `TimeProvider`(운영 등록보다 먼저) · `WriteInterceptors` · `ConfigureServices`(운영 등록 뒤, 예: 테스트 `IPreCommitHook`) |
+| `DbContextInterceptorRegistration.AddWriteDbContextInterceptors` | 운영 등록이 만든 쓰기 DbContext 옵션 팩터리를 감싸 `AddInterceptors`만 더한다(`UseNpgsql` 재호출 없음, 감사 인터셉터 유지, EF8에 `ConfigureDbContext` 없음). `ConfigureTestServices`에서도 사용 |
+| `TestData/EmployeeBuilder` · `EmployeeCommits.AddAndCommitAsync` | 테스트 데이터(기본 `example.com`)와 새 스코프의 Repository `Add` → `IUnitOfWork.CommitAsync`(Handler 사전 검사 없음, P4 경로) |
 
 **트리거 규칙**
 
@@ -304,7 +323,8 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 ```
 
 - 보고 경로는 한 단계 패턴(`TestResults/*/`)을 쓴다. trx 로거가 커버리지 첨부를 `TestResults/<trx 이름>/In/**` 아래로 한 번 더 복사해 `**` 패턴이면 같은 결과가 두 번 합산된다.
-- CI 산출물: 텍스트 요약은 로그에, Markdown 요약은 잡 요약(`GITHUB_STEP_SUMMARY`)에 싣는다. trx(`test-results`)와 HTML 보고서(`coverage-report`)는 아티팩트로 14일 보관한다(실패해도 업로드). 단계별 소요 시간은 Actions 실행 화면의 단계 목록에서 확인한다(NFR-07 10분 이내).
+- CI 산출물: 텍스트 요약은 로그에, Markdown 요약은 잡 요약(`GITHUB_STEP_SUMMARY`)에 싣는다. trx(`test-results`)와 HTML 보고서(`coverage-report`)는 아티팩트로 14일 보관한다(실패해도 업로드). 단계별 소요 시간(초)은 주요 단계가 `$RUNNER_TEMP/step-times.md`에 적고(`trap ... EXIT`라 실패한 단계도 기록) 마지막 단계가 잡 요약 표로 싣는다(NFR-07 10분 이내).
+- 통합 테스트(S03-T06): 같은 `build-test` 잡의 `dotnet test`가 함께 실행한다(Docker는 ubuntu 러너 기본 제공). Test 전에 `postgres:<태그>`를 따로 `docker pull`한다. 태그는 `dotnet msbuild <통합 테스트 csproj> -getProperty:EmergencyHubPostgresImageTag`로 `Directory.Build.props` 원본에서 읽는다(워크플로에 태그 리터럴 없음). Test 단계는 `EMERGENCYHUB_CONTAINER_LOG_DIRECTORY`를 주고, 실패하면(`if: failure()`) 그 폴더를 `container-logs` 아티팩트로 올린다. Aspire.Hosting.Testing(AppHost) 스모크는 넣지 않는다.
 - `TestResults/` · `coveragereport/`는 `.gitignore` 대상이다.
 
 ---
@@ -322,3 +342,4 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 | 2026-09-27 | developer | 아키텍처 테스트 규칙 목록에 `<Service>.Api` Controller · `<Service>.MigrationService` · 서비스 격리 규칙 추가(S03 예정 문구를 본문으로), 건너뛰는 규칙 수 명시 (S02-T05 재작업) |
 | 2026-09-27 | - | S02 회고: 기반 · 셋팅 작업은 완료 조건 항목마다 성공 / 실패 / 엣지 최소 1개, 나머지 엣지는 tester가 빈 곳만 보강 |
 | 2026-09-28 | dba | 통합 테스트 fixture DB 구성 표(이미지 태그 메타데이터, 초기화 스크립트 공유 마운트, 생성 스크립트 한 문장, Write / Read 연결, 대기 전략 주의), Respawn 옵션 형식과 이름 대소문자 실측, 장애 주입 절(항목별 트리거 / 인터셉터 추천, 테스트 전용 트리거 SQL · 시퀀스 카운터 · 생성 · DROP · 잔여 검사), DB 검증 쿼리 Q1~Q12 (S03-T06) |
+| 2026-09-28 | developer | fixture 구현 위치 · 공개 도우미, 장애 주입 도우미 표(트리거 · 인터셉터 · 재시도 축소 등록), 로컬 Docker API 1.43 대처, CI 통합 테스트(이미지 선 pull · 태그 원본 읽기 · 단계별 시간 요약 · 실패 시 컨테이너 로그 아티팩트) (S03-T06) |

@@ -25,8 +25,12 @@ public sealed class Program
     }
 
     /// <summary>
-    /// Api의 DB 재시도 설정입니다. BL-073 임시값, S03-T06 실측 뒤 확정합니다(재시도 총 대기 약 4.4초, 시도마다 연결 · 명령 제한 시간은 별도).
+    /// Api의 DB 재시도 설정입니다: 최대 3회 · 최대 지연 5초(BL-073 확정, S03-T06 실측, database.md "Api 등록 사양").
     /// </summary>
+    /// <remarks>
+    /// 즉시 반환되는 일시 오류면 시도 4회 · 약 4.3초 뒤 재시도 한도 초과(9003)로 끝납니다(기본값 6회 · 30초는 약 57초). 실제 장애에서는 시도마다
+    /// 연결 · 명령 제한 시간(기본 15초 · 30초)이 더해집니다. Api 요청 제한 시간은 없습니다(설정하지 않음). MigrationService는 Npgsql 기본값을 씁니다.
+    /// </remarks>
     internal static DbRetryOptions DbRetry { get; } = new(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(5));
 
     /// <summary>호스트를 만들고 실행합니다.</summary>

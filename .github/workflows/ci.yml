@@ -1,7 +1,9 @@
-# PR 워크플로 (PRD-001 FR-10 · NFR-03 · NFR-07, S01-T07)
-# 순서: restore → build → format 검사 → test(커버리지 수집) → 커버리지 보고 → 아티팩트 업로드
+# PR 워크플로 (PRD-001 FR-10 · NFR-03 · NFR-07, S01-T07 · S03-T06)
+# 순서: restore → build → format 검사 → PostgreSQL 이미지 pull → test(단위 + 통합, 커버리지 수집) → 커버리지 보고 → 아티팩트 업로드 → 단계별 시간 요약
 # 로컬에서 같은 명령을 같은 순서로 실행할 수 있다(wiki/04-development/testing-strategy.md "CI").
 # 액션은 커밋 SHA로 고정하고 뒤에 버전 주석을 단다(wiki/03-architecture/package-versions.md "GitHub Actions").
+# 통합 테스트(S03-T06)는 Testcontainers로 postgres 컨테이너를 띄운다(ubuntu 러너 기본 Docker). Aspire.Hosting.Testing 스모크는 넣지 않는다.
+# 단계별 시간: 주요 단계가 trap EXIT로 "$RUNNER_TEMP/step-times.md"에 한 줄씩 적고(실패한 단계 포함) 마지막 단계가 잡 요약에 싣는다(NFR-07).
 name: ci
 
 on:
@@ -30,6 +32,9 @@ jobs:
     # NFR-07 목표는 10분. 멈춘 작업이 러너를 오래 잡지 않도록 여유를 두고 끊는다.
     timeout-minutes: 20
     steps:
+      - name: Start step timer
+        run: date +%s > "$RUNNER_TEMP/job-start"
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,30 +52,53 @@ jobs:
         run: dotnet tool restore
 
       - name: Restore
-        run: dotnet restore EmergencyHub.sln
+        run: |
+          start=$SECONDS; trap 'echo "| Restore | $((SECONDS - start)) |" >> "$RUNNER_TEMP/step-times.md"' EXIT
+          dotnet restore EmergencyHub.sln
 
       # 경고 = 오류는 Directory.Build.props(TreatWarningsAsErrors)가 처리한다.
       - name: Build
-        run: dotnet build EmergencyHub.sln --no-restore --configuration "$CONFIGURATION"
+        run: |
+          start=$SECONDS; trap 'echo "| Build | $((SECONDS - start)) |" >> "$RUNNER_TEMP/step-times.md"' EXIT
+          dotnet build EmergencyHub.sln --no-restore --configuration "$CONFIGURATION"
 
       - name: Format check
-        run: dotnet format EmergencyHub.sln --verify-no-changes --no-restore
+        run: |
+          start=$SECONDS; trap 'echo "| Format check | $((SECONDS - start)) |" >> "$RUNNER_TEMP/step-times.md"' EXIT
+          dotnet format EmergencyHub.sln --verify-no-changes --no-restore
 
+      # 이미지 태그는 Directory.Build.props(EmergencyHubPostgresImageTag) 한 곳이 원본이다(TD-004). 워크플로에 태그를 적지 않고 MSBuild 평가로 읽는다.
+      # 이미지 내려받기 시간을 Test 단계와 나누려고 먼저 받는다(Testcontainers는 로컬에 있는 이미지를 그대로 씀).
+      - name: Pull PostgreSQL image
+        run: |
+          start=$SECONDS; trap 'echo "| Pull PostgreSQL image | $((SECONDS - start)) |" >> "$RUNNER_TEMP/step-times.md"' EXIT
+          tag="$(dotnet msbuild tests/Services/Employee/EmergencyHub.Employee.IntegrationTests/EmergencyHub.Employee.IntegrationTests.csproj -getProperty:EmergencyHubPostgresImageTag | tr -d '[:space:]')"
+          if [ -z "$tag" ]; then
+            echo "::error::EmergencyHubPostgresImageTag를 읽지 못했습니다(Directory.Build.props)."
+            exit 1
+          fi
+          docker pull "postgres:$tag"
+
+      # 통합 테스트 fixture가 EMERGENCYHUB_CONTAINER_LOG_DIRECTORY에 컨테이너 로그를 남긴다(폐기 직전 · 시작 실패 때). 실패한 실행만 아티팩트로 올린다.
       - name: Test (coverage)
-        run: >-
-          dotnet test EmergencyHub.sln
-          --no-build
-          --configuration "$CONFIGURATION"
-          --collect "XPlat Code Coverage"
-          --settings coverlet.runsettings
-          --logger trx
-          --results-directory TestResults
+        env:
+          EMERGENCYHUB_CONTAINER_LOG_DIRECTORY: ${{ runner.temp }}/container-logs
+        run: |
+          start=$SECONDS; trap 'echo "| Test (coverage) | $((SECONDS - start)) |" >> "$RUNNER_TEMP/step-times.md"' EXIT
+          dotnet test EmergencyHub.sln \
+            --no-build \
+            --configuration "$CONFIGURATION" \
+            --collect "XPlat Code Coverage" \
+            --settings coverlet.runsettings \
+            --logger trx \
+            --results-directory TestResults
 
       # 80%는 목표이며 임계값 실패는 걸지 않는다(NFR-03, ADR-0022). 보고만 한다.
       # trx 로거가 첨부 파일을 TestResults/<trx 이름>/In/** 아래로 복사하므로
       # 한 단계 패턴(TestResults/*/)으로 테스트 프로젝트별 원본만 합산한다(중복 방지, 로컬 실측).
       - name: Coverage report
         run: |
+          start=$SECONDS; trap 'echo "| Coverage report | $((SECONDS - start)) |" >> "$RUNNER_TEMP/step-times.md"' EXIT
           dotnet tool run reportgenerator \
             "-reports:TestResults/*/coverage.cobertura.xml" \
             "-targetdir:coveragereport" \
@@ -95,3 +123,26 @@ jobs:
           path: coveragereport/
           if-no-files-found: ignore
           retention-days: 14
+
+      # 서버 로그에는 23505 DETAIL의 테스트 이메일(example.com)이 보일 수 있다. 비밀번호는 없다(초기화 스크립트 log_statement = 'none').
+      - name: Upload container logs
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: container-logs
+          path: ${{ runner.temp }}/container-logs/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Step times summary
+        if: always()
+        run: |
+          total=$(( $(date +%s) - $(cat "$RUNNER_TEMP/job-start") ))
+          {
+            echo "### 단계별 시간 (초)"
+            echo ""
+            echo "| 단계 | 초 |"
+            echo "|---|---|"
+            if [ -f "$RUNNER_TEMP/step-times.md" ]; then cat "$RUNNER_TEMP/step-times.md"; fi
+            echo "| 잡 전체(타이머 시작부터 이 단계까지) | $total |"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -57,9 +57,9 @@ public sealed class ProgramTests : IDisposable
     }
 
     [Fact]
-    public void DbRetry_IsTemporaryThreeRetriesWithFiveSecondMaxDelay()
+    public void DbRetry_IsThreeRetriesWithFiveSecondMaxDelay()
     {
-        // BL-073 임시값(database.md "Api 등록 사양"), S03-T06 실측 뒤 확정.
+        // BL-073 확정값(S03-T06 실측, database.md "Api 등록 사양"): 3회 · 5초, Api 요청 제한 시간 없음.
         Program.DbRetry.MaxRetryCount.Should().Be(3);
         Program.DbRetry.MaxRetryDelay.Should().Be(TimeSpan.FromSeconds(5));
     }

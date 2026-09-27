@@ -128,6 +128,8 @@ updated: 2026-09-27
 | BL-099 | local-setup: https 기본 프로필은 dotnet dev-certs https --trust가 있어야 대시보드 로그 · 추적이 보임(없으면 OTLP TLS 실패로 0건). http 프로필 대안 · 확인 방법(dotnet dev-certs https --check --trust) 기록, 기본 프로필 순서 변경 여부 판단 | S03-T05 tester | | new | S04 local-setup 후보, 증빙 dashboard-07 · 08 |
 | BL-100 | database.md · local-setup: 첫 실행 때 user-secrets에 AppHost:OtlpApiKey도 저장됨을 기록하고 초기화 절차 clear 대상에 포함 | S03-T05 tester | | new | S04 local-setup 후보 |
 | BL-101 | 운영 PostgreSQL 서버 로그 DETAIL 노출: 기본 설정에서 23505 · 23514 때 Key (email)=(...)와 위반 행 전체가 서버 로그에 남음. log_error_verbosity=terse 등 서버 로그 설정 검토 | S03-T06 dba | | new | 재검토 트리거: 배포 토픽(Phase 4) 또는 로그 수집기 도입 |
+| BL-102 | 로컬 Docker Engine API 1.44 미만(Docker Desktop 4.26 / Engine 24.0.7)이면 Testcontainers 4.15.0 연결 실패: local-setup에 최소 Docker 버전과 DOCKER_API_VERSION=1.43 대처 기록 또는 Docker Desktop 업그레이드 검토 | S03-T06 developer | | new | S04 local-setup 후보 |
+| BL-103 | MigrationService 실제 호스트(Program.Configure + MigrationWorker)를 컨테이너로 실행하는 통합 시나리오: Program · Configure가 internal이고 InternalsVisibleTo가 UnitTests만 허용해 참조 · 가시성 확장 필요 | S03-T03 tester · S03-T06 developer | | new | S03-T06에서는 fixture가 같은 등록 · 적용 경로로 대신 검증 |
 
 ---
 

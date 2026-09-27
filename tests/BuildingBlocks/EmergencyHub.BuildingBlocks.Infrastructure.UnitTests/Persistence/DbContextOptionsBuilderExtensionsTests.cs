@@ -1,6 +1,9 @@
 using EmergencyHub.BuildingBlocks.Infrastructure.Persistence;
 using EmergencyHub.BuildingBlocks.Infrastructure.UnitTests.Samples.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Logging;
 
 namespace EmergencyHub.BuildingBlocks.Infrastructure.UnitTests.Persistence;
 
@@ -79,6 +82,47 @@ public sealed class DbContextOptionsBuilderExtensionsTests
         act.Should().Throw<ArgumentException>();
     }
 
+    // BL-023(S03-T06): 정상 경합(23505 → 23001) · 재시도로 회복한 일시 오류에 EF Error 로그가 남지 않도록 실패 이벤트 3개를 Debug로 낮춘다.
+    // 변환되지 않는 예외는 전역 예외 처리기가 이벤트 1(Error)로 한 번 남긴다. 실측은 Employee 통합 테스트 EfCoreErrorLogLevelTests.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UseBuildingBlocksNpgsql_AnyRetrySetting_LowersCommandSaveChangesAndTransactionFailureLogsToDebug(bool withRetryOptions)
+    {
+        using var context = CreateContext(withRetryOptions ? new DbRetryOptions(3, TimeSpan.FromSeconds(5)) : null);
+
+        var warnings = Warnings(context);
+
+        warnings.GetLevel(RelationalEventId.CommandError).Should().Be(LogLevel.Debug);
+        warnings.GetLevel(CoreEventId.SaveChangesFailed).Should().Be(LogLevel.Debug);
+        warnings.GetLevel(RelationalEventId.TransactionError).Should().Be(LogLevel.Debug);
+    }
+
+    [Fact]
+    public void UseBuildingBlocksNpgsql_ConnectionError_KeepsDefaultLevel()
+    {
+        // 실패 쪽 경계: 연결 실패는 낮추지 않는다(DB 장애 신호). 지정하지 않은 이벤트는 null(EF 기본 수준 Error)이다.
+        using var context = CreateContext(retry: null);
+
+        Warnings(context).GetLevel(RelationalEventId.ConnectionError).Should().BeNull();
+    }
+
+    [Fact]
+    public void UseBuildingBlocksNpgsql_LaterConfigureWarnings_KeepsLoweredLevels()
+    {
+        // 엣지: 등록 확장의 추가 옵션 콜백이 ConfigureWarnings를 다시 불러도 앞서 낮춘 수준은 유지된다(병합).
+        var options = new DbContextOptionsBuilder<SampleWriteDbContext>()
+            .UseBuildingBlocksNpgsql(SampleDbContexts.DummyConnectionString)
+            .ConfigureWarnings(warnings => warnings.Log((CoreEventId.ContextInitialized, LogLevel.Trace)))
+            .Options;
+        using var context = new SampleWriteDbContext(options);
+
+        var warnings = Warnings(context);
+
+        warnings.GetLevel(RelationalEventId.CommandError).Should().Be(LogLevel.Debug);
+        warnings.GetLevel(CoreEventId.ContextInitialized).Should().Be(LogLevel.Trace);
+    }
+
     [Fact]
     public void DbRetryOptions_NegativeRetryCount_ThrowsArgumentOutOfRangeException()
     {
@@ -100,6 +144,9 @@ public sealed class DbContextOptionsBuilderExtensionsTests
     {
         new DbRetryOptions(3, TimeSpan.FromSeconds(5)).Should().Be(new DbRetryOptions(3, TimeSpan.FromSeconds(5)));
     }
+
+    private static WarningsConfiguration Warnings(DbContext context) =>
+        context.GetService<IDbContextOptions>().FindExtension<CoreOptionsExtension>()!.WarningsConfiguration;
 
     private static SampleWriteDbContext CreateContext(DbRetryOptions? retry) =>
         new(new DbContextOptionsBuilder<SampleWriteDbContext>()
