@@ -73,5 +73,6 @@ changed_files: ["tests/..."]
 tests: { added: 0, passed: 0, failed: 0 }
 fr_verified: [{ id: "PRD-NNN/FR-NN", test: "테스트 이름", ok: true }]
 commit_message: "test(<scope>): <내용> (SNN-TNN)"
-candidates: { backlog: ["..."], tech_debt: ["..."] }
+candidates: { backlog: ["..."], tech_debt: ["..."] }   # 스프린트 밖에서 처리할 것만
+handoff: [{ to: "SNN-TNN", note: "..." }]               # 같은 스프린트의 다음 작업에서 반영할 메모 (백로그 아님)
 ```

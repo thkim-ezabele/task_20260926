@@ -86,5 +86,6 @@ reject_to: developer                 # REJECT일 때만: dba | developer
 reasons: ["파일:줄 - 위반 규칙 - 기대하는 모습"]
 changed_files: []                    # reviewer는 파일을 바꾸지 않는다
 commit_message: "docs(sprint): SNN-TNN 리뷰 판정 (SNN-TNN)"
-candidates: { backlog: ["..."], tech_debt: ["..."] }
+candidates: { backlog: ["..."], tech_debt: ["..."] }   # 스프린트 밖에서 처리할 것만
+handoff: [{ to: "SNN-TNN", note: "..." }]               # 같은 스프린트의 다음 작업에서 반영할 메모 (백로그 아님)
 ```

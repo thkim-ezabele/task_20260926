@@ -89,5 +89,6 @@ tests: { added: 0, passed: 0, failed: 0 }
 adr_drafts:                         # adr_phase: draft일 때만
   - { number: "0011", title: "...", body: "frontmatter 포함 ADR 전문" }
 commit_message: "feat(<scope>): <내용> (SNN-TNN)"
-candidates: { backlog: ["..."], tech_debt: ["..."] }
+candidates: { backlog: ["..."], tech_debt: ["..."] }   # 스프린트 밖에서 처리할 것만
+handoff: [{ to: "SNN-TNN", note: "..." }]               # 같은 스프린트의 다음 작업에서 반영할 메모 (백로그 아님)
 ```
