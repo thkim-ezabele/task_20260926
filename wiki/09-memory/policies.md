@@ -10,7 +10,7 @@ updated: 2026-09-27
 
 > [장기기억](README.md) · 원본: [위키 홈 작성 규칙](../README.md), [Worklog](../08-worklog/README.md)
 
-## 개발 흐름 (확정, 에이전트·스킬 구현 완료 / 시험 운영 전)
+## 개발 흐름 (확정, `/prd` 시험 운영 완료 · `/sprint` · `/retro` 미실행)
 
 원본: [개발 관리](../10-delivery/README.md), [에이전트 워크플로우](../10-delivery/agents.md)
 

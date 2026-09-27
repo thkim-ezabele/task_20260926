@@ -27,20 +27,30 @@ updated: 2026-09-27
 
 형상관리는 GitHub로 확정했습니다(ADR 없음).
 
+## 방향 결정 (PRD-001, S01에서 ADR로 확정 예정)
+
+원본: [PRD-001 질문과 답변](../10-delivery/prd/PRD-001-foundation.md#질문과-답변)
+
+- **로컬 인프라**: .NET Aspire 9.x AppHost(docker compose 없음), SDK .NET 8. PostgreSQL + MigrationService(Api는 완료 대기), DB `emergency_hub_employee` / 롤 `employee_app`, Write / Read 연결 주입(Read는 `default_transaction_read_only=on`)
+- **도입 보류**: 메시지 브로커, Outbox / Inbox, API Gateway, 로그 수집기(로컬 관측은 Aspire 대시보드)
+- **애플리케이션**: Mediator 직접 구현(로깅 → 검증 → 트랜잭션 → Handler), 트랜잭션 데코레이터가 실행 전략 안에서 SaveChanges · 커밋(Handler는 저장 안 함), Controller, Scrutor(0010 구체화), FluentValidation, Serilog + OTLP, Swashbuckle
+- **ID · 테스트**: UUID v7은 `IIdGenerator` + UUIDNext(Handler가 생성), AwesomeAssertions, Respawn, coverlet + ReportGenerator
+- **정책**: 운영 배포(Phase 4) 전까지 마이그레이션 리셋 허용, 도메인 이벤트는 수집만
+- 미해결: 고정할 Aspire 9.x 마이너 버전(S01-T01)
+
 ## 검토 중 (초안 기본값)
 
-- **메시지 브로커**: RabbitMQ / Kafka (미정), 추상화는 MassTransit
-- **API Gateway**: YARP / Ocelot (미정)
-- **공통 라이브러리**: ASP.NET Core(API 스타일 미정, Minimal API 기본안), Mediator(MediatR v13+ 상용 → 구현체 미정), FluentValidation, Serilog, OpenTelemetry, Swashbuckle, Polly, Redis(필요 시)
-- **테스트 도구**: xUnit, 단언 라이브러리(FluentAssertions v8+ 상용 → v7 / Shouldly / AwesomeAssertions 미정), NSubstitute, Testcontainers, Respawn, NetArchTest
-- **인프라**: GitHub Actions, Docker / docker compose, Kubernetes(필요 시)
+- **메시지 브로커**(보류 후 재검토): RabbitMQ 추천안 / Kafka. MassTransit은 v9부터 상용
+- **API Gateway**(보류 후 재검토): YARP 추천안 / Ocelot
+- **공통 라이브러리**: OpenTelemetry, Polly, Redis(필요 시)
+- **테스트 도구**: xUnit, NSubstitute, Testcontainers, NetArchTest
+- **인프라**: GitHub Actions, Docker, Kubernetes(필요 시, Phase 4)
 
 ## 기준 문서 (draft)
 
 [코딩 컨벤션](../04-development/coding-conventions.md) · [데이터베이스](../04-development/database.md) · [테스트 전략](../04-development/testing-strategy.md)(성공 / 실패 / 엣지 필수) · [Clean Architecture](../03-architecture/clean-architecture.md) · [로깅](../04-development/logging-observability.md)(콘솔 텍스트 / 파일 JSON) · [TDD 가이드](../04-development/tdd-guide.md) · [API 설계](../04-development/api-guidelines.md)(ProblemDetails `code`, `Idempotency-Key`) · [에러 코드](../05-api/error-codes.md)(`S T NNN`, 로그 이벤트 ID `S0NNN`) · [기술 스택](../03-architecture/tech-stack.md)
 
-미정(기반 구축 토픽에서 결정): Mediator 구현체, 단언 라이브러리, UUID v7 생성, API 스타일, 타입 검색 구현, 로그 수집기
 
 ## 미착수
 
-솔루션 코드(PRD-001 기반 구축 예정), 도메인 모델(유비쿼터스 언어, 바운디드 컨텍스트, Aggregate), 서비스 상세와 의존 관계, API / 이벤트 명세
+솔루션 코드(PRD-001 S01~S04에서 작성), 도메인 모델(유비쿼터스 언어, 바운디드 컨텍스트, Aggregate), 서비스 상세와 의존 관계, API / 이벤트 명세
