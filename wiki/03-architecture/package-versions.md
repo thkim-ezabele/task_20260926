@@ -269,6 +269,7 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 | 기술부채 | TD-006 클라이언트 통합 사용 시 OTel 버전 혼재 | 기존. 위 판단 자료로 해소 가능 |
 | 기술부채 | TD-007 Aspire.Hosting 9.5.2 전이 MessagePack 취약 → 수동 고정 유지 | 기존 |
 | 기술부채 | TD-008 net8.0 앱에 Microsoft.Extensions.* · DiagnosticSource 10.0.0 전이 유입(Scrutor 7, Serilog 10, OTel 1.19) | 기존. OTel은 피할 수 없음(취약점 없는 버전이 모두 DiagnosticSource 10 요구). S02-T01 관찰: BuildingBlocks.Application이 DependencyInjection · Logging.Abstractions 10.0.0을 직접 고정(8.0.x 고정은 NU1109), net8.0 빌드 · 단위 테스트 51건에서 이상 없음. 런타임 호환은 S03 호스트 실행 때 계속 관찰 |
+| 기술부채 | TD-026 Employee.Infrastructure가 `IConfiguration`을 전이 참조로 사용: `Microsoft.Extensions.Configuration.Abstractions` 8.0.0(경로 Employee.Infrastructure → BuildingBlocks.Infrastructure → Npgsql.EntityFrameworkCore.PostgreSQL → Microsoft.EntityFrameworkCore.Relational 8.0.31, `project.assets.json` 실측). 직접 참조 · CPM 등록 없음, 빌드 · 감사 문제 없음 | S04-T02 기록. 직접 참조 여부는 .NET 10 전환(TD-002) 때 TD-019와 함께 판단 |
 
 ---
 
@@ -286,3 +287,4 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 | 2026-09-27 | developer | BuildingBlocks.Infrastructure가 Npgsql.EntityFrameworkCore.PostgreSQL · EFCore.NamingConventions 직접 참조, EF Core 경유 DependencyInjection 10.0.0 전이 해석 관찰, Infrastructure.UnitTests가 TimeProvider.Testing 참조. `dotnet list package --vulnerable --include-transitive` 취약 패키지 없음 (S02-T04) |
 | 2026-09-27 | developer | BuildingBlocks.Api(FrameworkReference `Microsoft.AspNetCore.App`)가 Swashbuckle.AspNetCore를 직접 참조, Api.UnitTests는 기존 테스트 패키지만(새 패키지 없음). 취약 패키지 없음 (S02-T06) |
 | 2026-09-28 | developer | Microsoft.AspNetCore.Mvc.Testing 8.0.31 행 추가(Employee.IntegrationTests, Api 프로젝트 참조), 취약 패키지 없음 (S03-T07) |
+| 2026-09-28 | developer | 결정 · 미해결 표에 TD-026(Configuration.Abstractions 8.0.0 전이 사용 경로) 행 추가. 미정 표시 0건 확인 (S04-T02) |

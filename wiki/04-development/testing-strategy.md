@@ -37,6 +37,8 @@ flowchart TB
 **테스트 대상 동작(도메인 메서드, Handler, API 엔드포인트) 하나마다** 세 종류를 모두 작성합니다. reviewer는 이 기준으로 누락을 판정합니다.
 
 > **기반 · 셋팅 작업**(BuildingBlocks, DI 등록, 공통 규칙, 빌드 · CI 설정)은 완료 조건 **항목마다** 성공 / 실패 / 엣지를 최소 1개씩 작성하는 것으로 충족합니다. 체크리스트의 나머지 엣지는 tester가 완료 조건 대조에서 빈 곳이 있을 때만 보강합니다. 도메인 로직은 아래 기준 전부를 적용합니다. 원본: [에이전트 워크플로우 테스트 범위](../10-delivery/agents.md#테스트-범위)(S02 회고).
+>
+> 설정 · 구성 코드(DI 등록, 호스트 · 환경 주입, 빌드 설정)처럼 "잘못된 입력"이 없는 항목의 **실패** 케이스는 적용되지 않아야 할 대상에 적용되지 않음(부정 범위)을 확인하는 것으로 본다. 예: S04-T01 AppHost 테스트는 MigrationService에 `Development` 주입(성공)과 기존 Api 환경 유지(부정 범위)를 함께 확인한다.
 
 | 종류 | 기준 | 예: `Employee.Register` |
 |---|---|---|
@@ -84,6 +86,7 @@ public void Register_WithInvalidChannels_ReturnsInvalidChannelsError(Notificatio
 
 - **Domain**: Aggregate와 Value Object의 불변식, 상태 전이, 도메인 이벤트 발생. 외부 의존이 없으므로 Test Double을 쓰지 않는다.
 - **Application**: Handler의 흐름(Repository 조회 · 추가, 도메인 호출, `Result` 반환)과 Validator 규칙. Repository · `IIdGenerator` 등 포트는 NSubstitute로 대체한다. Handler는 저장하지 않으므로(`SaveChanges` · `CommitAsync`를 부르지 않음, [ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)) Handler 테스트에서 저장 호출을 검증하지 않는다. 성공 시 커밋 · 실패 `Result` 시 미커밋은 트랜잭션 데코레이터 단위 테스트(가짜 `IUnitOfWork`)가 검증한다([ADR-0015](../03-architecture/adr/0015-custom-mediator-pipeline.md)). Query Handler는 DB 프로젝션이 핵심이므로 통합 테스트로 검증한다.
+- **Validator 기반**: Validator는 FluentValidation `AbstractValidator<T>`를 직접 상속하지 않고 공통 기반 `RequestValidator<T>`(BuildingBlocks.Application, `AbstractValidator<T>` 파생, 생성자에서 `RuleLevelCascadeMode = CascadeMode.Stop`)를 상속한다(S02-T02, 아키텍처 규칙 `ValidatorsDeriveFromRequestValidator`). 중단 방식이 전역 설정이 아니라 기반 클래스에 있으므로 Validator 단위 테스트에서 `new`로 만들어도 호스트와 같게 동작한다: 한 속성은 첫 실패에서 멈추고, 여러 속성의 실패는 모두 모인다. [ADR-0018](../03-architecture/adr/0018-use-fluentvalidation.md) 본문의 `AbstractValidator<TRequest>` 표기는 이 기반을 거쳐 충족한다.
 - 시간은 `FakeTimeProvider`(Microsoft.Extensions.TimeProvider.Testing)로 고정한다.
 - 테스트끼리 상태를 공유하지 않는다. 실행 순서에 의존하지 않는다.
 
@@ -263,14 +266,58 @@ SELECT (SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'test\_%' AND NOT tgis
 
 ## 아키텍처 테스트
 
-NetArchTest.Rules 1.3.2로 검증합니다([ADR-0021](../03-architecture/adr/0021-test-tooling-xunit-v3-and-awesomeassertions.md)). 프로젝트는 `tests/EmergencyHub.ArchitectureTests`이고(S02-T05), 규칙 원본은 [ADR-0024 의존성 규칙 표](../03-architecture/adr/0024-building-blocks-api-for-common-http-handling.md#의존성-규칙-표-초안)와 [Clean Architecture · 의존성 규칙](../03-architecture/clean-architecture.md#의존성-규칙)입니다. 규칙마다 원본 행 · 절을 규칙 정의(`Source`)와 테스트 주석에 적습니다.
+NetArchTest.Rules 1.3.2로 검증합니다([ADR-0021](../03-architecture/adr/0021-test-tooling-xunit-v3-and-awesomeassertions.md)). 프로젝트는 `tests/EmergencyHub.ArchitectureTests`이고(S02-T05), **규칙 목록의 원본은 이 프로젝트의 규칙 정의**(`Rules/DependencyRules.cs` · `Rules/ConventionRules.cs` · `Rules/InjectionRules.cs` · `References/DeclaredReferenceRules.cs`)입니다. 레이어 의존 규칙의 설계 원본은 [ADR-0024 의존성 규칙 표](../03-architecture/adr/0024-building-blocks-api-for-common-http-handling.md#의존성-규칙-표-초안)이고, 구현에 맞춘 표는 [Clean Architecture · 의존성 규칙 표](../03-architecture/clean-architecture.md#의존성-규칙-표)입니다. 규칙마다 원본 행 · 절을 규칙 정의(`Source`)에 적습니다. 아래 표는 규칙 정의와 1:1입니다(규칙 25개 + 선언 참조 · 대상 목록 점검).
 
-- 의존성 규칙(형식 의존, ADR-0024 표 행마다 테스트 1개 · 10개): Domain은 System과 Domain 레이어만 의존(직렬화 라이브러리 금지), Application ↛ Infrastructure 계열 · Api 계열 · EF Core · Npgsql · Scrutor · ASP.NET Core, Infrastructure 계열 ↛ Api 계열 · ASP.NET Core(Swashbuckle 포함), BuildingBlocks.Api ↛ Infrastructure 계열 · EF Core · Npgsql, `<Service>.Api`의 Controller ↛ Infrastructure 계열 형식 · Repository(`IRepository` / `IReadRepository` 파생, 생성자 · 액션 매개변수 등 시그니처 기준. DI 등록 코드는 대상 아님), `<Service>.MigrationService` ↛ Api 계열, 서비스 ↛ 다른 서비스(서비스 접두사 `EmergencyHub.<Service>` 기준, 서비스마다 규칙 1개, `<Service>.Domain`끼리 의존도 이 규칙이 막는다).
-- 선언 참조: csproj의 프로젝트 · 패키지 참조도 같은 금지 목록을 따른다. **쓰지 않는 참조도 막는다**(컴파일된 어셈블리에는 남지 않으므로 테스트 어셈블리의 deps.json으로 확인). `<Service>.Domain`은 BuildingBlocks.Domain만, `<Service>.MigrationService`는 Api 계열 금지, 모든 서비스 프로젝트는 자기 서비스 · BuildingBlocks · ServiceDefaults 밖의 `EmergencyHub.*`(다른 서비스)를 참조하지 않는다(서비스 수와 관계없이 적용, 목록에 없는 서비스도 이름으로 잡음).
-- 컨벤션: 클래스 sealed(예외 `Error` · `Result`), Command · Query · Request · Response · Dto · 이벤트는 `record`, Repository 인터페이스는 `IRepository` / `IReadRepository` 상속, 구현은 `RepositoryBase` / `ReadRepositoryBase` 파생, `IStronglyTypedId<TSelf>`의 `TSelf`는 자기 자신, Entity 키는 강타입 ID, enum 기반 형식(일반 `short`, `[Flags]` `int` / `long`), Handler · Validator · Repository · 포트 구현은 `internal sealed`, Validator는 `RequestValidator<T>` 파생, 명시 등록 포트(`IUnitOfWork` · `IExceptionClassifier` · `IIdGenerator` · `IPreCommitHook`) 구현은 마커 미구현, `Error` / `Result` 파생 금지, Entity 파생은 `sealed`.
-- 주입: Handler ↛ `ISender`, Validator ↛ Repository · 서비스 주입, Query Handler ↛ `IUnitOfWork` · Write Repository · Command Handler 겸용.
-- **대상 어셈블리는 `ArchitectureAssemblies` 한곳에서 관리한다.** 서비스를 추가하면 레이어별로 목록에 넣고 csproj에 참조를 더한다. 테스트 어셈블리는 넣지 않는다.
-- 규칙마다 제품 대상 형식이 1개 이상임을 단언한다(공허 통과 방지). 대상이 서비스 코드에만 있는 규칙(현재 10개: 컨벤션 · 주입 8, Controller, MigrationService)은 서비스 어셈블리가 목록에 없는 동안만 건너뜀(Skip)으로 표시하고, 서비스가 들어오면 대상 0개는 실패다. 서비스 ↛ 다른 서비스 규칙은 서비스가 2개 미만이면 건너뛴다(금지할 다른 서비스가 없음). 지금 건너뛰는 제품 테스트는 11개다.
+**의존성 규칙** (형식 의존, `DependencyRules` 10개, 테스트 `DependencyRuleTests`)
+
+| 규칙 | 내용 |
+|---|---|
+| `DomainDependsOnlyOnSystemAndDomain` | Domain 레이어(BuildingBlocks.Domain · `<Service>.Domain`)는 System과 Domain 레이어만 의존, 직렬화 라이브러리 금지 |
+| `ApplicationDoesNotDependOnInfrastructure` | Application ↛ Infrastructure 계열 |
+| `ApplicationDoesNotDependOnApi` | Application ↛ Api 계열 |
+| `ApplicationDoesNotDependOnFrameworks` | Application ↛ EF Core · Npgsql · Scrutor · ASP.NET Core (FluentValidation · `Microsoft.Extensions.*.Abstractions` 허용) |
+| `InfrastructureDoesNotDependOnApi` | Infrastructure 계열 ↛ Api 계열 |
+| `InfrastructureDoesNotDependOnAspNetCore` | Infrastructure 계열 ↛ `Microsoft.AspNetCore.*` · Swashbuckle · `Microsoft.OpenApi` |
+| `BuildingBlocksApiDoesNotDependOnInfrastructureOrDatabase` | BuildingBlocks.Api ↛ Infrastructure 계열 · EF Core · Npgsql |
+| `ControllersDoNotUseInfrastructureOrRepositories` | `<Service>.Api`의 Controller ↛ Infrastructure 계열 형식 · Repository(`IRepository` / `IReadRepository` 파생, 생성자 · 액션 매개변수 등 시그니처 기준). DI 등록 코드는 대상 아님 |
+| `MigrationServiceDoesNotDependOnApi` | `<Service>.MigrationService` ↛ Api 계열(`<Service>.Api` · BuildingBlocks.Api) |
+| `ServicesDoNotDependOnOtherServices` | 서비스 ↛ 다른 서비스(접두사 `EmergencyHub.<Service>` 기준, 서비스마다 규칙 1개, `<Service>.Domain`끼리 의존도 이 규칙이 막음) |
+
+**컨벤션 규칙** (`ConventionRules` 12개, 테스트 `ConventionRuleTests`)
+
+| 규칙 | 내용 |
+|---|---|
+| `ClassesAreSealed` | 추상 · static이 아닌 클래스는 sealed(예외 `Error` · `Result`). 범위는 아래 "ClassesAreSealed 범위" |
+| `RequestAndResponseModelsAreRecords` | Command · Query · Request · Response · Dto · 이벤트는 `record` |
+| `RepositoryInterfacesInheritMarkers` | `*ReadRepository` 인터페이스 → `IReadRepository`, 그 밖 `*Repository` → `IRepository` |
+| `RepositoryImplementationsDeriveFromBases` | 쓰기 구현은 `RepositoryBase<T>`, 읽기 구현은 `ReadRepositoryBase<T>` 파생 |
+| `StronglyTypedIdsReferenceThemselves` | `IStronglyTypedId<TSelf>`의 `TSelf`는 구현 형식 자신 |
+| `EntityIdsAreStronglyTyped` | `Entity<TId>`의 `TId`는 강타입 ID |
+| `CodeEnumsUseConventionalUnderlyingTypes` | enum 기반 형식: 일반 `short`, `[Flags]` `int` / `long` |
+| `ImplementationsAreInternalSealed` | Handler · Validator · Repository · 포트 구현은 `internal sealed` |
+| `ValidatorsDeriveFromRequestValidator` | Validator는 공통 기반 `RequestValidator<T>` 파생(아래 Validator 기반 참고) |
+| `ExplicitlyRegisteredPortsDoNotImplementMarkers` | 명시 등록 포트(`IUnitOfWork` · `IExceptionClassifier` · `IIdGenerator` · `IPreCommitHook`) 구현은 자동 등록 마커 미구현 |
+| `ErrorAndResultAreNotDerived` | `Error` / `Result` 파생 금지(`ValidationError` · `Result<T>` 제외) |
+| `EntityDerivedTypesAreSealed` | Entity / AggregateRoot 파생은 sealed(abstract 중간 기반 금지) |
+
+**주입 규칙** (`InjectionRules` 3개, 테스트 `ConventionRuleTests`)
+
+| 규칙 | 내용 |
+|---|---|
+| `HandlersDoNotDependOnSender` | Handler ↛ `ISender`(중첩 Send 금지) |
+| `ValidatorsDoNotInjectRepositoriesOrServices` | Validator ↛ `IRepository` · `IReadRepository` · `IService` 주입 |
+| `QueryHandlersDoNotUseWriteSide` | Query Handler ↛ `IUnitOfWork` · Write Repository · Command Handler 겸용 |
+
+**선언 참조 · 대상 목록**
+
+| 점검 | 내용 |
+|---|---|
+| `DeclaredReferenceRules` (테스트 `DeclaredReferenceTests`, 제품 프로젝트마다 1건) | csproj의 프로젝트 · 패키지 참조도 같은 금지 목록을 따른다. **쓰지 않는 참조도 막는다**(컴파일된 어셈블리에는 남지 않으므로 테스트 어셈블리의 deps.json으로 확인). Domain은 BuildingBlocks.Domain만, `<Service>.MigrationService`는 Api 계열 금지, 모든 서비스 프로젝트는 자기 서비스 · BuildingBlocks · ServiceDefaults 밖의 `EmergencyHub.*`(다른 서비스)를 참조하지 않는다(서비스 수와 관계없이 적용, 목록에 없는 서비스도 이름으로 잡음) |
+| `ArchitectureAssemblyCoverageTests` | `src`의 제품 프로젝트가 ServiceDefaults · AppHost를 빼고 모두 `ArchitectureAssemblies.All`에 있고, Employee가 5개 레이어를 한 번씩 가진다 |
+
+- **대상 어셈블리는 `ArchitectureAssemblies` 한곳에서 관리한다**(현재 BuildingBlocks 4개 + Employee 5개). 서비스를 추가하면 레이어별로 목록에 넣고 csproj에 참조를 더한다. 테스트 어셈블리는 넣지 않는다. ServiceDefaults · AppHost는 규칙 대상이 아니다.
+- 규칙마다 제품 대상 형식이 1개 이상임을 단언한다(공허 통과 방지). 대상이 서비스 코드에만 있는 규칙(현재 10개: 컨벤션 · 주입 8, Controller, MigrationService)은 서비스 어셈블리가 목록에 없을 때만 건너뜀(Skip)으로 표시하고, 서비스가 들어온 지금은 대상 0개면 실패다. 서비스 ↛ 다른 서비스 규칙은 서비스가 2개 미만이면 건너뛴다(금지할 다른 서비스가 없음). **지금 건너뛰는 제품 테스트는 1개**(`ServicesDoNotDependOnOtherServices`, 서비스 1개)다(S04-T02 실측: 아키텍처 테스트 전체 100 = 통과 99 · 건너뜀 1).
+- **ClassesAreSealed 범위**: 대상은 `ArchitectureAssemblies.All`의 `EmergencyHub.*` 네임스페이스에 있는 추상 · static이 아닌 클래스 전부이며, **가시성(public / internal)과 관계없다**. 루트 네임스페이스 밖의 컴파일러 생성 형식(`<PrivateImplementationDetails>` 등)과 ServiceDefaults · AppHost는 대상 밖이다. EF 생성 형식도 대상이라 마이그레이션(public)과 모델 스냅샷(internal)에 직접 쓴 `*.Sealed.cs` partial 선언으로 sealed를 붙인다([데이터베이스 · 마이그레이션 규칙](database.md#마이그레이션-규칙)). S04-T02 실측: `EmployeeDbContextModelSnapshot.Sealed.cs`에서 `sealed`를 빼면 `ClassesAreSealed_ProductAssemblies_Holds`가 `EmployeeDbContextModelSnapshot`(internal)으로 실패한다. 따라서 BL-090의 "internal 생성 형식은 잡지 않음"은 현재 코드에서 재현되지 않는다(S03-T02 반려 때 InitialCreate만 보고된 원인은 확인하지 않았다). 생성 형식을 규칙에서 예외 처리하는 기준은 정하지 않았다(BL-090 트리거 대기).
 - 규칙마다 테스트 어셈블리 안 표본 네임스페이스에 위반 예시와 지킨 예시를 두고, 같은 규칙 객체가 위반 예시만 정확히 잡는지 확인한다.
 - 아키텍처 테스트 프로젝트에는 `coverlet.collector`를 넣지 않는다. 수집기가 출력 폴더의 제품 DLL을 계측하면 Coverlet 추적 형식 의존이 생겨 Domain 규칙이 실패한다(S02-T05 실측).
 - 한계: `const` 참조는 컴파일러가 인라인해 형식 의존으로 보이지 않는다. enum의 `: int` 명시 여부는 메타데이터로 구별할 수 없어 `[Flags]`의 `: int` 생략은 사람 리뷰로 잡는다. Controller가 메서드 본문에서 서비스 로케이터로 Repository를 꺼내는 경우는 시그니처에 드러나지 않아 reviewer가 판정한다.
@@ -306,15 +353,23 @@ DI 등록 검증(통합 테스트): 마커를 구현한 모든 타입이 `Scoped
 
 ## 커버리지 기준
 
-- BuildingBlocks(Domain · Application)와 서비스 Domain / Application 라인 커버리지 **80% 이상**을 목표로 한다([PRD-001](../10-delivery/prd/PRD-001-foundation.md) NFR-03). CI에서 측정 · 보고만 하고 필수 체크(임계값 실패)는 걸지 않는다. 안정되면 필수 체크로 바꿀지 새로 정한다.
-- 측정: `dotnet test --collect "XPlat Code Coverage" --settings coverlet.runsettings` → ReportGenerator로 합산 보고. 대상 어셈블리 · 제외 규칙(테스트, `Migrations/**`, 생성 코드)은 [ADR-0022](../03-architecture/adr/0022-respawn-and-coverage-tooling.md#커버리지)를 따른다.
+- 대상 어셈블리 **6개**의 라인 커버리지 **80% 이상**을 목표로 한다([PRD-001](../10-delivery/prd/PRD-001-foundation.md) NFR-03, S04 계획 확정의 해석: "BuildingBlocks"는 Domain · Application · Infrastructure · Api 4개). CI에서 측정 · 보고만 하고 필수 체크(임계값 실패)는 걸지 않는다. 안정되면 필수 체크로 바꿀지 새로 정한다.
+
+| 구분 | 어셈블리 |
+|---|---|
+| 대상 (`coverlet.runsettings` `Include`) | `EmergencyHub.BuildingBlocks.Domain` · `.Application` · `.Infrastructure` · `.Api`, `EmergencyHub.Employee.Domain` · `.Application` |
+| 대상 아님 | Employee Api · Infrastructure · MigrationService, ServiceDefaults, AppHost: 커버리지 대신 통합 테스트 · 실기동으로 확인한다 |
+| 수집 안 함 | `EmergencyHub.ArchitectureTests`: `coverlet.collector`를 넣지 않는다(아래 [아키텍처 테스트](#아키텍처-테스트), TD-024). 커버리지 실행 때 수집기 없음 메시지만 내고 통과한다 |
+
+- 원본은 저장소 루트 [`coverlet.runsettings`](../../coverlet.runsettings)이다(S04-T01, BL-068). 대상을 바꾸면 이 표와 runsettings 주석을 함께 고친다.
+- 측정: `dotnet test --collect "XPlat Code Coverage" --settings coverlet.runsettings` → ReportGenerator로 합산 보고. 제외 규칙(테스트 어셈블리, `Migrations/**`, `obj/**`, 생성 코드, `GeneratedCode` · `CompilerGenerated` · `ExcludeFromCodeCoverage` 속성, 자동 속성)은 [ADR-0022](../03-architecture/adr/0022-respawn-and-coverage-tooling.md#커버리지)와 runsettings를 따른다. 80% 미만 대상은 테스트로 보강하고, 생성 · 구성 코드 제외만 사유와 함께 허용한다.
 - 커버리지 숫자보다 **필수 테스트 케이스(성공 / 실패 / 엣지)의 충족**을 우선 판정한다.
-- Api / Infrastructure는 커버리지 대신 통합 테스트로 확인한다.
+- **스모크 테스트는 도입하지 않는다.** Aspire.Hosting.Testing으로 AppHost를 띄우는 스모크(PRD-001 FR-03 선택 항목)는 S04에서 미도입으로 정했고, 근거와 재도입 조건(AppHost 테스트 모드, CI 3회 연속 통과, CI 추가 시간 최대 7분)은 BL-111에 있다([백로그](../10-delivery/backlog.md)).
 
 ## CI
 
 - 워크플로: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml). `develop` · `main` 대상 PR(Draft PR 포함)마다 `ubuntu-24.04`에서 실행한다([PRD-001](../10-delivery/prd/PRD-001-foundation.md) FR-10). 권한은 `contents: read`, 비밀은 쓰지 않는다. SDK는 `global.json`으로 설치하고, 액션은 커밋 SHA로 고정한다([패키지 버전 · 라이선스](../03-architecture/package-versions.md#github-actions)).
-- 커버리지 설정: 저장소 루트 [`coverlet.runsettings`](../../coverlet.runsettings)(cobertura, NFR-03 대상 4개 어셈블리 `Include` — 아직 없는 어셈블리도 패턴으로 미리 포함, 테스트 어셈블리 · `Migrations/**` · `obj/**` · `*.g.cs` 제외, `GeneratedCode` · `CompilerGenerated` · `ExcludeFromCodeCoverage` 속성 제외, `SkipAutoProps`).
+- 커버리지 설정: 저장소 루트 [`coverlet.runsettings`](../../coverlet.runsettings)(cobertura, NFR-03 대상 6개 어셈블리 `Include`(위 [커버리지 기준](#커버리지-기준) 표), 테스트 어셈블리 · `Migrations/**` · `obj/**` · `*.g.cs` 제외, `GeneratedCode` · `CompilerGenerated` · `ExcludeFromCodeCoverage` 속성 제외, `SkipAutoProps`).
 - 같은 순서를 로컬에서 그대로 실행할 수 있다(저장소 루트, Git Bash).
 
 ```bash
@@ -328,7 +383,7 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 
 - 보고 경로는 한 단계 패턴(`TestResults/*/`)을 쓴다. trx 로거가 커버리지 첨부를 `TestResults/<trx 이름>/In/**` 아래로 한 번 더 복사해 `**` 패턴이면 같은 결과가 두 번 합산된다.
 - CI 산출물: 텍스트 요약은 로그에, Markdown 요약은 잡 요약(`GITHUB_STEP_SUMMARY`)에 싣는다. trx(`test-results`)와 HTML 보고서(`coverage-report`)는 아티팩트로 14일 보관한다(실패해도 업로드). 단계별 소요 시간(초)은 주요 단계가 `$RUNNER_TEMP/step-times.md`에 적고(`trap ... EXIT`라 실패한 단계도 기록) 마지막 단계가 잡 요약 표로 싣는다(NFR-07 10분 이내).
-- 통합 테스트(S03-T06): 같은 `build-test` 잡의 `dotnet test`가 함께 실행한다(Docker는 ubuntu 러너 기본 제공). Test 전에 `postgres:<태그>`를 따로 `docker pull`한다. 태그는 `dotnet msbuild <통합 테스트 csproj> -getProperty:EmergencyHubPostgresImageTag`로 `Directory.Build.props` 원본에서 읽는다(워크플로에 태그 리터럴 없음). Test 단계는 `EMERGENCYHUB_CONTAINER_LOG_DIRECTORY`를 주고, 실패하면(`if: failure()`) 그 폴더를 `container-logs` 아티팩트로 올린다. Aspire.Hosting.Testing(AppHost) 스모크는 넣지 않는다.
+- 통합 테스트(S03-T06): 같은 `build-test` 잡의 `dotnet test`가 함께 실행한다(Docker는 ubuntu 러너 기본 제공). Test 전에 `postgres:<태그>`를 따로 `docker pull`한다. 태그는 `dotnet msbuild <통합 테스트 csproj> -getProperty:EmergencyHubPostgresImageTag`로 `Directory.Build.props` 원본에서 읽는다(워크플로에 태그 리터럴 없음). Test 단계는 `EMERGENCYHUB_CONTAINER_LOG_DIRECTORY`를 주고, 실패하면(`if: failure()`) 그 폴더를 `container-logs` 아티팩트로 올린다. Aspire.Hosting.Testing(AppHost) 스모크는 넣지 않는다(미도입 유지, 재도입 조건은 BL-111).
 - `TestResults/` · `coveragereport/`는 `.gitignore` 대상이다.
 
 ---
@@ -348,3 +403,4 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 | 2026-09-28 | dba | 통합 테스트 fixture DB 구성 표(이미지 태그 메타데이터, 초기화 스크립트 공유 마운트, 생성 스크립트 한 문장, Write / Read 연결, 대기 전략 주의), Respawn 옵션 형식과 이름 대소문자 실측, 장애 주입 절(항목별 트리거 / 인터셉터 추천, 테스트 전용 트리거 SQL · 시퀀스 카운터 · 생성 · DROP · 잔여 검사), DB 검증 쿼리 Q1~Q12 (S03-T06) |
 | 2026-09-28 | developer | fixture 구현 위치 · 공개 도우미, 장애 주입 도우미 표(트리거 · 인터셉터 · 재시도 축소 등록), 로컬 Docker API 1.43 대처, CI 통합 테스트(이미지 선 pull · 태그 원본 읽기 · 단계별 시간 요약 · 실패 시 컨테이너 로그 아티팩트) (S03-T06) |
 | 2026-09-28 | developer | fixture 메서드 목록에 `ExecutePsqlScriptAsync` · `PsqlResult` 추가, Q12 NOTICE 문구 보정(빈 DB · 마이그레이션된 DB 구분), `WebApplicationFactory` 도우미(`EmployeeApiFactory` · 옵션 · 설정 사본 · 로그 수집) 사용법 (S03-T07) |
+| 2026-09-28 | developer | 아키텍처 테스트 절을 규칙 정의와 1:1 표로(의존성 10 · 컨벤션 12 · 주입 3, 선언 참조 · 대상 목록 점검), 규칙 목록 원본을 테스트 프로젝트로, 건너뜀 11 → 1 실측, ClassesAreSealed 범위(가시성 무관, 실측으로 BL-090 전제 불일치 기록), Validator 공통 기반 `RequestValidator<T>`, 커버리지 대상 6개 표 · 대상 아님 · 수집 안 함, 스모크 미도입(BL-111), CI 절 대상 6개, 설정 · 구성 코드의 실패 = 부정 범위 해석 (S04-T02, BL-066 · 068 · 087 · 090) |

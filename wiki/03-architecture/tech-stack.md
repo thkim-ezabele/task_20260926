@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [architecture]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 기술 스택
@@ -74,8 +74,8 @@ updated: 2026-09-27
 | Test Double | NSubstitute | 🟢 확정 | [TDD 가이드](../04-development/tdd-guide.md#test-double-사용-기준), 버전은 ADR-0021 |
 | 통합 테스트 | Testcontainers (PostgreSQL) + Respawn | 🟢 확정 | [ADR-0022](adr/0022-respawn-and-coverage-tooling.md). InMemory / SQLite 대체 금지. 브로커 컨테이너는 보류(ADR-0023) |
 | 시간 고정 | Microsoft.Extensions.TimeProvider.Testing | 🟢 확정 | `FakeTimeProvider` |
-| 아키텍처 테스트 | NetArchTest.Rules | 🟢 확정 | 레이어 의존, 마커 상속, record 규칙 |
-| 커버리지 | coverlet.collector + ReportGenerator | 🟢 확정 | [ADR-0022](adr/0022-respawn-and-coverage-tooling.md). BuildingBlocks · Employee Domain / Application 80% 목표(보고만) |
+| 아키텍처 테스트 | NetArchTest.Rules | 🟢 확정 | [ADR-0021](adr/0021-test-tooling-xunit-v3-and-awesomeassertions.md). 레이어 의존 · 선언 참조 · 컨벤션 · 주입 규칙([테스트 전략 · 아키텍처 테스트](../04-development/testing-strategy.md#아키텍처-테스트)) |
+| 커버리지 | coverlet.collector + ReportGenerator | 🟢 확정 | [ADR-0022](adr/0022-respawn-and-coverage-tooling.md). 대상 6개(BuildingBlocks Domain · Application · Infrastructure · Api, Employee Domain / Application) 라인 80% 목표(보고만), 원본 `coverlet.runsettings`([테스트 전략 · 커버리지 기준](../04-development/testing-strategy.md#커버리지-기준)) |
 
 ## 인프라 & DevOps
 
@@ -123,4 +123,5 @@ updated: 2026-09-27
 | 2026-09-27 | - | ADR 0007~0010과 기준 문서 결정 반영: CQRS, EF Core, 정수 코드, Serilog, NSubstitute, Testcontainers 등 확정 / MediatR · FluentAssertions 라이선스로 후보 전환 |
 | 2026-09-27 | developer | 패키지 버전 · 라이선스 문서 링크 추가 (S01-T01) |
 | 2026-09-27 | developer | CI 워크플로 위치 링크, GitHub Actions SHA 고정 결정으로 미정 표 행 제거 (S01-T07) |
+| 2026-09-28 | developer | 커버리지 행을 S04-T01 대상 6개로, 아키텍처 테스트 행에 ADR-0021 · 규칙 종류 링크. 미정 표시 0건 확인(S01-T04에서 확정 / 보류 / 이후 토픽으로 정리, 비확정 항목은 모두 처리 방식 표에 있음) (S04-T02) |
 | 2026-09-27 | developer | ADR 0011~0023 반영: 후보(미정) 항목을 확정 / 보류 / 이후 토픽으로 정리, 남은 항목 처리 방식 표 추가 (S01-T04) |
