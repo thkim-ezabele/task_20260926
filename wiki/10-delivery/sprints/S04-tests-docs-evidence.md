@@ -95,6 +95,7 @@ updated: 2026-09-28
 | 2026-09-28 | S04-T04 | dba | PASS | 재현 절차 · 판정 기준 확정(명령 미실행): 로컬 저장소 clone(원격이 24커밋 뒤처짐) → C:\eh-s04에서 local-setup 초기화 ①~③ 한 번 → http 1회차(새 볼륨 psql 1~11, 42P04 0 기대) → 2회차 재시작(42P04 한 쌍 1, 등록 id 조회 200) → https 회차 선택. 삭제 대상: 볼륨 emergency-hub-postgres-data, UserSecretsId 4264c4b6-… 키 전부(이름만 기록). 보호 대상 3시점 diff. psql은 Git Bash heredoc · 컨테이너 환경 변수 비밀번호. 새 BL-115 · 116(판정 문구 · psql 명령 틀 보완) |
 | 2026-09-28 | S04-T04 | developer | PASS | 스프린트 문서 '## 증빙' 절 틀: T04 하위 절 10개(환경 · 시작 조건, 삭제 전 대상 목록, 실행 절차 1~14단계, psql 1~11, 회차별 서버 로그, HTTP, 대시보드, https 확인, 재현 차이점, 정리 확인), 값 칸 '(tester 기록)', T06 자리. check-docs 4건 |
 | 2026-09-28 | S04-T04 | reviewer | REJECT → developer | 반려 1회(형식). 증빙 틀에 FR-03 시작 순서(PostgreSQL → 마이그레이션 종료 코드 0 → Api) 판정 칸 없음, 회차별 employee-migrations 종료 코드 · 앱 리소스 Error · Critical 수 칸 없음. 나머지(기대값 ↔ 원본, 비밀 칸 없음, http 결정 · 인수 조건 대비 변경 반영, check-docs 4) 통과 |
+| 2026-09-28 | S04-T04 | developer | PASS | 재작업: 대시보드 증빙에 시작 순서 행(local-setup 원문 순서), 회차별 서버 로그 표에 employee-migrations 종료 코드 · 앱 리소스 Error · Critical 열(판정은 두 기준 모두), 선행 작업 커밋 포함 행, '기타 ERROR · FATAL · PANIC', 7행 UserSecretsId 공유 안내. check-docs 4건 |
 
 ## 계획 리뷰
 
@@ -189,6 +190,7 @@ S03 인계: 로컬 통합 테스트 `DOCKER_API_VERSION=1.43`(BL-102), https 대
 | dev-certs 상태(`dotnet dev-certs https --check --trust` 종료 코드) | (tester 기록) |
 | 프로필 | (tester 기록) |
 | 원래 트리에서 실행 중인 AppHost 없음 | (tester 기록) |
+| 선행 작업 T01 · T02 · T05 · T03 커밋 포함(`git merge-base --is-ancestor <커밋> HEAD` 또는 `git log`로 확인, clone HEAD 기준) | (tester 기록) |
 
 #### 삭제 전 대상 목록
 
@@ -212,7 +214,7 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 | 4 | 초기화 ① 컨테이너 없음 확인 | `docker ps -a --filter volume=emergency-hub-postgres-data --format '{{.Names}}'` | (tester 기록) | (tester 기록) |
 | 5 | 초기화 ② 볼륨 확인 · 삭제 | `docker volume ls --filter name=emergency-hub-postgres-data --format '{{.Name}}'`, `docker volume rm emergency-hub-postgres-data` | (tester 기록) | (tester 기록) |
 | 6 | 초기화 ③ user-secrets clear · 키 이름 확인 | `dotnet user-secrets clear --project src/Aspire/EmergencyHub.AppHost`, local-setup ③의 키 이름 확인 명령 | (tester 기록) | (tester 기록) |
-| 7 | 로컬 설정(User Secrets) 첫 실행 전 키 이름 | local-setup "로컬 설정" 절의 키 이름 확인 명령 | (tester 기록) | (tester 기록) |
+| 7 | 로컬 설정(User Secrets) 첫 실행 전 키 이름 | local-setup "로컬 설정" 절의 키 이름 확인 명령 | (tester 기록) | (tester 기록, 원래 트리와 같은 `UserSecretsId`라 키가 공유된다는 점을 함께 적고 재현 차이점 표 `UserSecretsId` 행에도 기록) |
 | 8 | 서비스 빌드 및 실행(1회차) | `dotnet run --project src/Aspire/EmergencyHub.AppHost --launch-profile http` | (tester 기록) | (tester 기록) |
 | 9 | 대시보드 확인 | Resources 화면 상태 | (tester 기록) | (tester 기록) |
 | 10 | 동작 확인 · 헬스 체크 | `curl -s -i http://localhost:5180/health/ready` 또는 `Invoke-RestMethod` | (tester 기록) | (tester 기록) |
@@ -241,13 +243,13 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 
 #### 실행 회차별 서버 로그
 
-각 회차를 멈추기 전에 `docker logs`를 스크래치에 저장해 셉니다. 판정 기준: 1회차는 42P04 0 · 42710 0 · 기타 0(3D000 · 25006 탐침은 수만 기록하고 제외), 2회차 이후는 42P04 한 쌍(ERROR 1 + STATEMENT 1) 정확히 1 · 3D000 0 · 42710 0 · 기타 0.
+각 회차를 멈추기 전에 `docker logs`를 스크래치에 저장해 셉니다. 판정 기준: 1회차는 42P04 0 · 42710 0 · 기타 0(3D000 · 25006 탐침은 수만 기록하고 제외), 2회차 이후는 42P04 한 쌍(ERROR 1 + STATEMENT 1) 정확히 1 · 3D000 0 · 42710 0 · 기타 0. 앱 리소스는 회차마다 대시보드에서 확인하며, `employee-migrations` 종료 코드 `0`(2회차 이후는 적용할 마이그레이션 없음), `employee-migrations` · `employee-api` Error · Critical 0이어야 합니다. 판정 열은 서버 로그 기준과 앱 리소스 기준을 모두 만족할 때만 통과입니다.
 
-| 회차 | 프로필 | 42P04 쌍 | 3D000 | 25006 탐침 | 42710 | 기타 ERROR · FATAL | 판정 |
-|---|---|---|---|---|---|---|---|
-| 1 | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) |
-| 2 | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) |
-| 3 | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) |
+| 회차 | 프로필 | 42P04 쌍 | 3D000 | 25006 탐침 | 42710 | 기타 ERROR · FATAL · PANIC | `employee-migrations` 종료 코드 | `employee-migrations` · `employee-api` Error · Critical 수 | 판정 |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) |
+| 2 | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) |
+| 3 | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) |
 
 #### HTTP 증빙
 
@@ -263,6 +265,7 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 | 확인 | 회차 | 기대 | 실제 |
 |---|---|---|---|
 | 대시보드 로그인 URL | (tester 기록) | `login?t=<토큰>` 형식(토큰 미기록) | (tester 기록) |
+| 시작 순서 | (tester 기록) | local-setup "로컬 구성" 절 시작 순서: `postgres` → `employee-db` → `employee-migrations`(종료 코드 0) → `employee-api`(Healthy) | (tester 기록, 리소스별 시작 · 종료 시각 또는 `employee-api`가 `employee-migrations` 종료 전 `Waiting`이었다는 관찰) |
 | Resources 상태 | (tester 기록) | `postgres` Running, `employee-migrations` Finished, `employee-api` Running · Healthy | (tester 기록) |
 | `employee-migrations` 종료 코드 | (tester 기록) | `0`(2회차 이후는 적용할 마이그레이션 없음) | (tester 기록) |
 | Structured logs DOM 덤프 요지 | (tester 기록) | `employee-api` 로그 있음, `employee-migrations` · `employee-api` Error · Critical 0 | (tester 기록) |
