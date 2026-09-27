@@ -146,13 +146,17 @@ UnitOfWork(`PersistenceLogs`, BuildingBlocks.Infrastructure)가 영속성 예외
 
 ### Employee 로그 이벤트
 
-Employee.Application `EmployeeLogs`가 남깁니다(S03-T01). 속성은 직원 ID뿐이고 이름 · 이메일은 남기지 않습니다([로깅 · 개인정보](../04-development/logging-observability.md#개인정보--보안)). 단위 테스트(`EmployeeLogsTests`)가 이 표와 정의를 대조합니다.
+Employee.Application `EmployeeLogs`(S03-T01)와 Employee.MigrationService `MigrationServiceLogs`(S03-T03)가 남깁니다. `EmployeeLogs`의 속성은 직원 ID뿐이고 이름 · 이메일은 남기지 않습니다([로깅 · 개인정보](../04-development/logging-observability.md#개인정보--보안)). 단위 테스트(`EmployeeLogsTests`)가 이 표와 정의를 대조합니다.
 
 | 이벤트 ID | 이름 | 수준 | 메시지 템플릿 |
 |---|---|---|---|
 | 20001 | `EmployeeRegistered` | `Information` | `Employee {EmployeeId} registered` |
+| 20901 | `MigrationsApplied` | `Information` | `Migrations applied for {DbContextType} in {ElapsedMilliseconds} ms` |
+| 20902 | `MigrationsFailed` | `Error` | `Migrations failed for {DbContextType} with exception {ExceptionType} and SqlState {SqlState} after {ElapsedMilliseconds} ms, exit code {ExitCode}` |
 
-- 등록 Handler가 커밋 전에 남깁니다. 커밋이 실패하면(경합 23505 → 23001 등) 로깅 데코레이터가 같은 요청의 실패(102)를 뒤이어 남기므로, 등록 확정 여부는 102 유무와 함께 봅니다.
+- 하위 범위: 20001 ~ 20899는 Employee.Application(`EmployeeLogs`), 20901 ~ 20999는 Employee.MigrationService(`MigrationServiceLogs`, S03-T03)입니다. 단위 테스트(`MigrationServiceLogsTests`)가 20901 · 20902 정의를 대조합니다.
+- 20901 · 20902는 MigrationService Worker가 적용 한 번에 한 줄만 남깁니다. 속성은 DbContext 형식 이름 · 경과 시간(밀리초) · 실패 때 예외 형식 이름 · SqlState(예외 사슬의 `DbException`, 없으면 `null`) · 종료 코드(정수, 1 실패 · 2 취소)와 예외 객체이고, 연결 문자열 · 호스트 · 사용자 · 비밀번호는 넣지 않습니다([데이터베이스 · 마이그레이션 규칙](../04-development/database.md#마이그레이션-규칙)).
+- 20001은 등록 Handler가 커밋 전에 남깁니다. 커밋이 실패하면(경합 23505 → 23001 등) 로깅 데코레이터가 같은 요청의 실패(102)를 뒤이어 남기므로, 등록 확정 여부는 102 유무와 함께 봅니다.
 
 ## 공통 에러 코드
 
@@ -210,3 +214,4 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01, S03 계획 리뷰 �
 | 2026-09-27 | developer | 공통 코드 3003 `Common.UniqueConstraintViolated`(BL-019), 영속성 로그 이벤트 201~203 (S02-T07) |
 | 2026-09-27 | developer | API 로그 이벤트 1 · 301~304(예외 메시지 미기록, 프레임워크 예외 미들웨어 로그 끄기), 공통 하위 범위 표 비고 갱신. 새 에러 코드 할당 없음(BL-052) (S02-T06) |
 | 2026-09-27 | developer | Employee 에러 코드 표(21001 ~ 21006, 22001, 23001)와 Employee 로그 이벤트 20001 `EmployeeRegistered` (S03-T01) |
+| 2026-09-27 | developer | Employee 로그 하위 범위(20001 ~ 20899 Application, 20901 ~ 20999 MigrationService)와 MigrationService 로그 이벤트 20901 `MigrationsApplied` · 20902 `MigrationsFailed` (S03-T03) |

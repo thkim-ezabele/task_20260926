@@ -49,6 +49,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.Employee.Infra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.Employee.Infrastructure.UnitTests", "tests\Services\Employee\EmergencyHub.Employee.Infrastructure.UnitTests\EmergencyHub.Employee.Infrastructure.UnitTests.csproj", "{F02CB2CE-9514-4AC9-9225-85584E321D6D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Aspire", "Aspire", "{2A2E555C-752C-44F3-AD14-DBDCDC3F18F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.ServiceDefaults", "src\Aspire\EmergencyHub.ServiceDefaults\EmergencyHub.ServiceDefaults.csproj", "{B30CF0B3-78BB-4B4C-83BA-9D6A922EA895}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Aspire", "Aspire", "{A6B46E25-767B-43BF-823F-8E2E3ABF1ABF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.ServiceDefaults.UnitTests", "tests\Aspire\EmergencyHub.ServiceDefaults.UnitTests\EmergencyHub.ServiceDefaults.UnitTests.csproj", "{5D8D2EA8-3E8C-463B-A7E8-D687CD58E68A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.Employee.MigrationService", "src\Services\Employee\EmergencyHub.Employee.MigrationService\EmergencyHub.Employee.MigrationService.csproj", "{6BA006F3-2F78-4E59-AE9E-4AA5A28EA39D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyHub.Employee.MigrationService.UnitTests", "tests\Services\Employee\EmergencyHub.Employee.MigrationService.UnitTests\EmergencyHub.Employee.MigrationService.UnitTests.csproj", "{3700BB6D-F22C-4BCE-A1E3-EDF73119A037}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -118,6 +130,22 @@ Global
 		{F02CB2CE-9514-4AC9-9225-85584E321D6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F02CB2CE-9514-4AC9-9225-85584E321D6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F02CB2CE-9514-4AC9-9225-85584E321D6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B30CF0B3-78BB-4B4C-83BA-9D6A922EA895}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B30CF0B3-78BB-4B4C-83BA-9D6A922EA895}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B30CF0B3-78BB-4B4C-83BA-9D6A922EA895}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B30CF0B3-78BB-4B4C-83BA-9D6A922EA895}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D8D2EA8-3E8C-463B-A7E8-D687CD58E68A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D8D2EA8-3E8C-463B-A7E8-D687CD58E68A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D8D2EA8-3E8C-463B-A7E8-D687CD58E68A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D8D2EA8-3E8C-463B-A7E8-D687CD58E68A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BA006F3-2F78-4E59-AE9E-4AA5A28EA39D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BA006F3-2F78-4E59-AE9E-4AA5A28EA39D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BA006F3-2F78-4E59-AE9E-4AA5A28EA39D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BA006F3-2F78-4E59-AE9E-4AA5A28EA39D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3700BB6D-F22C-4BCE-A1E3-EDF73119A037}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3700BB6D-F22C-4BCE-A1E3-EDF73119A037}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3700BB6D-F22C-4BCE-A1E3-EDF73119A037}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3700BB6D-F22C-4BCE-A1E3-EDF73119A037}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{52869930-5044-4418-B2FA-8BD075033B70} = {D9B1C4DB-69E0-4939-8D3D-8C94181D667E}
@@ -141,5 +169,11 @@ Global
 		{CC4481A6-AB5A-4339-8138-323B561FF9EE} = {81CDF134-34E6-4383-9804-F8166CA2C26E}
 		{AE22F448-404D-4E7E-9D3F-B3D62494952E} = {7A373D14-0277-4507-B9C4-C89E5A4AD494}
 		{F02CB2CE-9514-4AC9-9225-85584E321D6D} = {81CDF134-34E6-4383-9804-F8166CA2C26E}
+		{2A2E555C-752C-44F3-AD14-DBDCDC3F18F2} = {D9B1C4DB-69E0-4939-8D3D-8C94181D667E}
+		{B30CF0B3-78BB-4B4C-83BA-9D6A922EA895} = {2A2E555C-752C-44F3-AD14-DBDCDC3F18F2}
+		{A6B46E25-767B-43BF-823F-8E2E3ABF1ABF} = {604F3EE8-CE4C-4DA0-AEFD-BA0194D48B2E}
+		{5D8D2EA8-3E8C-463B-A7E8-D687CD58E68A} = {A6B46E25-767B-43BF-823F-8E2E3ABF1ABF}
+		{6BA006F3-2F78-4E59-AE9E-4AA5A28EA39D} = {7A373D14-0277-4507-B9C4-C89E5A4AD494}
+		{3700BB6D-F22C-4BCE-A1E3-EDF73119A037} = {81CDF134-34E6-4383-9804-F8166CA2C26E}
 	EndGlobalSection
 EndGlobal

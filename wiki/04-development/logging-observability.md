@@ -53,6 +53,7 @@ flowchart LR
 - ServiceDefaults의 공통 확장(`AddServiceDefaults`)이 `builder.Services.AddSerilog((services, configuration) => ...)`로 등록한다. Api와 MigrationService가 같은 코드를 쓴다. 정적 `Log`와 부트스트랩 로거는 쓰지 않는다.
 - 싱크 · 수준은 `appsettings*.json`의 `Serilog` 절(`ReadFrom.Configuration`)로 관리한다. **수준은 `Serilog:MinimumLevel`에서만 정하고 `Logging:LogLevel` 절은 두지 않는다**(Serilog가 로거 팩터리를 교체하므로 쓰이지 않는다). 테스트 · CI 호스트는 설정으로 파일 싱크를 끈다.
 - OTLP 싱크(Serilog.Sinks.OpenTelemetry)는 `OTEL_EXPORTER_OTLP_ENDPOINT`가 있을 때만 코드에서 붙인다(Aspire가 주입. 테스트 · CI에는 없음). 싱크가 `OTEL_*` 환경 변수를 읽어 로그가 트레이스와 같은 서비스로 묶인다.
+- 구성 순서(`SerilogDefaults.Configure`, S03-T03): `ReadFrom.Configuration` → `ReadFrom.Services`(DI에 등록한 `ILogEventSink` · 보강기를 싱크로 받음. 통합 테스트의 수집 싱크는 `ConfigureTestServices`로 등록) → `Enrich.FromLogContext` · `WithMachineName` · `Environment` 속성 → `MinimumLevel.Override(ExceptionHandlerMiddleware 범주, Off)` → (엔드포인트가 있으면) OTLP 싱크. 범주 끄기를 설정보다 **뒤에** 두어 `Serilog:MinimumLevel:Override`로 다시 켤 수 없다(BL-075). 정적 `Log.Logger`는 바꾸지 않는다(`preserveStaticLogger: true`).
 
 **Serilog / OpenTelemetry 로그 중복 방지**:
 
@@ -177,8 +178,18 @@ OpenTelemetry Metrics로 기본 계측(ASP.NET Core, HttpClient, 런타임)을 �
 
 ## 헬스체크
 
-- 엔드포인트: `/health/live`(프로세스 생존), `/health/ready`(DB · 메시지 브로커 등 의존성 준비)
-- 헬스체크 요청은 요청 로그에서 제외한다(로그 잡음 방지).
+ServiceDefaults의 `MapDefaultEndpoints`가 매핑합니다(S03-T03, BL-030). 경로 · 태그 상수는 `HealthEndpoints`에 있습니다.
+
+| 경로 | 실행하는 검사 | 용도 |
+|---|---|---|
+| `/health/live` | 없음(등록된 검사를 하나도 실행하지 않음) | 프로세스 생존. DB가 내려가도 200 |
+| `/health/ready` | `ready` 태그가 붙은 검사만 | 의존성 준비. 서비스 Api가 쓰기 · 읽기 DbContext 검사를 `ready` 태그로 등록(S03-T04) |
+
+- **노출 환경: 모든 환경**에 매핑한다. Aspire 템플릿은 `/health` · `/alive`를 Development에서만 매핑하지만, 대시보드 · 오케스트레이터의 준비 판단이 환경과 무관하게 같은 경로를 써야 하므로 바꿨다(템플릿과의 차이, TD-012). 템플릿 경로 `/health` · `/alive`는 매핑하지 않는다.
+- **응답 본문은 상태 문자열만**(`Healthy` / `Degraded` / `Unhealthy`, 기본 작성기)이다. 검사 이름 · 설명 · 예외 · 소요 시간을 싣는 JSON 작성기는 쓰지 않는다. 모든 환경에 인증 없이 노출되므로 DB 호스트 · 연결 오류 메시지 같은 내부 정보가 나가지 않게 하기 위해서다. 상태 코드는 `Healthy` · `Degraded` 200, `Unhealthy` 503(기본값)이다.
+- 검사 실패 원인은 응답이 아니라 로그 · 추적에서 본다.
+- ServiceDefaults는 EF Core를 참조하지 않는다. DB 검사(`AddDbContextCheck`)는 서비스 Api가 등록한다. MigrationService는 Worker라 헬스 엔드포인트가 없고, 준비 판단은 AppHost `WaitForCompletion`(종료 코드)이 한다([데이터베이스 · 마이그레이션 규칙](database.md#마이그레이션-규칙)).
+- 헬스체크 요청은 추적(ASP.NET Core 계측 `Filter`)과 요청 로그에서 제외한다(로그 잡음 방지). 판별은 `HealthEndpoints.IsHealthPath`(`/health` 아래)로 한다.
 
 ## 알림 기준
 
@@ -195,3 +206,4 @@ OpenTelemetry Metrics로 기본 계측(ASP.NET Core, HttpClient, 런타임)을 �
 | 2026-09-27 | - | 로그 컨벤션 초안: 콘솔 텍스트 / 파일 JSON(CLEF), 공통 필드, 레벨 기준, 작성 규칙(`[LoggerMessage]`, 정수 이벤트 ID), 개인정보, 분산 추적, 헬스체크 |
 | 2026-09-27 | developer | ADR 0020 · 0023 반영: 등록 · 설정(`Logging:LogLevel` 미사용), OTLP 중복 방지, EF 로그 수준, EF · Npgsql 민감 데이터 규칙, 로그 수집기 · 추적 백엔드 보류 (S01-T04) |
 | 2026-09-27 | developer | 전역 예외 처리기의 예외 기록 방식(메시지를 뺀 사본, 이벤트 ID 1)과 프레임워크 예외 미들웨어 로그 끄기 (S02-T06) |
+| 2026-09-27 | developer | 헬스체크 경로 · 노출 환경(모든 환경) · 응답 본문(상태 문자열만), ServiceDefaults Serilog 구성(`ReadFrom.Services`, ExceptionHandlerMiddleware 범주 `MinimumLevel.Override` 끄기) (S03-T03) |

@@ -69,20 +69,26 @@ emergency-hub/
 │   │   ├── EmergencyHub.BuildingBlocks.Domain/
 │   │   ├── EmergencyHub.BuildingBlocks.Application/
 │   │   └── EmergencyHub.BuildingBlocks.Infrastructure/
+│   ├── Aspire/
+│   │   └── EmergencyHub.ServiceDefaults/   # 헬스체크 · OTel · Serilog · 서비스 디스커버리 · 복원력 (S03-T03)
 │   ├── Services/
 │   │   └── <Service>/           # Employee, Identity, ContactNetwork, Emergency, Notification
 │   │       ├── EmergencyHub.<Service>.Domain/
 │   │       ├── EmergencyHub.<Service>.Application/
 │   │       ├── EmergencyHub.<Service>.Infrastructure/
-│   │       └── EmergencyHub.<Service>.Api/
+│   │       ├── EmergencyHub.<Service>.Api/
+│   │       └── EmergencyHub.<Service>.MigrationService/  # 마이그레이션 적용 Worker (ADR-0012)
 │   └── Gateway/
 │       └── EmergencyHub.Gateway/
 ├── tests/
 │   ├── EmergencyHub.ArchitectureTests/
+│   ├── Aspire/
+│   │   └── EmergencyHub.ServiceDefaults.UnitTests/
 │   └── Services/
 │       └── <Service>/
 │           ├── EmergencyHub.<Service>.Domain.UnitTests/
 │           ├── EmergencyHub.<Service>.Application.UnitTests/
+│           ├── EmergencyHub.<Service>.MigrationService.UnitTests/
 │           └── EmergencyHub.<Service>.IntegrationTests/
 ├── deploy/                      # docker compose 등
 └── wiki/
@@ -171,3 +177,4 @@ EmergencyHub.Employee.Api/
 | 2026-09-27 | - | 기본 구조 초안: 레이어 책임, 의존성 규칙, CQRS 적용, 저장소 · 프로젝트 구조, BuildingBlocks, 공통 빌드 설정 |
 | 2026-09-27 | - | 읽기 / 쓰기 DbContext 분리, Read Repository로 Query 구현 위치 확정, DI 자동 등록 구조 반영 |
 | 2026-09-27 | developer | ADR 0014 · 0016 · 0023 반영: Api `Endpoints/` → `Controllers/`, API 스타일 확정, Command 흐름의 커밋 주체 · Outbox 보류 (S01-T04). 저장소 구조 전체 갱신은 S04-T02 |
+| 2026-09-27 | developer | 저장소 구조에 `src/Aspire/EmergencyHub.ServiceDefaults`, `<Service>.MigrationService`와 테스트 프로젝트 추가 (S03-T03) |

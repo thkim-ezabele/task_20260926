@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    OutputType=Exe · IsTestProject=true는 Directory.Build.props가 이름 규칙(*Tests)으로 지정한다(ADR-0021).
+    xunit.runner.visualstudio · coverlet.collector · NSubstitute.Analyzers.CSharp의 PrivateAssets=all은 Directory.Build.targets가 적용한다.
+    헬스 경로는 루프백 Kestrel(포트 0)에 실제 HTTP 요청으로 확인한다(TestHost 패키지 없이, S03-T03).
+    BuildingBlocks.Api 참조는 ExceptionHandlerMiddleware 범주 상수가 두 곳에서 같은지 확인하는 테스트만 쓴다(제품 ServiceDefaults는 참조하지 않음).
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="NSubstitute.Analyzers.CSharp" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Aspire\EmergencyHub.ServiceDefaults\EmergencyHub.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\src\BuildingBlocks\EmergencyHub.BuildingBlocks.Api\EmergencyHub.BuildingBlocks.Api.csproj" />
+  </ItemGroup>
+
+</Project>
