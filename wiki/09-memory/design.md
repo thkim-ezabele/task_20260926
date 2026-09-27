@@ -20,6 +20,10 @@ updated: 2026-09-27
 | [0004](../03-architecture/adr/0004-adopt-event-driven-architecture.md) | EDA | 서비스 간 상태 전파는 통합 이벤트 비동기 메시징, Outbox 패턴, 멱등성 검토 |
 | [0005](../03-architecture/adr/0005-use-postgresql.md) | PostgreSQL | EF Core + Npgsql, 서비스별 Database(또는 Schema), 테스트는 컨테이너 DB |
 | [0006](../03-architecture/adr/0006-adopt-tdd.md) | TDD | 도메인/애플리케이션 로직은 테스트 먼저, PR은 테스트 통과 필수 |
+| [0007](../03-architecture/adr/0007-adopt-cqrs.md) | CQRS | 같은 DB에서 Command / Query 분리, Query는 Read Repository 프로젝션 |
+| [0008](../03-architecture/adr/0008-integer-codes-and-bitmask.md) | 정수 코드 · 비트 마스킹 | 문자열 코드 절대 금지(`smallint` + enum), 조합 코드는 `[Flags]` 비트 마스킹, API · 이벤트 · 에러 코드도 정수 |
+| [0009](../03-architecture/adr/0009-separate-read-write-db-context.md) | 읽기 / 쓰기 분리 | 연결 문자열 · DbContext 분리(현재 같은 DB), Repository는 람다 LINQ 쿼리만 |
+| [0010](../03-architecture/adr/0010-convention-based-di-registration.md) | DI 자동 등록 | 마커 인터페이스 / 기반 클래스 + 어셈블리 검색, Scoped |
 
 형상관리는 GitHub로 확정했습니다(ADR 없음).
 
@@ -30,6 +34,12 @@ updated: 2026-09-27
 - **공통 라이브러리**: ASP.NET Core Web API, MediatR, FluentValidation, Serilog, OpenTelemetry, Swashbuckle, Polly, Redis(필요 시)
 - **테스트 도구**: xUnit, FluentAssertions, NSubstitute / Moq, Testcontainers, NetArchTest
 - **인프라**: GitHub Actions, Docker / docker compose, Kubernetes(필요 시)
+
+## 기준 문서 (draft)
+
+[코딩 컨벤션](../04-development/coding-conventions.md) · [데이터베이스](../04-development/database.md) · [테스트 전략](../04-development/testing-strategy.md)(성공 / 실패 / 엣지 필수) · [Clean Architecture](../03-architecture/clean-architecture.md) · [로깅](../04-development/logging-observability.md)(콘솔 텍스트 / 파일 JSON)
+
+미정(기반 구축 토픽에서 결정): Mediator 구현체, 단언 라이브러리, UUID v7 생성, API 스타일, 타입 검색 구현, 로그 수집기
 
 ## 미착수
 

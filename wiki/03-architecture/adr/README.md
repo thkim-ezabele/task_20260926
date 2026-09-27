@@ -30,3 +30,7 @@ updated: 2026-09-27
 | [0004](0004-adopt-event-driven-architecture.md) | 이벤트 기반 아키텍처(EDA) 채택 | 승인 | 2026-09-27 |
 | [0005](0005-use-postgresql.md) | PostgreSQL 채택 | 승인 | 2026-09-27 |
 | [0006](0006-adopt-tdd.md) | TDD 개발 방법론 채택 | 승인 | 2026-09-27 |
+| [0007](0007-adopt-cqrs.md) | CQRS 적용 | 승인 | 2026-09-27 |
+| [0008](0008-integer-codes-and-bitmask.md) | 코드값 정수화와 비트 마스킹 | 승인 | 2026-09-27 |
+| [0009](0009-separate-read-write-db-context.md) | 읽기 / 쓰기 DB 연결 분리와 Repository 규칙 | 승인 | 2026-09-27 |
+| [0010](0010-convention-based-di-registration.md) | 규칙 기반 DI 자동 등록 | 승인 | 2026-09-27 |

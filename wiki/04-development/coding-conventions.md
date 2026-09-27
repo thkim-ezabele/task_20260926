@@ -316,6 +316,10 @@ builder.Services.AddConventionalServices(
 | namespace | file-scoped (`csharp_style_namespace_declarations = file_scoped:error`) |
 | 분석기 | `AnalysisLevel = latest-recommended`, 경고는 오류로 처리 |
 
+## 로깅
+
+로그는 [로깅 & 관측성](logging-observability.md) 규칙을 따른다. `ILogger<T>` + 메시지 템플릿, 반복 로그는 `[LoggerMessage]`, 개인정보 금지.
+
 ## 주석 및 문서화
 
 - 주석은 **"왜"**를 적는다. 코드로 알 수 있는 "무엇"은 적지 않는다.
