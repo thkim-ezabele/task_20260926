@@ -78,6 +78,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T01 | dba | PASS | 사용자 결정: Aspire 9.5.2 유지(지원 종료는 Aspire ADR 명시 + TD-005, 재검토 BL-002). NU1902는 T02(BL-004), 생성 스크립트 실측은 BL-003으로 이관 후 재판정 |
 | 2026-09-27 | S01-T01 | developer | PASS | `package-versions.md` 신규(패키지 · 라이선스 · 출처 표), PRD Q19 해소. Aspire 9.5 지원 종료 2025-11-11, global.json 8.0.400 + latestFeature 권장(로컬 SDK 8.0.202는 xunit.v3 빌드 실패 → 8.0.425 설치 필요), MessagePack 2.5.192 취약(AppHost 전이) → 2.5.305 고정 + `NuGetAuditMode=all`, OTel 1.19.x, 상용 0건. 스크래치(SDK 8.0.425)에서 restore · build 경고 0 · test 통과 |
 | 2026-09-27 | S01-T01 | reviewer | PASS | 코드 점검 15개 해당 없음. 출처 링크 · 버전 표기 · FR-01① · 완료 조건 전 항목 · frontmatter · 상대 링크 · ADR 불변 확인 |
+| 2026-09-27 | S01-T01 | tester | PASS | 표 6개 46행 버전 · 라이선스 · 출처 누락 0(Node 검사), 스크래치 net8.0 sln(고정 39개, CPM · 전이 고정 · `NuGetAuditMode=all` · global.json 8.0.400 latestFeature, SDK 8.0.425) `dotnet restore` 경고 0, 해석 버전 불일치 0, MessagePack 고정 제거 대조군 NU1902 9 · NU1903 2, 취약 패키지 0, Q19 링크 · 앵커 유효, 상용 0건 |
 
 ## 계획 리뷰
 
@@ -134,6 +135,8 @@ updated: 2026-09-27
 | TD-009 | xUnit v2 선택 시 Legacy 폐기 상태 | S01-T01 | |
 | BL-010 | 클라이언트 통합의 net8.0 EF Core 의존 버전 · 하한 명시(T02) | S01-T01 | |
 | BL-011 | PostgreSQL 이미지 · .NET SDK 라이선스 행 추가 검토 | S01-T01 | |
+| BL-012 | Aspire 리소스 이름 밑줄 불가(ASPIRE006): `AddDatabase("employee-db", databaseName: ...)` | S01-T01 | |
+| BL-013 | 클라이언트 통합 · Dashboard.Sdk · Orchestration 폐기 표시 문서 반영 | S01-T01 | |
 
 ## 회고
 
