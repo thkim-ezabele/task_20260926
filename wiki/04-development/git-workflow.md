@@ -139,11 +139,13 @@ Stage: developer
 | 브랜치 | PR 시점 | 대상 | 병합 방식 |
 |---|---|---|---|
 | `feature/prd-*` (토픽) | `/prd`에서 **Draft PR** 생성 → `/retro` 후 Ready로 바꿔 병합 | `develop` | **Merge commit**: 스프린트 · 작업자별 커밋을 증빙으로 보존 |
-| `feature/*`, `bugfix/*` (토픽 밖) | 작업 완료 시 | `develop` | **Squash merge** (PR 제목을 Conventional Commits 형식으로) |
+| `feature/*`, `bugfix/*` (토픽 밖) | 작업 완료 시 | `develop` | **Merge commit** |
 | `release/*`, `hotfix/*` | 릴리스 / 수정 준비 완료 시 | `main` | **Merge commit** (`--no-ff`) |
 | `chore/backmerge-*` | `main` 병합 · 태그 직후 | `develop` | **Merge commit**: 병합 후 브랜치 자동 삭제 설정 때문에 `release/*`를 두 번 병합할 수 없어, `main`에서 역병합 브랜치를 따로 만든다 |
 
 - 토픽 PR 제목: `feat(<scope>): PRD-NNN <토픽 제목>`
+- **모든 PR은 Merge commit으로 병합한다.** feature 브랜치의 커밋이 `develop`에 그대로 남아 과제 증빙으로 추적할 수 있다. 병합 커밋 제목은 PR 제목이 되므로 **PR 제목을 Conventional Commits 형식으로** 쓴다.
+- 병합 전에 feature 브랜치의 커밋 메시지가 커밋 규칙을 지켰는지 확인한다(개별 커밋이 그대로 남기 때문).
 - PR 병합 전 테스트 통과가 필수다([ADR-0006](../03-architecture/adr/0006-adopt-tdd.md)). CI 구성 후 필수 체크로 건다.
 - 템플릿: 저장소 루트의 [`.github/pull_request_template.md`](../../.github/pull_request_template.md)
 
@@ -154,7 +156,8 @@ Stage: developer
 | 항목 | 값 |
 |---|---|
 | 기본 브랜치 | `develop` (PR 기본 대상) |
-| 병합 방식 | Squash merge, Merge commit 허용 / Rebase merge 끔 |
+| 병합 방식 | **Merge commit만 허용** (Squash merge · Rebase merge 끔) |
+| 병합 커밋 메시지 | 제목 = PR 제목, 본문 = PR 본문 (`merge_commit_title: PR_TITLE`) |
 | 병합 후 브랜치 삭제 | 자동 |
 | 브랜치 보호 (`main`, `develop`) | ⚪ 적용 불가: GitHub Free의 private 저장소는 브랜치 보호 / Ruleset을 지원하지 않음(HTTP 403) |
 
@@ -188,5 +191,6 @@ Stage: developer
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | GitHub Flow → Git Flow로 변경, 브랜치 전략·네이밍·커밋·PR·태깅 규칙 초안 작성 |
 | 2026-09-27 | - | GitHub 저장소 설정 기록, 브랜치 보호 적용 불가(Free private)로 직접 push 금지는 규칙으로 운영 |
+| 2026-09-27 | - | 병합 방식을 Merge commit으로 통일(Squash · Rebase 끔), 병합 커밋 제목 = PR 제목 |
 | 2026-09-27 | - | 역병합 브랜치 `chore/backmerge-*` 추가 |
 | 2026-09-27 | - | 개발 관리(10-delivery)와 연결: 토픽 브랜치(`feature/prd-*`), 단계별 커밋, 토픽 PR은 Draft → Merge commit, 토픽 = 릴리스 |
