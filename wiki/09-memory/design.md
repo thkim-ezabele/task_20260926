@@ -60,4 +60,4 @@ updated: 2026-09-27
 
 ## 미착수
 
-솔루션 코드(PRD-001 S01~S04에서 작성), 도메인 모델(유비쿼터스 언어, 바운디드 컨텍스트, Aggregate), 서비스 상세와 의존 관계, API / 이벤트 명세
+Application · Infrastructure · Employee 서비스 코드(PRD-001 S02~S03, S01에서 빌드 설정과 BuildingBlocks.Domain까지 작성), 도메인 모델(유비쿼터스 언어, 바운디드 컨텍스트, Aggregate), 서비스 상세와 의존 관계, API / 이벤트 명세
