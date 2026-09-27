@@ -73,6 +73,8 @@ updated: 2026-09-28
 | 2026-09-28 | S04-T02 | developer | PASS | clean-architecture 저장소 트리 실경로화(경로 94개 존재 · 누락 0, BL-048), 의존성 규칙 표 신설(Api · MigrationService 행) · 아키텍처 테스트 규칙 25개(의존성 10 · 컨벤션 12 · 주입 3)와 testing-strategy 표 1:1 누락 0 · 초과 0, DependencyRules.cs Source 문자열 갱신(BL-087, 빌드 경고 0 · format · ArchitectureTests 99 통과 · 1 건너뜀). BL-090 실측: ClassesAreSealed는 internal 생성 형식도 잡음 → 범위 기록 · BL-090 비고 정정. BL-066 Validator 기반 문구. testing-strategy 커버리지 대상 6개 · 스모크 미도입 BL-111(BL-068). tech-stack 🟡 0(S01-T04 완료 근거) · 커버리지 행 갱신, package-versions TD-026 행, 아키텍처 문서 3개 보류 🟡 → ADR-0023(BL-038). check-docs 4건. 새 BL-112(보류 아닌 🟡 표기 통일). handoff: T05 sealed 범위 · Validator 예시, T03 앵커 |
 | 2026-09-28 | S04-T02 | reviewer | REJECT → developer | 반려 1회. testing-strategy 필수 테스트 케이스 절(약 40~41행)에 완료 조건에 없는 판정 기준(설정 · 구성 코드의 실패 = 부정 범위)을 추가: 원본 agents.md 테스트 범위 절과 어긋나고 reviewer 점검 3번 기준을 완화, 예시도 사실과 다름. 나머지 대조(트리 경로 누락 0, 규칙 25개 1:1, database.md ↔ 코드, 커버리지 6개, frontmatter, check-docs 4건, ADR 불변)는 통과. 원인: 계획 인계 메모의 '선택' 항목. 새 BL-113 |
 | 2026-09-28 | S04-T02 | developer | PASS | 재작업: testing-strategy 부정 범위 해석 문단과 변경 이력 문구 삭제(grep 0건), tech-stack 변경 이력 날짜순 정렬. check-docs 4건 |
+| 2026-09-28 | S04-T02 | reviewer | PASS | 재판정: 반려 사유 해소('부정 범위' grep 0), 재작업 범위가 반려 부분 · tech-stack 변경 이력 정렬뿐, check-docs 4건, ADR 불변. handoff: T05 해석 기준 임의 추가 금지(BL-113) |
+| 2026-09-28 | S04-T02 | tester | REJECT → dba | 반려 2회. database.md 약 443행 '따옴표 식별자는 "__EFMigrationsHistory"뿐'이 idempotent SQL 실측("__EFMigrationsHistory" 5, "migration_id" 3)과 불일치(bd368f3). 나머지 점검 통과: 트리 94 누락 0 · csproj 24 역방향 누락 0, 규칙 25 1:1, InitialCreate · 스냅샷 · enum 대조, Include 6, 🟡 0, check-docs 4, 링크, ADR 불변, 테스트 1537 통과 · 1 건너뜀(DOCKER_API_VERSION=1.43) |
 
 ## 계획 리뷰
 
