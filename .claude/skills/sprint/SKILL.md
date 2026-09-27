@@ -53,12 +53,17 @@ argument-hint: "SNN (예: S01)"
 stages = [dba, developer, reviewer, tester]
 i = 0, rejections = 0, rework_reasons = []
 작업 상태를 doing으로 바꾼다
+작업별 파이프라인 표의 dba 열이 "해당 없음"이면:
+    dba를 호출하지 않고 진행 기록에 "dba | 해당 없음" 한 줄만 적는다 (커밋하지 않음, developer 커밋에 포함)
+    i = 1
 while i < 4:
     결과 = stages[i] 호출 (mode: task-stage)
     진행 기록에 한 줄 추가 (날짜, 작업, 단계, 판정, 내용)
     candidates가 있으면 backlog.md / tech-debt.md에 new 행 추가 (다음 ID, 스프린트 밖 대상만)
     handoff가 있으면 진행 기록에 적고 대상 작업의 "인계 메모"로 넘긴다 (백로그로 올리지 않음)
-    PASS    → 단계 커밋, rework_reasons = [], i += 1
+    PASS    → reviewer면 커밋하지 않는다 (진행 기록은 tester 커밋에 포함)
+              그 밖의 단계는 단계 커밋
+              rework_reasons = [], i += 1
     REJECT  → rejections += 1, 진행 기록 커밋
               rejections >= 3 이면 작업 상태 blocked, 멈추고 사용자에게 보고
               아니면 i = stages.index(reject_to), rework_reasons = 결과.reasons
@@ -78,8 +83,12 @@ PRD: wiki/10-delivery/prd/PRD-NNN-*.md
 앞 단계 결과: <이번 작업에서 앞 단계들이 반환한 YAML 요약: status, changed_files, reasons>
 rework_reasons: <되돌아온 경우 반려 사유, 아니면 없음>
 인계 메모: <앞 작업 · 단계가 이 작업에 남긴 handoff, 없으면 없음>
+테스트 범위: <도메인 로직 | 기반 · 셋팅> (developer · tester 호출에만, agents.md "테스트 범위")
 반환: 에이전트 정의의 "단계 반환 형식"(YAML)
 ```
+
+- 인계 메모가 길면(여러 작업에서 쌓인 handoff) 스크래치 파일에 모아 두고 경로를 넘겨도 된다. 원문을 요약하다 조건을 빠뜨리지 않게 한다.
+- 에이전트가 완료 조건 항목을 `candidates`로 스프린트 밖에 내보내려 하면 기록하지 말고 사용자에게 묻는다(agents.md "구조").
 
 **문서 · ADR 작업** (원본: `wiki/10-delivery/agents.md` "문서 작업과 ADR 확인"): 작업이 ADR을 만들면 developer 단계를 둘로 나눈다.
 
@@ -92,9 +101,10 @@ rework_reasons: <되돌아온 경우 반려 사유, 아니면 없음>
 **단계 커밋**
 
 - 제품 파일(코드 · 설정 · 기준 문서 · ADR)이 바뀐 단계: 에이전트가 준 `commit_message` (없으면 `<type>(<scope>): <작업 제목> (SNN-TNN)`)
-- 판정 · 기록만 남는 단계(스프린트 문서 · 백로그 · 기술부채만 바뀜, reviewer 전부, 변경 없는 dba 등): `docs(sprint): SNN-TNN <단계> 판정 (SNN-TNN)`로 통일한다(에이전트의 `commit_message`는 쓰지 않음).
+- 판정 · 기록만 남는 단계(스프린트 문서 · 백로그 · 기술부채만 바뀜, 변경 없는 dba · tester 등): `docs(sprint): SNN-TNN <단계> 판정 (SNN-TNN)`로 통일한다(에이전트의 `commit_message`는 쓰지 않음).
 - footer: `Stage: <agent>`
-- 변경이 전혀 없는 단계도 진행 기록 한 줄을 커밋해 단계 통과를 이력에 남긴다.
+- **reviewer PASS는 따로 커밋하지 않는다.** 진행 기록 한 줄은 tester 단계 커밋에 함께 들어간다. dba "해당 없음"(호출 생략) 줄은 developer 단계 커밋에 함께 들어간다.
+- 그 밖에 변경이 전혀 없는 단계(호출한 dba · tester)도 진행 기록 한 줄을 커밋해 단계 통과를 이력에 남긴다.
 - 문서를 바꾼 단계는 커밋 전에 `node scripts/check-docs.js`로 결함이 늘지 않았는지 확인한다.
 
 **반려 커밋**: `docs(sprint): SNN-TNN <단계> 반려 → <reject_to> (SNN-TNN)` + footer `Stage: <agent>`. 반려한 단계가 만든 파일 변경(재현 테스트 등)이 있으면 함께 커밋한다.

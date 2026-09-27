@@ -36,6 +36,8 @@ flowchart TB
 
 **테스트 대상 동작(도메인 메서드, Handler, API 엔드포인트) 하나마다** 세 종류를 모두 작성합니다. reviewer는 이 기준으로 누락을 판정합니다.
 
+> **기반 · 셋팅 작업**(BuildingBlocks, DI 등록, 공통 규칙, 빌드 · CI 설정)은 완료 조건 **항목마다** 성공 / 실패 / 엣지를 최소 1개씩 작성하는 것으로 충족합니다. 체크리스트의 나머지 엣지는 tester가 완료 조건 대조에서 빈 곳이 있을 때만 보강합니다. 도메인 로직은 아래 기준 전부를 적용합니다. 원본: [에이전트 워크플로우 테스트 범위](../10-delivery/agents.md#테스트-범위)(S02 회고).
+
 | 종류 | 기준 | 예: `Employee.Register` |
 |---|---|---|
 | **성공** | 정상 입력에서 기대 결과와 부수 효과(상태 변경, 도메인 이벤트)를 검증한다. 최소 1개 | 등록 성공, `EmployeeRegisteredDomainEvent` 발생 |
@@ -190,3 +192,4 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 | 2026-09-27 | developer | CI 절 추가: 워크플로 · runsettings 위치, 로컬 재현 명령, 보고 경로 패턴(중복 합산 방지), 산출물 (S01-T07) |
 | 2026-09-27 | developer | 아키텍처 테스트 절을 구현에 맞춰 갱신: 규칙 원본(ADR-0024 표), 규칙 목록, 쓰지 않는 선언 참조 금지, 대상 어셈블리 단일 목록, 공허 통과 방지 · 서비스 전용 규칙 건너뜀, 표본 검증, 한계 (S02-T05) |
 | 2026-09-27 | developer | 아키텍처 테스트 규칙 목록에 `<Service>.Api` Controller · `<Service>.MigrationService` · 서비스 격리 규칙 추가(S03 예정 문구를 본문으로), 건너뛰는 규칙 수 명시 (S02-T05 재작업) |
+| 2026-09-27 | - | S02 회고: 기반 · 셋팅 작업은 완료 조건 항목마다 성공 / 실패 / 엣지 최소 1개, 나머지 엣지는 tester가 빈 곳만 보강 |

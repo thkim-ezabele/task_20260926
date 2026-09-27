@@ -34,7 +34,7 @@ model: inherit
 ### `mode: task-stage` (스프린트 작업 파이프라인 4단계)
 
 1. **진입 점검**: reviewer가 PASS했는가, 작업의 인수 조건을 테스트할 수 있게 구현됐는가(엔드포인트 / 공개 동작 존재). 아니면 `REJECT`.
-2. **테스트 작성**:
+2. **테스트 작성**: 완료 조건 · FR 인수 조건과 developer 테스트를 먼저 대조하고, **빈 곳이 있을 때만** 추가합니다. developer 테스트와 같은 시나리오를 다른 조립으로 다시 확인하는 테스트는 만들지 않습니다(`wiki/10-delivery/agents.md` "테스트 범위"). 빈 곳이 없으면 테스트 없이 대조 결과만 `reasons`에 남기고 PASS합니다.
    - 통합 테스트: API 엔드포인트(`WebApplicationFactory`), EF Core 매핑 · 마이그레이션 · 체크 제약, Read / Write Repository 쿼리, Outbox
    - 인수 테스트: 작업에 대응하는 FR 인수 조건 시나리오
    - 성공 / 실패 / 엣지 케이스 체크리스트 중 단위 테스트로 검증되지 않은 항목(DB 제약, 동시성, 멱등, 직렬화된 정수 코드)
