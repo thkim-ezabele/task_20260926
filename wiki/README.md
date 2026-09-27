@@ -79,6 +79,12 @@ updated: 2026-09-27
 ### 09. 장기기억
 - [장기기억 (Project Memory)](09-memory/README.md): 새 세션이 이어받을 프로젝트 핵심 요약 (루트 `CLAUDE.md`가 자동 로드)
 
+### 10. 개발 관리
+- [개발 관리 (Delivery)](10-delivery/README.md): 토픽(PRD) → 스프린트 → 회고 흐름, Git 운영, ID 체계
+- [에이전트 워크플로우](10-delivery/agents.md): `/prd` · `/sprint` · `/retro`와 서브에이전트 구성
+- [백로그](10-delivery/backlog.md)
+- [기술부채](10-delivery/tech-debt.md)
+
 ---
 
 ## 📝 문서 작성 규칙
@@ -95,7 +101,7 @@ updated: 2026-09-27
 ### Obsidian 규칙
 
 - **링크**: GitHub에서도 동작하도록 상대경로 마크다운 링크(`[텍스트](경로.md)`)를 씁니다. `[[wikilink]]`는 쓰지 않습니다. vault 설정(`.obsidian/app.json`)에서 마크다운 링크와 상대경로가 기본값으로 지정되어 있습니다.
-- **템플릿**: 새 문서는 [`_templates/`](_templates/)의 템플릿(`doc`, `adr`, `worklog`)으로 만듭니다. Obsidian의 Templates 코어 플러그인을 켜면 바로 쓸 수 있습니다.
+- **템플릿**: 새 문서는 [`_templates/`](_templates/)의 템플릿(`doc`, `adr`, `worklog`, `prd`, `sprint`, `retro`)으로 만듭니다. Obsidian의 Templates 코어 플러그인을 켜면 바로 쓸 수 있습니다.
 - **첨부 파일**: `_assets/`에 둡니다.
 - **공유 범위**: `.obsidian/`의 vault 설정은 git으로 공유하고, 개인 작업 상태(`workspace*.json`)와 커뮤니티 플러그인은 제외합니다.
 
@@ -106,15 +112,18 @@ updated: 2026-09-27
 | 필드 | 필수 | 값 |
 |---|---|---|
 | `title` | ✅ | 문서 제목 (본문 H1과 동일) |
-| `type` | ✅ | `doc` · `index` · `adr` · `worklog` · `raw-log` · `memory` |
-| `status` | `doc`, `index`, `adr` | 아래 상태 범례 참고 |
+| `type` | ✅ | `doc` · `index` · `adr` · `worklog` · `raw-log` · `memory` · `prd` · `sprint` · `retro` |
+| `status` | `doc`, `index`, `adr`, `prd`, `sprint` | 아래 상태 범례 참고 |
 | `tags` | ✅ | 섹션 태그 (예: `[architecture]`, `[adr, architecture]`) |
 | `created` / `updated` | ✅ | `YYYY-MM-DD` |
 | `aliases` | 선택 | 검색용 별칭 (예: `[ADR-0001]`, `[WL-2026-09-27-01]`) |
 
 유형별 추가 필드:
 - `adr`: `adr`(번호), `date`, `deciders`, `supersedes`, `superseded_by`
-- `worklog`: `date`, `session`, `model`, `adrs`
+- `worklog`: `date`, `session`, `model`, `sprint`, `adrs`
+- `prd`: `prd`(번호), `received`, `sprints`, `branch`, `pr`, `release`, `retro`
+- `sprint`: `sprint`(번호), `prd`, `started`, `finished`, `adrs`, `worklogs`
+- `retro`: `prd`, `sprints`, `release`, `date`
 
 ## 📌 문서 상태 범례
 
@@ -135,6 +144,23 @@ updated: 2026-09-27
 | `deprecated` | 폐기 |
 | `superseded` | 대체됨 (`superseded_by`에 새 ADR 번호) |
 
+**PRD** (`prd`)
+
+| `status` | 의미 |
+|---|---|
+| `draft` | 접수, 분석 / 질문 중 |
+| `stable` | 요구사항 확정 (사용자 확인), 토픽 진행 중 |
+| `done` | 모든 스프린트 종료, 회고 · 병합 · 릴리스 완료 |
+| `superseded` | 새 PRD로 대체됨 |
+
+**스프린트** (`sprint`)
+
+| `status` | 의미 |
+|---|---|
+| `planned` | 계획 작성, 승인 대기 |
+| `active` | 진행 중 |
+| `done` | 종료 (정리 · push · `sprint/SNN` 태그 완료) |
+
 본문 표 안의 🟢 / 🟡 / ⚪ 표시는 문서 안 개별 항목의 상태를 나타낼 때만 씁니다.
 
 ---
@@ -146,3 +172,4 @@ updated: 2026-09-27
 | 2026-09-27 | - | 위키 기본 구조 생성 |
 | 2026-09-27 | - | 08. 작업 로그 섹션 추가 |
 | 2026-09-27 | - | 09. 장기기억 섹션 추가, Obsidian vault 형식(frontmatter, 템플릿, vault 설정)으로 재구성 |
+| 2026-09-27 | - | 10. 개발 관리 섹션 추가, frontmatter에 `prd` / `sprint` / `retro` 유형 추가 |

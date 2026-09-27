@@ -4,6 +4,7 @@ type: worklog
 date: {{date}}
 session: "xxxxxxxx"
 model: "Claude Code · <모델명>"
+sprint: 
 adrs: []
 aliases: [WL-YYYY-MM-DD-NN]
 tags: [worklog]
@@ -14,7 +15,7 @@ updated: {{date}}
 # WL-YYYY-MM-DD-NN: 세션 제목
 
 - 원문 로그: [raw/YYYY-MM-DD](../raw/YYYY-MM-DD.md)
-- 관련: ADR-NNNN, #이슈, PR, 커밋
+- 관련: 스프린트 / 작업(SNN-TNN), ADR-NNNN, PR, 커밋
 
 ## 목표
 
