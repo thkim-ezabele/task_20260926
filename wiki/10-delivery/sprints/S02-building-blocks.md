@@ -76,6 +76,7 @@ updated: 2026-09-27
 | 2026-09-27 | S02-T01 | dba | PASS | 해당 없음(DB 변경 없음). CommitAsync → Task<Result>가 ADR-0014와 맞음. 주의: IUnitOfWork에 SaveChanges · BeginTransaction 공개 금지, 분류 포트는 System.Exception만, 실패 Result는 롤백 완료 전제를 XML 주석에. handoff: T02 실패 Result 전달, T07 UoW 순서(원문 T04 → T07로 정정) |
 | 2026-09-27 | S02-T01 | developer | PASS | Red(컴파일 오류 34) → Green. 계약(Unit, ICommand · IQuery · Handler, ISender, IUnitOfWork.CommitAsync → Task<Result>, IReadRepository, IService, IIdGenerator, IExceptionClassifier.Classify(Exception) → Error?), internal sealed Sender + RequestInvokerCache(키 = 요청 · 응답 형식, Lazy). 테스트 51건(캐시 판정 ByCount · ByReference 등, 동시 64건, 누락 예외, 토큰 전달), Application 커버리지 line · branch 100%. Abstractions 10.0.0 고정(8.0.2는 Scrutor 7로 NU1109). build 경고 0, test 253 통과, format 통과. 후보 BL-065(IService 마커 위치). handoff: T02 · T03 · T05 · T06 · T07 |
 | 2026-09-27 | S02-T01 | reviewer | PASS | 진입 점검 15개 통과(build 경고 0, test 253, format, 레이어 의존, dba 조건). 경고 억제 승인 목록: CA1812 2건(CommandInvoker{TCommand,TResponse}.cs:12, QueryInvoker{TQuery,TResponse}.cs:12, [SuppressMessage] + Justification, Activator 생성), 전역 NoWarn · pragma 없음. BL-065 유지. handoff: T03 Sender 생성자 해석 · 비마커 제외 확인, T05 수락 테스트 중복 정리 |
+| 2026-09-27 | S02-T01 | tester | PASS | 인수 조건 대조, 인수 테스트 7건 추가(DispatcherAcceptanceTests: 인터페이스 변수 → 런타임 형식 캐시, 한 인자 Handler, Unit 실패 전달, 다른 응답 형식만 등록 시 누락 예외, Query 취소 토큰, Query 동시 64건, 형식 혼합 동시 첫 요청 48건). build 경고 0, test 260 통과, format 통과, 새 테스트 5회 반복 통과. handoff: T03 실제 ServiceCollection 확인 항목, T05 중복 기준 |
 
 ## 계획 리뷰
 
