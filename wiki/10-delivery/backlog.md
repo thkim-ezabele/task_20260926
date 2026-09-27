@@ -117,6 +117,9 @@ updated: 2026-09-27
 | BL-088 | Flags · owned 실측(S03 계획 리뷰에서 이관): [Flags] 미정의 비트 ck_ 거부(BL-082 S4 Flags), owned ck_ · bigint 마스크(S5), owned 하위 값만 바뀔 때 소유자 UPDATE · xmin 충돌(BL-081 P5 owned) | S03 계획 리뷰 | 중 | open | 재검토 트리거: 제품 코드의 첫 [Flags] 코드 또는 owned 타입(예: Contact Network 알림 채널). 생성 SQL은 S02 설계 시점 단위 테스트로 확인됨 |
 | BL-089 | 기준 문서가 S03 결정과 어긋남: coding-conventions DDD 구현 규칙(불변식 위반 시 Result 실패, Email.Create → Result 값 객체, CQRS 예시 Handler)과 S03 결정(Aggregate 불변식 위반은 예외, Email은 정규화한 string), logging-observability 20001 예시 템플릿과 실제 정의(Employee {EmployeeId} registered) | S03-T01 | | new | 원본은 S03 계획 리뷰 결정과 error-codes.md Employee 절 |
 | BL-090 | 아키텍처 규칙 ClassesAreSealed가 internal 생성 형식(EmployeeDbContextModelSnapshot, partial, sealed 아님)은 잡지 않고 public InitialCreate만 잡음: 규칙 범위(가시성)와 EF 생성 형식 처리 기준을 아키텍처 테스트 문서에 적을지 결정 | S03-T02 reviewer | | new | S03-T02 반려 조치는 sealed partial 선언 추가(규칙 변경 없음). 누락 방지가 서비스별 개수 단언뿐이라 아키텍처 공통 규칙(Migration · ModelSnapshot 파생은 sealed) 검토 |
+| BL-091 | coding-conventions 코드값 규칙 '0은 None/Unknown 예약'의 적용 범위 명시: 프로세스 종료 코드처럼 외부 규약상 0이 의미 있는 internal enum(MigrationExitCode Succeeded=0)은 예외 | S03-T03 reviewer | | new | 회고 판정 근거 |
+| BL-092 | coding-conventions DI 규칙에 IHostedService(AddHostedService)를 Program에서 명시 등록해도 되는지 명시(현재 표는 서비스 · Repository · Handler만) | S03-T03 reviewer | | new | |
+| BL-093 | ADR-0006 결과 36행(developer는 단위 테스트 먼저)과 결정 41행(도메인 / 애플리케이션 로직)의 적용 범위 차이를 tdd-guide 레이어 표에 호스트 구성(ServiceDefaults 등) 행으로 명시 | S03-T03 reviewer | | new | S03-T03에서 ServiceDefaults 구현 먼저 · 변형 5개로 테스트 실패 확인, reviewer가 허용 판정 |
 
 ---
 
