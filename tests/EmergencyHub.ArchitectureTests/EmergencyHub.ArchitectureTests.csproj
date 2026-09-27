@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    아키텍처 테스트(PRD-001 FR-09 · NFR-02, S02-T05). 규칙 원본: ADR-0024 의존성 규칙 표, clean-architecture "의존성 규칙",
+    coding-conventions(sealed · record · Repository · DI · CQRS 규칙), testing-strategy "아키텍처 테스트".
+    OutputType=Exe · IsTestProject=true는 Directory.Build.props가 이름 규칙(*Tests)으로 지정한다(ADR-0021).
+    xunit.runner.visualstudio의 PrivateAssets=all은 Directory.Build.targets가 적용한다.
+    coverlet.collector는 넣지 않는다: 수집기가 출력 폴더의 제품 DLL(Domain · Application)을 계측하면 Coverlet 추적 형식 의존이 생겨
+    Domain 의존 규칙이 실패한다(S02-T05 실측). CI 커버리지 수집 때 이 프로젝트는 수집기 없음 메시지만 내고 통과한다.
+    검사 대상 어셈블리는 Assemblies/ArchitectureAssemblies.cs 한곳에서 관리한다. 제품 프로젝트를 모두 참조해야 목록에 넣을 수 있다.
+    BuildingBlocks.Api · Infrastructure 참조로 Application · Domain과 EF Core · Npgsql · Scrutor · ASP.NET Core 형식이 전이된다.
+    위반 예시(Samples)가 금지 대상 형식을 쓸 수 있도록 이 전이 참조를 그대로 쓴다. 테스트 어셈블리 자체는 검사 대상이 아니다.
+  -->
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="NetArchTest.Rules" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BuildingBlocks\EmergencyHub.BuildingBlocks.Domain\EmergencyHub.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\EmergencyHub.BuildingBlocks.Application\EmergencyHub.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\EmergencyHub.BuildingBlocks.Infrastructure\EmergencyHub.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\EmergencyHub.BuildingBlocks.Api\EmergencyHub.BuildingBlocks.Api.csproj" />
+  </ItemGroup>
+
+</Project>

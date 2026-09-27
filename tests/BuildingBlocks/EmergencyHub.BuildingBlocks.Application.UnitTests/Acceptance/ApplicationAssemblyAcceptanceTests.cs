@@ -10,7 +10,8 @@ using EmergencyHub.BuildingBlocks.Application.Validation;
 namespace EmergencyHub.BuildingBlocks.Application.UnitTests.Acceptance;
 
 // PRD-001 FR-05 중 S02-T01 · T02 범위(계약 · 디스패처 · 데코레이터)의 어셈블리 단위 확인. 파이프라인 순서는 S02-T03이 검증한다.
-// 레이어 의존 규칙 전체는 S02-T05 아키텍처 테스트가 원본이고, 여기서는 이 작업이 만든 참조만 확인한다.
+// 레이어 의존 규칙 전체와 구현 형식 internal sealed 규칙은 S02-T05 아키텍처 테스트(tests/EmergencyHub.ArchitectureTests)가 원본이고,
+// 여기서는 FR-05 인수 증빙으로 이 작업이 만든 참조 · 형식만 확인한다(중복 유지: 산출물 참조 목록 기준이라 검사 방식이 다름).
 [Trait("FR", "PRD-001/FR-05")]
 public sealed class ApplicationAssemblyAcceptanceTests
 {

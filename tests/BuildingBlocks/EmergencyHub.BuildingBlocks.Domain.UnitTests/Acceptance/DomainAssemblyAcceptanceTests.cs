@@ -10,6 +10,7 @@ namespace EmergencyHub.BuildingBlocks.Domain.UnitTests.Acceptance;
 
 // PRD-001 FR-04 인수 조건: "에러 코드의 유형 자리와 ErrorType이 일치함을 검증한다. 프레임워크 패키지를 참조하지 않는다."
 // 개별 동작의 성공 / 실패 / 엣지는 단위 테스트(Entities · Errors · Results)가 검증하고, 여기서는 어셈블리 단위로 인수 조건만 확인한다.
+// Domain 의존 규칙의 원본은 아키텍처 테스트(tests/EmergencyHub.ArchitectureTests DependencyRuleTests · DeclaredReferenceTests, S02-T05)다.
 [Trait("FR", "PRD-001/FR-04")]
 public sealed class DomainAssemblyAcceptanceTests
 {

@@ -110,15 +110,18 @@ public void Register_WithInvalidChannels_ReturnsInvalidChannelsError(Notificatio
 
 ## 아키텍처 테스트
 
-NetArchTest.Rules로 검증합니다([ADR-0021](../03-architecture/adr/0021-test-tooling-xunit-v3-and-awesomeassertions.md)). 규칙 상세는 [Clean Architecture](../03-architecture/clean-architecture.md#의존성-규칙)에 있습니다.
+NetArchTest.Rules 1.3.2로 검증합니다([ADR-0021](../03-architecture/adr/0021-test-tooling-xunit-v3-and-awesomeassertions.md)). 프로젝트는 `tests/EmergencyHub.ArchitectureTests`이고(S02-T05), 규칙 원본은 [ADR-0024 의존성 규칙 표](../03-architecture/adr/0024-building-blocks-api-for-common-http-handling.md#의존성-규칙-표-초안)와 [Clean Architecture · 의존성 규칙](../03-architecture/clean-architecture.md#의존성-규칙)입니다. 규칙마다 원본 행 · 절을 규칙 정의(`Source`)와 테스트 주석에 적습니다.
 
-- Domain은 Application / Infrastructure / Api와 EF Core, ASP.NET Core를 참조하지 않는다.
-- Application은 Infrastructure / Api를 참조하지 않는다.
-- Command / Query / Handler / Validator 이름 규칙, Handler는 `sealed`
-- 서비스끼리 서로의 프로젝트를 참조하지 않는다.
-- Repository 구현은 `RepositoryBase` / `ReadRepositoryBase`를 상속하고 `sealed`이며, 인터페이스는 `IRepository` / `IReadRepository`를 상속한다.
-- 서비스 구현의 인터페이스는 `IService`를 상속한다.
-- Application / Domain / Api에는 모델용 `class`가 아니라 `record`를 쓴다(`*Command`, `*Query`, `*Response`, `*Request`, `*Dto`, `*Event` 이름 규칙으로 검사).
+- 의존성 규칙(형식 의존): Domain은 System과 Domain 레이어만 의존(직렬화 라이브러리 금지), Application ↛ Infrastructure 계열 · Api 계열 · EF Core · Npgsql · Scrutor · ASP.NET Core, Infrastructure 계열 ↛ Api 계열 · ASP.NET Core(Swashbuckle 포함), BuildingBlocks.Api ↛ Infrastructure 계열 · EF Core · Npgsql.
+- 선언 참조: csproj의 프로젝트 · 패키지 참조도 같은 금지 목록을 따른다. **쓰지 않는 참조도 막는다**(컴파일된 어셈블리에는 남지 않으므로 테스트 어셈블리의 deps.json으로 확인).
+- 컨벤션: 클래스 sealed(예외 `Error` · `Result`), Command · Query · Request · Response · Dto · 이벤트는 `record`, Repository 인터페이스는 `IRepository` / `IReadRepository` 상속, 구현은 `RepositoryBase` / `ReadRepositoryBase` 파생, `IStronglyTypedId<TSelf>`의 `TSelf`는 자기 자신, Entity 키는 강타입 ID, enum 기반 형식(일반 `short`, `[Flags]` `int` / `long`), Handler · Validator · Repository · 포트 구현은 `internal sealed`, Validator는 `RequestValidator<T>` 파생, 명시 등록 포트(`IUnitOfWork` · `IExceptionClassifier` · `IIdGenerator` · `IPreCommitHook`) 구현은 마커 미구현, `Error` / `Result` 파생 금지, Entity 파생은 `sealed`.
+- 주입: Handler ↛ `ISender`, Validator ↛ Repository · 서비스 주입, Query Handler ↛ `IUnitOfWork` · Write Repository · Command Handler 겸용.
+- **대상 어셈블리는 `ArchitectureAssemblies` 한곳에서 관리한다.** 서비스를 추가하면 레이어별로 목록에 넣고 csproj에 참조를 더한다. 테스트 어셈블리는 넣지 않는다.
+- 규칙마다 제품 대상 형식이 1개 이상임을 단언한다(공허 통과 방지). 대상이 서비스 코드에만 있는 규칙은 서비스 어셈블리가 목록에 없는 동안만 건너뜀(Skip)으로 표시하고, 서비스가 들어오면 대상 0개는 실패다.
+- 규칙마다 테스트 어셈블리 안 표본 네임스페이스에 위반 예시와 지킨 예시를 두고, 같은 규칙 객체가 위반 예시만 정확히 잡는지 확인한다.
+- 아키텍처 테스트 프로젝트에는 `coverlet.collector`를 넣지 않는다. 수집기가 출력 폴더의 제품 DLL을 계측하면 Coverlet 추적 형식 의존이 생겨 Domain 규칙이 실패한다(S02-T05 실측).
+- 한계: `const` 참조는 컴파일러가 인라인해 형식 의존으로 보이지 않는다. enum의 `: int` 명시 여부는 메타데이터로 구별할 수 없어 `[Flags]`의 `: int` 생략은 사람 리뷰로 잡는다.
+- 서비스끼리 서로의 프로젝트를 참조하지 않는다, Controller는 Infrastructure 형식 · Repository를 쓰지 않는다(Api는 DI 등록만)는 서비스 어셈블리가 생기면 추가한다(S03).
 - Repository에 분기 · 로직이 없는지는 아키텍처 테스트로 잡기 어려우므로 reviewer가 판정한다.
 
 DI 등록 검증(통합 테스트): 마커를 구현한 모든 타입이 `Scoped`로 등록되어 컨테이너에서 해석되는지 확인한다.
@@ -186,3 +189,4 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 | 2026-09-27 | - | 아키텍처 테스트에 Repository · DI 마커 · record 규칙, DI 등록 검증 추가 |
 | 2026-09-27 | developer | ADR 0014 · 0021 · 0022 · 0023 반영: 도구 버전 고정(xUnit v3, AwesomeAssertions), 통합 테스트 Respawn · DB 준비 규칙, 커버리지 대상 · 보고 방식, Handler 테스트의 저장 검증 제외 (S01-T04) |
 | 2026-09-27 | developer | CI 절 추가: 워크플로 · runsettings 위치, 로컬 재현 명령, 보고 경로 패턴(중복 합산 방지), 산출물 (S01-T07) |
+| 2026-09-27 | developer | 아키텍처 테스트 절을 구현에 맞춰 갱신: 규칙 원본(ADR-0024 표), 규칙 목록, 쓰지 않는 선언 참조 금지, 대상 어셈블리 단일 목록, 공허 통과 방지 · 서비스 전용 규칙 건너뜀, 표본 검증, 한계 (S02-T05) |

@@ -4,7 +4,8 @@ namespace EmergencyHub.BuildingBlocks.Api.UnitTests.Acceptance;
 
 // ADR-0024 의존성 규칙 표: BuildingBlocks.Api는 Application · Domain만 참조하고 Infrastructure · EF Core · Npgsql은 참조하지 않는다(S02-T08 인계).
 // 이 테스트 프로젝트는 인수 테스트 조립 때문에 Infrastructure를 참조하므로, 테스트 어셈블리가 아니라 제품 어셈블리의 참조 목록을 본다.
-// NetArchTest 규칙(아키텍처 테스트 프로젝트)은 S03에서 만든다. 여기서는 빌드 산출물의 직접 참조만 확인한다.
+// 규칙 원본은 아키텍처 테스트(tests/EmergencyHub.ArchitectureTests, S02-T05)다: 형식 의존은 DependencyRuleTests, 쓰지 않는 선언 참조는 DeclaredReferenceTests.
+// 여기서는 FR-07 인수 증빙으로 빌드 산출물(컴파일된 어셈블리)의 직접 참조만 확인한다(쓰지 않는 csproj 참조는 산출물에 남지 않아 여기서는 보이지 않음).
 [Trait("FR", "PRD-001/FR-07")]
 public sealed class ApiAssemblyAcceptanceTests
 {

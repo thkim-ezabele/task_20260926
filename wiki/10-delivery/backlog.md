@@ -104,6 +104,9 @@ updated: 2026-09-27
 | BL-075 | ServiceDefaults Serilog 설정에서 Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware 범주를 MinimumLevel.Override로 끄기: Serilog는 Microsoft.Extensions.Logging 필터를 무시하므로 없으면 원본 예외 메시지(제약 이름 · SQL)가 Error로 남음 | S02-T06 | 상 | new | S03 ServiceDefaults 작업, S03-T05에서 Serilog 경로 재확인 |
 | BL-076 | 메시지를 남겨도 되는 예외 형식(예: ArgumentException) 허용 목록 정책: 현재 전역 예외 로그는 모든 예외 메시지를 뺀 사본(RedactedException)으로 기록 | S02-T06 | 하 | new |  |
 | BL-077 | ADR-0018은 [Flags] 조합 검사를 Phase 2로 적었으나 S02-T06(스프린트 완료 조건)에서 MustBeDefinedEnum으로 구현: 차이를 기록할 위치(후속 ADR / 결과 리뷰) 판단 | S02-T06 | 하 | new |  |
+| BL-078 | 서비스끼리 프로젝트 참조 금지 아키텍처 규칙: 서비스가 2개 이상일 때만 대상이 생김(1개면 공허 통과) | S02-T05 | 하 | new | 두 번째 서비스 토픽에서 추가 |
+| BL-079 | [Flags] enum의 `: int` 명시 여부는 메타데이터로 구별 불가: Roslyn 분석기(구문 기준)로 강제할지 검토 | S02-T05 | 하 | new | BL-072 검토 결과 중 남은 부분 |
+| BL-080 | 테스트 프로젝트 이름 규칙(TD-014)을 아키텍처 테스트로 볼 수 없음: sln 파싱 CI 점검 스크립트로 보완 검토 | S02-T05 | 하 | new |  |
 
 ---
 
