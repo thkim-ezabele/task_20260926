@@ -82,7 +82,7 @@ updated: 2026-09-27
 | 항목 | 선택 | 상태 | 비고 |
 |---|---|---|---|
 | 형상관리 | GitHub, Git Flow | 🟢 확정 | [Git 워크플로우](../04-development/git-workflow.md) |
-| CI | GitHub Actions | 🟢 확정 | PRD-001 FR-10(Q7), 워크플로는 S01-T07. CD(배포)는 Phase 4 |
+| CI | GitHub Actions | 🟢 확정 | PRD-001 FR-10(Q7), 워크플로 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)(S01-T07, 액션은 커밋 SHA 고정). CD(배포)는 Phase 4 |
 | 컨테이너 | Docker | 🟢 확정 | 로컬 인프라(Aspire가 컨테이너 실행)와 Testcontainers에 필수. docker compose는 쓰지 않음([ADR-0011](adr/0011-use-aspire-local-orchestration.md)). 서비스 이미지 빌드는 Phase 4 |
 | 오케스트레이션 | Kubernetes | 이후 토픽 | 필요 시(Phase 4) |
 
@@ -100,7 +100,6 @@ updated: 2026-09-27
 | 회복성(Polly) | 이후 토픽 | 나가는 HTTP 호출이 생길 때 |
 | 오케스트레이션(Kubernetes) · CD | 이후 토픽 | Phase 4 배포 |
 | 계약 테스트 도구 | 이후 토픽 | 서비스 간 연동 시작 시([테스트 전략](../04-development/testing-strategy.md#계약-테스트-api--이벤트)) |
-| GitHub Actions 메이저 태그 / SHA 고정 | S01-T07 | [패키지 버전 · 라이선스](package-versions.md#github-actions) |
 
 ## 패키지 버전 · 라이선스
 
@@ -123,4 +122,5 @@ updated: 2026-09-27
 | 2026-09-27 | - | .NET 8 유지 결정 기록 |
 | 2026-09-27 | - | ADR 0007~0010과 기준 문서 결정 반영: CQRS, EF Core, 정수 코드, Serilog, NSubstitute, Testcontainers 등 확정 / MediatR · FluentAssertions 라이선스로 후보 전환 |
 | 2026-09-27 | developer | 패키지 버전 · 라이선스 문서 링크 추가 (S01-T01) |
+| 2026-09-27 | developer | CI 워크플로 위치 링크, GitHub Actions SHA 고정 결정으로 미정 표 행 제거 (S01-T07) |
 | 2026-09-27 | developer | ADR 0011~0023 반영: 후보(미정) 항목을 확정 / 보류 / 이후 토픽으로 정리, 남은 항목 처리 방식 표 추가 (S01-T04) |

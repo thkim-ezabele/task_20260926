@@ -108,6 +108,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T06 | reviewer | PASS | 점검 15개 통과(#4 해당 없음). 직접 build 경고 0 · test 197/197 · format 0, Domain 패키지 0건. developer 판단 사항(Error.None 없음, private protected, None=0 예약 등) 기준 문서 · Q1/Q2와 충돌 없음, CA1716 억제는 규칙 부재로 사유 명시 조건 허용 |
 | 2026-09-27 | S01-T06 | tester | PASS | FR-04 인수 테스트 5건 추가(참조 어셈블리 System.* 뿐, Domain 전체 Error T ↔ ErrorType, FR-04 타입 · 마커, AggregateRoot 수집만, 시나리오). test 202/202, 경고 0, format 0, Domain 패키지 0건, CS1591 부정 점검 오류 확인, 커버리지 라인 98.22% · 분기 100%(보고만), error-codes.md 대조 일치. coverlet.runsettings는 T07 완료 조건으로 처리 |
 | 2026-09-27 | S01-T07 | dba | PASS | 해당 없음(DB 변경 없음). S03 CI 통합 테스트 대비 주의점 기록(BL-057) |
+| 2026-09-27 | S01-T07 | developer | PASS | `.github/workflows/ci.yml`(develop · main PR, Draft 포함, ubuntu-24.04, contents: read, 액션 SHA 고정, restore → build → format → test(커버리지) → ReportGenerator → 아티팩트), `coverlet.runsettings`. 로컬 Windows · Linux 컨테이너에서 같은 순서 성공(test 202, 커버리지 98.1%), actionlint 오류 0. 실측 수정 2건(runsettings 주석 `--`, cobertura 중복 합산 경로). 관련 문서 4개 갱신 |
 
 ## 계획 리뷰
 
@@ -218,6 +219,11 @@ updated: 2026-09-27
 | BL-055 | coding-conventions 경고 억제 규칙 명문화 | S01-T06 | |
 | BL-056 | "ValidationError는 sealed" 명시(ADR 0018 문구 오해 방지) | S01-T06 | |
 | BL-057 | S03 CI 통합 테스트 대비: ubuntu 러너 · services 미사용, 이미지 pull 시간, 컨테이너 공유 | S01-T07 | |
+| BL-058 | Dependabot(github-actions) 검토 | S01-T07 | |
+| BL-059 | CI 시간이 NFR-07에 가까워지면 NuGet 캐시 재판단 | S01-T07 | |
+| BL-060 | ReportGenerator 무료판 메서드 커버리지 표시 제한(기록) | S01-T07 | |
+| BL-061 | AggregateRoot protected 생성자 커버리지 제외 여부 | S01-T07 | |
+| TD-018 | 브랜치 보호 불가로 CI 필수 체크 미적용 | S01-T07 | |
 
 ## 회고
 

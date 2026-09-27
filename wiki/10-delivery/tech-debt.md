@@ -44,6 +44,7 @@ updated: 2026-09-27
 | TD-015 | 강타입 ID용 ValueConverter 공통 등록(ConfigureConventions)과 AggregateRoot.DomainEvents Ignore 공통 처리를 BuildingBlocks 영속성 계층에서 제공(첫 DbContext 작업에서 반영) | 설계 | | S01-T06 | | new |
 | TD-016 | Error는 non-sealed record라 컴파일러가 만드는 protected 복사 생성자로 어셈블리 밖에서도 파생 가능(불변식은 유지). coding-conventions:61 · Error.cs remarks의 "같은 어셈블리로 막음" 표현이 부정확(CS8878). 문서 수정 또는 아키텍처 테스트(BL-054)로 보완 | 코드 | | S01-T06 | | new |
 | TD-017 | Result<T>는 성공 값 null을 런타임에만 거부하고 `where T : notnull` 제약 없음(Mediator 인터페이스 전파 부담) | 코드 | | S01-T06 | | new |
+| TD-018 | GitHub Free private라 브랜치 보호 불가 → CI를 필수 체크로 걸 수 없음. "CI 미통과 PR 병합 금지"를 규칙으로만 지킴 | 인프라 | | S01-T07 | | new |
 
 ---
 

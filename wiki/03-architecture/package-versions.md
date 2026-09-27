@@ -204,7 +204,13 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 | actions/setup-dotnet | v6.0.0 (메이저 `v6`) | `a98b56852c35b8e3190ac28c8c2271da59106c68` | node24 | MIT | [releases/latest](https://github.com/actions/setup-dotnet/releases/tag/v6.0.0) | 2026-07-16. `global-json-file` + `latestFeature` 지원 |
 | actions/upload-artifact | v7.0.1 (메이저 `v7`) | `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` | node24 | MIT | [releases/latest](https://github.com/actions/upload-artifact/releases/tag/v7.0.1) | 2026-04-10 |
 
-메이저 태그(`@v7`)와 커밋 SHA 고정 중 무엇을 쓸지는 S01-T07(CI)에서 정합니다.
+**고정 방식(S01-T07 결정): 커밋 SHA 고정 + 버전 주석.** 워크플로([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml))는 `uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1`처럼 전체 40자 SHA로 참조하고 줄 끝 주석에 릴리스 태그를 적습니다.
+
+- 근거 ① 재현성: 메이저 태그(`@v7`)는 새 릴리스마다 옮겨지는 가변 참조라 같은 커밋의 CI가 날짜에 따라 다른 액션 코드로 돌 수 있습니다. 완료 조건 "액션 버전 고정"과 이 문서의 고정 버전 표(패치까지)를 그대로 지키는 방법은 SHA뿐입니다.
+- 근거 ② 공급망 보안: 태그는 저장소 권한이 있으면 다른 커밋으로 다시 붙일 수 있습니다(2025-03 `tj-actions/changed-files` 태그 변조 사고). GitHub 보안 강화 가이드도 SHA 고정을 권장합니다([Security hardening for GitHub Actions](https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions)). 워크플로는 `permissions: contents: read`, `persist-credentials: false`로 토큰 노출도 줄입니다.
+- 비용: 업데이트를 사람이 해야 하고 SHA만으로는 버전을 알기 어렵습니다. 버전 주석으로 가독성을 보완하고, 업데이트는 이 표를 먼저 고친 뒤 워크플로의 SHA · 주석을 같은 커밋에서 바꿉니다. Dependabot은 SHA + 버전 주석 형식을 갱신할 수 있으나 아직 설정하지 않았습니다.
+- SHA 확인: `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`로 태그가 가리키는 커밋을 조회해 표의 SHA와 일치함을 확인했습니다(2026-09-27, 3종 모두 일치).
+- NuGet 캐시: `setup-dotnet`의 `cache`는 `packages.lock.json`이 있어야 하고 저장소에 잠금 파일이 없어 쓰지 않습니다. 별도 `actions/cache` 도입도 하지 않습니다(액션 추가 없이 NFR-07 10분 안에 들어오는지 먼저 측정).
 
 ## 라이선스 점검
 
@@ -251,7 +257,7 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 | 결정 | xUnit v3 · AwesomeAssertions · 테스트 도구 고정 | [ADR-0021](adr/0021-test-tooling-xunit-v3-and-awesomeassertions.md) (TD-009 해소) |
 | 결정 | ServiceDiscovery · Http.Resilience는 템플릿대로 포함 | [ADR-0011](adr/0011-use-aspire-local-orchestration.md) (BL-009) |
 | 결정 | ServiceDefaults OpenTelemetry 1.19.x | [ADR-0020](adr/0020-logging-with-serilog-and-otlp.md) (BL-007) |
-| 미해결 | GitHub Actions 메이저 태그 / SHA 고정 | S01-T07 |
+| 결정 | GitHub Actions는 커밋 SHA 고정 + 버전 주석, NuGet 캐시 미사용 | S01-T07 ([GitHub Actions](#github-actions)) |
 | 기술부채 | TD-003 Npgsql.EFCore EF 의존 상한 없음 → 전이 고정 | 기존 |
 | 기술부채 | TD-004 Testcontainers 이미지 인자 필수 | 기존 |
 | 기술부채 | TD-005 Aspire 9.x 지원 종료 상태로 9.5.2 사용 | 기존, 재검토 BL-002(.NET 10 · Aspire 13 전환) |
@@ -268,3 +274,4 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 | 2026-09-27 | developer | 문서 생성 (S01-T01 사전 확인: Aspire 9.5.2, SDK, 패키지 버전 · 라이선스, 스크래치 restore 검증) |
 | 2026-09-27 | developer | ADR 0011 · 0020 · 0021 · 0022 반영: 클라이언트 통합 미사용 · 의존 버전, 폐기 표시(클라이언트 통합 · Dashboard.Sdk · Orchestration), `WithInitFiles`, Npgsql.OpenTelemetry · HealthChecks.EFCore · Serilog.Sinks.Async · Serilog.Enrichers.Environment 행, PostgreSQL 이미지 · .NET SDK 라이선스, xUnit v3 확정, 결정 · 미해결 표 갱신 (S01-T04) |
 | 2026-09-27 | developer | 테스트 표 사이 설명 문단을 표 뒤로 이동(표 끊김 수정), CI 작업 번호를 S01-T07로 정정(2곳), xUnit 용도 열 "채택" / "비교용 · 미사용" (S01-T04) |
+| 2026-09-27 | developer | GitHub Actions 고정 방식 결정(커밋 SHA + 버전 주석, 태그 → SHA 일치 확인), NuGet 캐시 미사용, 결정 · 미해결 표 갱신 (S01-T07) |
