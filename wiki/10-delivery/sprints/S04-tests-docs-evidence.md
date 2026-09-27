@@ -77,6 +77,8 @@ updated: 2026-09-28
 | 2026-09-28 | S04-T02 | tester | REJECT → dba | 반려 2회. database.md 약 443행 '따옴표 식별자는 "__EFMigrationsHistory"뿐'이 idempotent SQL 실측("__EFMigrationsHistory" 5, "migration_id" 3)과 불일치(bd368f3). 나머지 점검 통과: 트리 94 누락 0 · csproj 24 역방향 누락 0, 규칙 25 1:1, InitialCreate · 스냅샷 · enum 대조, Include 6, 🟡 0, check-docs 4, 링크, ADR 불변, 테스트 1537 통과 · 1 건너뜀(DOCKER_API_VERSION=1.43) |
 | 2026-09-28 | S04-T02 | dba | PASS | 재작업: database.md 443행 범위를 DDL · 이력 INSERT로 좁히고 조회 조건 3곳의 "migration_id" 따옴표 문장 추가(실측 "__EFMigrationsHistory" 5 · "migration_id" 3). 다른 SQL 인용 문장 대조 일치. check-docs 4건 |
 | 2026-09-28 | S04-T02 | developer | PASS | dba 재작업 반영 확인: developer 담당 문서의 이력 테이블 · 따옴표 설명(testing-strategy Q10~Q12, 98행)이 database.md 443행과 일치, 변경 없음 |
+| 2026-09-28 | S04-T02 | reviewer | PASS | 재판정: 443행이 idempotent.sql 실측과 일치, 재작업 범위는 443행 · 변경 이력 1행뿐, ADR 불변, check-docs 4건 |
+| 2026-09-28 | S04-T02 | tester | PASS | 재점검: idempotent SQL 재실측("__EFMigrationsHistory" 5, "migration_id" 3 조회 조건만)이 443행과 일치, 재작업 범위 database.md 443행 · 변경 이력뿐, 이전 6개 항목 결과 재사용, check-docs 4건 |
 
 ## 계획 리뷰
 
