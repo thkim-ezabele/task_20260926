@@ -137,6 +137,7 @@ updated: 2026-09-28
 | BL-108 | DB 정지 상태 /health/ready가 연결 제한 시간만큼(약 15초) 걸려 503: 헬스 검사 제한 시간 별도 설정 여부(프로브 제한 시간) | S03-T07 tester | 중 | open | S03 종료 정리: 제한 시간 설정은 배포 토픽에서 프로브 주기와 함께. 실측값(DB 정지 약 15.0초 → 503, live 200)은 S04-T02 logging-observability 헬스체크 절에 기록 |
 | BL-109 | 비밀 점검 명령 6개를 scripts/check-secrets.js로 스크립트화하고, 알려진 가짜 값은 고유 표식(do-not-leak 계열)과 경로 기준으로 제외: 문서 인용 때문에 제외 행이 늘어나는 문제 해소 | S03 결과 리뷰 | 중 | open | S04 계획 리뷰에서 S04-T03(ci-cd) 편입 판단(BL-001과 같은 CI 편입 축) |
 | BL-110 | MigrationService가 Aspire에서 Environment=Production으로 뜸(launchSettings 없음): Api와 맞춰 Development로(AppHost DOTNET_ENVIRONMENT 주입 또는 launchSettings 추가) | S03 결과 리뷰 | 하 | planned:S04 | S04-T03 environments 문서에서 결정 · 기록(오케스트레이션 세션 승인: Development로). 동작 영향 없음 |
+| BL-111 | Aspire 스모크 테스트(Aspire.Hosting.Testing으로 AppHost 기동 → Api /health/ready · 마이그레이션 완료 확인) 도입. 재도입 조건: AppHost 테스트 모드(데이터 볼륨 · 매개변수 persist 끔) 마련, CI 3회 연속 통과, CI 추가 시간 최대 7분 | S04-T01 | | new | S04 미도입 근거: 스프린트 안에 CI 러너에서 AppHost 기동 시간을 측정할 경로가 없음, 현재 AppHost는 개발용 데이터 볼륨과 user-secrets persist를 테스트와 공유함, S03 CI 기준선 약 4분 12초(NFR-07 10분 안 여유 판단 근거 없음). PRD-001 FR-03 선택 스모크 해석은 S04 계획 확정(인수 조건 해석) |
 
 ---
 
@@ -150,3 +151,4 @@ updated: 2026-09-28
 | 2026-09-27 | orchestrator | S02 종료 정리: BL-065~080 정리(done 5 · dropped 6 · planned 9 · open 6), 인계 메모로 BL-081~087 추가(S03-T05 실측 묶음 3, S03-T02 · 아키텍처 편입 · AppHost 제외 · S04 문서 묶음), `new` 0 |
 | 2026-09-28 | orchestrator | S03 종료 정리: BL-089~108 정리(planned:S04 8 · open 12), S03 편입분 done 15 · BL-057은 CI 판정 대기, 결과 리뷰에서 BL-109 · 110 추가, `new` 0 |
 | 2026-09-28 | orchestrator | S04 계획 확정: BL-038 open → planned:S04(S04-T02), BL-110 배정을 S04-T01(코드) · S04-T03(기록)으로 나눔 |
+| 2026-09-28 | developer | S04-T01: Aspire 스모크 미도입 근거 · 재도입 조건으로 BL-111 추가(`new`) |

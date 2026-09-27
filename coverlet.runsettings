@@ -6,9 +6,12 @@
 
   사용: .github/workflows/ci.yml의 "Test (coverage)" 단계(dotnet test의 collect · settings 옵션).
   XML 주석 안에는 하이픈 두 개를 쓸 수 없어 명령 원문은 워크플로와 testing-strategy.md에 둔다.
-  - Include: NFR-03 대상 어셈블리만. 아직 없는 어셈블리(BuildingBlocks.Application, Employee.*)는
-    패턴으로 미리 넣어 두어 프로젝트가 생기면 설정 변경 없이 측정된다.
-  - Api · Infrastructure는 커버리지 대신 통합 테스트로 확인한다(대상 아님).
+  - Include: NFR-03 대상 6개 어셈블리. BuildingBlocks 4개(Domain · Application · Infrastructure · Api)와
+    Employee Domain / Application(S04 계획 확정의 NFR-03 해석, BL-068). Employee Api · Infrastructure · MigrationService,
+    ServiceDefaults · AppHost는 대상이 아니다(통합 테스트 · 실기동으로 확인).
+  - 수집기(coverlet.collector)는 대상 어셈블리를 참조하는 테스트 프로젝트에 둔다. ArchitectureTests는 수집하지 않는다:
+    계측된 제품 DLL을 검사하면 Coverlet 추적 형식 의존으로 Domain 규칙이 실패한다(S02-T05, TD-024).
+    그 프로젝트는 커버리지 실행 때 수집기 없음 메시지만 내고 통과한다.
   - 80%는 목표이며 임계값 실패(필수 체크)는 걸지 않는다(보고만).
 -->
 <RunSettings>
@@ -17,7 +20,7 @@
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
           <Format>cobertura</Format>
-          <Include>[EmergencyHub.BuildingBlocks.Domain]*,[EmergencyHub.BuildingBlocks.Application]*,[EmergencyHub.Employee.Domain]*,[EmergencyHub.Employee.Application]*</Include>
+          <Include>[EmergencyHub.BuildingBlocks.Domain]*,[EmergencyHub.BuildingBlocks.Application]*,[EmergencyHub.BuildingBlocks.Infrastructure]*,[EmergencyHub.BuildingBlocks.Api]*,[EmergencyHub.Employee.Domain]*,[EmergencyHub.Employee.Application]*</Include>
           <Exclude>[*.UnitTests]*,[*.IntegrationTests]*,[*.ArchitectureTests]*</Exclude>
           <IncludeTestAssembly>false</IncludeTestAssembly>
           <ExcludeByFile>**/Migrations/**,**/obj/**,**/*.g.cs,**/*.g.i.cs,**/*.Designer.cs,**/*.designer.cs</ExcludeByFile>

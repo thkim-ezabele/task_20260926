@@ -12,6 +12,15 @@ internal static class EmergencyHubApplication
     /// <summary>Api 헬스 검사에 쓰는 엔드포인트입니다(Api launchSettings의 http 프로필).</summary>
     internal const string ApiHealthEndpointName = "http";
 
+    /// <summary>.NET 일반 호스트의 환경 이름 변수입니다(Worker인 MigrationService가 읽음).</summary>
+    internal const string DotnetEnvironmentVariable = "DOTNET_ENVIRONMENT";
+
+    /// <summary>
+    /// MigrationService에 주입하는 호스트 환경 이름입니다(<c>DOTNET_ENVIRONMENT</c>, BL-110).
+    /// MigrationService에는 launchSettings가 없어 주입하지 않으면 Production으로 뜹니다. Api(launchSettings http 프로필)와 맞춥니다.
+    /// </summary>
+    internal const string MigrationEnvironmentName = "Development";
+
     /// <summary>비밀번호 생성 최소 길이입니다(영문 대소문자 · 숫자, 약 185비트).</summary>
     internal const int PasswordMinLength = 32;
 
@@ -24,6 +33,8 @@ internal static class EmergencyHubApplication
     /// <remarks>
     /// <c>WithReference</c>는 쓰지 않습니다. Database 리소스의 연결 식은 슈퍼유저 자격 증명이라 <c>employee_app</c> 연결 식을 직접 넣습니다.
     /// 비밀번호 매개변수는 설정(user-secrets)에 값이 없으면 첫 실행 때 생성해 AppHost user-secrets에 저장합니다(<c>persist</c>).
+    /// MigrationService에는 <see cref="MigrationEnvironmentName"/>을 고정 값으로 주입합니다(AppHost 환경과 무관한 로컬 오케스트레이션 값).
+    /// Api 환경은 Api launchSettings(http 프로필)가 정하고 AppHost는 바꾸지 않습니다.
     /// </remarks>
     internal static EmergencyHubResources AddEmergencyHub(this IDistributedApplicationBuilder builder, string postgresImageTag)
     {
@@ -47,6 +58,7 @@ internal static class EmergencyHubApplication
             .WithEnvironment(
                 EmployeeConnectionStrings.WriteVariable,
                 EmployeeConnectionStrings.Write(server, appPasswordParameter.Resource, EmployeeConnectionStrings.MigrationApplicationName))
+            .WithEnvironment(DotnetEnvironmentVariable, MigrationEnvironmentName)
             .WaitFor(employeeDatabase);
 
         var api = builder.AddProject<Projects.EmergencyHub_Employee_Api>(EmergencyHubResourceNames.EmployeeApi)

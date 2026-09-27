@@ -21,7 +21,10 @@ namespace EmergencyHub.BuildingBlocks.Domain.Errors;
 /// <para>
 /// "모델은 <c>record</c>, 클래스는 기본 <c>sealed</c>" 규칙의 예외로 <b>non-sealed</b> <c>record</c>입니다.
 /// 검증 실패의 필드별 상세를 담는 <see cref="ValidationError"/>가 파생합니다(ADR-0018).
-/// 생성자는 이 어셈블리 안의 파생 타입만 부를 수 있고(<c>private protected</c>), 밖에서는 유형별 팩토리로만 만듭니다.
+/// 값을 받는 생성자는 <c>private protected</c>라 어셈블리 밖에서는 유형별 팩토리로만 새 값을 만듭니다.
+/// 다만 파생을 이 어셈블리로 막지는 못합니다. non-sealed <c>record</c>는 컴파일러가 만드는 복사 생성자가
+/// <c>protected</c>여야 하므로(더 좁히면 CS8878) 어셈블리 밖에서도 복사 생성자를 불러 파생할 수 있습니다.
+/// 이때도 값은 이미 검증된 인스턴스에서 복사되므로 코드 · 메시지 · 유형 불변식은 유지됩니다.
 /// 속성은 <c>init</c> 접근자가 없어 <c>with</c> 식으로 값을 바꿔 검증을 우회할 수 없습니다.
 /// </para>
 /// </remarks>
