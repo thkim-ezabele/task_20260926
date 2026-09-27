@@ -27,7 +27,7 @@ argument-hint: "[세션 제목 (선택)]"
    - `git status --short`, `git diff --stat`, 이 세션 동안의 `git log --oneline` 으로 변경 파일과 커밋
 
 3. **작성** (템플릿 구조 그대로)
-   - **frontmatter**: `{{date}}` 등 자리표시자를 실제 값으로 채운다. `title`, `aliases`, `session`, `model`, `adrs` 를 맞춘다. 보완하는 경우 `updated` 만 바꾼다.
+   - **frontmatter**: `{{date}}` 등 자리표시자를 실제 값으로 채운다. `title`, `aliases`, `session`, `model`, `sprint`, `adrs` 를 맞춘다. `sprint` 는 이 세션이 진행한 스프린트 ID(`SNN`)이고, 없으면 비워 둔다. 보완하는 경우 `updated` 만 바꾼다.
    - **주요 프롬프트**: 원문 중 의미 있는 요청만 골라 인용한다. 단순 확인("응", "진행해")은 뺀다. 원문이 길면 요약하고, 원문은 raw 로그 링크로 대신한다.
    - **작업 내용 / 변경 파일**: 실제로 한 일만 적는다. 시도했다가 되돌린 것은 "이슈 / 배운 점"에 적는다.
    - **결정 사항**: 아키텍처, 기술 스택, 규칙에 영향을 주는 결정은 ADR 후보로 표시한다. ADR 파일은 **사용자에게 물어본 뒤에만** 만든다.
@@ -36,6 +36,7 @@ argument-hint: "[세션 제목 (선택)]"
 
 4. **목록 갱신**
    - `wiki/08-worklog/README.md` 의 `로그 목록` 표에 한 줄을 추가한다 (오래된 순).
+   - 스프린트를 진행한 세션이면 해당 스프린트 문서(`wiki/10-delivery/sprints/`)의 frontmatter `worklogs` 에 이 worklog ID를 추가한다.
 
 5. **장기기억 갱신** (`wiki/09-memory/`, 작성 원칙은 그 폴더의 README)
    - `sessions.md`: 이력 표에 세션 행을 추가(또는 보완)하고, `현재 상태`와 `다음 할 일`을 이번 worklog 기준으로 **교체**한다. 끝난 할 일은 지운다.

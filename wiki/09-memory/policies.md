@@ -10,13 +10,19 @@ updated: 2026-09-27
 
 > [장기기억](README.md) · 원본: [위키 홈 작성 규칙](../README.md), [Worklog](../08-worklog/README.md)
 
-## 개발 흐름 (기본 방향 확정, 세부 설계 예정)
+## 개발 흐름 (설계 확정, 에이전트·스킬 구현 전)
 
-1. 사용자가 **PRD 형태의 요구사항**을 하나 준다.
-2. 그 PRD를 **topic으로 스프린트**를 만들고 개발한다.
-3. 개발하면서 생기는 **백로그와 기술부채를 반드시 기록**한다.
+원본: [개발 관리](../10-delivery/README.md), [에이전트 워크플로우](../10-delivery/agents.md)
 
-> 폴더 구조, 템플릿, 스프린트와 worklog / ADR의 연결 방식은 아직 설계하지 않았습니다. 설계 전에는 스프린트나 백로그 문서를 임의로 만들지 않습니다.
+1. **`/prd` 토픽 생성**: 인터뷰로 PRD 작성 → orchestrator ∥ dba ∥ developer 병렬 리뷰 → orchestrator가 스프린트 분할 → 승인 → `feature/prd-NNN-*` 브랜치 + Draft PR
+2. **`/sprint SNN`**: 에이전트별 계획 리뷰 → 작업(`SNN-TNN`)마다 dba → developer → reviewer → tester (진입 점검, 반려 시 회귀, 작업당 3회 넘으면 중단) → orchestrator 결과 리뷰 · 백로그/기술부채 정리 → push, 태그 `sprint/SNN`
+3. **`/retro PRD-NNN`**: 에이전트별 회고 → orchestrator 통합(FR 충족 표, 개선안) → 토픽 PR Merge commit → `release/0.N.0` → `v0.N.0`
+
+- PRD 하나 = 토픽 브랜치 하나 = 릴리스 하나. 토픽은 한 번에 하나. 스프린트는 범위 고정.
+- 커밋은 작업자 단계마다 로컬 커밋(footer `Stage:`), push는 스프린트 종료 때. 재작업은 새 커밋(reset 금지).
+- 백로그(`BL-NNN`)·기술부채(`TD-NNN`)는 발견 즉시 `new`로 기록, 스프린트 종료 때 orchestrator가 정리.
+- 흐름 제어는 스킬(메인 세션), 판단은 orchestrator. 서브에이전트는 다른 서브에이전트를 부를 수 없다. 에이전트 모델은 메인 세션 상속.
+- 작업 관리는 GitHub Issues가 아니라 위키에서 한다.
 
 ## 기록
 
@@ -34,9 +40,12 @@ updated: 2026-09-27
 
 ## Git
 
-- 원격: `origin` = GitHub `thkim-ezabele/task_20260926`, 브랜치 `main`
+- 원격: `origin` = GitHub `thkim-ezabele/task_20260926`
 - 커밋은 요청이 있을 때만 하고, push는 따로 확인을 받는다.
-- 커밋 메시지는 Conventional Commits 형식을 쓴다(예: `docs(worklog): ...`, `chore: ...`). 세부 규칙은 [Git 워크플로우](../04-development/git-workflow.md)에서 정할 예정이다.
+- **Git Flow**: `main`(릴리스, 태그 `vX.Y.Z`) / `develop`(통합, GitHub 기본 브랜치). 토픽은 `feature/prd-*`(Draft PR → Merge commit), 토픽 밖 작업은 `feature/*`(Squash merge), `release/*`·`hotfix/*`는 `main`으로(Merge commit). 원본: [Git 워크플로우](../04-development/git-workflow.md)
+- `main` / `develop`에 직접 push하지 않는다. GitHub Free private라 브랜치 보호가 불가해 규칙으로 지킨다.
+- 커밋 메시지는 Conventional Commits 형식을 쓴다(예: `docs(worklog): ...`, `feat(employee): ... (S01-T02)` + footer `Stage: developer`).
+- `git flow` 설정은 `.git/config`에만 있어서 새로 clone하면 다시 설정해야 한다(방법은 Git 워크플로우 문서).
 
 ## 작업 환경
 
