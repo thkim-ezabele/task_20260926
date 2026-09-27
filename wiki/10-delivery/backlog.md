@@ -141,6 +141,8 @@ updated: 2026-09-28
 | BL-112 | 아키텍처 문서 3개(event-driven-architecture · service-communication · architecture-overview)에 남은 보류 아닌 🟡(Polly · Kubernetes = 이후 토픽, Identity · 사업자 · 서비스 후보 · 전파 속도 수치 · gRPC = PRD 결정) 표기를 tech-stack 처리 방식 표 기준으로 통일 | S04-T02 developer | 하 | new | BL-038(보류 항목)과 범위 분리 |
 | BL-113 | 설정 · 구성 코드(DI 등록, 호스트 환경 주입, 빌드 설정)의 "실패" 테스트 해석 기준(예: 부정 범위 확인)을 정할지 결정. 정하면 사용자 결정 후 agents.md 테스트 범위 절에 먼저 반영하고 testing-strategy는 요약 · 링크만 | S04-T02 reviewer | 하 | new | S04-T02에서 완료 조건 밖으로 추가된 해석 문단은 반려로 제거 |
 | BL-114 | local-setup 동작 확인: PowerShell 5.1 Invoke-RestMethod는 409 응답 본문(code 23001)을 예외로 바꿔 바로 보여 주지 않음. 재등록 결과 확인 방법(try/catch 또는 Invoke-WebRequest) 안내 검토 | S04-T03 tester | 하 | new | |
+| BL-115 | database.md · troubleshooting 42P04 판정 문구 "(실행 횟수 − 1)"에 풀이 추가: 컨테이너가 세션 수명이라 서버 로그는 실행별, 첫 실행 0 · 이후 실행마다 한 쌍 1개 | S04-T04 dba | 하 | new | |
+| BL-116 | database.md psql 확인 절에 Git Bash heredoc 명령 틀(postgres · employee_app 접속, 11번 PGOPTIONS 읽기 전용 세션)과 PowerShell 5.1 인용 주의 추가 | S04-T04 dba | 하 | new | |
 
 ---
 
