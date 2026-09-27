@@ -99,6 +99,8 @@ updated: 2026-09-27
 | BL-070 | owned가 아닌 하위 엔티티(같은 Aggregate, 별도 테이블)만 바뀌면 루트 행이 UPDATE되지 않아 루트 xmin 동시성 검사가 걸리지 않음: 루트 갱신 여부 · 소유 관계 판별 방법 결정 | S02-T04 | 중 | new | 서비스 Aggregate 설계 때(S03) 결정 |
 | BL-071 | 테이블 · 컬럼 · pk_ · fk_ · ix_ 이름의 63바이트 한도를 모델 생성 시 검사하는 공통 검증(현재 ux_ · ck_만 검사, EF 자동 잘림으로 23505 매핑과 어긋날 수 있음) | S02-T04 | 중 | new |  |
 | BL-072 | IStronglyTypedId<Other>처럼 형식 인자가 자기 자신이 아닌 구현은 변환기 등록에서 조용히 빠짐: 아키텍처 테스트나 분석기 규칙으로 막을지 검토 | S02-T04 | 하 | new | S02-T05 규칙 후보와 함께 검토 |
+| BL-073 | EnableRetryOnFailure 기본값(6회, 최대 지연 30초)이면 일시 장애 때 요청 하나가 수십 초 걸릴 수 있음: maxRetryCount · maxRetryDelay 조정 여부 | S02-T07 | 중 | new | S03-T05 실측 후 판단 |
+| BL-074 | IExceptionClassifier가 RetryLimitExceeded만 9003으로 분류: 실행 전략을 거치지 않은 일시 오류(NpgsqlException.IsTransient)는 9001이 됨. 분류 대상 확대 검토 | S02-T07 | 하 | new |  |
 
 ---
 

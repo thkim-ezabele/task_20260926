@@ -94,6 +94,7 @@ updated: 2026-09-27
 | 2026-09-27 | S02-T04 | developer | PASS | 재작업(반려 1): 테스트 샘플 enum 5개에 `: int` 명시. src · tests 전체 enum 기반 형식 누락 0. -warnaserror 빌드 경고 0, test 600 통과, format 통과 |
 | 2026-09-27 | S02-T04 | reviewer | PASS | 재판정: 반려 사유 해결(기반 형식 없는 enum 0), -warnaserror 경고 0, test 600, format 통과. 경고 억제 승인: CA1812 StronglyTypedIdValueConverter.cs:16(EF 리플렉션 생성), AuditSaveChangesInterceptor.cs:18(DI 생성, T07에서 제거 예정). 누적 CA1812 제품 9 + 테스트 2 |
 | 2026-09-27 | S02-T04 | tester | PASS | 계획 리뷰 tester 항목은 기존 테스트로 충족. 인수 테스트 22건 보강(CommonModelRulesAcceptanceTests + Dispatch 샘플): 이름 덮어쓰기 · owned 속성 ck_ 최종 이름, ADR-0008 저장 형식(smallint · integer · bigint, 문자열 변환기 없음), 모델 등록 변환기 왕복(Guid.Empty 포함), 두 번째 Aggregate 공통 뒤처리 · 읽기/쓰기 스크립트 동일 · 저장 차단, +09:00 → UTC, owned만 변경 시 소유자만 갱신. 제품 결함 없음. -warnaserror 경고 0, test 622 통과, format 통과. handoff: T07 등록 확장으로 조립 교체 · 레지스트리 키 단언, S03-T05 실측 항목 |
+| 2026-09-27 | S02-T07 | dba | PASS | database.md: 공통 DbContext 등록 규칙, UnitOfWork 커밋 순서 · 재시도 때 상태(accept false), 영속성 예외 변환 규칙표 1~9, 23505 매핑 레지스트리 계약(UniqueIndexName 키, Conflict만, 중복 키 예외, Ordinal 조회), 변환 로그 필드 · 수준(201 Debug · 202 Warning · 203 Debug). 발견: AcceptAllChanges가 Deleted를 Detached로 빼므로 IHasDomainEvents 대상은 그 전에 수집. 변환은 ExecuteAsync 바깥에서. 3003 · 201~203 error-codes 행은 developer가 코드와 같은 커밋에. 후보: EF 23505 Error 로그는 BL-023에 해당(새 행 없음), BL-073 · BL-074. check-docs 기준선 |
 
 ## 계획 리뷰
 

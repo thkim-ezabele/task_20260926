@@ -174,7 +174,13 @@ var smsEnabled = await db.Employees
 - **Query(CQRS)는 Read Repository가 읽기 DbContext에서 `Select` 프로젝션**으로 응답 `record`를 바로 만든다. 엔티티 전체를 불러와 변환하지 않는다.
 - Command는 Write Repository로 Aggregate를 불러온다. **Handler · Repository는 `SaveChanges`를 부르지 않는다**([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)).
   - 트랜잭션 데코레이터(Command 전용)가 Handler 성공 뒤 `IUnitOfWork.CommitAsync`를 부른다. Handler는 실행 전략 밖에서 한 번만 실행된다.
-  - UnitOfWork(Infrastructure)가 실행 전략 안에서 `BeginTransactionAsync(IsolationLevel.ReadCommitted)` → `SaveChangesAsync(acceptAllChangesOnSuccess: false)` → 커밋을 하고, 커밋이 성공한 뒤 전략 밖에서 `ChangeTracker.AcceptAllChanges()`를 부른다. 재시도 범위는 SaveChanges · 커밋뿐이다.
+  - UnitOfWork(Infrastructure)가 실행 전략 안에서 `BeginTransactionAsync(IsolationLevel.ReadCommitted)` → `SaveChangesAsync(acceptAllChangesOnSuccess: false)` → 커밋을 하고, 커밋이 성공한 뒤 전략 밖에서 `ChangeTracker.AcceptAllChanges()`를 부른다. 재시도 범위는 SaveChanges · 커밋뿐이다. 세부 순서와 재시도 때 상태는 [UnitOfWork 커밋 순서](#unitofwork-커밋-순서)에 있다.
+- **공통 DbContext 등록**(S02-T07): 옵션 구성(`UseNpgsql(연결, EnableRetryOnFailure)` + `UseSnakeCaseNamingConvention()`)은 **한 메서드**에 두고 등록 확장 · 설계 시점 팩터리 · 모델 메타데이터 테스트가 같은 경로를 쓴다.
+  - 쓰기 등록만 감사 인터셉터(`AuditSaveChangesInterceptor`)를 붙인다. 읽기 등록에는 붙이지 않는다(읽기 DbContext는 저장하지 않음). 인터셉터는 상태가 없으므로 Singleton 한 인스턴스를 붙인다(`TimeProvider`도 Singleton).
+  - 쓰기와 읽기는 등록 메서드를 나눈다. MigrationService는 쓰기만 등록한다(`ConnectionStrings:Read`가 없어도 시작해야 함).
+  - 연결 문자열이 없거나 비어 있으면 **시작 시** 예외로 멈춘다(첫 요청까지 미루지 않음). 예외 메시지 · 로그에 연결 문자열 값을 넣지 않는다(비밀번호).
+  - 서비스 하나에 쓰기 DbContext는 하나다. `AddUnitOfWork<TContext>()`는 `IUnitOfWork`를 그 쓰기 DbContext에 묶어 Scoped로 등록하고, UnitOfWork와 Write Repository는 같은 스코프의 **같은 DbContext 인스턴스**를 쓴다. 다른 `TContext`로 다시 부르면 시작 시 예외다.
+  - `EnableRetryOnFailure`는 Npgsql 기본값(최대 6회, 최대 지연 30초)을 쓴다. 요청 시간과의 관계는 S03-T05에서 실측한 뒤 조정한다.
 - DbContext는 `AddDbContext`로 `Scoped` 등록한다. `AddDbContextPool`과 Aspire 클라이언트 통합(`AddNpgsqlDbContext`)은 쓰지 않는다(풀 강제, DI의 `SaveChangesInterceptor`를 붙일 수 없음, [ADR-0011](../03-architecture/adr/0011-use-aspire-local-orchestration.md)).
 - 연결 문자열은 설정 / 시크릿으로 주입한다([설정 & 시크릿 관리](../06-deployment/configuration.md)).
 
@@ -238,11 +244,60 @@ var smsEnabled = await db.Employees
   - 컬럼 이름 · 타입은 **명시**한다. Npgsql 규칙과 snake_case 명명 규칙이 둘 다 규칙(Convention) 수준에서 이름을 정하므로, 명시하지 않으면 적용 순서에 따라 `version` 같은 일반 컬럼이 생길 수 있다.
   - `xmin`은 시스템 컬럼이라 마이그레이션이 `CREATE TABLE`에 넣지 않는다. 생성 SQL(`migrations script --idempotent`)에 `xmin` 컬럼 생성이 없는지 dba가 확인한다.
   - owned 타입(테이블 분할)은 소유자의 토큰을 따른다. owned 변경은 감사 규칙으로 소유자 행을 UPDATE하므로 충돌이 검출된다.
-- 영속성 예외의 `Result` 변환은 Infrastructure(UnitOfWork)에서 한다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)). Application은 EF · Npgsql 형식을 참조하지 않는다.
-  - `DbUpdateConcurrencyException` → `Common.ConcurrencyConflict`([에러 코드](../05-api/error-codes.md))
-  - `23505`(유니크 위반) → `ConstraintName`으로 서비스별 매핑(예: `ux_employees_email` → 이메일 중복). 매핑이 없으면 공통 Conflict(BL-019)
-  - `23514`(체크 제약 위반)는 변환하지 않는다(프로그래밍 오류 → 전역 예외 처리)
-  - 변환 로그 · 메시지에는 제약 이름만 남기고 값은 남기지 않는다. 커밋 결과를 모르는 상태의 재시도 오판 한계는 TD-010
+- 영속성 예외의 `Result` 변환은 Infrastructure(UnitOfWork)에서 한다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)). Application은 EF · Npgsql 형식을 참조하지 않는다. 규칙은 아래 [영속성 예외 변환](#영속성-예외-변환)을 따른다.
+
+### UnitOfWork 커밋 순서
+
+1. `strategy = db.Database.CreateExecutionStrategy()`, `strategy.ExecuteAsync(..., cancellationToken)`
+2. 전략 안(재시도 단위): `BeginTransactionAsync(IsolationLevel.ReadCommitted)` → `SaveChangesAsync(acceptAllChangesOnSuccess: false)` → **Outbox 확장 지점**(같은 트랜잭션, 커밋 전) → `CommitAsync`. 트랜잭션은 `await using`으로 열어, 예외가 전략 밖으로 나가기 전에 Dispose(= 롤백)되게 한다.
+3. 전략 밖, 커밋 성공 뒤: `IHasDomainEvents` 엔트리 목록을 **먼저 모은 다음** `ChangeTracker.AcceptAllChanges()` → 모아 둔 Aggregate의 `ClearDomainEvents()`. `AcceptAllChanges`가 Deleted 엔트리를 Detached로 바꿔 추적기에서 빼므로, 순서를 바꾸면 삭제된 Aggregate의 이벤트가 남는다.
+4. 예외 변환은 `ExecuteAsync` **바깥**에서 잡는다. 전략 안에서 잡으면 실행 전략이 일시 오류를 보지 못해 재시도하지 않는다. 바깥에서 잡을 때는 트랜잭션이 이미 롤백되어 있다(`IUnitOfWork` 계약: 실패 결과는 롤백 뒤).
+
+재시도 때 상태(`acceptAllChangesOnSuccess: false`의 의미)
+
+- 첫 시도의 `SaveChanges`가 성공하고 커밋이 일시 오류로 실패해도 엔트리 상태(Added / Modified / Deleted)와 **원래 값(OriginalValues)** 이 그대로다. 재시도는 같은 INSERT / UPDATE / DELETE를 다시 보내고, UPDATE · DELETE의 `WHERE xmin = @원래값`도 첫 시도와 같다(롤백되어 DB 행의 `xmin`도 그대로).
+- 첫 시도 뒤 EF는 저장소 생성 값(`xmin`)을 **현재 값(CurrentValue)** 에만 반영한다. 원래 값은 `AcceptAllChanges` 때 바뀐다. 키는 `ValueGeneratedNever`라 임시 키 문제가 없다.
+- 감사 인터셉터는 재시도마다 다시 실행되어 `created_at` · `updated_at`을 다시 계산한다(허용).
+- Outbox 확장 지점은 재시도 때 다시 호출된다. 확장 지점에 들어가는 코드는 멱등이어야 한다(같은 엔트리를 두 번 Add하지 않음).
+- 실패(변환된 `Result` 또는 예외) 뒤에는 `AcceptAllChanges` · `ClearDomainEvents`를 하지 않고 추적기를 비우지도 않는다. **스코프 하나 = Command 하나**가 전제이므로 실패한 스코프의 DbContext로 다른 Command를 커밋하지 않는다.
+- 커밋 응답을 받는 중 연결이 끊기면 실제로는 성공한 커밋을 재시도해 `pk_` `23505`(→ 3003) 또는 `xmin` 충돌(→ 3001)로 잘못 보고할 수 있다(TD-010). 이 경우 로그 202(매핑 없는 유니크 위반, 제약 이름 `pk_...`)로 드러난다.
+
+### 영속성 예외 변환
+
+변환기는 UnitOfWork가 쓰는 **순수 함수**다(DB · DI 없이 `PostgresException` public 생성자로 테스트). 판정은 형식 검사(`is`)와 Npgsql 상수(`PostgresErrorCodes.UniqueViolation`)로 하고, 형식 이름 · SqlState 문자열 리터럴을 비교하지 않는다. 위에서부터 처음 맞는 행을 쓴다.
+
+| # | 입력 | 결과 | 로그 |
+|---|---|---|---|
+| 1 | `DbUpdateConcurrencyException` | `Result` 실패 3001 `Common.ConcurrencyConflict` | 203 |
+| 2 | `DbUpdateException`, `InnerException`이 `PostgresException`이고 SqlState `23505`, `ConstraintName`이 레지스트리에 있음 | `Result` 실패: 레지스트리의 서비스 Error(예: 23001 이메일 중복) | 201 |
+| 3 | 2와 같으나 `ConstraintName`이 레지스트리에 없음(`pk_...`, `null`, 빈 문자열 포함) | `Result` 실패 3003 `Common.UniqueConstraintViolated` | 202 |
+| 4 | `DbUpdateException` + `PostgresException` SqlState `23514`(체크 제약) | 변환하지 않음(다시 던짐 → 전역 예외 처리 9001) | 없음 |
+| 5 | `DbUpdateException` + `PostgresException` 그 밖의 SqlState(`23503` · `23502` · `22001` · `25006` 등) | 변환하지 않음 | 없음 |
+| 6 | `DbUpdateException`인데 `InnerException`이 `PostgresException`이 아님(`null`, `NpgsqlException`, 한 단계 더 감싼 경우 포함) | 변환하지 않음 | 없음 |
+| 7 | `DbUpdateException`으로 감싸지 않은 `PostgresException`(예: `COMMIT`에서 발생) | 변환하지 않음 | 없음 |
+| 8 | `RetryLimitExceededException` | UnitOfWork는 변환하지 않음. 전역 예외 처리기가 예외 분류 포트(`IExceptionClassifier`)로 9003 `Common.TemporarilyUnavailable` | 없음(EF 재시도 로그만) |
+| 9 | `OperationCanceledException` | 변환하지 않음(취소 전파) | 없음 |
+
+- `InnerException`은 **바로 한 단계만** 본다. Npgsql EF 공급자가 `PostgresException`을 직접 감싸는 형태만 변환하고, 더 깊은 체인을 뒤지지 않는다(다른 오류를 유니크 위반으로 오판하지 않기 위해).
+- 유니크 **인덱스** 위반에서도 PostgreSQL은 `ConstraintName`에 인덱스 이름을 넣는다. 그래서 `ux_` 인덱스 이름으로 매핑한다. 유니크 인덱스는 `DEFERRABLE`이 될 수 없으므로 23505는 `COMMIT`이 아니라 `SaveChanges`에서 난다(규칙 7이 23505를 놓치지 않음). `DEFERRABLE` 제약은 쓰지 않는다.
+- `23505`는 일시 오류가 아니라 실행 전략이 재시도하지 않고 그대로 올라온다. `40001` · `40P01` 등 Npgsql이 일시 오류로 보는 SqlState는 실행 전략이 재시도하고, 한도를 넘으면 규칙 8이 된다.
+
+**23505 매핑 레지스트리 계약** (BuildingBlocks.Infrastructure 계약, 서비스 Infrastructure가 등록)
+
+- 키는 `UniqueIndexName`, 값은 `Error`다. 키는 서비스 Infrastructure의 `ux_` 이름 상수(매핑의 `HasDatabaseName`과 같은 상수)를 참조하고 문자열 리터럴을 쓰지 않는다.
+- 값 `Error`의 `ErrorType`은 `Conflict`여야 한다(유니크 위반은 충돌, 409). 아니면 등록 시 `ArgumentException`.
+- 같은 키를 두 번 등록하면 시작 시 `InvalidOperationException`(같은 값이어도). 등록이 끝나면 바뀌지 않는다(불변, Singleton).
+- 조회는 `ConstraintName` 문자열을 `UniqueIndexName.Value`와 **Ordinal**로 비교한다. 조회할 때 `ConstraintName`으로 `UniqueIndexName`을 만들지 않는다(`pk_` 등 `ux_`가 아닌 이름은 생성자가 예외를 던짐).
+- 레지스트리에는 **자기 서비스의 인덱스만** 둔다. 모든 `ux_`를 등록할 필요는 없다(없으면 3003).
+- 서비스 테스트는 레지스트리 키가 모두 모델의 유니크 인덱스 이름(`GetDatabaseName()`)에 있는지 단언한다(이름 변경 · 오타 검출).
+
+**변환 로그와 메시지** (로그 이벤트 ID 201~299, [에러 코드 · 공통 하위 범위](../05-api/error-codes.md#공통-하위-범위))
+
+- 로그 속성은 **제약 이름(`ConstraintName`) · SqlState · 엔티티 형식 이름(`DbUpdateException.Entries`의 엔티티 형식 짧은 이름, 중복 제거)** 과 변환한 에러 코드뿐이다. 3001은 제약 이름 · SqlState가 없으므로 엔티티 형식과 에러 코드만 남긴다.
+- `PostgresException.Detail`(예: `Key (email)=(...) already exists`) · `MessageText` · 엔트리 값 · 키 값은 남기지 않는다. 로그 호출에 **예외 객체를 넘기지 않는다**(싱크가 `ToString()`으로 내부 예외를 펼침).
+- `Result`의 메시지는 레지스트리 · `CommonErrors`에 정의된 고정 문구다. 예외 메시지로 만들지 않는다.
+- 실패 `Result`는 로깅 데코레이터가 102(`CommandFailed`, Information)로 이미 남긴다. 변환 로그는 같은 사실을 Information으로 다시 남기지 않는다: 매핑된 23505(201) · 동시성 충돌(203)은 `Debug`, 매핑 없는 23505(202)는 매핑 누락 또는 TD-010 신호이므로 `Warning`이다.
+- 재시도 로그는 따로 만들지 않는다(EF Core 실행 전략 자체 로그).
 
 ## Outbox 테이블
 
@@ -286,3 +341,4 @@ var smsEnabled = await db.Employees
 | 2026-09-27 | developer | ADR 0011~0014 · 0022 · 0023 반영: 롤 모델, UUID v7 확정, 마이그레이션 적용 · 리셋 · 이력 테이블 예외, 트랜잭션 격리 명시, EF 등록, 예외 변환, Outbox 보류 (S01-T04) |
 | 2026-09-27 | developer | 마이그레이션 생성 코드에 CS1591 none 병기 (S01-T05, BL-047) |
 | 2026-09-27 | dba | EF Core 공통 모델 규칙 절 추가(snake_case · `ux_` 덮어쓰기와 이름 상수 공유 · `ck_` 도우미 · 강타입 ID · DomainEvents 제외 · 감사 shadow property · `xmin`), `xmin`을 shadow property로 정정, `[Flags]` 체크 제약을 마스크 조건으로 정정, 63바이트 식별자 한도, 읽기 DbContext SaveChanges 4개 차단 (S02-T04) |
+| 2026-09-27 | dba | 공통 DbContext 등록 규칙(옵션 구성 한 곳, 인터셉터 쓰기만 · Singleton, 쓰기 / 읽기 등록 분리, 연결 문자열 시작 시 검사, UoW와 Repository 같은 인스턴스), UnitOfWork 커밋 순서(이벤트 대상 수집 → AcceptAllChanges, 변환은 전략 밖)와 재시도 때 상태, 영속성 예외 변환 규칙표(1~9), 23505 매핑 레지스트리 계약, 변환 로그 필드 · 수준 (S02-T07) |
