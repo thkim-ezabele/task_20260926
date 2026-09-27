@@ -6,7 +6,7 @@ status: stable
 received: 2026-09-27
 sprints: [S05, S06, S07]
 branch: "feature/prd-002-employee-contacts"
-pr:
+pr: 8
 release: "v0.2.0"
 retro:
 aliases: [PRD-002]
@@ -19,7 +19,7 @@ updated: 2026-09-27
 
 - 받은 날: 2026-09-27
 - 스프린트: [S05](../sprints/S05-rebase-decisions-schema.md), [S06](../sprints/S06-bulk-register-api.md), [S07](../sprints/S07-query-api-docs.md) (가번호, S05-T01에서 확정)
-- 토픽 브랜치: `feature/prd-002-employee-contacts` · PR: # · 릴리스: `v0.2.0` · 회고: -
+- 토픽 브랜치: `feature/prd-002-employee-contacts` · PR: [#8](https://github.com/thkim-ezabele/task_20260926/pull/8) · 릴리스: `v0.2.0` · 회고: -
 - 선행 토픽: [PRD-001 기반 구축](PRD-001-foundation.md) (병합 후 스프린트 시작)
 
 ## 원문
@@ -195,3 +195,4 @@ updated: 2026-09-27
 | 2026-09-27 | - | PRD 접수, 인터뷰 정리, 초안 작성 (별도 worktree) |
 | 2026-09-27 | - | 병렬 리뷰(orchestrator / dba / developer) 통합 반영, 차단 질문 4건(B1~B4) 답변 반영, 선행 조건 · 입력 경로 표 추가, FR 11개로 재구성 |
 | 2026-09-27 | - | 스프린트 분할(S05~S07 가번호, 작업 15개) 승인, 세부 기본값(Q9~Q11, Q16) 확정, `stable` |
+| 2026-09-27 | - | Draft PR #8 연결 |
