@@ -100,6 +100,7 @@ updated: 2026-09-28
 | 2026-09-28 | S04-T04 | tester | PASS | 재현 실행: 삭제 전 목록 기록 → C:\eh-s04 로컬 clone(HEAD bcf55f3 = 토픽 HEAD) → 문서 초기화 ①~③(볼륨 emergency-hub-postgres-data 이름 지정 삭제, user-secrets clear, 'No secrets configured' 확인) → http 1회차: 시작 순서 postgres → migrations(exitCode 0) → api, /health/ready 200, 등록 201 · 조회 200, structuredlogs 27 · traces 10(CDP DOM 덤프), psql 1~11 기대값 일치 → 2회차 재시작 · 3회차 https: 42P04 한 쌍 1 · 나머지 오류 0, 같은 id 조회 200, https 미신뢰(exit 7)에서 OTLP 로그 0 · 추적 0. 보호 대상(익명 볼륨 2, backend_postgres_data, vital-* · elastic8 · mysql) 불변, C:\eh-s04 삭제. 편차: 1회차 employee-api 첫 헬스 검사 Unhealthy Error 2건(서버 로그 오류 없음, 이후 Healthy) — 완료 조건(재시작 때 오류 0)과 FR-03은 충족, 틀의 1회차 앱 리소스 기준 불일치로 기록 → 새 BL-117, BL-118(CDP 덤프 방법) |
 | 2026-09-28 | S04-T06 | dba | 해당 없음 | 파이프라인 표 dba 열 해당 없음, 호출 생략 |
 | 2026-09-28 | S04-T06 | developer | PASS | 실패 테스트 파일은 스크래치에만(t06/CiCheck/CiFailureCheckTests.cs → tests/BuildingBlocks/EmergencyHub.BuildingBlocks.Domain.UnitTests/CiCheck/, Assert 실패 1건, 로컬 build 경고 0 · format 통과 · 실패 1 · 통과 215, 작업 트리 원복 확인). 증빙 절: CI 실패 확인 틀(실행 기록 4 · 실패 확인 5 · 정리 확인 5), FR / NFR 증빙 표 18행 빈 셀 0(Trait 재집계 FR-03 10 · 04 1 · 05 11 · 06 27 · 07 8 · 08 12 · 09 20 · 11 2, NFR-02 4 · NFR-06 2), FR-10 · NFR-07은 종료 push 뒤 판정 표시. check-docs 4건 |
+| 2026-09-28 | S04-T06 | reviewer | REJECT → developer | 반려 1회(형식). 증빙 표 FR-03 행에 PRD 선택 항목 스모크 처리(미도입, BL-111) 누락. 나머지(18행 · 빈 칸 0, Trait 재집계, CI run 4건, 수치 · 경로 표본, S01~S03 모순 없음, 실패 확인 틀, 실패 테스트 컨벤션 · format) 통과 |
 
 ## 계획 리뷰
 
