@@ -59,7 +59,7 @@ updated: 2026-09-27
 
 ## 테이블 / 컬럼 네이밍 규칙 (snake_case)
 
-모든 식별자는 **소문자 snake_case**로 합니다. 따옴표가 필요한 이름은 만들지 않습니다(예외: `__EFMigrationsHistory`, [마이그레이션 규칙](#마이그레이션-규칙) 참고). EF Core에서는 `EFCore.NamingConventions`의 `UseSnakeCaseNamingConvention()`으로 자동 변환합니다.
+모든 식별자는 **소문자 snake_case**로 합니다. 따옴표가 필요한 이름은 만들지 않습니다(예외: 테이블 이름 `__EFMigrationsHistory` 하나, 그 컬럼과 기본 키는 snake_case, [마이그레이션 규칙](#마이그레이션-규칙) 참고). EF Core에서는 `EFCore.NamingConventions`의 `UseSnakeCaseNamingConvention()`으로 자동 변환합니다.
 
 | 대상 | 규칙 | 예 |
 |---|---|---|
@@ -241,7 +241,7 @@ var smsEnabled = await db.Employees
 - 운영 환경에서는 애플리케이션 시작 시 자동 적용하지 않는다(마이그레이션 번들 / 스크립트로 적용).
 - **로컬 적용**: MigrationService 하나가 Write 연결로 실행 전략 안에서 `MigrateAsync`만 하고 종료한다(실패 시 0이 아닌 종료 코드, Api는 `WaitForCompletion`으로 완료를 기다림). **Api는 시작할 때 마이그레이션하지 않는다.** DB 생성은 AppHost가 하고 `EnsureCreated`는 금지한다. EF Core 8 `MigrateAsync`에는 잠금이 없으므로 적용 주체는 하나다(TD-011, [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md)).
 - **설계 시점 팩터리**: `IDesignTimeDbContextFactory`는 쓰기 DbContext만 만들고, 연결 문자열은 환경 변수 또는 더미 값을 쓴다(비밀 없음). 한 어셈블리에 DbContext가 2개라 `dotnet ef`에는 `--context <Service>DbContext`가 필수다. `Migrations/**`는 생성 코드(`generated_code`)로 분석에서 뺀다. `generated_code`는 컴파일러 경고 CS1591을 끄지 못하므로 `.editorconfig` 같은 섹션에 `dotnet_diagnostic.CS1591.severity = none`을 함께 둔다(BL-047).
-- **`__EFMigrationsHistory`**: snake_case 규칙의 유일한 예외로 EF 기본 이름을 유지한다. 컬럼 `"MigrationId"` · `"ProductVersion"`과 기본 키 제약 `"PK___EFMigrationsHistory"`는 SQL에서 따옴표가 필요하다(모두 같은 예외). 스키마를 지정하지 않으므로 `public."__EFMigrationsHistory"`에 생긴다([Database per Service 원칙](#database-per-service-원칙)의 스키마 규칙). 통합 테스트 Respawn 초기화 대상에서 제외한다([ADR-0022](../03-architecture/adr/0022-respawn-and-coverage-tooling.md)).
+- **`__EFMigrationsHistory`**: snake_case 규칙의 예외는 **테이블 이름 하나뿐**이다. 테이블 이름은 EF 기본 이름을 유지하므로 SQL에서 따옴표가 필요하다(`"__EFMigrationsHistory"`). 컬럼과 기본 키 제약은 snake_case로 생성된다: `migration_id character varying(150)` · `product_version character varying(32)` · `pk___ef_migrations_history`(따옴표 불필요). 원인은 `EFCore.NamingConventions` 8.0.3의 `UseSnakeCaseNamingConvention()`이 이력 테이블 컬럼 · PK에도 적용되기 때문이다(S03-T02 `InitialCreate` idempotent SQL 실측). [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md)의 "컬럼 `MigrationId` · `ProductVersion`은 따옴표 필요" 기재와 다르며, 이 문서가 실제 동작을 따른다(ADR-0012 이력 컬럼 조항의 대체 ADR은 S03 결과 리뷰에서 다룬다). 스키마를 지정하지 않으므로 `public."__EFMigrationsHistory"`에 생긴다([Database per Service 원칙](#database-per-service-원칙)의 스키마 규칙). 통합 테스트 Respawn 초기화 대상에서 제외한다([ADR-0022](../03-architecture/adr/0022-respawn-and-coverage-tooling.md)).
 - **운영 전 리셋 정책**: 운영 배포(Phase 4) 전까지(그보다 먼저 로컬 밖 지속 공유 DB가 생기면 그때까지) 마이그레이션 전체 리셋을 허용한다. 절차 ①~⑤와 기록 방법(리셋만 담은 커밋, 스프린트 기록, 이 문서 변경 이력 한 줄)은 [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md)를 따른다.
 
 ## 트랜잭션 & 동시성 제어
@@ -374,3 +374,4 @@ erDiagram
 | 2026-09-27 | dba | 공통 DbContext 등록 규칙(옵션 구성 한 곳, 인터셉터 쓰기만 · Singleton, 쓰기 / 읽기 등록 분리, 연결 문자열 시작 시 검사, UoW와 Repository 같은 인스턴스), UnitOfWork 커밋 순서(이벤트 대상 수집 → AcceptAllChanges, 변환은 전략 밖)와 재시도 때 상태, 영속성 예외 변환 규칙표(1~9), 23505 매핑 레지스트리 계약, 변환 로그 필드 · 수준 (S02-T07) |
 | 2026-09-27 | developer | 공통 DbContext 등록 구현 이름(`UseBuildingBlocksNpgsql`, `AddWriteDbContext` · `AddReadDbContext` · `AddUnitOfWork`, `IPreCommitHook`, 분류기 등록 위치) (S02-T07) |
 | 2026-09-27 | dba | Employee 코드 정의 표(`EmployeeStatus` 1 · 2)와 ERD, 스키마 미지정 · 롤 이름 스키마 금지 규칙, 이력 테이블 PK 이름 예외, 재시도 설정 인자 규칙(BL-073), UUID 정렬 검증 작업 번호 정정 (S03-T02) |
+| 2026-09-27 | dba | `__EFMigrationsHistory` 예외를 테이블 이름으로 한정(컬럼 `migration_id` · `product_version`, PK `pk___ef_migrations_history`는 snake_case, EFCore.NamingConventions 8.0.3 실측, ADR-0012 기재와 차이) (S03-T02 재확인) |
