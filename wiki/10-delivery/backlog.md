@@ -124,6 +124,9 @@ updated: 2026-09-27
 | BL-095 | 요청 로그 구성(UseSerilogRequestLogging + 헬스 경로 제외, Employee.Api RequestLogLevels)을 ServiceDefaults 공용 확장으로 이동 | S03-T04 developer | | new | 트리거: 두 번째 서비스 Api가 생길 때(중복 방지) |
 | BL-096 | ADR-0011 롤 생성 조항 보충 후보: 재시작 때 생성 스크립트 42P04가 서버 로그에 ERROR로 남는다는 사실과 BL-014 리소스 로그 오류 0의 판정 기준(42P04 한 쌍 제외) | S03-T05 dba | | new | 결과 리뷰 ADR 후보 목록에서 판단 |
 | BL-097 | Aspire 9.5.2 AppHost가 실행할 때마다 버전 확인으로 네트워크에 접속하고 user-secrets에 Aspire:VersionCheck:* 키를 씀: ASPIRE_VERSION_CHECK_DISABLED 사용 여부 결정 | S03-T05 developer | | new | S04 local-setup 후보 |
+| BL-098 | 초기화 스크립트가 employee_app 비밀번호를 psql -v 명령줄 인자로 넘겨 실행 중 짧게 컨테이너 안 프로세스 목록에 보일 수 있음(로컬 전용): PGOPTIONS · 표준 입력 방식 전환 여부 | S03-T05 reviewer | | new | 우선순위 낮음 후보 |
+| BL-099 | local-setup: https 기본 프로필은 dotnet dev-certs https --trust가 있어야 대시보드 로그 · 추적이 보임(없으면 OTLP TLS 실패로 0건). http 프로필 대안 · 확인 방법(dotnet dev-certs https --check --trust) 기록, 기본 프로필 순서 변경 여부 판단 | S03-T05 tester | | new | S04 local-setup 후보, 증빙 dashboard-07 · 08 |
+| BL-100 | database.md · local-setup: 첫 실행 때 user-secrets에 AppHost:OtlpApiKey도 저장됨을 기록하고 초기화 절차 clear 대상에 포함 | S03-T05 tester | | new | S04 local-setup 후보 |
 
 ---
 
