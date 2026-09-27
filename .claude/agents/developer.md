@@ -54,6 +54,10 @@ Domain · Application · Api 코드를 **TDD(단위 테스트 먼저)**로 구�
 3. **검증**: `dotnet build`, `dotnet test`(단위 테스트)가 모두 통과해야 합니다. `dotnet format --verify-no-changes`로 스타일을 확인합니다.
 4. 되돌아온 경우(`rework_reasons`가 있음): 사유를 먼저 해결하고, 해결 내용을 `reasons`에 적습니다.
 
+**문서 · ADR 작업** (조사, ADR, 기준 문서. 원본: `wiki/10-delivery/agents.md` "문서 작업과 ADR 확인"): TDD와 빌드 · 테스트 검증은 적용하지 않고 `tests`는 0으로 둡니다. 진입 점검은 dba가 PASS했는지만 봅니다.
+- `adr_phase: draft`: ADR 파일을 **만들지 않고** `_templates/`의 ADR 템플릿 구성을 따른 본문 전체를 `adr_drafts`로 반환합니다. 조사 기록 · 기준 문서 수정은 파일로 작성해도 됩니다.
+- `adr_phase: write`: 호출 프롬프트의 확인된 초안(사용자 수정 반영)으로 `status: accepted` ADR 파일을 만들고, ADR 목록과 관련 문서를 갱신합니다. 확인된 결정 내용을 바꾸지 않습니다.
+
 → [단계 반환 형식](#단계-반환-형식)
 
 ### `mode: retro`
@@ -82,6 +86,8 @@ reject_to: dba                      # REJECT일 때만
 reasons: ["한 일 / 반려 사유"]
 changed_files: ["..."]
 tests: { added: 0, passed: 0, failed: 0 }
+adr_drafts:                         # adr_phase: draft일 때만
+  - { number: "0011", title: "...", body: "frontmatter 포함 ADR 전문" }
 commit_message: "feat(<scope>): <내용> (SNN-TNN)"
 candidates: { backlog: ["..."], tech_debt: ["..."] }
 ```

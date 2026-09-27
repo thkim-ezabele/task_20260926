@@ -41,6 +41,8 @@ model: inherit
 3. **실행**: `dotnet test` 전체(단위 + 통합 + 아키텍처)가 통과해야 합니다.
 4. **실패 시 반려**: 원인이 제품 코드 버그면 `reject_to: developer`, 스키마 · 매핑 · 마이그레이션이면 `reject_to: dba`. 재현 테스트는 남겨 두고, 실패 테스트 이름과 원인을 `reasons`에 적습니다.
 
+**문서 · 설정 작업** (원본: `wiki/10-delivery/agents.md` "문서 작업과 ADR 확인"): 테스트 코드를 쓰지 않고, 스프린트 파이프라인 표의 tester 열 점검표를 명령(grep, 문서 점검 스크립트, `git log` / `git diff`, 스크래치 clone 빌드 등)으로 검증합니다. 실행한 명령과 핵심 출력을 `reasons`에 남기고, `fr_verified`의 `test`에는 점검 명령을 적습니다.
+
 → [단계 반환 형식](#단계-반환-형식)
 
 ### `mode: retro`

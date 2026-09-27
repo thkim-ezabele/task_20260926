@@ -78,6 +78,13 @@ rework_reasons: <되돌아온 경우 반려 사유, 아니면 없음>
 반환: 에이전트 정의의 "단계 반환 형식"(YAML)
 ```
 
+**문서 · ADR 작업** (원본: `wiki/10-delivery/agents.md` "문서 작업과 ADR 확인"): 작업이 ADR을 만들면 developer 단계를 둘로 나눈다.
+
+1. developer 1차: 단계 호출 프롬프트에 `adr_phase: draft`를 넣는다. PASS면 반환된 `adr_drafts`를 작업 단위로 한 번에 사용자에게 보여 주고 **확인을 받는다**(이 단계는 아직 커밋하지 않는다. 조사 기록 등 다른 파일 변경은 2차와 함께 커밋).
+2. 수정 요청이 있으면 요청을 `rework_reasons`에 넣어 1차를 다시 호출하고 다시 확인받는다.
+3. developer 2차: `adr_phase: write`와 확인된 초안 전문(수정 반영)을 넣어 호출한다. PASS면 단계 커밋한다.
+4. reviewer · tester가 반려할 때 사유가 형식 문제면 2차부터, 결정 내용 문제면 1차부터 다시 한다. 반려 횟수 규칙은 같다.
+
 **단계 커밋**
 
 - 제목: 에이전트가 준 `commit_message` (없으면 `<type>(<scope>): <작업 제목> (SNN-TNN)`)

@@ -95,7 +95,7 @@ flowchart TB
 ```
 
 1. **계획 리뷰**: 네 에이전트가 병렬로 계획을 리뷰하고 orchestrator가 통합해 계획 수정안을 낸다. 사용자 승인 후 스프린트를 `active`로 바꾼다.
-2. **작업 파이프라인**: 작업마다 dba → developer → reviewer → tester 순서로 진행한다. 각 단계는 [진입 점검](#단계-인계-계약)을 먼저 하고, 끝나면 **로컬 커밋**한다. DB 변경이 없는 작업은 dba가 "해당 없음"으로 PASS한다.
+2. **작업 파이프라인**: 작업마다 dba → developer → reviewer → tester 순서로 진행한다. 각 단계는 [진입 점검](#단계-인계-계약)을 먼저 하고, 끝나면 **로컬 커밋**한다. DB 변경이 없는 작업은 dba가 "해당 없음"으로 PASS한다. 문서 · ADR 작업은 [문서 작업과 ADR 확인](#문서-작업과-adr-확인)을 따른다.
 3. **결과 리뷰** (orchestrator): 계획 대비 실제(완료 · 이관 · 추가 작업), 완료 조건과 FR 충족, 반려 이력 분석
 4. **백로그 / 기술부채 정리** (orchestrator): 스프린트 동안 `new`로 쌓인 항목의 중복 병합, 기존 항목 갱신, 우선순위, 다음 스프린트 편입(`planned:SNN`), 상환 계획. 사용자 승인 후 반영하며, 끝나면 `new` 항목이 남지 않는다.
 5. **마무리**: 스프린트 문서의 회고 초안, DoD 점검, 정리 커밋, **push**, 태그 `sprint/SNN`. PRD의 마지막 스프린트면 `/retro PRD-NNN` 실행을 안내한다.
@@ -163,6 +163,27 @@ candidates:                       # 발견한 백로그 / 기술부채 (new로 �
 - 작업 하나에서 반려가 **총 3회**에 이르면 멈추고 사용자에게 보고한다(BLOCKED).
 - 반려 이력(단계, 되돌린 곳, 사유)은 스프린트 문서의 "진행 기록"에 남긴다.
 
+## 문서 작업과 ADR 확인
+
+조사 · ADR · 기준 문서처럼 코드가 없는 작업(스프린트 작업 표에서 문서 작업으로 표시)은 다음과 같이 운영한다.
+
+```mermaid
+flowchart LR
+    D1["developer 1차<br/>adr_phase: draft"] -->|adr_drafts| U{{사용자 확인}}
+    U -->|수정 요청| D1
+    U -->|확인| D2["developer 2차<br/>adr_phase: write"]
+    D2 --> CM[커밋 Stage: developer] --> R[reviewer] --> TS[tester]
+```
+
+- **developer 1차** (`adr_phase: draft`): ADR 파일을 만들지 않고 초안을 `adr_drafts: [{ number, title, body }]`로 반환한다. ADR이 아닌 조사 기록 · 기준 문서 수정은 이 호출에서 파일로 작성해도 된다.
+- **사용자 확인**: 스킬이 작업 단위로 초안을 한 번에 보여 주고 확인받는다. 수정 요청은 developer 1차를 다시 호출해 반영한다.
+- **developer 2차** (`adr_phase: write`): 확인된 본문으로 `accepted` ADR 파일을 만들고 ADR 목록 · 관련 문서를 갱신한다. 스킬이 `Stage: developer`로 커밋한다.
+- **reviewer · tester**는 커밋된 `accepted` 파일만 판정한다.
+- **반려**: 형식(템플릿, frontmatter, 링크, 오탈자) 반려는 사용자에게 다시 묻지 않고 developer 2차에서 새 커밋으로 고친다. 결정 내용이 바뀌는 반려는 developer 1차로 돌아가 다시 확인받는다. 둘 다 반려 3회 한도에 포함한다.
+- push 전 토픽 브랜치 안의 수정은 ADR 불변 규칙 위반으로 보지 않는다. 불변 규칙은 push된 `accepted` ADR부터 적용한다.
+- **단계별 판정**: dba는 DB 관련 내용이 있을 때만 검토한다(없으면 "해당 없음" PASS). developer는 TDD · 빌드 전제를 적용하지 않는다. reviewer는 코드 점검표 대신 스프린트 파이프라인 표의 reviewer 열과 문서 규칙(템플릿, frontmatter 필수 키, 상대경로 링크, wikilink 금지, 기존 ADR 불변)으로 판정한다. tester는 테스트 코드 대신 명령 기반 점검표로 검증하고 명령과 출력을 남긴다.
+- ADR과 draft 기준 문서가 충돌하면 ADR을 따르고, 같은 스프린트 안에서 기준 문서를 고친다.
+
 ## 커밋 규칙
 
 ```
@@ -185,3 +206,4 @@ Stage: dba | developer | reviewer | tester
 | 2026-09-27 | - | 문서 생성: 에이전트 구성, `/prd` · `/sprint` · `/retro` 흐름, 인계 계약, 회귀 규칙 |
 | 2026-09-27 | - | developer 코딩 컨벤션 준수 필수, reviewer 진입 점검 항목 구체화 |
 | 2026-09-27 | - | 에이전트 5개 · 스킬 3개 구현, 구현 위치 추가, 커밋 · 후보 기록 주체(스킬) 명시 → `stable` |
+| 2026-09-27 | - | 문서 작업과 ADR 확인 흐름 추가(S01 계획 리뷰 N1) |
