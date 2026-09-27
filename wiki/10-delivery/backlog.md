@@ -145,6 +145,8 @@ updated: 2026-09-28
 | BL-116 | database.md psql 확인 절에 Git Bash heredoc 명령 틀(postgres · employee_app 접속, 11번 PGOPTIONS 읽기 전용 세션)과 PowerShell 5.1 인용 주의 추가 | S04-T04 dba | 하 | dropped | S04 종료 정리: BL-115에 병합. |
 | BL-117 | 새 볼륨 첫 실행에서 employee-api의 첫 /health/ready가 Unhealthy(Error 2건, EventId 103 DefaultHealthCheckService, CanConnect=false · 예외 메시지 없음, 같은 시각 서버 로그 오류 없음)로 나오는 원인 조사. 3D000처럼 첫 실행 잡음으로 판정에서 뺄지, 로깅 · 헬스 검사를 손볼지 결정 | S04-T04 tester | 중 | open | S04 종료 정리: 트리거는 배포 토픽 프로브 설계(BL-108) 또는 AppHost 테스트 모드(BL-111). 원인 조사 → 잡음 제외 · 헬스 검사 수정 중 결정. 재현 조건: 볼륨 삭제 + user-secrets clear 뒤 1회차. 2 · 3회차와 이전 11회 시작에서는 0건 |
 | BL-118 | 대시보드 DOM 증빙 방법 문서화: Edge --dump-dom은 Blazor 대화형 렌더링 전에 끝나 본문이 비므로 원격 디버깅(CDP)으로 렌더링 뒤 DOM을 덤프해야 함 | S04-T04 tester | 하 | open | S04 종료 정리: 범위 확장 — CDP DOM 덤프, DCP API(/apis/usvc-dev.developer.microsoft.com/v1/executables) MigrationService exitCode 조회 문서화, 스크립트화 여부 판단. |
+| BL-119 | 아키텍처 테스트로 기계화: 한 파일 한 최상위 형식, Repository 본문 제약(람다 LINQ만), 테스트 enum 기반 형식 명시, Controller 서비스 로케이터 검출(BL-079 · TD-025와 함께 판단) | RETRO-PRD-001 | 중 | open | 회고 개선안 18 보류. 다음 토픽 계획 리뷰에서 편입 판단 |
+| BL-120 | check-docs.js에 완료 조건 FR ↔ 증빙 표 행 교차 점검 옵션 추가 | RETRO-PRD-001 | 하 | open | 회고 개선안 19 보류. BL-001 · 018과 묶어 판단 |
 
 ---
 
@@ -160,3 +162,4 @@ updated: 2026-09-28
 | 2026-09-28 | orchestrator | S04 계획 확정: BL-038 open → planned:S04(S04-T02), BL-110 배정을 S04-T01(코드) · S04-T03(기록)으로 나눔 |
 | 2026-09-28 | developer | S04-T01: Aspire 스모크 미도입 근거 · 재도입 조건으로 BL-111 추가(`new`) |
 | 2026-09-28 | orchestrator | S04 종료 정리: BL-111~118 정리(open 7 · dropped 1(BL-116 → BL-115)), planned:S04 21건 done, `new` 0 |
+| 2026-09-28 | orchestrator | RETRO-PRD-001: 보류 개선안 BL-119 · 120 추가(open) |

@@ -8,7 +8,7 @@ sprints: [S01, S02, S03, S04]
 branch: "feature/prd-001-foundation"
 pr: 7
 release: "v0.1.0"
-retro:
+retro: "RETRO-PRD-001"
 aliases: [PRD-001]
 tags: [delivery, prd]
 created: 2026-09-27
@@ -19,7 +19,7 @@ updated: 2026-09-28
 
 - 받은 날: 2026-09-27
 - 스프린트: [S01](../sprints/S01-decisions-build-ci.md), [S02](../sprints/S02-building-blocks.md), [S03](../sprints/S03-aspire-employee.md), [S04](../sprints/S04-tests-docs-evidence.md)
-- 토픽 브랜치: `feature/prd-001-foundation` · PR: [#7](https://github.com/thkim-ezabele/task_20260926/pull/7) · 릴리스: `v0.1.0` · 회고: -
+- 토픽 브랜치: `feature/prd-001-foundation` · PR: [#7](https://github.com/thkim-ezabele/task_20260926/pull/7) · 릴리스: `v0.1.0` · 회고: [RETRO-PRD-001](../retros/RETRO-PRD-001.md)
 
 ## 원문
 
@@ -155,3 +155,4 @@ updated: 2026-09-28
 | 2026-09-27 | orchestrator | S02 결과 리뷰: FR-05 본문의 "트랜잭션 데코레이터가 실행 전략 안에서 SaveChanges · 커밋"은 ADR-0014 · 0015 기준으로 해석(데코레이터는 `CommitAsync`만, 실행 전략 · SaveChanges는 UnitOfWork). FR-06의 `Decorate`는 ADR-0017의 `TryDecorate`로 해석. 결론 본문 불변 |
 | 2026-09-28 | orchestrator | S04 계획 확정: 인수 조건 해석 기록(결론 본문 불변). FR-03 스크린샷은 실행 기록 · 대시보드 DOM 덤프 · dev-certs 출력으로 대체(스크린샷은 사용자 추가 항목), 선택 스모크는 미도입 · BL. FR-10 실패 표시는 임시 Draft PR로 확인. FR-11 재현 기록 위치는 S04 스프린트 문서 증빙 절. NFR-03 "BuildingBlocks"는 Domain · Application · Infrastructure · Api 4개. NFR-04 같은 머신 재현의 warm 한계 기록. NFR-07은 S04 DoD에서 판정 |
 | 2026-09-28 | orchestrator | S04-T04 인수 조건 해석 보충: FR-03 대시보드 증빙은 http 프로필 사용(이 PC dev-certs 미신뢰, BL-099). https 프로필은 dev-certs 확인 출력과 OTLP 0건 여부를 재현 차이점으로 기록, 사용자 https 재확인 절차는 S04 결과 리뷰 사용자 확인 사항 |
+| 2026-09-28 | orchestrator | 토픽 회고 [RETRO-PRD-001](../retros/RETRO-PRD-001.md) 링크 추가 |
