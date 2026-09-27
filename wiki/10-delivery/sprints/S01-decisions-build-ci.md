@@ -63,8 +63,8 @@ updated: 2026-09-27
 - [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (S01은 단위만. 아키텍처는 S02-T05, 통합은 S03-T05부터)
 - [x] 관련 위키 문서(API, 이벤트, DB)를 갱신했다 (S01은 해당 없음. ADR · 기준 문서는 T02~T04에서 갱신)
 - [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
-- [ ] 토픽 브랜치를 push하고 `sprint/S01` 태그를 붙였다
-- [ ] 토픽 Draft PR에서 CI 워크플로가 통과하고 소요 시간을 기록했다
+- [x] 토픽 브랜치를 push하고 `sprint/S01` 태그를 붙였다 (cca4ac6)
+- [x] 토픽 Draft PR에서 CI 워크플로가 통과하고 소요 시간을 기록했다 ([run 36303017840](https://github.com/thkim-ezabele/task_20260926/actions/runs/36303017840): success, 잡 약 56초, 러너 SDK 8.0.425)
 
 ## 진행 기록
 
@@ -112,6 +112,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T07 | reviewer | PASS | 직접 build 경고 0 · format · test 202, 트리거(develop · main, Draft 포함), 권한 contents: read · 비밀 0, global-json-file, 액션 SHA 3개 gh api 조회 일치, runsettings · ADR-0021/0022 · testing-strategy 정합, check-docs BL-018 외 0 |
 | 2026-09-27 | S01-T07 | tester | PASS | 새 clone(b8b155a)에서 ci.yml run 단계 순서대로: Windows 7단계 rc=0 합계 30초, Linux sdk:8.0 합계 52초(로컬 참고치). test 202, 보고서 생성 · 대상 어셈블리만 · 중복 합산 없음(라인 98.1% · 분기 100%), actionlint 0, SHA 일치 |
 | 2026-09-27 | - | 결과 리뷰 | 승인 | orchestrator 결과 리뷰 · 정리안(BL 64 · TD 18, new 0) · 회고 초안 승인. DoD: build 경고 0 · test 202/202 · format · check-docs(BL-018 외 0). push · 태그 · PR CI는 승인 후 진행 |
+| 2026-09-27 | - | DoD | 완료 | push(cca4ac6), 태그 `sprint/S01`, PR #7 CI success(잡 약 56초: build 12초, format 18초, test 5초; NFR-07 10분 대비 여유), 러너 SDK 8.0.425(BL-064 done). 주의: 계획 리뷰 기본값은 "CI 통과 전 태그 보류"였으나 스킬 순서대로 태그를 먼저 붙였다(CI 통과로 결과 영향 없음, 태그는 이 기록 커밋 이전 cca4ac6을 가리킴) |
 
 ## 계획 리뷰
 
@@ -273,7 +274,7 @@ updated: 2026-09-27
 | TD-018 | 브랜치 보호 불가로 CI 필수 체크 미적용 | S01-T07 | open |
 | BL-062 | 테스트 실패 시 커버리지 보고 생략 의도 명시 검토 | S01-T07 | planned:S04 |
 | BL-063 | reportgenerator 입력 패턴 합산 수 확인(S03) | S01-T07 | planned:S04 |
-| BL-064 | DoD: 러너 dotnet --info로 SDK 버전 확인 | S01-T07 | planned:S01 |
+| BL-064 | DoD: 러너 dotnet --info로 SDK 버전 확인 | S01-T07 | done |
 
 ## 회고
 

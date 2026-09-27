@@ -90,7 +90,7 @@ updated: 2026-09-27
 | BL-061 | AggregateRoot<TId> protected 매개변수 없는 생성자 미실행: EF용이면 S03에서 커버리지 제외 여부 판단 | S01-T07 | 하 | dropped | NFR-03 영향 없음. S03 EF 매핑에서 자연 해소, 80% 미만 시 재등록 (기존: S03) |
 | BL-062 | ci.yml Coverage report 단계는 테스트 실패 시 건너뜀: 의도라면 testing-strategy CI 절에 명시 | S01-T07 | 하 | planned:S04 | S04-T03 ci-cd 워크플로 단계 설명 |
 | BL-063 | reportgenerator 입력 패턴 `TestResults/*/coverage.cobertura.xml`이 결과 폴더 구조 변화 시 0건이 될 수 있음: 테스트 프로젝트 증가 시 합산 대상 수 확인 | S01-T07 | 중 | planned:S04 | S04-T01 커버리지 기록(S03-T05 테스트 프로젝트 추가 때 먼저 확인 권장) (기존: S03) |
-| BL-064 | 로컬(8.0.425)과 러너 setup-dotnet SDK 버전이 다를 수 있음: DoD에서 러너 `dotnet --info` 로그로 확인 | S01-T07 | 중 | planned:S01 | S01 DoD: PR CI 실행 로그 dotnet --info로 SDK 확인하면 done (기존: S01 DoD) |
+| BL-064 | 로컬(8.0.425)과 러너 setup-dotnet SDK 버전이 다를 수 있음: DoD에서 러너 `dotnet --info` 로그로 확인 | S01-T07 | 중 | done | PR #7 CI run 36303017840 러너 SDK 8.0.425(로컬과 같음) |
 
 ---
 
