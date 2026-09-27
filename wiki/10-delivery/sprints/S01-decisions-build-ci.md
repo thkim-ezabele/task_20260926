@@ -2,11 +2,11 @@
 title: "S01: 기술 결정 확정과 빌드 · CI 기반"
 type: sprint
 sprint: "S01"
-status: active
+status: done
 prd: [PRD-001]
 started: 2026-09-27
-finished:
-adrs: []
+finished: 2026-09-27
+adrs: [ADR-0011, ADR-0012, ADR-0013, ADR-0014, ADR-0015, ADR-0016, ADR-0017, ADR-0018, ADR-0019, ADR-0020, ADR-0021, ADR-0022, ADR-0023]
 worklogs: []
 aliases: [S01]
 tags: [delivery, sprint]
@@ -59,10 +59,10 @@ updated: 2026-09-27
 
 ## 완료 기준 (DoD)
 
-- [ ] 모든 작업이 `done`이거나 백로그로 이관되었다
-- [ ] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (S01은 단위만. 아키텍처는 S02-T05, 통합은 S03-T05부터)
-- [ ] 관련 위키 문서(API, 이벤트, DB)를 갱신했다 (S01은 해당 없음. ADR · 기준 문서는 T02~T04에서 갱신)
-- [ ] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
+- [x] 모든 작업이 `done`이거나 백로그로 이관되었다
+- [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (S01은 단위만. 아키텍처는 S02-T05, 통합은 S03-T05부터)
+- [x] 관련 위키 문서(API, 이벤트, DB)를 갱신했다 (S01은 해당 없음. ADR · 기준 문서는 T02~T04에서 갱신)
+- [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
 - [ ] 토픽 브랜치를 push하고 `sprint/S01` 태그를 붙였다
 - [ ] 토픽 Draft PR에서 CI 워크플로가 통과하고 소요 시간을 기록했다
 
@@ -111,6 +111,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T07 | developer | PASS | `.github/workflows/ci.yml`(develop · main PR, Draft 포함, ubuntu-24.04, contents: read, 액션 SHA 고정, restore → build → format → test(커버리지) → ReportGenerator → 아티팩트), `coverlet.runsettings`. 로컬 Windows · Linux 컨테이너에서 같은 순서 성공(test 202, 커버리지 98.1%), actionlint 오류 0. 실측 수정 2건(runsettings 주석 `--`, cobertura 중복 합산 경로). 관련 문서 4개 갱신 |
 | 2026-09-27 | S01-T07 | reviewer | PASS | 직접 build 경고 0 · format · test 202, 트리거(develop · main, Draft 포함), 권한 contents: read · 비밀 0, global-json-file, 액션 SHA 3개 gh api 조회 일치, runsettings · ADR-0021/0022 · testing-strategy 정합, check-docs BL-018 외 0 |
 | 2026-09-27 | S01-T07 | tester | PASS | 새 clone(b8b155a)에서 ci.yml run 단계 순서대로: Windows 7단계 rc=0 합계 30초, Linux sdk:8.0 합계 52초(로컬 참고치). test 202, 보고서 생성 · 대상 어셈블리만 · 중복 합산 없음(라인 98.1% · 분기 100%), actionlint 0, SHA 일치 |
+| 2026-09-27 | - | 결과 리뷰 | 승인 | orchestrator 결과 리뷰 · 정리안(BL 64 · TD 18, new 0) · 회고 초안 승인. DoD: build 경고 0 · test 202/202 · format · check-docs(BL-018 외 0). push · 태그 · PR CI는 승인 후 진행 |
 
 ## 계획 리뷰
 
@@ -141,108 +142,168 @@ updated: 2026-09-27
 
 > 스프린트 종료 시 orchestrator의 결과 리뷰(계획 대비 실제, 완료 조건 · FR 충족, 반려 분석)를 요약합니다.
 
--
+### 계획 대비 실제
+
+- 작업 7개 모두 `done`. 이관 · 추가 · 삭제 · 순서 변경 없음. 계획 확정(ef1b3df) 이후 커밋 39개(N1 반영 `chore(agents)` 포함).
+- ADR 13건(0011~0023) 모두 사용자 확인 후 `accepted`. 확인 3회 모두 초안 수정 없이 승인.
+- 테스트 202/202, 빌드 경고 0, format 통과, BuildingBlocks.Domain 라인 98.1% · 분기 100%. CI 워크플로 로컬 재현 Windows 30초 · Linux 컨테이너 52초.
+- 특이점: ① PRD 전제(Aspire 9.x 지원 중)가 틀림 — 9.x 전 버전 NuGet 폐기, 사용자 결정으로 9.5.2 유지(ADR-0011, TD-005, BL-002). ② Docker가 꺼져 있어 DB 실측을 S03으로 이관(BL-014 · 024 · 033). ③ 로컬 SDK 8.0.202로 xunit.v3 빌드 불가 → 스프린트 중 8.0.425 설치(BL-005). ④ 실측으로 설정 수정 4건(WarningsAsErrors의 CS1591 우선, generated_code의 CS1591 한계, runsettings 주석 `--`, cobertura 중복 합산 경로). ⑤ 후보 폭증(BL 64, TD 18) — 약 22건은 같은 스프린트 인계 메모.
+
+### 요구사항 충족
+
+| 요구사항 | 상태 | 근거 |
+|---|---|---|
+| FR-01 | 충족 | ADR 0011~0023 accepted(608f828 · 3f0e048 · 5b94975), package-versions.md, PRD Q19 해소, 대상 6개 문서 🟡 0건, ADR 커밋이 구현보다 앞섬 |
+| FR-02 | 부분 | 빌드 설정 일체(0f0a54a), 새 clone 경고 0. 생성 코드 포함 재검증은 S03-T02(BL-045) |
+| FR-04 | 충족 | Domain 기반 타입(df00b97), FR-04 인수 테스트 5건, Domain 패키지 참조 0건 |
+| FR-09 | 부분 | Domain 단위 테스트만. Application · Infrastructure · 아키텍처 · 통합은 S02 · S03 |
+| FR-10 | 부분 | ci.yml · coverlet.runsettings(0335d14), 로컬 전 단계 성공. PR 통과 · 소요 시간은 DoD, 실패 표시는 S04-T04 |
+| FR-11 | 부분 | 기준 문서 7종 갱신(T04 · T05 · T06). 저장소 구조 · ERD · todo 문서는 S04 |
+| NFR-01 | 충족 | 경고 0, 부정 점검 5종 기대대로 |
+| NFR-03 | 부분 | 측정 · 보고 경로 정의, Domain 98.1%. Application · Employee는 이후 |
+| NFR-05 | 충족 | 46행 버전 · 라이선스 · 출처, 상용 0건(Aspire.Dashboard.Sdk는 Microsoft 사용 조건, 무료) |
+| NFR-06 | 부분 | .gitignore 비밀 제외, ci.yml 비밀 0. 실제 비밀은 S03-T04부터 |
+| NFR-07 | 부분 | 로컬 참고치 30초 / 52초. 러너 실측은 DoD, Testcontainers 뒤 재측정 |
+
+### 반려 분석
+
+- reviewer 반려 1회(S01-T04, 형식): package-versions.md 표 중간 문단으로 행 이탈, CI 작업 번호 불일치. check-docs가 표 구조를 점검하지 않음. 형식 반려라 developer 2차 새 커밋(26b2ce4)으로 해결.
+- dba BLOCKED 1회(S01-T01, 외부 제약): Aspire 9.x 폐기 · 클라이언트 통합 NU1902. 사용자 결정 후 재판정 PASS(40332ef → 3b70c39).
+
+### S02에 주는 영향
+
+- S02-T06 완료 조건 수정: "공통 에러 코드 할당" → "CommonErrors(11개) 재사용 + 매핑 없는 23505용 공통 Conflict 코드 추가"(BL-019 · 052).
+- S02-T04 완료 조건 누락: ADR-0014가 배정한 23505 → Result 변환 추가. TD-015(DomainEvents Ignore), BL-023(EF 오류 로그 수준) 함께 검토.
+- S02-T02: BL-053, BL-028. S02-T05: TD-013, BL-029, TD-014. S02-T01: BL-039, TD-017.
+- 새 테스트 프로젝트 이름은 `*Tests`(TD-014), 커버리지 대상 포함 확인(BL-063). 새 패키지 전이 취약점이 NuGetAudit로 빌드를 막을 수 있음(TD-008 관찰).
+- S02 계획 리뷰에서 N3(공통 API 처리 위치) 확정. BL-055(경고 억제 규칙)를 S02 시작 전 reviewer 기준으로 합의 권장. S03 대비 Docker 실행 환경 확보.
+
+### ADR 후보 (사용자 확인 전, 목록만)
+
+- GitHub Actions 액션 커밋 SHA 고정 + 버전 주석 정책(BL-058 Dependabot 결정 포함)
+- 테스트 프로젝트 판별 이름 규칙(IsTestProject = `*Tests`)과 IVT · 문서 생성 · CS1591 범위(TD-014)
+- 패키지 공급망 정책: CentralPackageTransitivePinning, NuGetAuditMode=all · Level=low, 취약 전이 의존 수동 고정 원칙
+- SDK 고정 정책: global.json 8.0.400 + latestFeature(하한 근거 xunit.v3)
+- ErrorType 2자리 값 체계, Error 생성 시 검증, Error.None 없음, Result 암시적 변환(ADR-0008 구체화)
+- (하) 분석기 경고 강제 · 억제 규칙(BL-055) — coding-conventions로 충분한지 먼저 판단
+- (후속) .NET 10 · Aspire 13 전환(ADR-0001 대체, BL-002)
 
 ## 생긴 백로그 / 기술부채
 
 | ID | 제목 | 발생 작업 | 정리 결과 |
 |---|---|---|---|
-| TD-001 | 마이그레이션 전용 DB 롤 분리 | 계획 리뷰(Q4) | |
-| TD-002 | .NET 8 / Aspire 9.x 지원 종료에 따른 메이저 업그레이드 | 계획 리뷰 | |
-| BL-001 | 문서 점검 Node 스크립트 CI 편입 검토 | 계획 리뷰 | |
-| BL-002 | Aspire 9.x 지원 종료 대응(.NET 10 · Aspire 13 전환 재검토) | S01-T01 | |
-| BL-003 | 롤 생성은 초기화 스크립트, `WithCreationScript`는 CREATE DATABASE 한 문장 + Docker 재시작 검증 | S01-T01 | |
-| BL-004 | 클라이언트 통합 판단 근거에 NU1902 추가 | S01-T01 | |
-| TD-003 | Npgsql.EFCore EF 의존 상한 없음 → 전이 고정 필수 | S01-T01 | |
-| TD-004 | Testcontainers `PostgreSqlBuilder` 이미지 인자 필수(CS0618) | S01-T01 | |
-| TD-005 | Aspire 9.x 지원 종료 상태로 9.5.2 사용 | S01-T01 | |
-| TD-006 | 클라이언트 통합 사용 시 OpenTelemetry 계열 버전 혼재 | S01-T01 | |
-| BL-005 | 로컬 SDK 8.0.425 설치(사용자 작업) | S01-T01 | |
-| BL-006 | T05: `NuGetAuditMode=all`, MessagePack 2.5.305 고정, global.json 8.0.400 + latestFeature | S01-T01 | |
-| BL-007 | T03 로깅 ADR: ServiceDefaults OTel 1.19.x 고정 | S01-T01 | |
-| BL-008 | BL-004 판단 자료: OTel 1.19.x와 함께면 NU1902 · TD-006 해소 | S01-T01 | |
-| BL-009 | ServiceDiscovery · Http.Resilience 사용 여부 결정 | S01-T01 | |
-| TD-007 | MessagePack 2.5.305 수동 고정 유지(Aspire.Hosting 전이 취약) | S01-T01 | |
-| TD-008 | net8.0 앱에 Microsoft.Extensions.* · DiagnosticSource 10.0.0 전이 유입 | S01-T01 | |
-| TD-009 | xUnit v2 선택 시 Legacy 폐기 상태 | S01-T01 | |
-| BL-010 | 클라이언트 통합의 net8.0 EF Core 의존 버전 · 하한 명시(T02) | S01-T01 | |
-| BL-011 | PostgreSQL 이미지 · .NET SDK 라이선스 행 추가 검토 | S01-T01 | |
-| BL-012 | Aspire 리소스 이름 밑줄 불가(ASPIRE006): `AddDatabase("employee-db", databaseName: ...)` | S01-T01 | |
-| BL-013 | 클라이언트 통합 · Dashboard.Sdk · Orchestration 폐기 표시 문서 반영 | S01-T01 | |
-| BL-014 | BL-003 실측을 S03 Aspire 작업 완료 조건에 편입 | S01-T02 | |
-| BL-015 | 서비스 DB 2개 이상 시 REVOKE CONNECT, TEMPORARY FROM PUBLIC | S01-T02 | |
-| BL-016 | package-versions.md: WithInitFiles 표기, Npgsql.OpenTelemetry · HealthChecks.EFCore 행 | S01-T02 | |
-| BL-017 | local-setup / troubleshooting: MigrationService Waiting 멈춤 대응 | S01-T02 | |
-| TD-010 | 커밋 결과 불명 시 재시도 오판(23505 · xmin) | S01-T02 | |
-| TD-011 | EF Core 8 MigrateAsync 잠금 없음 → 적용 주체 1개 | S01-T02 | |
-| BL-018 | raw-log frontmatter created · updated 누락(hook 템플릿 vs 예외) | S01-T02 | |
-| BL-019 | 매핑 없는 23505용 공통 Conflict 코드 할당 | S01-T02 | |
-| BL-020 | check-docs.js 유형별 추가 필드 점검 검토 | S01-T02 | |
-| BL-021 | check-docs.js 공백 포함 링크 대상 형식 미점검 | S01-T02 | |
-| BL-022 | database.md "기본값(Read Committed)" → "명시" 문구 정리(T04) | S01-T02 | |
-| BL-023 | 23505 정상 경합 시 EF가 Error 로그 2건 기록 → 수준 조정 여부 | S01-T03 | |
-| BL-024 | S03-T05: 추적 db.connection_string 비밀번호 · 파라미터 값 미노출 실측 | S01-T03 | |
-| BL-025 | coding-conventions Command 반환 `Result<Unit>`(T04) | S01-T03 | |
-| BL-026 | package-versions에 Serilog.Sinks.Async · Enrichers.Environment 행(T04) | S01-T03 | |
-| BL-027 | logging-observability에 ADR-0020 반영(T04) | S01-T03 | |
-| BL-028 | Mediator 로깅 이벤트 ID 할당(S02-T02) | S01-T03 | |
-| BL-029 | 아키텍처 테스트 후보: Handler ISender 금지, Validator Repository 금지(S02-T05) | S01-T03 | |
-| BL-030 | 헬스체크 경로 정리(S03-T04) | S01-T03 | |
-| TD-012 | ServiceDefaults가 Aspire 템플릿과 달라짐 | S01-T03 | |
-| BL-031 | PRD Q9 결론에 "구체화: ADR-0014 · 0015" 주석 검토(T04) | S01-T03 | |
-| BL-032 | clean-architecture `Endpoints/` · Minimal API → `Controllers/` 수정(T04) | S01-T03 | |
-| BL-033 | S03-T05: fixture employee_app 재현, Respawn 이력 보존 · TRUNCATE 권한 · 25006 실측 | S01-T04 | |
-| BL-034 | HasData 기준 데이터 → Respawn TablesToIgnore 규칙 | S01-T04 | |
-| BL-035 | 순환 FK 금지(Respawn DISABLE TRIGGER 슈퍼유저 필요) 스키마 리뷰 항목 | S01-T04 | |
-| BL-036 | S03-T02: 이력 테이블 이름이 TablesToIgnore와 일치하는지 확인 | S01-T04 | |
-| BL-037 | T05: CPM에 OpenTelemetry.Api 1.19.1 전이 고정 | S01-T04 | |
-| BL-038 | grep 대상 밖 문서 보류 🟡 → ADR-0023 링크 | S01-T04 | |
-| BL-039 | coding-conventions `IIdGenerator.NewId()` 이름 S02-T01에 맞춤 | S01-T04 | |
-| BL-040 | T06: `Result<T>` 값 암시적 변환 여부 | S01-T04 | |
-| TD-013 | NetArchTest.Rules · NSubstitute.Analyzers 유지 중단 | S01-T04 | |
-| BL-041 | package-versions 테스트 표 용도 열 "추천/대안" → "채택/미사용" | S01-T04 | |
-| BL-042 | clean-architecture 서비스 카탈로그 🟡(도메인 항목) 정리 위치 | S01-T04 | |
-| BL-043 | service-catalog.md:24 API Gateway 🟡를 BL-038/042 범위에 | S01-T04 | |
-| BL-044 | security.md:71 마이그레이션 전용 계정 🟡 표시 정리 | S01-T04 | |
-| BL-045 | S03-T02: 실제 EF 생성 파일에서 Migrations 섹션 경고 0 · format 재확인 | S01-T05 | |
-| BL-046 | S03: EF Design 참조 위치 · dotnet ef 프로젝트 인자 통일 | S01-T05 | |
-| BL-047 | 문서: generated_code + CS1591 none 병기 | S01-T05 | |
-| BL-048 | clean-architecture 저장소 구조 · 공통 빌드 설정 표 갱신(S04-T02) | S01-T05 | |
-| BL-049 | local-setup: Windows MAX_PATH(MSB3101/MSB3030) 안내 | S01-T05 | |
-| BL-050 | T06: 골격 확인 테스트 대체 · 삭제 | S01-T05 | |
-| BL-051 | IDE0005 빌드 강제 여부 | S01-T05 | |
-| TD-014 | 테스트 프로젝트 판별이 이름 규칙(*Tests)에 의존 | S01-T05 | |
-| TD-015 | 강타입 ID ValueConverter · DomainEvents Ignore 공통 처리 | S01-T06 | |
-| BL-052 | S02-T06: CommonErrors 재사용, 매핑 · 변환만 구현 | S01-T06 | |
-| BL-053 | S02-T02: CustomState 없는 실패는 Error.Validation(1001)로 감싸기 | S01-T06 | |
-| BL-054 | 아키텍처 테스트 후보: Error/Result 파생 금지, Entity 파생 sealed | S01-T06 | |
-| TD-016 | Error 복사 생성자로 외부 파생 가능 | S01-T06 | |
-| TD-017 | Result<T> notnull 제약 없음(런타임 거부만) | S01-T06 | |
-| BL-055 | coding-conventions 경고 억제 규칙 명문화 | S01-T06 | |
-| BL-056 | "ValidationError는 sealed" 명시(ADR 0018 문구 오해 방지) | S01-T06 | |
-| BL-057 | S03 CI 통합 테스트 대비: ubuntu 러너 · services 미사용, 이미지 pull 시간, 컨테이너 공유 | S01-T07 | |
-| BL-058 | Dependabot(github-actions) 검토 | S01-T07 | |
-| BL-059 | CI 시간이 NFR-07에 가까워지면 NuGet 캐시 재판단 | S01-T07 | |
-| BL-060 | ReportGenerator 무료판 메서드 커버리지 표시 제한(기록) | S01-T07 | |
-| BL-061 | AggregateRoot protected 생성자 커버리지 제외 여부 | S01-T07 | |
-| TD-018 | 브랜치 보호 불가로 CI 필수 체크 미적용 | S01-T07 | |
-| BL-062 | 테스트 실패 시 커버리지 보고 생략 의도 명시 검토 | S01-T07 | |
-| BL-063 | reportgenerator 입력 패턴 합산 수 확인(S03) | S01-T07 | |
-| BL-064 | DoD: 러너 dotnet --info로 SDK 버전 확인 | S01-T07 | |
+| TD-001 | 마이그레이션 전용 DB 롤 분리 | 계획 리뷰(Q4) | open |
+| TD-002 | .NET 8 / Aspire 9.x 지원 종료에 따른 메이저 업그레이드 | 계획 리뷰 | open |
+| BL-001 | 문서 점검 Node 스크립트 CI 편입 검토 | 계획 리뷰 | open |
+| BL-002 | Aspire 9.x 지원 종료 대응(.NET 10 · Aspire 13 전환 재검토) | S01-T01 | open |
+| BL-003 | 롤 생성은 초기화 스크립트, `WithCreationScript`는 CREATE DATABASE 한 문장 + Docker 재시작 검증 | S01-T01 | dropped → BL-014 |
+| BL-004 | 클라이언트 통합 판단 근거에 NU1902 추가 | S01-T01 | done |
+| TD-003 | Npgsql.EFCore EF 의존 상한 없음 → 전이 고정 필수 | S01-T01 | open |
+| TD-004 | Testcontainers `PostgreSqlBuilder` 이미지 인자 필수(CS0618) | S01-T01 | planned:S03 |
+| TD-005 | Aspire 9.x 지원 종료 상태로 9.5.2 사용 | S01-T01 | open → TD-002 |
+| TD-006 | 클라이언트 통합 사용 시 OpenTelemetry 계열 버전 혼재 | S01-T01 | resolved |
+| BL-005 | 로컬 SDK 8.0.425 설치(사용자 작업) | S01-T01 | done |
+| BL-006 | T05: `NuGetAuditMode=all`, MessagePack 2.5.305 고정, global.json 8.0.400 + latestFeature | S01-T01 | done |
+| BL-007 | T03 로깅 ADR: ServiceDefaults OTel 1.19.x 고정 | S01-T01 | done |
+| BL-008 | BL-004 판단 자료: OTel 1.19.x와 함께면 NU1902 · TD-006 해소 | S01-T01 | done |
+| BL-009 | ServiceDiscovery · Http.Resilience 사용 여부 결정 | S01-T01 | done |
+| TD-007 | MessagePack 2.5.305 수동 고정 유지(Aspire.Hosting 전이 취약) | S01-T01 | open |
+| TD-008 | net8.0 앱에 Microsoft.Extensions.* · DiagnosticSource 10.0.0 전이 유입 | S01-T01 | open |
+| TD-009 | xUnit v2 선택 시 Legacy 폐기 상태 | S01-T01 | resolved |
+| BL-010 | 클라이언트 통합의 net8.0 EF Core 의존 버전 · 하한 명시(T02) | S01-T01 | done |
+| BL-011 | PostgreSQL 이미지 · .NET SDK 라이선스 행 추가 검토 | S01-T01 | done |
+| BL-012 | Aspire 리소스 이름 밑줄 불가(ASPIRE006): `AddDatabase("employee-db", databaseName: ...)` | S01-T01 | done |
+| BL-013 | 클라이언트 통합 · Dashboard.Sdk · Orchestration 폐기 표시 문서 반영 | S01-T01 | done |
+| BL-014 | BL-003 실측을 S03 Aspire 작업 완료 조건에 편입 | S01-T02 | planned:S03 |
+| BL-015 | 서비스 DB 2개 이상 시 REVOKE CONNECT, TEMPORARY FROM PUBLIC | S01-T02 | open |
+| BL-016 | package-versions.md: WithInitFiles 표기, Npgsql.OpenTelemetry · HealthChecks.EFCore 행 | S01-T02 | done |
+| BL-017 | local-setup / troubleshooting: MigrationService Waiting 멈춤 대응 | S01-T02 | planned:S04 |
+| TD-010 | 커밋 결과 불명 시 재시도 오판(23505 · xmin) | S01-T02 | open |
+| TD-011 | EF Core 8 MigrateAsync 잠금 없음 → 적용 주체 1개 | S01-T02 | open |
+| BL-018 | raw-log frontmatter created · updated 누락(hook 템플릿 vs 예외) | S01-T02 | open |
+| BL-019 | 매핑 없는 23505용 공통 Conflict 코드 할당 | S01-T02 | planned:S02 |
+| BL-020 | check-docs.js 유형별 추가 필드 점검 검토 | S01-T02 | dropped → BL-001 |
+| BL-021 | check-docs.js 공백 포함 링크 대상 형식 미점검 | S01-T02 | dropped → BL-001 |
+| BL-022 | database.md "기본값(Read Committed)" → "명시" 문구 정리(T04) | S01-T02 | done |
+| BL-023 | 23505 정상 경합 시 EF가 Error 로그 2건 기록 → 수준 조정 여부 | S01-T03 | open |
+| BL-024 | S03-T05: 추적 db.connection_string 비밀번호 · 파라미터 값 미노출 실측 | S01-T03 | open |
+| BL-025 | coding-conventions Command 반환 `Result<Unit>`(T04) | S01-T03 | done |
+| BL-026 | package-versions에 Serilog.Sinks.Async · Enrichers.Environment 행(T04) | S01-T03 | done |
+| BL-027 | logging-observability에 ADR-0020 반영(T04) | S01-T03 | done |
+| BL-028 | Mediator 로깅 이벤트 ID 할당(S02-T02) | S01-T03 | planned:S02 |
+| BL-029 | 아키텍처 테스트 후보: Handler ISender 금지, Validator Repository 금지(S02-T05) | S01-T03 | open |
+| BL-030 | 헬스체크 경로 정리(S03-T04) | S01-T03 | planned:S03 |
+| TD-012 | ServiceDefaults가 Aspire 템플릿과 달라짐 | S01-T03 | open |
+| BL-031 | PRD Q9 결론에 "구체화: ADR-0014 · 0015" 주석 검토(T04) | S01-T03 | done |
+| BL-032 | clean-architecture `Endpoints/` · Minimal API → `Controllers/` 수정(T04) | S01-T03 | done |
+| BL-033 | S03-T05: fixture employee_app 재현, Respawn 이력 보존 · TRUNCATE 권한 · 25006 실측 | S01-T04 | planned:S03 |
+| BL-034 | HasData 기준 데이터 → Respawn TablesToIgnore 규칙 | S01-T04 | open |
+| BL-035 | 순환 FK 금지(Respawn DISABLE TRIGGER 슈퍼유저 필요) 스키마 리뷰 항목 | S01-T04 | open |
+| BL-036 | S03-T02: 이력 테이블 이름이 TablesToIgnore와 일치하는지 확인 | S01-T04 | planned:S03 |
+| BL-037 | T05: CPM에 OpenTelemetry.Api 1.19.1 전이 고정 | S01-T04 | done |
+| BL-038 | grep 대상 밖 문서 보류 🟡 → ADR-0023 링크 | S01-T04 | open |
+| BL-039 | coding-conventions `IIdGenerator.NewId()` 이름 S02-T01에 맞춤 | S01-T04 | planned:S04 |
+| BL-040 | T06: `Result<T>` 값 암시적 변환 여부 | S01-T04 | done |
+| TD-013 | NetArchTest.Rules · NSubstitute.Analyzers 유지 중단 | S01-T04 | open |
+| BL-041 | package-versions 테스트 표 용도 열 "추천/대안" → "채택/미사용" | S01-T04 | done |
+| BL-042 | clean-architecture 서비스 카탈로그 🟡(도메인 항목) 정리 위치 | S01-T04 | open |
+| BL-043 | service-catalog.md:24 API Gateway 🟡를 BL-038/042 범위에 | S01-T04 | dropped → BL-038 |
+| BL-044 | security.md:71 마이그레이션 전용 계정 🟡 표시 정리 | S01-T04 | dropped → BL-038 |
+| BL-045 | S03-T02: 실제 EF 생성 파일에서 Migrations 섹션 경고 0 · format 재확인 | S01-T05 | planned:S03 |
+| BL-046 | S03: EF Design 참조 위치 · dotnet ef 프로젝트 인자 통일 | S01-T05 | planned:S03 |
+| BL-047 | 문서: generated_code + CS1591 none 병기 | S01-T05 | done |
+| BL-048 | clean-architecture 저장소 구조 · 공통 빌드 설정 표 갱신(S04-T02) | S01-T05 | planned:S04 |
+| BL-049 | local-setup: Windows MAX_PATH(MSB3101/MSB3030) 안내 | S01-T05 | planned:S04 |
+| BL-050 | T06: 골격 확인 테스트 대체 · 삭제 | S01-T05 | done |
+| BL-051 | IDE0005 빌드 강제 여부 | S01-T05 | open |
+| TD-014 | 테스트 프로젝트 판별이 이름 규칙(*Tests)에 의존 | S01-T05 | open |
+| TD-015 | 강타입 ID ValueConverter · DomainEvents Ignore 공통 처리 | S01-T06 | planned:S02 |
+| BL-052 | S02-T06: CommonErrors 재사용, 매핑 · 변환만 구현 | S01-T06 | planned:S02 |
+| BL-053 | S02-T02: CustomState 없는 실패는 Error.Validation(1001)로 감싸기 | S01-T06 | planned:S02 |
+| BL-054 | 아키텍처 테스트 후보: Error/Result 파생 금지, Entity 파생 sealed | S01-T06 | dropped → BL-029 |
+| TD-016 | Error 복사 생성자로 외부 파생 가능 | S01-T06 | planned:S04 |
+| TD-017 | Result<T> notnull 제약 없음(런타임 거부만) | S01-T06 | open |
+| BL-055 | coding-conventions 경고 억제 규칙 명문화 | S01-T06 | open |
+| BL-056 | "ValidationError는 sealed" 명시(ADR 0018 문구 오해 방지) | S01-T06 | dropped → TD-016 |
+| BL-057 | S03 CI 통합 테스트 대비: ubuntu 러너 · services 미사용, 이미지 pull 시간, 컨테이너 공유 | S01-T07 | planned:S03 |
+| BL-058 | Dependabot(github-actions) 검토 | S01-T07 | open |
+| BL-059 | CI 시간이 NFR-07에 가까워지면 NuGet 캐시 재판단 | S01-T07 | open |
+| BL-060 | ReportGenerator 무료판 메서드 커버리지 표시 제한(기록) | S01-T07 | dropped |
+| BL-061 | AggregateRoot protected 생성자 커버리지 제외 여부 | S01-T07 | dropped |
+| TD-018 | 브랜치 보호 불가로 CI 필수 체크 미적용 | S01-T07 | open |
+| BL-062 | 테스트 실패 시 커버리지 보고 생략 의도 명시 검토 | S01-T07 | planned:S04 |
+| BL-063 | reportgenerator 입력 패턴 합산 수 확인(S03) | S01-T07 | planned:S04 |
+| BL-064 | DoD: 러너 dotnet --info로 SDK 버전 확인 | S01-T07 | planned:S01 |
 
 ## 회고
 
 ### 잘된 점
 
--
+- N1 ADR 확인 흐름(developer 1차 `adr_drafts` → 사용자 확인 → 2차 파일 생성)이 3회 모두 계획대로 돌았다. 결정 내용 때문에 되돌아간 반려 0.
+- 문서 작업 운영(reviewer 점검 15개 해당 없음, tester 명령 기반 점검표)으로 코드 없는 작업에도 grep · Node 검사 · 부정 점검 같은 재현 가능한 증빙이 남았다.
+- dba가 NuGet 캐시 · 패키지 소스로 사실을 확인해 설계 결함을 사전에 막았다(`WithReference(db)` 슈퍼유저 자격 증명 주입, Respawn `TablesToIgnore` 표기).
+- 외부 사실(Aspire 폐기)을 BLOCKED로 올려 사용자 결정 → ADR · TD · BL 기록까지 한 흐름으로 처리했다.
+- 새 clone · 실측으로 설정 결함 4건을 커밋 전에 잡았다.
+- check-docs.js를 T02에서 먼저 만들어 이후 작업 전체에서 재사용했다. 반려는 1회(형식)뿐이었다.
 
 ### 문제
 
--
+- 후보 폭증(BL 64, TD 18): 약 22건이 같은 스프린트의 다음 작업에 넘기는 인계 메모였는데 백로그를 인계 채널로 써서 정리 비용이 커졌다.
+- Docker가 꺼진 상태로 진행해 DB 실측이 모두 S03으로 몰렸다.
+- PRD 단계 전제(Aspire 9.x 지원, 로컬 SDK 충분)가 스프린트 안에서 깨졌다. 환경 · 외부 사실 사전 점검이 없었다.
+- check-docs가 표 구조 결함을 못 잡아 reviewer 반려로 이어졌다. raw-log frontmatter 결함(BL-018)이 내내 잔여 결함으로 남았다.
+- dba 단계 커밋 타입이 섞였다(`chore(sprint)` / `docs(sprint)`). 스프린트 frontmatter(adrs, finished) 갱신 단계가 없다. 커밋 약 2/3가 판정 기록 커밋이다.
+- CI 첫 러너 실행이 스프린트 종료 뒤라 러너 고유 문제를 늦게 발견할 수 있다.
+- ADR 확인 3회가 모두 "수정 없음" — 확인 자료가 과해 검토가 형식적이 됐을 가능성을 점검할 필요가 있다.
 
 ### 다음에 바꿀 것
 
--
+- 같은 스프린트 안에서 반영할 인계 메모는 BL로 만들지 않고 진행 기록 · 다음 작업 입력으로 넘긴다(agents.md · 에이전트 정의에 기준 추가).
+- `/sprint` 시작에 환경 사전 점검 단계 추가: Docker 실행, SDK 버전(global.json 충족), gh 인증, 필요 외부 서비스.
+- 단계 커밋 타입 규칙 고정(산출물 없는 판정 · 기록은 `docs(sprint)`), 종료 단계에 frontmatter(adrs, finished, status) 갱신 추가.
+- check-docs에 표 열 수 일관성 점검 추가, BL-018을 토픽 밖 작업으로 먼저 해결해 결함 0 기준선 확보.
+- ADR 확인은 결정 문장 · 선택지 요약 위주로 보여 주는 형식 검토.
+- CI 첫 실행을 앞당길지 결정(N2 임시 브랜치 예외와 함께 정책화 검토).
 
 ---
 
@@ -252,3 +313,4 @@ updated: 2026-09-27
 |---|---|---|
 | 2026-09-27 | - | 스프린트 계획 (`/prd` PRD-001 분할) |
 | 2026-09-27 | - | 계획 리뷰 반영, `active` |
+| 2026-09-27 | - | 결과 리뷰 · 백로그 / 기술부채 정리 · 회고, `done` |
