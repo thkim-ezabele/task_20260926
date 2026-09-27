@@ -35,4 +35,31 @@ public static class ValidationRuleExtensions
 
         return rule.WithState(_ => error).WithMessage(error.Message);
     }
+
+    /// <summary>
+    /// 정의되지 않은 코드값을 1002(<see cref="CommonErrors.InvalidCode"/>)로 거부합니다(ADR-0008, ADR-0018 "정의되지 않은 코드값").
+    /// </summary>
+    /// <typeparam name="T">검증 대상 형식.</typeparam>
+    /// <typeparam name="TEnum">코드값 enum 형식.</typeparam>
+    /// <param name="rule">규칙 빌더.</param>
+    /// <returns>규칙 빌더. 뒤에 <see cref="WithError{T, TProperty}"/>를 붙이면 서비스 코드로 바꿀 수 있습니다.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="rule"/>이 <see langword="null"/>인 경우.</exception>
+    /// <remarks>
+    /// <para>일반 enum은 정의된 멤버만 허용하고 0(예약 값 <c>None</c> / <c>Unknown</c>)은 정의되어 있어도 거부합니다.</para>
+    /// <para>
+    /// <c>[Flags]</c> enum은 정의된 비트의 조합을 허용하고(0 포함), 정의되지 않은 비트가 하나라도 있으면 거부합니다.
+    /// 조합 규칙(예: 최소 하나)은 Aggregate / Value Object가 검증합니다.
+    /// </para>
+    /// <para>
+    /// 내부적으로 <c>Must(...).WithError(CommonErrors.InvalidCode)</c>입니다. FluentValidation의 <c>IsInEnum()</c>은 일반 enum의 0을
+    /// 허용하므로 쓰지 않습니다.
+    /// </para>
+    /// </remarks>
+    public static IRuleBuilderOptions<T, TEnum> MustBeDefinedEnum<T, TEnum>(this IRuleBuilder<T, TEnum> rule)
+        where TEnum : struct, Enum
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+
+        return rule.Must(DefinedEnumValues<TEnum>.IsDefined).WithError(CommonErrors.InvalidCode);
+    }
 }

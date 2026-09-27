@@ -78,7 +78,7 @@ DB의 코드값 규칙([데이터베이스 · 코드값](database.md#코드값-�
 - 기반 형식을 명시한다. 일반 코드는 `short`, 비트 플래그는 `int`(31개까지) 또는 `long`(63개까지).
 - `0`은 `None` / `Unknown` 용도로 예약한다. 유효한 업무 값으로 쓰지 않는다.
 - API 요청 / 응답과 이벤트에서도 코드는 **정수로 직렬화**한다. `JsonStringEnumConverter`는 쓰지 않는다.
-- 외부에서 들어온 정수는 `Enum.IsDefined`(일반 코드) 또는 정의된 비트 마스크 범위 검사(플래그)로 검증한다.
+- 외부에서 들어온 정수는 `Enum.IsDefined`(일반 코드) 또는 정의된 비트 마스크 범위 검사(플래그)로 검증한다. 요청 검증은 Validator의 `MustBeDefinedEnum()`(1002)으로 한다.
 
 ```csharp
 public enum EmployeeStatus : short
@@ -133,7 +133,7 @@ Application 레이어는 **Command(상태 변경)와 Query(조회)를 분리**�
 - Handler 하나는 요청 하나만 처리한다.
 - Command Handler는 다른 Command를 직접 호출하지 않는다. Handler는 `ISender`를 주입받지 않는다(중첩 `SendAsync`는 커밋이 두 번 일어남). 후속 처리는 도메인 이벤트 / 통합 이벤트로 연결한다.
 - 공통 관심사(로깅, 검증, 트랜잭션)는 **Handler 데코레이터 파이프라인**으로 처리한다. 순서는 Command가 로깅 → 검증 → 트랜잭션 → Handler, Query가 로깅 → 검증 → Handler다(트랜잭션은 Command에만).
-- Validator는 `internal sealed class <요청>Validator : RequestValidator<요청>`(BuildingBlocks.Application.Validation)으로 만든다. 공통 기반이 한 속성의 규칙 체인을 첫 실패에서 멈추게 한다(`RuleLevelCascadeMode = Stop`, [ADR-0018](../03-architecture/adr/0018-use-fluentvalidation.md)). 규칙마다 `WithError(Error)`로 정수 코드를 붙이고(검증 실패 유형만), 붙이지 않은 규칙의 실패는 1001로 담긴다. FluentValidation의 문자열 `ErrorCode`는 쓰지 않는다.
+- Validator는 `internal sealed class <요청>Validator : RequestValidator<요청>`(BuildingBlocks.Application.Validation)으로 만든다. 공통 기반이 한 속성의 규칙 체인을 첫 실패에서 멈추게 한다(`RuleLevelCascadeMode = Stop`, [ADR-0018](../03-architecture/adr/0018-use-fluentvalidation.md)). 규칙마다 `WithError(Error)`로 정수 코드를 붙이고(검증 실패 유형만), 붙이지 않은 규칙의 실패는 1001로 담긴다. 코드값(enum) 속성은 `MustBeDefinedEnum()`으로 정의되지 않은 값을 1002로 거부한다(일반 enum은 0도 거부, `[Flags]`는 정의된 비트의 조합과 0 허용). FluentValidation의 문자열 `ErrorCode`는 쓰지 않는다.
 - **Handler와 Repository는 `SaveChanges`를 부르지 않는다.** Handler가 성공 `Result`를 돌려주면 트랜잭션 데코레이터가 `IUnitOfWork.CommitAsync`를 부르고, 실패 `Result`면 저장하지 않는다. Handler는 DbContext를 받지 않는다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)).
 - Application 코드는 BuildingBlocks의 추상화(`ICommand`, `ICommand<TResponse>`, `IQuery<TResponse>`, `ICommandHandler<,>`, `IQueryHandler<,>`, `ISender`)에만 의존한다. 반환 값 없는 Command는 `ICommand : ICommand<Unit>`이고 `Result<Unit>`을 돌려준다.
 
@@ -318,6 +318,7 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 | `AddBuildingBlocksApplication()` | BuildingBlocks.Application | `ISender`(Scoped), `TimeProvider.System`(Singleton). `TryAdd`라 여러 번 불러도 하나, 먼저 등록한 대역(`FakeTimeProvider` 등)은 유지 |
 | `AddBuildingBlocksInfrastructure()` | BuildingBlocks.Infrastructure | `IIdGenerator`(UUID v7, Scoped) + `AddBuildingBlocksApplication()`. `TryAdd` |
 | `AddConventionalServices(어셈블리...)` | BuildingBlocks.Infrastructure | 마커 구현 · Handler · Validator(모두 Scoped), 데코레이터(`PipelineDecorators` 목록 순서로 `TryDecorate`) + `AddBuildingBlocksApplication()` |
+| `AddBuildingBlocksApi(apiTitle)` / `app.UseBuildingBlocksApi()` | BuildingBlocks.Api | Controller 기본 설정 · 바인딩 오류 1001 · 전역 예외 처리기(Singleton) · Swashbuckle(`v1`) + `AddBuildingBlocksApplication()` / 예외 처리 미들웨어 → (Development만) Swagger → `MapControllers`. 서비스 Api 호스트만 부르고, 두 번 부르면 `InvalidOperationException`. `AddConventionalServices`는 부르지 않는다([ADR-0024](../03-architecture/adr/0024-building-blocks-api-for-common-http-handling.md), S02-T06) |
 
 - `IIdGenerator`는 `IService`를 상속하지 않고 `AddBuildingBlocksInfrastructure()`가 **명시 등록**한다. ADR-0017이 공통 인프라(`TimeProvider`, `ISender`, `IIdGenerator`)를 공통 등록 코드에서 명시 등록한다고 정했고, 구현이 서비스 어셈블리 밖(BuildingBlocks.Infrastructure)에 있어 어셈블리 검색으로 찾을 수 없기 때문이다. 수명은 ADR-0013대로 Scoped다. `IUnitOfWork` · `IExceptionClassifier`도 마커를 상속하지 않는다(등록은 S02-T07).
 - `AddConventionalServices`는 **한 번만** 부르고 검색할 어셈블리를 한 번에 모두 넘긴다. 두 번 부르면 Handler가 두 겹으로 감싸져 커밋 · 로그가 중복되므로 두 번째 호출은 `InvalidOperationException`이다. 같은 어셈블리를 중복해 넘기는 것은 한 번으로 처리한다.
@@ -395,3 +396,4 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 | 2026-09-27 | developer | CQRS 규칙에 Validator 공통 기반 `RequestValidator<T>` · `WithError` 규칙 추가 (S02-T02) |
 | 2026-09-27 | developer | DI 규칙에 BuildingBlocks 공통 등록 진입점 표, `IIdGenerator` 명시 등록 결정, `AddConventionalServices` 1회 호출 · 서비스 인터페이스 1개 검사 · keyed 데코레이터 등록 추가, Handler 예시 주석의 `NewId()` 확정 (S02-T03) |
 | 2026-09-27 | developer | Repository 규칙에 영속성 기반 형식 절 추가(DbContext 기반 · 모델 정의 · 강타입 ID · `ux_` / `ck_` 도우미 · shadow property 이름), DI 예시의 `RepositoryBase` 제약을 `WriteDbContextBase`로 정정 (S02-T04) |
+| 2026-09-27 | developer | 공통 등록 진입점 표에 `AddBuildingBlocksApi` / `UseBuildingBlocksApi` 추가, 코드값 검증 규칙 `MustBeDefinedEnum()`(1002) (S02-T06) |

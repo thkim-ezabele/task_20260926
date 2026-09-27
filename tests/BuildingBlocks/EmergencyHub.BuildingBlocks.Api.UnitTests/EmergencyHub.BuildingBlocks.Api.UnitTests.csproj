@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    OutputType=Exe · IsTestProject=true는 Directory.Build.props가 이름 규칙(*Tests)으로 지정한다(ADR-0021).
+    xunit.runner.visualstudio · coverlet.collector · NSubstitute.Analyzers.CSharp의 PrivateAssets=all은 Directory.Build.targets가 적용한다.
+    ASP.NET Core는 공유 프레임워크(Microsoft.AspNetCore.App)를 쓰고, DI 구현 패키지는 따로 참조하지 않는다.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="NSubstitute.Analyzers.CSharp" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\BuildingBlocks\EmergencyHub.BuildingBlocks.Api\EmergencyHub.BuildingBlocks.Api.csproj" />
+  </ItemGroup>
+
+</Project>

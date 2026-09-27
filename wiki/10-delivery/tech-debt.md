@@ -47,6 +47,9 @@ updated: 2026-09-27
 | TD-018 | GitHub Free private라 브랜치 보호 불가 → CI를 필수 체크로 걸 수 없음. "CI 미통과 PR 병합 금지"를 규칙으로만 지킴 | 인프라 | 중 | S01-T07 | 상환 수단 없음(요금제). "CI 통과 전 병합 금지"를 PR 체크리스트 · retro 점검으로 유지 | open |
 | TD-019 | 테스트 프로젝트에 Microsoft.Extensions.Logging · DependencyInjection 8.0.1(Diagnostics.Testing 전이)과 *.Abstractions 10.0.0이 섞여 해석됨(메이저 혼합) | 의존성 | 하 | S02-T02 | .NET 10 전환(BL-002 · TD-002) 때 함께 정리(TD-008 관찰 연장) | new |
 | TD-020 | Scrutor 7 Decorate가 keyed 서비스(IKeyedServiceProvider)에 의존: 앱 호스트 공유 프레임워크 DI 8.0과 Abstractions 10.0.0 혼합 런타임 호환 미확인 | 의존성 | 중 | S02-T03 | S03 호스트 실행 때 확인(TD-008 관찰 확장) | new |
+| TD-021 | BadHttpRequestException의 원래 상태 코드(413 · 408 등)를 모두 400 · 1001로 응답(원래 코드는 로그 302에만) | 설계 | 하 | S02-T06 | api-guidelines 정비 때 상태 코드 보존 여부 결정 | new |
+| TD-022 | ExceptionHandlerMiddleware 범주 전체를 로그 필터로 끄므로 같은 범주의 다른 로그(응답 시작 후 Warning, 요청 중단 Debug)도 사라짐. 이벤트 ID 단위 필터 불가 | 설계 | 중 | S02-T06 | .NET 10 전환(BL-002) 때 억제 옵션 검토 | new |
+| TD-023 | 바인딩 오류 errors 키 순서가 ModelStateDictionary 열거 순서를 따르고 요청 속성 순서를 보장하지 않음 | 설계 | 하 | S02-T06 | 클라이언트 요구가 생기면 정렬 규칙 결정 | new |
 
 ---
 

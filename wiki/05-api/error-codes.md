@@ -99,7 +99,7 @@ public static class EmployeeErrors
 | 2 ~ 100 | (예비) | |
 | 101 ~ 199 | Mediator 파이프라인(BuildingBlocks.Application) | 로깅 데코레이터 |
 | 201 ~ 299 | 영속성(BuildingBlocks.Infrastructure) | UnitOfWork, 예외 변환(S02-T07) |
-| 301 ~ 399 | API 공통 처리(BuildingBlocks.Api) | ProblemDetails 변환, 바인딩 오류(S02-T06) |
+| 301 ~ 399 | API 공통 처리(BuildingBlocks.Api) | 예외 분류 · 잘못된 요청 · 요청 중단 · 바인딩 오류(S02-T06, 301 ~ 304 사용) |
 | 400 ~ 999 | (예비) | |
 
 ### Mediator 로그 이벤트
@@ -128,6 +128,21 @@ UnitOfWork(`PersistenceLogs`, BuildingBlocks.Infrastructure)가 영속성 예외
 
 - 실패 `Result`는 로깅 데코레이터가 102(`Information`)로 이미 남기므로 변환 로그는 `Information`을 쓰지 않습니다. 202는 매핑 누락 또는 성공한 커밋의 재시도 오보(TD-010, 제약 이름 `pk_...`) 신호라 `Warning`입니다.
 - 재시도 로그는 따로 두지 않습니다(EF Core 실행 전략 자체 로그). 변환하지 않는 예외(23514 등)는 여기서 기록하지 않고 전역 예외 처리기(이벤트 ID 1)가 남깁니다.
+
+### API 로그 이벤트
+
+전역 예외 처리기와 바인딩 오류 응답(`ApiLogs`, BuildingBlocks.Api, S02-T06)이 남깁니다. 속성은 예외 형식 이름 · HTTP 메서드 · 상태 코드 · 에러 코드 · `ErrorType`(정수) · 필드 이름뿐이고, 요청 경로 · 쿼리 · 값과 **예외 메시지는 남기지 않습니다**. 예외는 메시지를 뺀 사본(형식 이름 · 스택 트레이스 · 내부 예외 사슬만, `RedactedException`)으로 넘깁니다. 변환되지 않은 DB 예외(23514 · 25006)의 메시지에 제약 이름 · SQL · 값이 들어가고, BuildingBlocks.Api는 Npgsql 형식을 몰라 골라 낼 수 없기 때문입니다([ADR-0024](../03-architecture/adr/0024-building-blocks-api-for-common-http-handling.md)). 단위 테스트(`ApiLogsTests`)가 이 표와 정의를 대조합니다.
+
+| 이벤트 ID | 이름 | 수준 | 메시지 템플릿 |
+|---|---|---|---|
+| 1 | `UnhandledException` | `Error` | `Unhandled exception {ExceptionType} while processing {RequestMethod} request, returned error {ErrorCode}` |
+| 301 | `ExceptionClassified` | `Warning` | `Exception {ExceptionType} classified as error {ErrorCode} of type {ErrorType}` |
+| 302 | `BadHttpRequestRejected` | `Information` | `Bad HTTP request rejected with status {StatusCode}, returned error {ErrorCode}` |
+| 303 | `RequestAborted` | `Information` | `Request aborted by client with exception {ExceptionType}, returned error {ErrorCode}` |
+| 304 | `ModelBindingFailed` | `Debug` | `Request model binding failed for fields {FieldNames}, returned error {ErrorCode}` |
+
+- 1은 예외 분류기(`IExceptionClassifier`)가 모두 `null`을 돌려준 예외(9001)에만 씁니다. 분류된 예외(예: 재시도 한도 초과 → 9003)는 301, `BadHttpRequestException`(400 · 1001)은 302, 클라이언트가 요청을 끊어 난 취소 · 입출력 예외는 303입니다(판정은 9001 그대로, 수준만 낮춤).
+- 프레임워크 `ExceptionHandlerMiddleware`도 같은 예외를 이벤트 ID 1 · `Error`로 원본 메시지와 함께 남기므로, `AddBuildingBlocksApi`가 범주 `Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware`를 끕니다(Microsoft.Extensions.Logging 필터). Serilog를 쓰는 호스트는 같은 범주를 `MinimumLevel.Override`로도 꺼야 합니다(ServiceDefaults).
 
 ## 공통 에러 코드
 
@@ -165,3 +180,4 @@ BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 | 2026-09-27 | developer | `ErrorType` 2자리 값(10 · 20 · 30 · 40 · 51 · 52 · 91 · 92 · 93)과 `T = 값 / 10`, HTTP 상태는 `ErrorType`으로 정함, `Error` 생성 시 검증 규칙(범위 · NNN 000 · 예비 S · T 불일치), `ValidationError`, 공통 코드 표에 `ErrorType` · `CommonErrors` 대응 (S01-T06) |
 | 2026-09-27 | developer | 공통 로그 이벤트 ID 하위 범위(1 전역 예외, 101~199 Mediator, 201~299 영속성, 301~399 API)와 Mediator 로그 이벤트 101~104 (S02-T02, BL-028) |
 | 2026-09-27 | developer | 공통 코드 3003 `Common.UniqueConstraintViolated`(BL-019), 영속성 로그 이벤트 201~203 (S02-T07) |
+| 2026-09-27 | developer | API 로그 이벤트 1 · 301~304(예외 메시지 미기록, 프레임워크 예외 미들웨어 로그 끄기), 공통 하위 범위 표 비고 갱신. 새 에러 코드 할당 없음(BL-052) (S02-T06) |

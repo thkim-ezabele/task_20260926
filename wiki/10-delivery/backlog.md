@@ -101,6 +101,9 @@ updated: 2026-09-27
 | BL-072 | IStronglyTypedId<Other>처럼 형식 인자가 자기 자신이 아닌 구현은 변환기 등록에서 조용히 빠짐: 아키텍처 테스트나 분석기 규칙으로 막을지 검토 | S02-T04 | 하 | new | S02-T05 규칙 후보와 함께 검토 |
 | BL-073 | EnableRetryOnFailure 기본값(6회, 최대 지연 30초)이면 일시 장애 때 요청 하나가 수십 초 걸릴 수 있음: maxRetryCount · maxRetryDelay 조정 여부 | S02-T07 | 중 | new | S03-T05 실측 후 판단 |
 | BL-074 | IExceptionClassifier가 RetryLimitExceeded만 9003으로 분류: 실행 전략을 거치지 않은 일시 오류(NpgsqlException.IsTransient)는 9001이 됨. 분류 대상 확대 검토 | S02-T07 | 하 | new |  |
+| BL-075 | ServiceDefaults Serilog 설정에서 Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware 범주를 MinimumLevel.Override로 끄기: Serilog는 Microsoft.Extensions.Logging 필터를 무시하므로 없으면 원본 예외 메시지(제약 이름 · SQL)가 Error로 남음 | S02-T06 | 상 | new | S03 ServiceDefaults 작업, S03-T05에서 Serilog 경로 재확인 |
+| BL-076 | 메시지를 남겨도 되는 예외 형식(예: ArgumentException) 허용 목록 정책: 현재 전역 예외 로그는 모든 예외 메시지를 뺀 사본(RedactedException)으로 기록 | S02-T06 | 하 | new |  |
+| BL-077 | ADR-0018은 [Flags] 조합 검사를 Phase 2로 적었으나 S02-T06(스프린트 완료 조건)에서 MustBeDefinedEnum으로 구현: 차이를 기록할 위치(후속 ADR / 결과 리뷰) 판단 | S02-T06 | 하 | new |  |
 
 ---
 

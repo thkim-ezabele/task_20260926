@@ -118,6 +118,8 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 - 객체 전체 분해(`{@Employee}`)는 쓰지 않는다. 필요한 속성만 남긴다(개인정보 유출과 로그 크기 방지).
 - 예외는 **경계에서 한 번만** 로그로 남긴다(전역 예외 처리기, 백그라운드 작업 최상위). 잡아서 로그를 남기고 다시 던지는 것을 여러 층에서 반복하지 않는다.
 - 예외는 `logger.LogError(exception, "...")`처럼 **예외 객체를 첫 인자로** 넘긴다. `exception.Message`만 남기지 않는다.
+  - 요청 처리 중 처리되지 않은 예외는 전역 예외 처리기(BuildingBlocks.Api)가 **메시지를 뺀 예외 사본**(형식 이름 · 스택 트레이스 · 내부 예외 사슬, `RedactedException`)을 넘겨 이벤트 ID 1로 한 번 남긴다. 변환되지 않은 DB 예외의 메시지에 제약 이름 · SQL · 값이 들어가기 때문이다([ADR-0024](../03-architecture/adr/0024-building-blocks-api-for-common-http-handling.md), [에러 코드 · API 로그 이벤트](../05-api/error-codes.md#api-로그-이벤트)). 원인은 형식 이름 · 스택 · TraceId로 찾는다.
+  - 프레임워크 `ExceptionHandlerMiddleware`의 자체 `Error` 로그(원본 메시지 포함)는 범주 `Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware`를 꺼서 남기지 않는다. `AddBuildingBlocksApi`가 Microsoft.Extensions.Logging 필터를 걸고, Serilog 설정(ServiceDefaults)도 같은 범주를 `MinimumLevel.Override`로 끈다.
 - Repository에는 로그를 두지 않는다([Repository 규칙](coding-conventions.md#repository-규칙-ef-core)). 로그는 Handler, 파이프라인 동작, 인프라 어댑터에서 남긴다.
 - 요청마다 시작 / 종료 로그를 직접 남기지 않는다. `UseSerilogRequestLogging()`이 요청당 한 줄을 남긴다.
 
@@ -192,3 +194,4 @@ OpenTelemetry Metrics로 기본 계측(ASP.NET Core, HttpClient, 런타임)을 �
 | 2026-09-27 | - | 로그 이벤트 ID 범위를 에러 코드 문서로 연결, 예시 ID 수정(20001) |
 | 2026-09-27 | - | 로그 컨벤션 초안: 콘솔 텍스트 / 파일 JSON(CLEF), 공통 필드, 레벨 기준, 작성 규칙(`[LoggerMessage]`, 정수 이벤트 ID), 개인정보, 분산 추적, 헬스체크 |
 | 2026-09-27 | developer | ADR 0020 · 0023 반영: 등록 · 설정(`Logging:LogLevel` 미사용), OTLP 중복 방지, EF 로그 수준, EF · Npgsql 민감 데이터 규칙, 로그 수집기 · 추적 백엔드 보류 (S01-T04) |
+| 2026-09-27 | developer | 전역 예외 처리기의 예외 기록 방식(메시지를 뺀 사본, 이벤트 ID 1)과 프레임워크 예외 미들웨어 로그 끄기 (S02-T06) |
