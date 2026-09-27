@@ -52,7 +52,7 @@ updated: 2026-09-27
 - 읽기 연결은 `default_transaction_read_only=on`으로 열어, 읽기 DbContext로 실수로 쓰기를 하면 DB가 거부하도록 한다(`25006`). 이것은 실수를 막는 **안전장치이지 보안 경계가 아니다**(세션에서 `SET`으로 풀 수 있다). 복제본을 도입하면 읽기 전용 계정으로 바꾼다.
 - 연결 문자열에 `Include Error Detail=true` · `Persist Security Info=true`를 쓰지 않는다([ADR-0020](../03-architecture/adr/0020-logging-with-serilog-and-otlp.md)).
 - 두 DbContext는 같은 엔티티 매핑(`IEntityTypeConfiguration<T>`)을 공유한다(`ApplyConfigurationsFromAssembly`).
-- 읽기 DbContext에는 `SaveChanges`를 쓰지 않는다. BuildingBlocks의 읽기 전용 기반 클래스가 `SaveChanges` 호출 시 예외를 던지게 한다.
+- 읽기 DbContext에는 `SaveChanges`를 쓰지 않는다. BuildingBlocks의 읽기 전용 기반 클래스가 `SaveChanges` 오버로드 4개(`SaveChanges()`, `SaveChanges(bool)`, `SaveChangesAsync(CancellationToken)`, `SaveChangesAsync(bool, CancellationToken)`)를 모두 `sealed override`로 막아 `InvalidOperationException`을 던진다. 추적 기본값은 `NoTracking`이다.
 - 복제 지연이 생기면 "쓰고 바로 읽기"가 틀릴 수 있다. Command 직후 결과가 필요하면 Command가 필요한 값(ID 등)을 반환하게 한다.
 
 ## 테이블 / 컬럼 네이밍 규칙 (snake_case)
@@ -76,6 +76,10 @@ updated: 2026-09-27
 | 유니크 인덱스 | `ux_<table>_<columns>` | `ux_employees_email` |
 | 체크 제약 | `ck_<table>_<rule>` | `ck_employees_employee_status` |
 
+- **식별자 길이는 63바이트 이하**로 한다. PostgreSQL은 더 긴 이름을 경고 없이 잘라 저장하므로, 잘린 제약 이름은 `23505` 매핑(`ConstraintName`)과 일치하지 않는다. 길면 `<columns>` / `<rule>`을 줄여 짓는다.
+- `EFCore.NamingConventions`는 유니크 인덱스도 `ix_`로 만든다. 유니크 인덱스는 BuildingBlocks 도우미로 **`HasDatabaseName`을 명시해 `ux_`로 덮어쓴다**([EF Core 공통 모델 규칙](#ef-core-공통-모델-규칙-buildingblocksinfrastructure)).
+- `ux_` 이름은 서비스 Infrastructure의 **이름 상수 한 곳**에 두고, 매핑(`HasDatabaseName`)과 `23505` 매핑 레지스트리가 같은 상수를 참조한다(문자열 중복 금지).
+
 ## 데이터 타입 규칙
 
 | 용도 | 타입 | 규칙 |
@@ -98,7 +102,7 @@ UUID v7 생성([ADR-0013](../03-architecture/adr/0013-uuid-v7-with-uuidnext.md))
 - PostgreSQL `uuid` 정렬 = 생성 순서다(Npgsql이 RFC 바이트 순서로 기록, S03-T05 통합 테스트로 검증). 메모리 안 정렬 검증은 `Guid.CompareTo`가 아니라 문자열 기준으로 한다.
 
 - 컬럼은 기본으로 `NOT NULL`이다. NULL은 "값이 없음"이 업무적으로 의미 있을 때만 허용한다.
-- 모든 테이블에 `created_at`, `updated_at`(timestamptz, NOT NULL)을 둔다. 값은 애플리케이션(`TimeProvider`)이 채운다.
+- 모든 테이블에 `created_at`, `updated_at`(timestamptz, NOT NULL)을 둔다. 값은 애플리케이션(`TimeProvider`)이 감사 인터셉터로 채운다. 대상은 **owned가 아닌 엔티티 형식**이고, owned 타입은 컬럼을 두지 않는다(소유자 행의 `updated_at`이 대신 바뀐다, [감사 컬럼](#감사-컬럼-created_at--updated_at)). 별도 테이블로 가는 owned 컬렉션(`OwnsMany`)도 예외이며, 행 단위 이력이 필요하면 owned가 아닌 엔티티로 설계한다.
 - 삭제는 기본적으로 물리 삭제한다. 이력이 필요한 테이블만 `deleted_at`(soft delete)을 두고, 그 테이블은 쿼리 필터를 건다.
 
 ## 코드값 규칙
@@ -109,7 +113,8 @@ UUID v7 생성([ADR-0013](../03-architecture/adr/0013-uuid-v7-with-uuidnext.md))
 - **C# enum이 코드 정의의 원본**이다. DB에는 코드 테이블을 두지 않고, 코드 값과 의미는 서비스별 [코드 정의](#코드-정의) 표에 기록한다.
 - `0`은 예약 값(`Unknown` / `None`)이다. 저장 값으로 쓰지 않는다.
 - 배포된 값은 바꾸거나 재사용하지 않는다. 폐기한 값은 코드 정의 표에 `폐기`로 남긴다.
-- 허용 값은 체크 제약으로 막는다: `ck_employees_employee_status CHECK (employee_status IN (1, 2, 3))`. 값을 추가하면 마이그레이션으로 제약을 함께 바꾼다.
+- 허용 값은 체크 제약으로 막는다: `ck_employees_employee_status CHECK (employee_status IN (1, 2, 3))`. 목록은 enum에 정의된 값 중 `0`을 뺀 값을 오름차순으로 나열하고, 제약 이름의 `<rule>`은 컬럼 이름이다. BuildingBlocks 도우미가 enum 정의에서 만든다(손으로 SQL을 쓰지 않음). 값을 추가하면 마이그레이션으로 제약을 함께 바꾼다.
+- NULL 허용 코드 컬럼은 제약에 `IS NULL`을 따로 넣지 않는다(체크 제약은 NULL이면 통과한다).
 - EF Core는 enum을 기반 정수 형식으로 저장하므로 별도 변환이 필요 없다. `HasConversion<string>()`은 쓰지 않는다.
 
 ## 비트 마스킹 규칙
@@ -123,7 +128,10 @@ UUID v7 생성([ADR-0013](../03-architecture/adr/0013-uuid-v7-with-uuidnext.md))
 
 - 각 플래그는 `1 << n` 값 하나를 차지한다. **비트 자리는 재사용하지 않는다.**
 - `0`은 "없음"이다. 조합 별칭(`All`)은 코드에서만 정의하고 저장 값으로 따로 두지 않는다.
-- 정의된 비트 밖의 값은 체크 제약으로 막는다: `ck_employees_notification_channels CHECK (notification_channels >= 0 AND notification_channels <= 7)`
+- 정의된 비트 밖의 값은 **마스크 조건** 체크 제약으로 막는다: `ck_employees_notification_channels CHECK (notification_channels >= 0 AND (notification_channels & ~7) = 0)`
+  - `7`은 enum에 정의된 모든 값의 비트 OR(마스크)이다. 범위 조건(`<= 7`)은 비트 자리에 빈 곳이 있으면(예: 1, 2, 8) 정의되지 않은 값(4)을 통과시키므로 쓰지 않는다.
+  - `&`와 `~`의 우선순위 때문에 괄호를 반드시 둔다. `0`(없음)은 허용된다.
+  - 제약 이름의 `<rule>`은 컬럼 이름이고, BuildingBlocks 도우미가 enum 정의에서 마스크를 계산해 만든다. 비트를 추가하면 마이그레이션으로 제약을 함께 바꾼다.
 - 조회는 비트 연산으로 한다.
 
 ```sql
@@ -159,7 +167,7 @@ var smsEnabled = await db.Employees
 - Provider: `Npgsql.EntityFrameworkCore.PostgreSQL`, 명명 규칙: `EFCore.NamingConventions`(`UseSnakeCaseNamingConvention()`)
 - 등록: BuildingBlocks.Infrastructure의 공용 확장 메서드가 쓰기 · 읽기 DbContext를 `AddDbContext` + `UseNpgsql(연결, o => o.EnableRetryOnFailure())` + `UseSnakeCaseNamingConvention()`으로 등록한다. 두 DbContext는 같은 실행 전략을 쓰고, Api · MigrationService · 통합 테스트가 같은 등록 코드를 쓴다. 추적은 Npgsql.OpenTelemetry `AddNpgsql()`, 헬스체크는 `AddDbContextCheck<TDbContext>()`로 붙인다([ADR-0011](../03-architecture/adr/0011-use-aspire-local-orchestration.md)).
 - 매핑은 Infrastructure의 `Persistence/Configurations/`에 **엔티티마다 `IEntityTypeConfiguration<T>` 하나**로 둔다. Domain에 데이터 어노테이션을 쓰지 않는다.
-- 강타입 ID는 값 변환기(`HasConversion`)로 `uuid`에 매핑한다.
+- 강타입 ID는 값 변환기로 `uuid`에 매핑한다. 엔티티마다 `HasConversion`을 쓰지 않고 공통 규칙이 등록한다([EF Core 공통 모델 규칙](#ef-core-공통-모델-규칙-buildingblocksinfrastructure)).
 - Value Object는 Owned Type 또는 Complex Type(EF Core 8)으로 매핑한다.
 - Lazy Loading은 쓰지 않는다. 필요한 연관은 `Include`로 명시한다.
 - 데이터 접근은 **Repository**로만 한다. Repository에는 람다식 LINQ 쿼리만 두고 분기 · 로직을 넣지 않는다([코딩 컨벤션 · Repository 규칙](coding-conventions.md#repository-규칙-ef-core)).
@@ -169,6 +177,44 @@ var smsEnabled = await db.Employees
   - UnitOfWork(Infrastructure)가 실행 전략 안에서 `BeginTransactionAsync(IsolationLevel.ReadCommitted)` → `SaveChangesAsync(acceptAllChangesOnSuccess: false)` → 커밋을 하고, 커밋이 성공한 뒤 전략 밖에서 `ChangeTracker.AcceptAllChanges()`를 부른다. 재시도 범위는 SaveChanges · 커밋뿐이다.
 - DbContext는 `AddDbContext`로 `Scoped` 등록한다. `AddDbContextPool`과 Aspire 클라이언트 통합(`AddNpgsqlDbContext`)은 쓰지 않는다(풀 강제, DI의 `SaveChangesInterceptor`를 붙일 수 없음, [ADR-0011](../03-architecture/adr/0011-use-aspire-local-orchestration.md)).
 - 연결 문자열은 설정 / 시크릿으로 주입한다([설정 & 시크릿 관리](../06-deployment/configuration.md)).
+
+## EF Core 공통 모델 규칙 (BuildingBlocks.Infrastructure)
+
+서비스 매핑(`IEntityTypeConfiguration<T>`)이 반복하지 않도록 BuildingBlocks.Infrastructure가 모든 서비스 DbContext에 같은 규칙을 적용합니다. 쓰기 · 읽기 DbContext는 **같은 공통 규칙과 같은 매핑**을 적용해 관계형 모델(테이블 · 컬럼 · 제약)이 같아야 합니다.
+
+| 규칙 | 적용 방식 | 결과 |
+|---|---|---|
+| snake_case | `UseSnakeCaseNamingConvention()`(등록 확장) | 테이블 · 컬럼 · `pk_` · `fk_` · `ix_` 이름 |
+| 유니크 인덱스 | 도우미가 `HasIndex(...).IsUnique().HasDatabaseName(상수)` | `ux_<table>_<columns>`(명명 규칙의 `ix_`를 덮어씀) |
+| 코드값 체크 제약 | 도우미(enum 속성 지정) | `ck_<table>_<column>` + `IN (정의 값, 0 제외)` |
+| 비트 플래그 체크 제약 | 도우미(`[Flags]` 속성 지정) | `ck_<table>_<column>` + `col >= 0 AND (col & ~mask) = 0` |
+| 강타입 ID | `ConfigureConventions`에서 `IStronglyTypedId<TSelf>` 구현 형식마다 값 변환기 등록, 키는 `ValueGeneratedNever` | `uuid`, DB 기본값 없음 |
+| 도메인 이벤트 | `DomainEvents`(와 `IDomainEvent`)를 매핑에서 제외 | 컬럼 · 테이블 · 탐색 없음(TD-015) |
+| 감사 컬럼 | owned가 아닌 엔티티 형식에 shadow property + `SaveChangesInterceptor` | `created_at`, `updated_at` |
+| 동시성 토큰 | owned가 아닌 엔티티 형식에 shadow property `IsRowVersion` | 시스템 컬럼 `xmin`(`xid`), 마이그레이션이 만들지 않음 |
+
+- **체크 제약의 컬럼 · 테이블 이름은 메타데이터로 해석한다.** C# 속성 이름을 손으로 snake_case로 바꿔 SQL에 넣지 않는다. 명명 규칙이 최종 이름을 정한 뒤의 값(`GetTableName()`, `GetColumnName(StoreObjectIdentifier)`)을 쓴다.
+- 도우미는 enum 기반 형식을 검사한다: 코드값은 `short`, `[Flags]`는 `int` / `long`이 아니면 모델 생성 시 예외.
+- 공통 규칙이 만든 이름과 SQL은 **설계 시점 모델(`IDesignTimeModel`)로 단위 테스트**한다(DB 없이). 실제 DB에서의 확인은 서비스 통합 테스트와 마이그레이션 SQL 검토(dba)가 한다.
+
+### 감사 컬럼 (created_at · updated_at)
+
+- shadow property 이름은 `CreatedAt` · `UpdatedAt`(`DateTimeOffset`, `timestamptz`, NOT NULL)이고, 이름 상수를 공개한다. Domain 엔티티에는 감사 속성을 두지 않는다.
+- Read Repository가 프로젝션에서 읽을 때는 상수로 `EF.Property<DateTimeOffset>(e, 상수)`를 쓴다(문자열 리터럴 금지).
+- 대상은 **owned가 아닌 엔티티 형식**만이다. owned 타입(`OwnsOne` · `OwnsMany`)에는 두지 않는다.
+- `SaveChangesInterceptor`가 저장 직전에 채운다. 시각은 `TimeProvider.GetUtcNow()`(오프셋 0)이며, 로컬 시간대가 `+09:00`이어도 UTC로 저장한다(Npgsql은 오프셋이 0이 아닌 `DateTimeOffset`을 `timestamptz`에 쓰지 않는다).
+
+| 엔트리 상태 | `created_at` | `updated_at` |
+|---|---|---|
+| Added | now | now(`created_at`과 같은 값) |
+| Modified | 바꾸지 않음(`IsModified = false`, 덮어쓰기 방지) | now |
+| owned 엔트리가 Added / Modified / Deleted | 소유자는 그대로 | **소유자(owned가 아닌 최상위 엔티티)** 의 `updated_at` = now. 소유자가 Unchanged면 Modified가 된다 |
+| Deleted / Unchanged | 없음 | 없음 |
+
+- owned 변경이 소유자 `updated_at`을 바꾸면 소유자 행이 UPDATE되어 소유자의 `xmin` 동시성 검사도 함께 걸린다.
+- 인터셉터는 상태를 보기 전에 `ChangeTracker.DetectChanges()`를 부른다(인터셉터 시점에는 자동 감지 전일 수 있다).
+- 실행 전략이 재시도하면 인터셉터가 다시 실행되어 시각이 다시 계산된다. 이것은 허용한다(S02 계획 리뷰 결정, [ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)).
+- 읽기 DbContext에는 인터셉터를 붙이지 않는다(저장이 없음).
 
 ## 마이그레이션 규칙
 
@@ -187,7 +233,11 @@ var smsEnabled = await db.Employees
 
 - **Command 하나 = 트랜잭션 하나 = Aggregate 하나.** 여러 Aggregate를 바꿔야 하면 도메인 이벤트로 나눈다.
 - 격리 수준은 **Read Committed를 명시한다**(UnitOfWork가 `BeginTransactionAsync(IsolationLevel.ReadCommitted)`, 서버 기본값에 기대지 않음, ADR-0014). 더 높은 수준이 필요하면 이유를 작업 문서에 남긴다.
-- 동시성은 **낙관적 잠금**으로 제어한다. PostgreSQL 시스템 컬럼 `xmin`을 동시성 토큰으로 매핑한다(`uint Version` 속성 + `IsRowVersion()`).
+- 동시성은 **낙관적 잠금**으로 제어한다. PostgreSQL 시스템 컬럼 `xmin`을 동시성 토큰으로 매핑한다.
+  - **EF shadow property**로 매핑하고 Domain에는 속성을 두지 않는다(S02 사용자 결정). 공통 규칙이 owned가 아닌 엔티티 형식마다 `Property<uint>(상수).IsRowVersion().HasColumnName("xmin").HasColumnType("xid")`를 적용한다.
+  - 컬럼 이름 · 타입은 **명시**한다. Npgsql 규칙과 snake_case 명명 규칙이 둘 다 규칙(Convention) 수준에서 이름을 정하므로, 명시하지 않으면 적용 순서에 따라 `version` 같은 일반 컬럼이 생길 수 있다.
+  - `xmin`은 시스템 컬럼이라 마이그레이션이 `CREATE TABLE`에 넣지 않는다. 생성 SQL(`migrations script --idempotent`)에 `xmin` 컬럼 생성이 없는지 dba가 확인한다.
+  - owned 타입(테이블 분할)은 소유자의 토큰을 따른다. owned 변경은 감사 규칙으로 소유자 행을 UPDATE하므로 충돌이 검출된다.
 - 영속성 예외의 `Result` 변환은 Infrastructure(UnitOfWork)에서 한다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)). Application은 EF · Npgsql 형식을 참조하지 않는다.
   - `DbUpdateConcurrencyException` → `Common.ConcurrencyConflict`([에러 코드](../05-api/error-codes.md))
   - `23505`(유니크 위반) → `ConstraintName`으로 서비스별 매핑(예: `ux_employees_email` → 이메일 중복). 매핑이 없으면 공통 Conflict(BL-019)
@@ -235,3 +285,4 @@ var smsEnabled = await db.Employees
 | 2026-09-27 | - | 읽기 / 쓰기 연결 분리(연결 문자열 · DbContext 분리, 현재는 같은 DB), Repository 경유 원칙 추가 |
 | 2026-09-27 | developer | ADR 0011~0014 · 0022 · 0023 반영: 롤 모델, UUID v7 확정, 마이그레이션 적용 · 리셋 · 이력 테이블 예외, 트랜잭션 격리 명시, EF 등록, 예외 변환, Outbox 보류 (S01-T04) |
 | 2026-09-27 | developer | 마이그레이션 생성 코드에 CS1591 none 병기 (S01-T05, BL-047) |
+| 2026-09-27 | dba | EF Core 공통 모델 규칙 절 추가(snake_case · `ux_` 덮어쓰기와 이름 상수 공유 · `ck_` 도우미 · 강타입 ID · DomainEvents 제외 · 감사 shadow property · `xmin`), `xmin`을 shadow property로 정정, `[Flags]` 체크 제약을 마스크 조건으로 정정, 63바이트 식별자 한도, 읽기 DbContext SaveChanges 4개 차단 (S02-T04) |

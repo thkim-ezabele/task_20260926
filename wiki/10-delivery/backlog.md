@@ -96,6 +96,7 @@ updated: 2026-09-27
 | BL-067 | ADR-0013 '자동 등록' 문구와 ADR-0017 '명시 등록' 불일치: S02-T03에서 ADR-0017(명시, Scoped)로 해석. 해석 기록 위치(결과 리뷰 / S04-T02 명문화) 판단 | S02-T03 | 하 | new |  |
 | BL-068 | coverlet.runsettings Include에 BuildingBlocks.Infrastructure(및 Api)가 없음: 80% 보고 대상 포함 여부 결정 | S02-T03 | 중 | new | NFR-03 대상 어셈블리 범위 |
 | BL-069 | 테스트 Samples 형식의 파일 규칙: 한 파일 한 형식을 테스트에도 적용한다고 명문화할지, 예외(시나리오 묶음 파일)를 둘지 결정(결정 전에는 현행 규칙 적용) | S02-T03 | 하 | new | S04-T02 기준 문서 정리 후보 |
+| BL-070 | owned가 아닌 하위 엔티티(같은 Aggregate, 별도 테이블)만 바뀌면 루트 행이 UPDATE되지 않아 루트 xmin 동시성 검사가 걸리지 않음: 루트 갱신 여부 · 소유 관계 판별 방법 결정 | S02-T04 | 중 | new | 서비스 Aggregate 설계 때(S03) 결정 |
 
 ---
 
