@@ -10,6 +10,7 @@ updated: 2026-09-27
 # 기술 스택
 
 > 백엔드에서 사용하는 기술과 결정 상태를 정리합니다. 결정 배경은 [ADR](adr/README.md)을 참고합니다.
+> 고정 버전 · 라이선스 · 출처는 [패키지 버전 · 라이선스](package-versions.md)에 있습니다.
 > 🟢 확정: ADR 또는 병합된 기준 문서(코딩 · DB · 테스트 · 로깅, 현재 `draft`)에서 채택 · 🟡 후보: 미정. 결정 시점이 정해진 항목은 비고에 적습니다.
 >
 > [위키 홈](../README.md)
@@ -81,6 +82,10 @@ updated: 2026-09-27
 | 컨테이너 | Docker / docker compose | 🟡 후보 | 로컬 인프라, Testcontainers에는 Docker 필수 |
 | 오케스트레이션 | Kubernetes | 🟡 후보 | 필요 시 |
 
+## 패키지 버전 · 라이선스
+
+도입 패키지의 고정 버전, 라이선스, 대상 프레임워크, 출처는 [패키지 버전 · 라이선스](package-versions.md)에 표로 정리합니다(S01-T01). 요약: Aspire 9.5.2(지원 종료 상태, TD-005), EF Core 8.0.31 · Npgsql.EFCore 8.0.11, PostgreSQL 이미지 `17`, SDK 하한 8.0.400(`rollForward: latestFeature`), 상용 라이선스 0건.
+
 ## 개발 도구
 
 | 항목 | 선택 | 비고 |
@@ -97,3 +102,4 @@ updated: 2026-09-27
 | 2026-09-27 | - | 문서 생성 (확정 사항 + 초안 기본값) |
 | 2026-09-27 | - | .NET 8 유지 결정 기록 |
 | 2026-09-27 | - | ADR 0007~0010과 기준 문서 결정 반영: CQRS, EF Core, 정수 코드, Serilog, NSubstitute, Testcontainers 등 확정 / MediatR · FluentAssertions 라이선스로 후보 전환 |
+| 2026-09-27 | developer | 패키지 버전 · 라이선스 문서 링크 추가 (S01-T01) |

@@ -1,0 +1,257 @@
+---
+title: "패키지 버전 · 라이선스"
+type: doc
+status: draft
+tags: [architecture, packages, license]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
+# 패키지 버전 · 라이선스
+
+> PRD-001 기반 구축에서 도입하는 SDK · 패키지 · 컨테이너 이미지 · GitHub Actions의 고정 버전, 라이선스, 출처를 기록합니다(S01-T01 사전 확인, [PRD-001](../10-delivery/prd/PRD-001-foundation.md) FR-01①, NFR-05, Q19).
+> 모든 값은 2026-09-27에 NuGet API · GitHub 원본 · 공식 페이지에서 직접 확인했습니다. 기술 선택의 결정 상태는 [기술 스택](tech-stack.md), 결정 배경은 [ADR](adr/README.md)이 원본입니다.
+>
+> [위키 홈](../README.md)
+
+## 요약
+
+| 항목 | 결론 | 근거 절 |
+|---|---|---|
+| Aspire 버전 | **9.5.2** 고정(사용자 결정). 9.x 전 버전이 NuGet에서 폐기(out of support) 상태 | [Aspire](#aspire) |
+| SDK | `global.json` `8.0.400` + `rollForward: latestFeature` 권장. 로컬 SDK 8.0.202는 **8.0.4xx로 업데이트 필요** | [SDK · global.json](#sdk--globaljson) |
+| EF Core 계열 | EF Core · Relational · Design · dotnet-ef **8.0.31**, Npgsql.EFCore **8.0.11**, Npgsql **8.0.9**, EFCore.NamingConventions **8.0.3** | [데이터](#데이터) |
+| PostgreSQL 이미지 | 메이저 태그 **`17`**, AppHost와 Testcontainers 양쪽에 명시하고 한 곳에서 관리 | [PostgreSQL 이미지](#postgresql-이미지) |
+| 테스트 프레임워크 | xUnit v3(`xunit.v3` 4.0.1) 추천, v2(2.9.3)는 NuGet `Legacy` 폐기 표시. 최종 선택은 S01-T04 | [테스트](#테스트) |
+| 취약점 | 고정 버전 조합에서 취약점 0건. 단, **MessagePack 2.5.305 전이 고정**(AppHost)과 **`NuGetAuditMode=all` 명시**가 필요 | [스크래치 검증](#스크래치-restore-검증) |
+| 라이선스 | 상용 라이선스 **0건**(MIT, Apache-2.0, BSD-3-Clause, PostgreSQL, 0BSD) | [라이선스 점검](#라이선스-점검) |
+
+## SDK · global.json
+
+| 항목 | 값 | 출처 |
+|---|---|---|
+| .NET 8 최신 런타임 | 8.0.31 (2026-09-08) | [releases.json](https://raw.githubusercontent.com/dotnet/core/main/release-notes/8.0/releases.json) |
+| .NET 8 최신 SDK | 8.0.425 (4xx 밴드), 8.0.131 (1xx 밴드). 2xx · 3xx 밴드는 더 이상 패치가 나오지 않음 | 같은 파일 `releases[0].sdks` |
+| .NET 8 지원 종료 | 2026-11-10 (`support-phase: maintenance`) | 같은 파일 `eol-date` |
+| 로컬 환경 | SDK 8.0.202 하나, 런타임 8.0.3 (`dotnet --list-sdks`, `--list-runtimes`) | 로컬 확인 |
+
+**최소 SDK 기능 밴드: 8.0.400.**
+
+- Aspire 9.x 공식 전제 조건은 ".NET 8.0 또는 9.0"뿐이고 기능 밴드는 따로 없습니다([aspire-prereqs.md, 2025-10-01 판](https://raw.githubusercontent.com/dotnet/docs-aspire/1f1a76339b3f22c99ea2060f42ba72361d9728f9/docs/includes/aspire-prereqs.md)). 실제로 AppHost(Aspire.AppHost.Sdk 9.5.2)는 SDK 8.0.202에서도 빌드 오류가 없었습니다.
+- 하한을 정하는 쪽은 xUnit v3입니다. `xunit.v3` 4.0.1이 끌어오는 `xunit.analyzers` 2.1.0은 Roslyn 4.11을 요구하는데, SDK 8.0.202(Roslyn 4.9)에서는 `CS9057`로 빌드가 실패했고 SDK 8.0.425에서는 성공했습니다.
+- 8.0.2xx 밴드는 패치가 끊겼고, 로컬 런타임 8.0.3은 보안 패치가 1년 넘게 밀려 있습니다.
+
+권장 `global.json`(S01-T05에서 작성):
+
+```json
+{
+  "sdk": {
+    "version": "8.0.400",
+    "rollForward": "latestFeature",
+    "allowPrerelease": false
+  }
+}
+```
+
+- `latestFeature`: 8.0.400 이상 중 설치된 가장 높은 8.0.x 기능 밴드 · 패치를 씁니다. 9.x SDK로는 올라가지 않습니다.
+- CI: `actions/setup-dotnet` v6은 `global-json-file`에 `rollForward: latestFeature`가 있으면 `8.0` 채널의 최신 SDK를 설치합니다([setup-dotnet.ts v6.0.0](https://github.com/actions/setup-dotnet/blob/v6.0.0/src/setup-dotnet.ts)의 `case 'latestFeature'`).
+- 스크래치 확인: 위 파일을 두고 SDK 8.0.425에서는 `dotnet --version`이 `8.0.425`로 나왔고, SDK 8.0.202만 있을 때는 SDK를 찾지 못해 실패했습니다. **로컬에 SDK 8.0.425를 설치해야 S01-T05 빌드가 가능합니다.**
+
+## Aspire
+
+### 지원 기간
+
+| 항목 | 내용 | 출처 |
+|---|---|---|
+| 지원 정책 | Microsoft Modern Lifecycle. **최신 릴리스 하나만 지원**하고, 다음 메이저 · 마이너가 나오면 이전 버전 지원이 끝남 | [Aspire support policy](https://dotnet.microsoft.com/en-us/platform/support/policy/aspire) |
+| Aspire 9.5 | 출시 2025-09-25, 마지막 패치 9.5.2 (2025-10-23), **지원 종료 2025-11-11** (Aspire 13.0 출시일) | 같은 페이지 "Out of support versions" |
+| 현재 지원 버전 | Aspire 13.5 (13.5.4, 2026-09-15) | 같은 페이지 |
+| NuGet 표시 | `Aspire.Hosting.AppHost` · `Aspire.AppHost.Sdk` · `Aspire.Hosting` · `Aspire.Hosting.PostgreSQL` 9.5.2 모두 폐기(`Other`, `Legacy`): "This version is out of support and is no longer maintained" | NuGet registration `deprecation` |
+| .NET 8 지원 종료와 관계 | Aspire 9.5는 .NET 8 지원 종료(2026-11-10)보다 **약 1년 먼저** 지원이 끝남. 이미 지원 밖이므로 .NET 8 종료로 추가되는 위험은 런타임 쪽뿐 | 위 두 출처 |
+| Aspire 13 전환 조건 | `Aspire.Hosting.AppHost` 13.5.4도 `net8.0` 대상 그룹은 있지만, **C# AppHost는 .NET 10 SDK가 필수** | [aspire.dev prerequisites](https://aspire.dev/get-started/prerequisites/), [13.5.4 nuspec](https://api.nuget.org/v3-flatcontainer/aspire.hosting.apphost/13.5.4/aspire.hosting.apphost.nuspec) |
+
+결정: 9.5.2를 유지합니다(사용자 결정, PRD Q3 · Q19). 지원 종료 사실은 Aspire ADR(S01-T02)에 적고, TD-005 · BL-002로 관리합니다.
+
+### 버전별 기능
+
+| 기능 | 도입 버전 | 확인 방법 |
+|---|---|---|
+| `Aspire.AppHost.Sdk`(워크로드 없이 MSBuild SDK로 AppHost 구성) | 9.0.0 | NuGet `aspire.apphost.sdk` 버전 목록 첫 정식판 9.0.0 |
+| `WaitFor` · `WaitForCompletion` | 9.0.0 | [v9.0.0 ResourceBuilderExtensions.cs](https://github.com/dotnet/aspire/blob/v9.0.0/src/Aspire.Hosting/ResourceBuilderExtensions.cs) |
+| `WaitForStart` | 9.5.2에 있음(9.0.0에는 없음) | [v9.5.2 ResourceBuilderExtensions.cs](https://github.com/dotnet/aspire/blob/v9.5.2/src/Aspire.Hosting/ResourceBuilderExtensions.cs) |
+| PostgreSQL `WithInitBindMount` | 9.0.0 | [v9.0.0 PostgresBuilderExtensions.cs](https://github.com/dotnet/aspire/blob/v9.0.0/src/Aspire.Hosting.PostgreSQL/PostgresBuilderExtensions.cs) |
+| PostgreSQL `AddDatabase`가 실제 DB 생성, `WithCreationScript` | 9.2.0 (dba 확인) | [v9.5.2 PostgresBuilderExtensions.cs](https://github.com/dotnet/aspire/blob/v9.5.2/src/Aspire.Hosting.PostgreSQL/PostgresBuilderExtensions.cs) |
+| PostgreSQL `WithInitFiles`, `WithPassword` | 9.5.x에 있음 | 같은 파일 |
+| PostgreSQL 기본 이미지 | 9.2.0: 17.2, 9.5.2: **17.6** | [v9.5.2 PostgresContainerImageTags.cs](https://github.com/dotnet/aspire/blob/v9.5.2/src/Aspire.Hosting.PostgreSQL/PostgresContainerImageTags.cs) |
+| ServiceDefaults 템플릿의 net8.0 OpenTelemetry 버전 | 9.5.2: **1.9.0**(취약, 아래 참고) | [v9.5.2 eng/Versions.props](https://github.com/dotnet/aspire/blob/v9.5.2/eng/Versions.props) `OpenTelemetryNet8Version` |
+
+- 9.5.2 `AddDatabase`의 생성 동작: 서버 `ResourceReadyEvent` 때 `postgres` DB에 접속해 스크립트 전체를 명령 1개로 실행하고, `42P04`(이미 존재)만 무시하며 다른 오류는 로그만 남기고 계속합니다(dba 확인). 실측은 BL-003.
+- dba 인계 자료의 "`WithInitBindMount` 9.2+"는 v9.0.0 소스에 이미 있어 9.0.0으로 정정합니다(9.5.2 사용에는 영향 없음).
+
+### AppHost · ServiceDefaults 패키지
+
+| 패키지 | 버전 | 용도 | 라이선스 | 대상 프레임워크 | 출처 | 비고 |
+|---|---|---|---|---|---|---|
+| Aspire.AppHost.Sdk | 9.5.2 | AppHost MSBuild SDK (`<Sdk Name="Aspire.AppHost.Sdk" Version="9.5.2" />`) | MIT | MSBuild SDK | [nuspec](https://api.nuget.org/v3-flatcontainer/aspire.apphost.sdk/9.5.2/aspire.apphost.sdk.nuspec), [Sdk.in.targets](https://github.com/dotnet/aspire/blob/v9.5.2/src/Aspire.AppHost.Sdk/SDK/Sdk.in.targets) | 폐기(out of support). CPM의 `Aspire.Hosting.AppHost` 버전을 읽어 Dashboard · DCP 패키지를 같은 버전으로 암묵 추가 |
+| Aspire.Hosting.AppHost | 9.5.2 | AppHost 런타임 | MIT | net8.0, net9.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/aspire.hosting.apphost/9.5.2/aspire.hosting.apphost.nuspec) | 폐기. net8.0 그룹 의존은 Microsoft.Extensions.* 8.0.x |
+| Aspire.Hosting | 9.5.2 | AppHost 전이 의존 | MIT | net8.0, net9.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/aspire.hosting/9.5.2/aspire.hosting.nuspec) | 폐기. StreamJsonRpc 2.22.11 → **MessagePack 2.5.192(취약)** 전이 |
+| Aspire.Hosting.PostgreSQL | 9.5.2 | PostgreSQL 컨테이너 리소스 | MIT | net8.0, net9.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/aspire.hosting.postgresql/9.5.2/aspire.hosting.postgresql.nuspec) | 폐기. dba 확인 |
+| Aspire.Npgsql.EntityFrameworkCore.PostgreSQL | 9.5.2 (사용 여부 S01-T02) | 클라이언트 통합 | MIT | net8.0, net9.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/aspire.npgsql.entityframeworkcore.postgresql/9.5.2/aspire.npgsql.entityframeworkcore.postgresql.nuspec) | net8.0에 EF Core 9 유입 없음. 단독 사용 시 OpenTelemetry.Api 1.9.0 → NU1902(BL-004) |
+| MessagePack | **2.5.305** (전이 고정) | AppHost 전이 의존 취약점 해소 | MIT | netstandard2.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/messagepack/2.5.305/messagepack.nuspec) | 2.5.192는 GHSA 11건(high 2). 모두 `< 2.5.301`에서 수정. 같은 2.x 줄의 최신 패치로 고정 |
+| Microsoft.Extensions.ServiceDiscovery | 9.5.2 | ServiceDefaults 서비스 검색 | MIT | net462, netstandard2.0, net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.extensions.servicediscovery/9.5.2/microsoft.extensions.servicediscovery.nuspec) | 폐기 표시 없음. 최신 10.10.0도 net8.0 지원. 서비스가 1개라 사용 여부는 S01-T02 |
+| Microsoft.Extensions.Http.Resilience | 9.9.0 | ServiceDefaults `AddStandardResilienceHandler` | MIT | net462, netstandard2.0, net8.0, net9.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.extensions.http.resilience/9.9.0/microsoft.extensions.http.resilience.nuspec) | Aspire 9.5.2 템플릿 값(`MicrosoftExtensionsHttpResilienceVersion`). 최신 10.10.0도 net8.0 지원 |
+| OpenTelemetry.Extensions.Hosting | 1.19.1 | OTel 호스팅 | Apache-2.0 | net8.0 외 | [nuspec](https://api.nuget.org/v3-flatcontainer/opentelemetry.extensions.hosting/1.19.1/opentelemetry.extensions.hosting.nuspec) | 템플릿 값 1.9.0 대신 사용. GHSA-g94r-2vxg-569j는 OpenTelemetry.Api `< 1.15.3` |
+| OpenTelemetry.Exporter.OpenTelemetryProtocol | 1.19.1 | OTLP 내보내기(Aspire 대시보드) | Apache-2.0 | net8.0 외 | [nuspec](https://api.nuget.org/v3-flatcontainer/opentelemetry.exporter.opentelemetryprotocol/1.19.1/opentelemetry.exporter.opentelemetryprotocol.nuspec) | |
+| OpenTelemetry.Instrumentation.AspNetCore | 1.19.0 | ASP.NET Core 추적 · 메트릭 | Apache-2.0 | net8.0, net10.0, netstandard2.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/opentelemetry.instrumentation.aspnetcore/1.19.0/opentelemetry.instrumentation.aspnetcore.nuspec) | |
+| OpenTelemetry.Instrumentation.Http | 1.19.0 | HttpClient 추적 | Apache-2.0 | net8.0 외 | [nuspec](https://api.nuget.org/v3-flatcontainer/opentelemetry.instrumentation.http/1.19.0/opentelemetry.instrumentation.http.nuspec) | |
+| OpenTelemetry.Instrumentation.Runtime | 1.19.0 | 런타임 메트릭 | Apache-2.0 | net8.0 외 | [nuspec](https://api.nuget.org/v3-flatcontainer/opentelemetry.instrumentation.runtime/1.19.0/opentelemetry.instrumentation.runtime.nuspec) | |
+
+- OpenTelemetry는 취약점이 없는 버전(1.15.3 이상)이 모두 net8.0에서 `System.Diagnostics.DiagnosticSource` 10.0.0을 요구합니다([1.15.3 nuspec](https://api.nuget.org/v3-flatcontainer/opentelemetry.api/1.15.3/opentelemetry.api.nuspec)). 1.12 ~ 1.15.0은 GHSA-g94r-2vxg-569j 대상입니다.
+- ServiceDefaults가 OTel 1.19.x를 참조하면, 클라이언트 통합(9.5.2)을 함께 넣어도 OpenTelemetry.Api가 1.19.1로 올라가 NU1902가 사라지고 OTel 버전이 한 줄로 맞춰집니다(스크래치 확인, 빌드 경고 0). BL-004 · TD-006 판단 자료입니다.
+
+## PostgreSQL 이미지
+
+| 항목 | 값 | 출처 |
+|---|---|---|
+| 결론 | **`postgres:17`** 메이저 태그. AppHost `.WithImageTag("17")`와 Testcontainers `new PostgreSqlBuilder("postgres:17")` 양쪽에 명시하고, 값은 한 곳(예: `Directory.Build.props` 속성 또는 공용 상수)에서 관리 | dba 결론 |
+| Docker Hub `17` | 존재, 2026-09-24 갱신. 최신 마이너 태그 17.11 | [Docker Hub tags API](https://hub.docker.com/v2/repositories/library/postgres/tags/17) |
+| PostgreSQL 17 지원 | 최신 17.11, 지원 종료 2029-11-08 | [PostgreSQL versioning policy](https://www.postgresql.org/support/versioning/) |
+| Aspire 9.5.2 기본값 | `library/postgres:17.6` | [PostgresContainerImageTags.cs](https://github.com/dotnet/aspire/blob/v9.5.2/src/Aspire.Hosting.PostgreSQL/PostgresContainerImageTags.cs) |
+| Testcontainers 4.15.0 기본값 | `postgres:15.1`, 매개변수 없는 생성자는 `Obsolete`(CS0618) → 이미지 인자 필수(TD-004) | [PostgreSqlBuilder.cs](https://github.com/testcontainers/testcontainers-dotnet/blob/4.15.0/src/Testcontainers.PostgreSql/PostgreSqlBuilder.cs) |
+
+## 데이터
+
+dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
+
+| 패키지 | 버전 | 용도 | 라이선스 | 대상 프레임워크 | 출처 | 비고 |
+|---|---|---|---|---|---|---|
+| Microsoft.EntityFrameworkCore | 8.0.31 | ORM | MIT | net8.0 | [index](https://api.nuget.org/v3-flatcontainer/microsoft.entityframeworkcore/index.json) | 8.0.x 최신(2026-09-08) |
+| Microsoft.EntityFrameworkCore.Relational | 8.0.31 | 관계형 공급자 기반 | MIT | net8.0 | [index](https://api.nuget.org/v3-flatcontainer/microsoft.entityframeworkcore.relational/index.json) | Npgsql.EFCore 하한(8.0.11)을 올리기 위해 CPM에 명시 |
+| Microsoft.EntityFrameworkCore.Design | 8.0.31 | 마이그레이션 설계 시점 | MIT | net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.entityframeworkcore.design/8.0.31/microsoft.entityframeworkcore.design.nuspec) | `PrivateAssets=all` |
+| Npgsql.EntityFrameworkCore.PostgreSQL | 8.0.11 | EF Core PostgreSQL 공급자 | PostgreSQL | net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/npgsql.entityframeworkcore.postgresql/8.0.11/npgsql.entityframeworkcore.postgresql.nuspec) | EF Core 의존 상한 없음 → 전이 고정 필수(TD-003) |
+| Npgsql | 8.0.9 | ADO.NET 드라이버 | PostgreSQL | net8.0 외 | [nuspec](https://api.nuget.org/v3-flatcontainer/npgsql/8.0.9/npgsql.nuspec) | 8.0.x 최신(2026-03-12), 취약점 0 |
+| EFCore.NamingConventions | 8.0.3 | snake_case 변환 | Apache-2.0 | net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/efcore.namingconventions/8.0.3/efcore.namingconventions.nuspec) | EF `[8.0.0, 9.0.0)` |
+| UUIDNext | 4.2.4 | UUID v7 생성 | 0BSD | net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/uuidnext/4.2.4/uuidnext.nuspec) | 의존 없음. `Uuid.NewDatabaseFriendly(Database.PostgreSql)` 컴파일 확인 |
+
+## 애플리케이션
+
+| 패키지 | 버전 | 용도 | 라이선스 | 대상 프레임워크 | 출처 | 비고 |
+|---|---|---|---|---|---|---|
+| Scrutor | 7.0.0 | 어셈블리 검색 DI 자동 등록(ADR 0010 구체화) | MIT | net462, netstandard2.0, net8.0, net10.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/scrutor/7.0.0/scrutor.nuspec) | net8.0에서 Microsoft.Extensions.DependencyInjection.Abstractions · DependencyModel **10.0.0** 전이. 6.1.0은 8.0.x 의존 |
+| FluentValidation | 12.1.1 | 입력 검증 | Apache-2.0 | net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/fluentvalidation/12.1.1/fluentvalidation.nuspec) | 12.x에서도 라이선스 변경 없음(저장소 라이선스 Apache-2.0). 12부터 net8.0 전용 |
+| FluentValidation.DependencyInjectionExtensions | 12.1.1 | `AddValidatorsFromAssembly` | Apache-2.0 | net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/fluentvalidation.dependencyinjectionextensions/12.1.1/fluentvalidation.dependencyinjectionextensions.nuspec) | |
+| Serilog.AspNetCore | 10.0.0 | Serilog 통합(`UseSerilog`) | Apache-2.0 | net462, netstandard2.0/2.1, net8.0, net9.0, net10.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/serilog.aspnetcore/10.0.0/serilog.aspnetcore.nuspec) | Serilog 4.3.0, Sinks.Console 6.1.1, Sinks.File 7.0.0, Formatting.Compact 3.0.0, Settings.Configuration 10.0.0을 전이로 포함. net8.0에서 Microsoft.Extensions.* 10.0.0 전이 |
+| Serilog.Sinks.Console | 6.1.1 (전이) | 콘솔 텍스트 로그 | Apache-2.0 | net462, net471, net6.0, net8.0, netstandard2.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/serilog.sinks.console/6.1.1/serilog.sinks.console.nuspec) | Serilog.AspNetCore 10.0.0에 포함 |
+| Serilog.Sinks.File | 7.0.0 (전이) | 파일 JSON 로그 | Apache-2.0 | net462, net471, net6.0, net8.0, net9.0, netstandard2.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/serilog.sinks.file/7.0.0/serilog.sinks.file.nuspec) | 같음 |
+| Serilog.Formatting.Compact | 3.0.0 (전이) | CLEF(JSON) 형식 | Apache-2.0 | net462, net471, net6.0, net8.0, netstandard2.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/serilog.formatting.compact/3.0.0/serilog.formatting.compact.nuspec) | 같음 |
+| Serilog.Sinks.OpenTelemetry | 4.2.0 | OTLP 로그 싱크(Aspire 대시보드) | Apache-2.0 | net462, net471, net6.0, net8.0, net9.0, netstandard2.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/serilog.sinks.opentelemetry/4.2.0/serilog.sinks.opentelemetry.nuspec) | Google.Protobuf 3.30.1, Grpc.Net.Client 2.70.0 전이. OTel SDK 로그와 중복 방지 방식은 S01-T03 |
+| Swashbuckle.AspNetCore | 10.2.3 | OpenAPI 문서 · Swagger UI | MIT | net8.0, net9.0, net10.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/swashbuckle.aspnetcore/10.2.3/swashbuckle.aspnetcore.nuspec) | Microsoft.OpenApi 2.7.5 전이(2.x API, 예전 1.x 예제와 네임스페이스가 다름) |
+
+- 상용 전환된 MediatR · AutoMapper · FluentAssertions v8+ · MassTransit v9+는 쓰지 않습니다(Mediator는 직접 구현).
+
+## 테스트
+
+| 패키지 | 버전 | 용도 | 라이선스 | 대상 프레임워크 | 출처 | 비고 |
+|---|---|---|---|---|---|---|
+| xunit.v3 | 4.0.1 | 테스트 프레임워크(v3, 추천) | Apache-2.0 | net472, net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/xunit.v3/4.0.1/xunit.v3.nuspec) | Microsoft Testing Platform v2 내장. xunit.analyzers 2.1.0 → **SDK 8.0.4xx 이상 필요** |
+| xunit | 2.9.3 | 테스트 프레임워크(v2, 대안) | Apache-2.0 | (메타 패키지) | [nuspec](https://api.nuget.org/v3-flatcontainer/xunit/2.9.3/xunit.nuspec) | NuGet 폐기(`Legacy`): "security issues만 갱신, 기능은 v3로" |
+| xunit.runner.visualstudio | 4.0.0 | VSTest 어댑터(`dotnet test`) | Apache-2.0 | net472, net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/xunit.runner.visualstudio/4.0.0/xunit.runner.visualstudio.nuspec) | v1 · v2 · v3 모두 실행. `PrivateAssets=all` |
+| Microsoft.NET.Test.Sdk | 18.10.1 | VSTest 호스트 | MIT | net8.0 외 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.net.test.sdk/18.10.1/microsoft.net.test.sdk.nuspec) | |
+| AwesomeAssertions | 9.6.0 | 단언(FluentAssertions 7 포크) | Apache-2.0 | net6.0, net8.0, netstandard2.0/2.1 | [nuspec](https://api.nuget.org/v3-flatcontainer/awesomeassertions/9.6.0/awesomeassertions.nuspec) | 의존 없음(net8.0) |
+| NSubstitute | 6.2.0 | Test Double | BSD-3-Clause | net8.0, netstandard2.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/nsubstitute/6.2.0/nsubstitute.nuspec) | Castle.Core 5.1.1 전이 |
+| NSubstitute.Analyzers.CSharp | 1.0.17 | NSubstitute 오용 분석기 | MIT (패키지 내 LICENSE.md, [저장소](https://github.com/nsubstitute/NSubstitute.Analyzers) MIT) | netstandard2.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/nsubstitute.analyzers.csharp/1.0.17/nsubstitute.analyzers.csharp.nuspec) | 2024-02 이후 릴리스 없음. `PrivateAssets=all` |
+| Testcontainers.PostgreSql | 4.15.0 | 통합 테스트 DB 컨테이너 | MIT | net8.0, netstandard2.0/2.1 | [nuspec](https://api.nuget.org/v3-flatcontainer/testcontainers.postgresql/4.15.0/testcontainers.postgresql.nuspec) | dba 확인. 이미지 인자 필수(TD-004) |
+| Respawn | 7.0.0 | 통합 테스트 DB 초기화 | Apache-2.0 | netstandard2.1 | [nuspec](https://api.nuget.org/v3-flatcontainer/respawn/7.0.0/respawn.nuspec) | dba 확인. 의존 없음 |
+| Microsoft.Extensions.TimeProvider.Testing | 10.10.0 | `FakeTimeProvider` | MIT | net8.0 외 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.extensions.timeprovider.testing/10.10.0/microsoft.extensions.timeprovider.testing.nuspec) | net8.0 그룹 의존 없음 → .NET 8 내장 `TimeProvider`와 그대로 호환 |
+| NetArchTest.Rules | 1.3.2 | 아키텍처 테스트 | MIT ([저장소](https://github.com/BenMorris/NetArchTest)) | netstandard2.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/netarchtest.rules/1.3.2/netarchtest.rules.nuspec) | 2021-05 이후 릴리스 없음(nuspec에 라이선스 메타데이터 없음, 저장소 MIT). Mono.Cecil 0.11.3 전이 |
+| coverlet.collector | 10.0.1 | VSTest 커버리지 수집(`--collect:"XPlat Code Coverage"`) | MIT | 수집기(도구 패키지) | [nuspec](https://api.nuget.org/v3-flatcontainer/coverlet.collector/10.0.1/coverlet.collector.nuspec), [릴리스](https://github.com/coverlet-coverage/coverlet/releases/tag/v10.0.1) | 8.0.0부터 .NET 8 SDK · 런타임 이상 필요. `PrivateAssets=all` |
+
+### xUnit v2 / v3 차이
+
+| 항목 | v2 (`xunit` 2.9.3) | v3 (`xunit.v3` 4.0.1) |
+|---|---|---|
+| 유지 상태 | NuGet `Legacy` 폐기, 보안 수정만 | 활발히 개발(4.0.0 2026-08-14) |
+| 테스트 프로젝트 | 라이브러리 | 실행 파일(`OutputType=Exe`) |
+| 실행 방식 | VSTest(`xunit.runner.visualstudio`) | Microsoft Testing Platform v2 내장 + VSTest(`xunit.runner.visualstudio`)도 가능. .NET 8 SDK의 `dotnet test`는 VSTest 경로 |
+| 기능 | 기본 | `TestContext`, 비동기 수명 주기 개선, 어셈블리 fixture, 4.0에서 Native AOT · 완전 병렬화 · 클래스 / 메서드 정렬자 추가 |
+| 최소 SDK | 8.0.202에서 빌드 성공 | xunit.analyzers 2.1.0(Roslyn 4.11) 때문에 8.0.4xx 필요 |
+| coverlet.collector | 동작 확인 | 동작 확인(VSTest 경로) |
+
+출처: [xUnit v3 4.0.0 릴리스 노트](https://github.com/xunit/xunit.net/blob/main/site/releases/v3/4.0.0.md), 각 nuspec. 추천은 v3이고, 최종 고정은 S01-T04(AwesomeAssertions ADR)에서 합니다.
+
+## 도구
+
+| 패키지 | 버전 | 용도 | 라이선스 | 대상 프레임워크 | 출처 | 비고 |
+|---|---|---|---|---|---|---|
+| dotnet-ef | 8.0.31 | 마이그레이션 CLI | MIT | .NET 도구 | [nuspec](https://api.nuget.org/v3-flatcontainer/dotnet-ef/8.0.31/dotnet-ef.nuspec) | EF 런타임과 같은 패치. 로컬 도구 매니페스트 |
+| dotnet-reportgenerator-globaltool | 5.5.11 | 커버리지 보고서 | Apache-2.0 | .NET 도구 | [nuspec](https://api.nuget.org/v3-flatcontainer/dotnet-reportgenerator-globaltool/5.5.11/dotnet-reportgenerator-globaltool.nuspec) | 로컬 도구 매니페스트. cobertura → TextSummary 생성 확인 |
+
+## GitHub Actions
+
+| 액션 | 고정 버전 | 커밋 SHA | 런타임 | 라이선스 | 출처 | 비고 |
+|---|---|---|---|---|---|---|
+| actions/checkout | v7.0.1 (메이저 `v7`) | `3d3c42e5aac5ba805825da76410c181273ba90b1` | node24 | MIT | [releases/latest](https://github.com/actions/checkout/releases/tag/v7.0.1) | 2026-07-20 |
+| actions/setup-dotnet | v6.0.0 (메이저 `v6`) | `a98b56852c35b8e3190ac28c8c2271da59106c68` | node24 | MIT | [releases/latest](https://github.com/actions/setup-dotnet/releases/tag/v6.0.0) | 2026-07-16. `global-json-file` + `latestFeature` 지원 |
+| actions/upload-artifact | v7.0.1 (메이저 `v7`) | `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` | node24 | MIT | [releases/latest](https://github.com/actions/upload-artifact/releases/tag/v7.0.1) | 2026-04-10 |
+
+메이저 태그(`@v7`)와 커밋 SHA 고정 중 무엇을 쓸지는 S01-T06(CI)에서 정합니다.
+
+## 라이선스 점검
+
+| 라이선스 | 패키지 |
+|---|---|
+| MIT | Aspire 계열, Microsoft.Extensions.*, EF Core 계열, dotnet-ef, Scrutor, Swashbuckle, Microsoft.NET.Test.Sdk, Testcontainers, coverlet, NSubstitute.Analyzers, NetArchTest, MessagePack, GitHub Actions 3종 |
+| Apache-2.0 | FluentValidation, Serilog 계열, OpenTelemetry 계열, xUnit(v2 · v3 · runner), AwesomeAssertions, Respawn, EFCore.NamingConventions, ReportGenerator |
+| BSD-3-Clause | NSubstitute |
+| PostgreSQL | Npgsql, Npgsql.EntityFrameworkCore.PostgreSQL |
+| 0BSD | UUIDNext |
+
+상용 · 유료 라이선스는 0건입니다(NFR-05). 확인 방법: 각 nuspec의 `<license type="expression">`, 파일 라이선스이거나 메타데이터가 없는 2건(NSubstitute.Analyzers.CSharp, NetArchTest.Rules)은 GitHub 저장소 라이선스(`gh api repos/<owner>/<repo>`의 `license.spdx_id`)로 확인했습니다.
+
+## 스크래치 restore 검증
+
+저장소 밖 스크래치 디렉터리에 net8.0 솔루션(AppHost, ServiceDefaults, Api, TestsV2, TestsV3)을 만들고 위 고정 버전을 CPM(`CentralPackageTransitivePinningEnabled`)으로 넣어 확인했습니다. 설정: `TreatWarningsAsErrors=true`, `NuGetAudit=true`, `NuGetAuditMode=all`, `NuGetAuditLevel=low`, nuget.org 단일 소스.
+
+| 단계 | SDK | 결과 |
+|---|---|---|
+| `dotnet restore` (MessagePack 고정 없음) | 8.0.202 / 8.0.425 | **실패**: AppHost에서 MessagePack 2.5.192 NU1902 9건 · NU1903 2건 |
+| `dotnet restore` (기본 `NuGetAuditMode`, 고정 없음) | 8.0.425 | 성공(경고 없음). .NET 8 SDK 기본값은 직접 참조만 감사해서 전이 취약점을 **놓침** |
+| `dotnet restore` (MessagePack 2.5.305 고정) | 8.0.202 / 8.0.425 | 성공, 경고 0 |
+| `dotnet build` | 8.0.202 | 실패: TestsV3만 `CS9057`(xunit.analyzers 2.1.0이 Roslyn 4.11 요구) |
+| `dotnet build` | 8.0.425 | 성공, 경고 0 · 오류 0 |
+| `dotnet test --collect:"XPlat Code Coverage"` | 8.0.425 | TestsV2 1/1, TestsV3 1/1 통과, cobertura 생성 |
+| `dotnet tool restore` + `reportgenerator` | 8.0.425 | 성공(TextSummary 생성) |
+| `dotnet list package --vulnerable --include-transitive` | 8.0.425 | 5개 프로젝트 모두 취약 패키지 없음 |
+| `dotnet list package --deprecated` | 8.0.425 | AppHost: Aspire 9.5.2 4건(`Other,Legacy`), TestsV2: xunit 2.9.3(`Legacy`) |
+| 클라이언트 통합 추가(Aspire.Npgsql.EFCore 9.5.2) | 8.0.425 | restore · build 경고 0, OpenTelemetry.Api 1.19.1로 통일 |
+
+스모크 테스트는 `FakeTimeProvider`, NSubstitute, AwesomeAssertions, NetArchTest, `PostgreSqlBuilder("postgres:17")`, Respawn 타입 참조를 컴파일 · 실행했습니다. Api는 Scrutor `Scan`, `AddValidatorsFromAssemblyContaining`, `UseSerilog`(콘솔 · 파일 CLEF · OpenTelemetry 싱크), Swashbuckle, `UseNpgsql(EnableRetryOnFailure)` + `UseSnakeCaseNamingConvention`, UUIDNext를 컴파일했습니다. Docker를 쓰는 실행(컨테이너 기동, 생성 스크립트)은 확인하지 않았습니다(BL-003).
+
+## 결정 · 미해결
+
+| 구분 | 항목 | 처리 |
+|---|---|---|
+| 결정 | Aspire 9.5.2 고정(Q19 해소) | 사용자 결정. 지원 종료는 Aspire ADR(S01-T02)에 명시 |
+| 결정 | EF 계열 8.0.31 / Npgsql.EFCore 8.0.11 / Npgsql 8.0.9 / NamingConventions 8.0.3, PostgreSQL `17` | dba 확인 |
+| 권장 | `global.json` 8.0.400 + `latestFeature`, 로컬 SDK 8.0.425 설치 | S01-T05에서 적용 |
+| 권장 | `Directory.Build.props`에 `NuGetAuditMode=all` 명시, CPM에 `MessagePack` 2.5.305 전이 고정 | S01-T05에서 적용 |
+| 권장 | ServiceDefaults의 OpenTelemetry는 템플릿 값(1.9.0) 대신 1.19.x | S01-T03 로깅 ADR |
+| 미해결 | 클라이언트 통합 사용 여부 | BL-004, S01-T02. 판단 자료: OTel 1.19.x와 함께 쓰면 NU1902 해소 |
+| 미해결 | `WithCreationScript` · 롤 생성 실측 | BL-003 |
+| 미해결 | xUnit v2 / v3 최종 선택 | S01-T04 |
+| 미해결 | ServiceDiscovery · Http.Resilience 사용 여부(서비스 1개) | S01-T02 / T03 |
+| 미해결 | GitHub Actions 메이저 태그 / SHA 고정 | S01-T06 |
+| 기술부채 | TD-003 Npgsql.EFCore EF 의존 상한 없음 → 전이 고정 | 기존 |
+| 기술부채 | TD-004 Testcontainers 이미지 인자 필수 | 기존 |
+| 기술부채 | TD-005 Aspire 9.x 지원 종료 상태로 9.5.2 사용 | 기존, 재검토 BL-002(.NET 10 · Aspire 13 전환) |
+| 기술부채 | TD-006 클라이언트 통합 사용 시 OTel 버전 혼재 | 기존. 위 판단 자료로 해소 가능 |
+| 기술부채 후보 | Aspire.Hosting 9.5.2 전이 MessagePack 취약 → 수동 고정 유지 | S01-T01 developer 제안 |
+| 기술부채 후보 | net8.0 앱에 Microsoft.Extensions.* · DiagnosticSource 10.0.0 전이 유입(Scrutor 7, Serilog 10, OTel 1.19) | S01-T01 developer 제안. OTel은 피할 수 없음(취약점 없는 버전이 모두 DiagnosticSource 10 요구) |
+
+---
+
+## 변경 이력
+
+| 날짜 | 작성자 | 내용 |
+|---|---|---|
+| 2026-09-27 | developer | 문서 생성 (S01-T01 사전 확인: Aspire 9.5.2, SDK, 패키지 버전 · 라이선스, 스크래치 restore 검증) |

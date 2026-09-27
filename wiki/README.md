@@ -47,6 +47,7 @@ updated: 2026-09-27
 - [이벤트 기반 아키텍처 (EDA)](03-architecture/event-driven-architecture.md)
 - [서비스 간 통신](03-architecture/service-communication.md)
 - [기술 스택](03-architecture/tech-stack.md)
+- [패키지 버전 · 라이선스](03-architecture/package-versions.md)
 - [아키텍처 결정 기록 (ADR)](03-architecture/adr/README.md)
 
 ### 04. 개발 가이드
@@ -173,3 +174,4 @@ updated: 2026-09-27
 | 2026-09-27 | - | 08. 작업 로그 섹션 추가 |
 | 2026-09-27 | - | 09. 장기기억 섹션 추가, Obsidian vault 형식(frontmatter, 템플릿, vault 설정)으로 재구성 |
 | 2026-09-27 | - | 10. 개발 관리 섹션 추가, frontmatter에 `prd` / `sprint` / `retro` 유형 추가 |
+| 2026-09-27 | developer | 03. 아키텍처에 패키지 버전 · 라이선스 문서 추가 (S01-T01) |

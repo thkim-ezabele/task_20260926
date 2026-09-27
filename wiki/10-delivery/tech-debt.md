@@ -33,6 +33,9 @@ updated: 2026-09-27
 | TD-004 | Testcontainers `PostgreSqlBuilder` 매개변수 없는 생성자는 CS0618로 빌드 실패: 이미지 인자 필수 | 테스트 | | S01-T01 | | new |
 | TD-005 | Aspire 9.x 지원 종료(NuGet out of support) 상태로 9.5.2 사용: 보안 패치 없음. .NET 8 지원 종료와 함께 해소(재검토 BL-002) | 인프라 | | S01-T01 | | new |
 | TD-006 | 클라이언트 통합을 쓰고 OpenTelemetry.Api만 1.15.3으로 고정하면 OpenTelemetry 1.9.0과 혼재: OTel 계열 전체 동일 버전 고정 필요(BL-004 결과에 따라 발생) | 인프라 | | S01-T01 | | new |
+| TD-007 | Aspire.Hosting 9.5.2 전이 MessagePack 2.5.192 취약(GHSA 11건, 높음 2건): 2.5.305 수동 고정 유지(AppHost 한정, Aspire 전환 시 제거) | 인프라 | | S01-T01 | | new |
+| TD-008 | net8.0 앱에 Microsoft.Extensions.* · System.Diagnostics.DiagnosticSource 10.0.0 전이 유입(Scrutor 7, Serilog.AspNetCore 10, OpenTelemetry 1.19). 취약점 없는 OTel은 모두 DiagnosticSource 10 요구 | 인프라 | | S01-T01 | | new |
+| TD-009 | xUnit v2 선택 시 xunit 2.9.3이 NuGet Legacy 폐기(보안 수정만) | 테스트 | | S01-T01 | | new |
 
 ---
 

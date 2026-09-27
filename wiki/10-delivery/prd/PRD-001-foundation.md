@@ -136,7 +136,7 @@ updated: 2026-09-27
 | Q16 | 샘플 테이블 구성 | id · display_name · email(ux_) · employee_status(smallint + ck_) · 감사 컬럼 · xmin + 이메일 중복 검사. 세부는 스프린트 계획 리뷰에서 확정 | FR-08 |
 | Q17 | Idempotency-Key | 이 토픽에서는 적용하지 않음 | 범위 밖 |
 | Q18 | ADR 단위 | 결정마다 1건, 도입 보류 항목만 1건으로 묶음 | FR-01 |
-| Q19 | 고정할 Aspire 9.x 마이너 버전 | 🟡 미해결: FR-01 사전 확인 작업에서 결정 | FR-01 |
+| Q19 | 고정할 Aspire 9.x 마이너 버전 | 해소: Aspire 9.5.2 (S01-T01, [패키지 버전 · 라이선스](../../03-architecture/package-versions.md#aspire)) | FR-01 |
 
 ---
 
@@ -147,3 +147,4 @@ updated: 2026-09-27
 | 2026-09-27 | - | PRD 접수, 인터뷰 정리, 초안 작성 |
 | 2026-09-27 | - | 병렬 리뷰(orchestrator / dba / developer) 통합 반영, 차단 질문 3건 답변 반영 |
 | 2026-09-27 | - | 스프린트 분할(S01~S04, 작업 22개) 승인, `stable` |
+| 2026-09-27 | developer | Q19 해소: Aspire 9.5.2 (S01-T01) |
