@@ -59,6 +59,10 @@ updated: 2026-09-27
 | BL-030 | 헬스체크 경로 정리(logging-observability `/health/live` · `/health/ready` vs Aspire 템플릿 `/health` · `/alive`) | S01-T03 | | new | S03-T04 |
 | BL-031 | PRD-001 Q9 결론 문구가 ADR-0014 · 0015 구체화(데코레이터는 CommitAsync만, 실행 전략은 UoW 안)와 표현이 다름: "구체화: ADR-0014 · 0015" 주석 검토 | S01-T03 | | new | S01-T04 |
 | BL-032 | clean-architecture.md의 `Endpoints/` · Minimal API 기본안을 `Controllers/`로 수정(ADR-0016) | S01-T03 | | new | S01-T04 |
+| BL-033 | 통합 테스트 fixture에서 employee_app 재현(슈퍼유저로 CREATE ROLE, CREATE DATABASE ... OWNER 한 문장씩), Respawn 이력 테이블 보존 · TRUNCATE 권한 · 읽기 연결 쓰기 거부(25006) 실측 | S01-T04 | | new | S03-T05 |
+| BL-034 | HasData 기준 데이터 도입 시 해당 테이블을 Respawn TablesToIgnore에 추가하거나 초기화 뒤 재시드(database.md 시드 절에 규칙 명시) | S01-T04 | | new | |
+| BL-035 | 순환 FK 금지: Respawn의 DISABLE TRIGGER ALL은 슈퍼유저 필요 → employee_app에서 실패. 스키마 리뷰 항목 추가 검토 | S01-T04 | | new | |
+| BL-036 | 마이그레이션 SQL 검토 때 이력 테이블이 정확히 `public."__EFMigrationsHistory"`인지 확인(TablesToIgnore 일치) | S01-T04 | | new | S03-T02 |
 
 ---
 

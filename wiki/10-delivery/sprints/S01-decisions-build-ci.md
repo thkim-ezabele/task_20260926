@@ -91,6 +91,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T03 | developer 2차 | PASS | ADR 0015~0020 `accepted` 생성(초안과 diff 동일), ADR 목록 · design.md · PRD Q5/Q11/Q14 링크, check-docs 23개 결함 0, 0001~0014 불변 |
 | 2026-09-27 | S01-T03 | reviewer | PASS | 템플릿 · frontmatter · 링크 결함 0, 0010 불변, 0003 / 0007 / 0010 / 0014 정합, 완료 조건 · dba 필수 문장 전부 반영, PRD Q5 · Q11 · Q14 일치 |
 | 2026-09-27 | S01-T03 | tester | PASS | Q5 · Q11 · Q14 결론과 결정 문장 grep 대조 일치, 6건 accepted, 목록 6행 일치, check-docs 23개 결함 0, 필수 문장 7종 존재, 0001~0014 불변 |
+| 2026-09-27 | S01-T04 | dba | PASS | Respawn 7.0.0 API 소스 확인, ADR 입력 확정(`TablesToIgnore`는 따옴표 없이 `public.__EFMigrationsHistory`, 쓰기 연결, employee_app 재현 추천, 테스트 전 ResetAsync, WithReseed false). database.md 12곳 · testing-strategy.md 2곳 수정안. Docker 꺼짐으로 실측은 S03-T05 |
 
 ## 계획 리뷰
 
@@ -171,6 +172,10 @@ updated: 2026-09-27
 | TD-012 | ServiceDefaults가 Aspire 템플릿과 달라짐 | S01-T03 | |
 | BL-031 | PRD Q9 결론에 "구체화: ADR-0014 · 0015" 주석 검토(T04) | S01-T03 | |
 | BL-032 | clean-architecture `Endpoints/` · Minimal API → `Controllers/` 수정(T04) | S01-T03 | |
+| BL-033 | S03-T05: fixture employee_app 재현, Respawn 이력 보존 · TRUNCATE 권한 · 25006 실측 | S01-T04 | |
+| BL-034 | HasData 기준 데이터 → Respawn TablesToIgnore 규칙 | S01-T04 | |
+| BL-035 | 순환 FK 금지(Respawn DISABLE TRIGGER 슈퍼유저 필요) 스키마 리뷰 항목 | S01-T04 | |
+| BL-036 | S03-T02: 이력 테이블 이름이 TablesToIgnore와 일치하는지 확인 | S01-T04 | |
 
 ## 회고
 
