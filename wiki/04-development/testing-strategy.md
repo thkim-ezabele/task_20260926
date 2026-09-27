@@ -37,8 +37,6 @@ flowchart TB
 **테스트 대상 동작(도메인 메서드, Handler, API 엔드포인트) 하나마다** 세 종류를 모두 작성합니다. reviewer는 이 기준으로 누락을 판정합니다.
 
 > **기반 · 셋팅 작업**(BuildingBlocks, DI 등록, 공통 규칙, 빌드 · CI 설정)은 완료 조건 **항목마다** 성공 / 실패 / 엣지를 최소 1개씩 작성하는 것으로 충족합니다. 체크리스트의 나머지 엣지는 tester가 완료 조건 대조에서 빈 곳이 있을 때만 보강합니다. 도메인 로직은 아래 기준 전부를 적용합니다. 원본: [에이전트 워크플로우 테스트 범위](../10-delivery/agents.md#테스트-범위)(S02 회고).
->
-> 설정 · 구성 코드(DI 등록, 호스트 · 환경 주입, 빌드 설정)처럼 "잘못된 입력"이 없는 항목의 **실패** 케이스는 적용되지 않아야 할 대상에 적용되지 않음(부정 범위)을 확인하는 것으로 본다. 예: S04-T01 AppHost 테스트는 MigrationService에 `Development` 주입(성공)과 기존 Api 환경 유지(부정 범위)를 함께 확인한다.
 
 | 종류 | 기준 | 예: `Employee.Register` |
 |---|---|---|
@@ -403,4 +401,4 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 | 2026-09-28 | dba | 통합 테스트 fixture DB 구성 표(이미지 태그 메타데이터, 초기화 스크립트 공유 마운트, 생성 스크립트 한 문장, Write / Read 연결, 대기 전략 주의), Respawn 옵션 형식과 이름 대소문자 실측, 장애 주입 절(항목별 트리거 / 인터셉터 추천, 테스트 전용 트리거 SQL · 시퀀스 카운터 · 생성 · DROP · 잔여 검사), DB 검증 쿼리 Q1~Q12 (S03-T06) |
 | 2026-09-28 | developer | fixture 구현 위치 · 공개 도우미, 장애 주입 도우미 표(트리거 · 인터셉터 · 재시도 축소 등록), 로컬 Docker API 1.43 대처, CI 통합 테스트(이미지 선 pull · 태그 원본 읽기 · 단계별 시간 요약 · 실패 시 컨테이너 로그 아티팩트) (S03-T06) |
 | 2026-09-28 | developer | fixture 메서드 목록에 `ExecutePsqlScriptAsync` · `PsqlResult` 추가, Q12 NOTICE 문구 보정(빈 DB · 마이그레이션된 DB 구분), `WebApplicationFactory` 도우미(`EmployeeApiFactory` · 옵션 · 설정 사본 · 로그 수집) 사용법 (S03-T07) |
-| 2026-09-28 | developer | 아키텍처 테스트 절을 규칙 정의와 1:1 표로(의존성 10 · 컨벤션 12 · 주입 3, 선언 참조 · 대상 목록 점검), 규칙 목록 원본을 테스트 프로젝트로, 건너뜀 11 → 1 실측, ClassesAreSealed 범위(가시성 무관, 실측으로 BL-090 전제 불일치 기록), Validator 공통 기반 `RequestValidator<T>`, 커버리지 대상 6개 표 · 대상 아님 · 수집 안 함, 스모크 미도입(BL-111), CI 절 대상 6개, 설정 · 구성 코드의 실패 = 부정 범위 해석 (S04-T02, BL-066 · 068 · 087 · 090) |
+| 2026-09-28 | developer | 아키텍처 테스트 절을 규칙 정의와 1:1 표로(의존성 10 · 컨벤션 12 · 주입 3, 선언 참조 · 대상 목록 점검), 규칙 목록 원본을 테스트 프로젝트로, 건너뜀 11 → 1 실측, ClassesAreSealed 범위(가시성 무관, 실측으로 BL-090 전제 불일치 기록), Validator 공통 기반 `RequestValidator<T>`, 커버리지 대상 6개 표 · 대상 아님 · 수집 안 함, 스모크 미도입(BL-111), CI 절 대상 6개 (S04-T02, BL-066 · 068 · 087 · 090) |
