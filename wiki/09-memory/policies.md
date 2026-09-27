@@ -43,7 +43,7 @@ updated: 2026-09-27
 
 - 원격: `origin` = GitHub `thkim-ezabele/task_20260926`
 - 커밋은 요청이 있을 때만 하고, push는 따로 확인을 받는다.
-- **Git Flow**: `main`(릴리스, 태그 `vX.Y.Z`) / `develop`(통합, GitHub 기본 브랜치). 토픽은 `feature/prd-*`(Draft PR → Merge commit), 토픽 밖 작업은 `feature/*`(Squash merge), `release/*`·`hotfix/*`는 `main`으로(Merge commit). 원본: [Git 워크플로우](../04-development/git-workflow.md)
+- **Git Flow**: `main`(릴리스, 태그 `vX.Y.Z`) / `develop`(통합, GitHub 기본 브랜치). 토픽은 `feature/prd-*`(Draft PR), 토픽 밖 작업은 `feature/*`, `release/*`·`hotfix/*`는 `main`으로. **모든 PR은 Merge commit**(Squash · Rebase는 GitHub 설정에서 끔, 병합 커밋 제목 = PR 제목). 원본: [Git 워크플로우](../04-development/git-workflow.md)
 - `main` / `develop`에 직접 push하지 않는다. GitHub Free private라 브랜치 보호가 불가해 규칙으로 지킨다.
 - 커밋 메시지는 Conventional Commits 형식을 쓴다(예: `docs(worklog): ...`, `feat(employee): ... (S01-T02)` + footer `Stage: developer`).
 - `git flow` 설정은 `.git/config`에만 있어서 새로 clone하면 다시 설정해야 한다(방법은 Git 워크플로우 문서).
