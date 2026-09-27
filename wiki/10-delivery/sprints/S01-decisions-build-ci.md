@@ -104,6 +104,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T05 | reviewer | PASS | 직접 build 경고 0 · format 0 · test 1/1, 공통 빌드 설정 표 · .editorconfig 표 일치, CS1591 · IVT 범위(msbuild 평가값), 전이 고정 · PrivateAssets · 도구 매니페스트 · .gitignore 비밀 파일, ADR 커밋 선행, 버전 표본 20종 일치, 취약 0 |
 | 2026-09-27 | S01-T05 | tester | PASS | 짧은 경로 clone(8b4c0dd): SDK 8.0.425 선택, tool restore · ef 8.0.31, build 경고 0 · test 1/1 · format · 취약 0. 부정 점검 5종 기대대로(CS0219 · CS1591 오류, Migrations · 테스트는 무오류, IDE0161 · IDE0011 오류), IVT는 Domain만, check-ignore 비밀 파일 제외, ADR 커밋 선행, i/crlf 0 |
 | 2026-09-27 | S01-T06 | dba | PASS | 해당 없음(DB 변경 없음). EF 매핑 주의점 6건 참고로 전달(강타입 ID 값 변환, DomainEvents Ignore, Id 기본값 동등성, 바인딩 생성자, Error 비저장, 동시성 토큰은 매핑 계층) |
+| 2026-09-27 | S01-T06 | developer | PASS | TDD(Red 확인 후 구현). Entity · AggregateRoot · IDomainEvent · IRepository · ErrorType(2자리, None=0 예약) · Error(get 전용, private protected 생성자 + 팩토리 9개, 생성 시 검증) · ValidationError · FieldError · CommonErrors(11) · Result / Result<T>(Error.None 없음, 암시적 변환 3종). 테스트 197/197, 경고 0, format 통과, Domain 패키지 0건, 라인 98.2% · 분기 100%. error-codes.md ErrorType 표 갱신. BL-040 · BL-050 해결 |
 
 ## 계획 리뷰
 
@@ -206,6 +207,11 @@ updated: 2026-09-27
 | BL-051 | IDE0005 빌드 강제 여부 | S01-T05 | |
 | TD-014 | 테스트 프로젝트 판별이 이름 규칙(*Tests)에 의존 | S01-T05 | |
 | TD-015 | 강타입 ID ValueConverter · DomainEvents Ignore 공통 처리 | S01-T06 | |
+| BL-052 | S02-T06: CommonErrors 재사용, 매핑 · 변환만 구현 | S01-T06 | |
+| BL-053 | S02-T02: CustomState 없는 실패는 Error.Validation(1001)로 감싸기 | S01-T06 | |
+| BL-054 | 아키텍처 테스트 후보: Error/Result 파생 금지, Entity 파생 sealed | S01-T06 | |
+| TD-016 | Error 복사 생성자로 외부 파생 가능 | S01-T06 | |
+| TD-017 | Result<T> notnull 제약 없음(런타임 거부만) | S01-T06 | |
 
 ## 회고
 

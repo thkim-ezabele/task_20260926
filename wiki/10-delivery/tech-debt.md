@@ -42,6 +42,8 @@ updated: 2026-09-27
 | TD-013 | NetArchTest.Rules 1.3.2(2021-05 이후 릴리스 없음) · NSubstitute.Analyzers.CSharp 1.0.17(2024-02 이후 없음) 유지 중단. 막히면 ArchUnitNET 전환 검토(ADR-0021) | 테스트 | | S01-T04 | | new |
 | TD-014 | 테스트 프로젝트 판별이 이름 규칙(MSBuildProjectName이 Tests로 끝남)에 의존: 규칙 밖 이름은 OutputType=Exe · 문서 생성 제외가 적용되지 않음. 아키텍처 테스트 / CI 점검으로 보완 검토 | 코드 | | S01-T05 | | new |
 | TD-015 | 강타입 ID용 ValueConverter 공통 등록(ConfigureConventions)과 AggregateRoot.DomainEvents Ignore 공통 처리를 BuildingBlocks 영속성 계층에서 제공(첫 DbContext 작업에서 반영) | 설계 | | S01-T06 | | new |
+| TD-016 | Error는 non-sealed record라 컴파일러가 만드는 protected 복사 생성자로 어셈블리 밖에서도 파생 가능(불변식은 유지). 아키텍처 테스트로 막을지 검토 | 코드 | | S01-T06 | | new |
+| TD-017 | Result<T>는 성공 값 null을 런타임에만 거부하고 `where T : notnull` 제약 없음(Mediator 인터페이스 전파 부담) | 코드 | | S01-T06 | | new |
 
 ---
 

@@ -39,20 +39,27 @@ updated: 2026-09-27
 
 > 서비스 구성은 [서비스 카탈로그](../03-architecture/service-catalog.md)가 확정되면 맞춥니다(현재 🟡 검토 중). 번호는 한 번 배정하면 바꾸지 않습니다.
 
-| T | 오류 유형 (`ErrorType`) | HTTP 상태 | 예 |
+| T | 오류 유형 (`ErrorType` = 값) | HTTP 상태 | 예 |
 |---|---|---|---|
-| 1 | 검증 실패 (Validation) | 400 | 필수 값 누락, 형식 오류, 정의되지 않은 코드값 |
-| 2 | 대상 없음 (NotFound) | 404 | 없는 직원 ID |
-| 3 | 충돌 (Conflict) | 409 | 중복 이메일, 동시성 충돌, 이미 처리된 요청 |
-| 4 | 업무 규칙 위반 (BusinessRule) | 422 | 허용되지 않은 상태 전이, 종료된 긴급 상황 변경 |
-| 5 | 인증 / 권한 (Unauthorized / Forbidden) | 401 / 403 | 토큰 없음, 권한 비트 없음 |
+| 1 | 검증 실패 (`Validation` = 10) | 400 | 필수 값 누락, 형식 오류, 정의되지 않은 코드값 |
+| 2 | 대상 없음 (`NotFound` = 20) | 404 | 없는 직원 ID |
+| 3 | 충돌 (`Conflict` = 30) | 409 | 중복 이메일, 동시성 충돌, 이미 처리된 요청 |
+| 4 | 업무 규칙 위반 (`BusinessRule` = 40) | 422 | 허용되지 않은 상태 전이, 종료된 긴급 상황 변경 |
+| 5 | 인증 필요 (`Unauthorized` = 51) | 401 | 토큰 없음, 만료된 토큰 |
+| 5 | 권한 없음 (`Forbidden` = 52) | 403 | 권한 비트 없음 |
 | 6 ~ 8 | (예비) | | |
-| 9 | 외부 연동 / 내부 오류 (External / Internal) | 502 / 503 / 500 | SMS 사업자 오류, 일시적 장애 |
+| 9 | 내부 오류 (`Internal` = 91) | 500 | 처리되지 않은 예외 |
+| 9 | 외부 연동 (`External` = 92) | 502 | SMS 사업자 오류 |
+| 9 | 일시적 장애 (`Unavailable` = 93) | 503 | 재시도 가능한 일시 장애 |
+
+`ErrorType`은 BuildingBlocks.Domain의 `short` enum이고 값은 2자리입니다. **`T = (short)ErrorType / 10`** 이며, 유형 자리 5와 9는 HTTP 상태가 둘 이상이라 1의 자리로 구분합니다. `0`(`None`)은 코드값 규칙에 따른 예약 값이라 `Error`에 쓰지 않습니다. 배포된 값은 바꾸거나 재사용하지 않습니다.
 
 규칙
 
-- 에러 코드는 `Error` 타입의 `int Code`로 정의하고, 서비스별 `<Aggregate>Errors` 정적 클래스에 모은다([코딩 컨벤션 · 예외 처리](../04-development/coding-conventions.md#예외-처리-규칙)).
-- **코드의 유형 자리(T)와 `ErrorType`이 일치해야 한다.** HTTP 상태는 `ErrorType`으로 결정한다.
+- 에러 코드는 `Error` 타입의 `int Code`로 정의하고, 서비스별 `<Aggregate>Errors` 정적 클래스에 모은다([코딩 컨벤션 · 예외 처리](../04-development/coding-conventions.md#예외-처리-규칙)). `Error`는 유형별 팩토리(`Error.Validation` · `NotFound` · `Conflict` · `BusinessRule` · `Unauthorized` · `Forbidden` · `Internal` · `External` · `Unavailable`)로만 만든다.
+- **코드의 유형 자리(T)와 `ErrorType`이 일치해야 한다(`T = 값 / 10`).** `Error`는 생성 시점에 다음을 검사하고 어기면 예외를 던진다: 범위 1001 ~ 99999(`ArgumentOutOfRangeException`), 일련번호(NNN) 000 금지, 예비 서비스 자리(S = 6 ~ 8) 금지, T ↔ `ErrorType` 불일치(각 `ArgumentException`), 빈 메시지. 규칙 위반은 프로그래밍 오류이므로 `Result`가 아니라 예외다.
+- **HTTP 상태는 T가 아니라 `ErrorType`으로 정한다**(위 표). 변환은 API 계층의 공통 변환기가 한다([ADR-0016](../03-architecture/adr/0016-use-controllers-for-api.md)).
+- 검증 실패는 `ValidationError`(`Error` 파생)로 표현한다. 대표 코드는 `1001`이고 필드별 상세(속성 경로, 정수 코드, 메시지)를 담으며, 필드별 코드도 검증 실패 유형(T = 1)이어야 한다([ADR-0018](../03-architecture/adr/0018-use-fluentvalidation.md)).
 - 배포된 코드는 의미를 바꾸거나 재사용하지 않는다. 폐기하면 표에 `폐기`로 남긴다.
 - 메시지(`detail`)는 사람이 읽는 설명이고 바뀔 수 있다. **클라이언트는 메시지가 아니라 코드로 분기**한다.
 - 코드를 추가하는 작업은 이 문서의 표를 함께 갱신한다. reviewer는 코드와 표가 일치하는지 확인한다.
@@ -86,19 +93,21 @@ public static class EmployeeErrors
 
 BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 
-| 코드 | 유형 | HTTP | 이름 | 의미 |
+| 코드 | `ErrorType` | HTTP | 이름 | 의미 |
 |---|---|---|---|---|
-| 1001 | 검증 실패 | 400 | `Common.ValidationFailed` | 요청 검증 실패 (상세는 `errors`에 필드별로) |
-| 1002 | 검증 실패 | 400 | `Common.InvalidCode` | 정의되지 않은 코드값 / 비트 플래그 |
-| 1003 | 검증 실패 | 400 | `Common.InvalidPaging` | 페이징 · 정렬 매개변수 오류 |
-| 2001 | 대상 없음 | 404 | `Common.NotFound` | 리소스 없음 (서비스별 코드가 없을 때) |
-| 3001 | 충돌 | 409 | `Common.ConcurrencyConflict` | 동시 수정 충돌 (낙관적 잠금) |
-| 3002 | 충돌 | 409 | `Common.DuplicateRequest` | 같은 `Idempotency-Key`로 이미 처리됨 |
-| 5001 | 인증 | 401 | `Common.Unauthenticated` | 인증 필요 |
-| 5002 | 권한 | 403 | `Common.Forbidden` | 권한 없음 |
-| 9001 | 내부 오류 | 500 | `Common.Unexpected` | 예상하지 못한 오류 (전역 예외 처리기) |
-| 9002 | 외부 연동 | 502 | `Common.ExternalServiceFailed` | 외부 시스템 오류 |
-| 9003 | 외부 연동 | 503 | `Common.TemporarilyUnavailable` | 일시적 장애 (재시도 가능) |
+| 1001 | `Validation` | 400 | `Common.ValidationFailed` | 요청 검증 실패 (상세는 `errors`에 필드별로, `ValidationError`) |
+| 1002 | `Validation` | 400 | `Common.InvalidCode` | 정의되지 않은 코드값 / 비트 플래그 |
+| 1003 | `Validation` | 400 | `Common.InvalidPaging` | 페이징 · 정렬 매개변수 오류 |
+| 2001 | `NotFound` | 404 | `Common.NotFound` | 리소스 없음 (서비스별 코드가 없을 때) |
+| 3001 | `Conflict` | 409 | `Common.ConcurrencyConflict` | 동시 수정 충돌 (낙관적 잠금) |
+| 3002 | `Conflict` | 409 | `Common.DuplicateRequest` | 같은 `Idempotency-Key`로 이미 처리됨 |
+| 5001 | `Unauthorized` | 401 | `Common.Unauthenticated` | 인증 필요 |
+| 5002 | `Forbidden` | 403 | `Common.Forbidden` | 권한 없음 |
+| 9001 | `Internal` | 500 | `Common.Unexpected` | 예상하지 못한 오류 (전역 예외 처리기) |
+| 9002 | `External` | 502 | `Common.ExternalServiceFailed` | 외부 시스템 오류 |
+| 9003 | `Unavailable` | 503 | `Common.TemporarilyUnavailable` | 일시적 장애 (재시도 가능) |
+
+이름 `Common.X`는 BuildingBlocks.Domain `CommonErrors.X` 필드입니다. 단위 테스트(`CommonErrorsTests`)가 이 표의 코드 · 유형과 필드 목록을 전수 대조합니다.
 
 ## 서비스별 에러 코드
 
@@ -112,3 +121,4 @@ BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 에러 코드 체계(5자리 `S T NNN`), 유형 ↔ HTTP 대응, 로그 이벤트 ID 범위, 공통 에러 코드 |
+| 2026-09-27 | developer | `ErrorType` 2자리 값(10 · 20 · 30 · 40 · 51 · 52 · 91 · 92 · 93)과 `T = 값 / 10`, HTTP 상태는 `ErrorType`으로 정함, `Error` 생성 시 검증 규칙(범위 · NNN 000 · 예비 S · T 불일치), `ValidationError`, 공통 코드 표에 `ErrorType` · `CommonErrors` 대응 (S01-T06) |

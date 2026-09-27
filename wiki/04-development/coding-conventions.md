@@ -58,7 +58,7 @@ CQRS 타입 이름
 | 규칙 | 설명 |
 |---|---|
 | Nullable 참조 형식 | 전 프로젝트 `enable`. `!`(null-forgiving)는 테스트 외에는 쓰지 않는다. |
-| 클래스는 기본 `sealed` | 상속을 의도한 타입만 `sealed`를 뺀다(`abstract` 기반 클래스 등). |
+| 클래스는 기본 `sealed` | 상속을 의도한 타입만 `sealed`를 뺀다(`abstract` 기반 클래스 등). BuildingBlocks.Domain의 예외: `Entity<TId>` · `AggregateRoot<TId>`(`abstract`), `Error`(non-sealed `record`, `ValidationError`가 파생), `Result`(non-sealed 클래스, `Result<T>`가 파생). 파생을 같은 어셈블리로 막으려고 생성자를 `private protected`로 둔다. |
 | `record` | **데이터를 담는 모델 클래스는 모두 `record`로 만든다**: DTO, API Request / Response, Command, Query, 조회 모델(Read Model), 도메인 / 통합 이벤트, Value Object. 위치 기반 생성자(positional record)를 기본으로 하고 불변으로 둔다. 모델에 `class`를 쓰면 반려 사유다. |
 | `record struct` | 강타입 ID에 쓴다: `public readonly record struct EmployeeId(Guid Value);` |
 | primary constructor | DI를 받는 서비스와 Handler에 쓴다. Entity / Aggregate에는 쓰지 않는다(불변식 검증이 필요하므로 팩토리 메서드 사용). |
@@ -303,7 +303,8 @@ builder.Services.AddConventionalServices(
 
 - **예상 가능한 실패는 예외가 아니라 `Result`로 반환한다.** 비즈니스 규칙 위반, 검증 실패, 대상 없음, 충돌이 여기에 해당한다.
 - 예외는 예상하지 못한 오류(인프라 장애, 프로그래밍 오류)에만 쓴다.
-- `Error`는 **정수 코드**와 메시지, 유형(검증 / 없음 / 충돌 / 규칙 위반 / 권한)을 가진다. 코드 범위는 서비스별로 나누며 [에러 코드](../05-api/error-codes.md)에서 관리한다.
+- `Error`는 **정수 코드**와 메시지, 유형(`ErrorType`: 검증 / 없음 / 충돌 / 규칙 위반 / 인증 / 권한 / 내부 / 외부 연동 / 일시 장애)을 가진다. 유형별 팩토리(`Error.NotFound(22001, "...")`)로만 만들고, 코드 규칙(범위, T ↔ `ErrorType`)을 어기면 생성 시 예외가 난다. 코드 범위는 서비스별로 나누며 [에러 코드](../05-api/error-codes.md)에서 관리한다.
+- `Result` / `Result<T>`: 성공은 `Result.Success()` / `Result.Success(value)`, 실패는 `Result.Failure(error)`. `Error` → `Result` / `Result<T>`, 값 → `Result<T>` 암시적 변환이 있어 `return EmployeeErrors.NotFound;`, `return result.Error;`, `return result.Value.Id;`로 쓴다. 성공 값은 `null`일 수 없다(대상이 없으면 NotFound 실패). 실패 결과의 `Value`, 성공 결과의 `Error`를 읽으면 `InvalidOperationException`이므로 `IsFailure`를 먼저 확인한다. `Error.None` 같은 빈 오류 값은 두지 않는다.
 - API는 `Result`를 RFC 9457 `ProblemDetails`로 변환한다. 전역 예외 처리(`IExceptionHandler`)는 예상하지 못한 예외만 500으로 변환하고 로그를 남긴다.
 - `catch (Exception)`으로 삼키지 않는다. 잡았으면 처리하거나 로그와 함께 다시 던진다.
 
@@ -356,3 +357,4 @@ builder.Services.AddConventionalServices(
 | 2026-09-27 | - | 모델은 모두 `record`, Repository 규칙(쿼리만, 람다 식), 읽기 / 쓰기 DbContext 분리, DI 자동 등록(마커 + Scoped) 추가 |
 | 2026-09-27 | developer | ADR 0013~0015 · 0017 · 0023 반영: Handler 예시에서 `SaveChanges` 제거, Command 반환 `Result<Unit>`, Mediator 직접 구현 · Scrutor 확정, 파이프라인 순서, 도메인 이벤트 수집만 (S01-T04) |
 | 2026-09-27 | developer | `.editorconfig` 표에 빌드 강제 · 테스트 예외 · 생성 코드(CS1591 none 병기, BL-047) 행 추가 (S01-T05) |
+| 2026-09-27 | developer | BuildingBlocks.Domain `sealed` 예외(Entity · AggregateRoot · Error · Result), `Error` 팩토리 · 생성 시 검증, `Result` 사용 규칙과 암시적 변환(BL-040) (S01-T06) |
