@@ -85,6 +85,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T02 | developer 2차 | PASS | ADR 0011~0014 `accepted` 생성(초안과 diff 동일), ADR 목록 · design.md · PRD Q9/Q10/Q12/Q13 링크 갱신, 점검 결함 0 |
 | 2026-09-27 | S01-T02 | reviewer | PASS | 템플릿 · frontmatter · 링크(check-docs 결함 0), ADR 0005 / 0009 정합, 0001~0010 불변, PRD Q 결론 일치, 완료 조건 필수 항목 전부 확인 |
 | 2026-09-27 | S01-T02 | tester | PASS | Q9 · Q10 · Q12(승인된 구체화) · Q13 결론과 본문 grep 대조 일치, 0011~0014 accepted, check-docs 17개 결함 0, 스크립트 부정 점검 6종 exit 1 · 정상 exit 0, 완료 조건 필수 항목 전부 존재, 0001~0010 불변 |
+| 2026-09-27 | S01-T03 | dba | PASS | Mediator 순서가 ADR-0014와 일치, Mediator ADR 필수 문장 8건 · 로깅 ADR DB 항목(EnableSensitiveDataLogging은 Development opt-in, 파라미터 값 미기록, EF 로그 수준, Include Error Detail · Persist Security Info 금지, Npgsql 추적 태그에 값 없음) 확정. NuGet 캐시 XML · DLL로 확인 |
 
 ## 계획 리뷰
 
@@ -154,6 +155,8 @@ updated: 2026-09-27
 | BL-020 | check-docs.js 유형별 추가 필드 점검 검토 | S01-T02 | |
 | BL-021 | check-docs.js 공백 포함 링크 대상 형식 미점검 | S01-T02 | |
 | BL-022 | database.md "기본값(Read Committed)" → "명시" 문구 정리(T04) | S01-T02 | |
+| BL-023 | 23505 정상 경합 시 EF가 Error 로그 2건 기록 → 수준 조정 여부 | S01-T03 | |
+| BL-024 | S03-T05: 추적 db.connection_string 비밀번호 · 파라미터 값 미노출 실측 | S01-T03 | |
 
 ## 회고
 
