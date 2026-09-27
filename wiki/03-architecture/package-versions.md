@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [architecture, packages, license]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 패키지 버전 · 라이선스
@@ -175,6 +175,7 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 | Microsoft.Extensions.TimeProvider.Testing | 10.10.0 | `FakeTimeProvider` | MIT | net8.0 외 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.extensions.timeprovider.testing/10.10.0/microsoft.extensions.timeprovider.testing.nuspec) | net8.0 그룹 의존 없음 → .NET 8 내장 `TimeProvider`와 그대로 호환 |
 | Microsoft.Extensions.Diagnostics.Testing | 10.10.0 | `FakeLogger` · `FakeLogCollector`(로그 수준 · 이벤트 ID · 구조화 속성 · 개인정보 없음 단언) | MIT | net462, netstandard2.0, net8.0, net9.0, net10.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.extensions.diagnostics.testing/10.10.0/microsoft.extensions.diagnostics.testing.nuspec) | S02-T02 추가(ADR 없이 기록, S02 계획 리뷰). net8.0 그룹 의존 Telemetry.Abstractions 10.10.0 · Logging 8.0.1 · Options.ConfigurationExtensions 8.0.0. 실측 해석: Logging.Abstractions · DependencyInjection.Abstractions · DiagnosticSource는 중앙 고정 10.0.0 유지(하향 NU1109 없음), Compliance.Abstractions 10.10.0 · ObjectPool 8.0.31 전이. 테스트 프로젝트만 참조. `dotnet list package --vulnerable --include-transitive` 취약 패키지 없음 |
 | Microsoft.Extensions.DependencyInjection | 10.0.0 | 실제 `ServiceProvider`(`ValidateOnBuild` · `ValidateScopes`)로 DI 등록 · 데코레이터 체인 해석 확인 | MIT | net462, netstandard2.0, netstandard2.1, net8.0, net9.0, net10.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencyinjection/10.0.0/microsoft.extensions.dependencyinjection.nuspec) | S02-T03 추가, 테스트 프로젝트(Application · Infrastructure UnitTests)만 직접 참조. S02-T04 관찰: BuildingBlocks.Infrastructure가 Npgsql.EntityFrameworkCore.PostgreSQL을 참조하면서 EF Core 8.0.31의 DI 의존(8.0.x 하한)이 전이 고정으로 10.0.0에 해석된다(제품 어셈블리에도 유입, NU1109 없음, 빌드 · 단위 테스트 이상 없음, TD-008 관찰 대상). net8.0 그룹 의존 DependencyInjection.Abstractions 10.0.0(중앙 고정과 같음). 고정 전에는 Diagnostics.Testing → Logging 8.0.1 전이로 8.0.1이 해석돼 Abstractions 10.0.0과 버전이 어긋났으므로 Abstractions와 같은 10.0.0으로 맞춤. 앱 호스트는 공유 프레임워크 DI를 쓰므로 영향 없음(TD-008 관찰 대상). Scrutor 7 `Decorate`는 감싼 안쪽 단계를 keyed 등록으로 남기므로 `IKeyedServiceProvider`가 필요(8.0 이상 충족). `dotnet list package --vulnerable --include-transitive` 취약 패키지 없음 |
+| Microsoft.AspNetCore.Mvc.Testing | 8.0.31 | `WebApplicationFactory<Program>`(HTTP 통합 테스트, Employee.IntegrationTests) | MIT | net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.aspnetcore.mvc.testing/8.0.31/microsoft.aspnetcore.mvc.testing.nuspec) | S03-T07 추가(ADR 없이 기록). ASP.NET Core 8 런타임과 같은 패치(8.0.x 최신). net8.0 그룹 의존 Microsoft.AspNetCore.TestHost 8.0.31 · Extensions.DependencyModel 8.0.2(해석 10.0.0) · Extensions.Hosting 8.0.1. `dotnet list package --vulnerable --include-transitive` 취약 패키지 없음 |
 | NetArchTest.Rules | 1.3.2 | 아키텍처 테스트 | MIT ([저장소](https://github.com/BenMorris/NetArchTest)) | netstandard2.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/netarchtest.rules/1.3.2/netarchtest.rules.nuspec) | 2021-05 이후 릴리스 없음(nuspec에 라이선스 메타데이터 없음, 저장소 MIT). Mono.Cecil 0.11.3 전이 |
 | coverlet.collector | 10.0.1 | VSTest 커버리지 수집(`--collect:"XPlat Code Coverage"`) | MIT | 수집기(도구 패키지) | [nuspec](https://api.nuget.org/v3-flatcontainer/coverlet.collector/10.0.1/coverlet.collector.nuspec), [릴리스](https://github.com/coverlet-coverage/coverlet/releases/tag/v10.0.1) | 8.0.0부터 .NET 8 SDK · 런타임 이상 필요. `PrivateAssets=all` |
 
@@ -284,3 +285,4 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 | 2026-09-27 | developer | Microsoft.Extensions.DependencyInjection 10.0.0 행 추가(테스트 전용, Abstractions와 버전 맞춤), BuildingBlocks.Infrastructure가 Scrutor · FluentValidation.DependencyInjectionExtensions · UUIDNext 직접 참조 (S02-T03) |
 | 2026-09-27 | developer | BuildingBlocks.Infrastructure가 Npgsql.EntityFrameworkCore.PostgreSQL · EFCore.NamingConventions 직접 참조, EF Core 경유 DependencyInjection 10.0.0 전이 해석 관찰, Infrastructure.UnitTests가 TimeProvider.Testing 참조. `dotnet list package --vulnerable --include-transitive` 취약 패키지 없음 (S02-T04) |
 | 2026-09-27 | developer | BuildingBlocks.Api(FrameworkReference `Microsoft.AspNetCore.App`)가 Swashbuckle.AspNetCore를 직접 참조, Api.UnitTests는 기존 테스트 패키지만(새 패키지 없음). 취약 패키지 없음 (S02-T06) |
+| 2026-09-28 | developer | Microsoft.AspNetCore.Mvc.Testing 8.0.31 행 추가(Employee.IntegrationTests, Api 프로젝트 참조), 취약 패키지 없음 (S03-T07) |

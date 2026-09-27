@@ -6,6 +6,7 @@ using Npgsql;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using Serilog;
+using Serilog.AspNetCore;
 
 namespace EmergencyHub.ServiceDefaults;
 
@@ -115,5 +116,11 @@ public static class ServiceDefaultsExtensions
             (services, logger) => SerilogDefaults.Configure(logger, services, configuration, environment),
             preserveStaticLogger: true,
             writeToProviders: false);
+
+        // UseSerilogRequestLogging은 options.Logger가 없으면 정적 Log에 쓴다. 정적 로거를 바꾸지 않으므로(위) 요청 완료 로그가 사라진다
+        // (S03-T05 발견, S03-T07 수정). 미들웨어가 읽는 IOptions<RequestLoggingOptions>에 DI의 Serilog 로거를 넣어 모든 서비스에 한 번에 적용한다.
+        // 호출 쪽 configureOptions는 이 값 위에 적용되므로 Logger를 직접 주면 그 값이 이긴다.
+        builder.Services.AddOptions<RequestLoggingOptions>()
+            .Configure<Serilog.ILogger>((options, logger) => options.Logger = logger);
     }
 }

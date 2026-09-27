@@ -16,6 +16,9 @@ public static class RepositoryFiles
     /// <summary>AppHost 프로젝트 폴더입니다.</summary>
     public static string AppHostDirectory => Path.Combine(Root, "src", "Aspire", "EmergencyHub.AppHost");
 
+    /// <summary>Employee Api 프로젝트 폴더입니다(<see cref="ApiContentRoot"/>가 설정 파일을 읽음).</summary>
+    public static string EmployeeApiDirectory => Path.Combine(Root, "src", "Services", "Employee", "EmergencyHub.Employee.Api");
+
     /// <summary>AppHost가 <c>WithInitFiles</c>로 넣는 PostgreSQL 초기화 스크립트 폴더입니다(AppHost <c>EmployeeDatabaseSettings.InitFilesDirectory</c>).</summary>
     public static string PostgresInitDirectory => Path.Combine(AppHostDirectory, "postgres-init");
 

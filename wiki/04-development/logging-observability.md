@@ -123,6 +123,7 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
   - 프레임워크 `ExceptionHandlerMiddleware`의 자체 `Error` 로그(원본 메시지 포함)는 범주 `Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware`를 꺼서 남기지 않는다. `AddBuildingBlocksApi`가 Microsoft.Extensions.Logging 필터를 걸고, Serilog 설정(ServiceDefaults)도 같은 범주를 `MinimumLevel.Override`로 끈다.
 - Repository에는 로그를 두지 않는다([Repository 규칙](coding-conventions.md#repository-규칙-ef-core)). 로그는 Handler, 파이프라인 동작, 인프라 어댑터에서 남긴다.
 - 요청마다 시작 / 종료 로그를 직접 남기지 않는다. `UseSerilogRequestLogging()`이 요청당 한 줄을 남긴다.
+  - 요청 로그 미들웨어는 `options.Logger`가 없으면 정적 `Serilog.Log`에 쓰는데, ServiceDefaults는 정적 로거를 바꾸지 않는다(`preserveStaticLogger: true`). 그래서 `AddServiceDefaults`가 `IOptions<RequestLoggingOptions>`의 `Logger`를 DI의 Serilog 로거로 채운다(S03-T05 발견 · S03-T07 수정). 서비스 코드는 `options.Logger`를 따로 주지 않는다(주면 그 값이 이긴다).
 
 ```csharp
 internal static partial class EmployeeLogs
@@ -208,3 +209,4 @@ ServiceDefaults의 `MapDefaultEndpoints`가 매핑합니다(S03-T03, BL-030). �
 | 2026-09-27 | developer | 전역 예외 처리기의 예외 기록 방식(메시지를 뺀 사본, 이벤트 ID 1)과 프레임워크 예외 미들웨어 로그 끄기 (S02-T06) |
 | 2026-09-27 | developer | 헬스체크 경로 · 노출 환경(모든 환경) · 응답 본문(상태 문자열만), ServiceDefaults Serilog 구성(`ReadFrom.Services`, ExceptionHandlerMiddleware 범주 `MinimumLevel.Override` 끄기) (S03-T03) |
 | 2026-09-28 | developer | EF 실패 이벤트 3개 `Debug`(BL-023 결정), 설정 위치 한 곳과 경계 로그 (S03-T06) |
+| 2026-09-28 | developer | 요청 로그 로거를 DI Serilog 로거로 채우는 위치(ServiceDefaults `RequestLoggingOptions`, 정적 `Log` 무음 결함 수정) (S03-T07) |

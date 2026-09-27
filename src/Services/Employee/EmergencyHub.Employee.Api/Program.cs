@@ -76,7 +76,10 @@ public sealed class Program
     /// 요청 파이프라인: 요청 로그(헬스 경로 제외) → 공통 API 처리(예외 처리 · Development 한정 Swagger · Controller) → 헬스 엔드포인트.
     /// </summary>
     /// <param name="app">웹 애플리케이션.</param>
-    /// <remarks>요청 로그를 맨 앞에 두어 예외 처리기가 만든 최종 상태 코드(500 등)까지 한 줄로 남깁니다.</remarks>
+    /// <remarks>
+    /// 요청 로그를 맨 앞에 두어 예외 처리기가 만든 최종 상태 코드(500 등)까지 한 줄로 남깁니다.
+    /// 요청 로그의 로거는 <c>AddServiceDefaults</c>가 DI의 Serilog 로거로 채웁니다(정적 <c>Log</c>는 쓰지 않음, S03-T07).
+    /// </remarks>
     internal static void ConfigurePipeline(WebApplication app)
     {
         app.UseSerilogRequestLogging(options => options.GetLevel = (httpContext, _, exception) => RequestLogLevels.Get(httpContext, exception));

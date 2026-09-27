@@ -13,7 +13,7 @@
 
   <!--
     Microsoft.AspNetCore.App: 운영과 같은 IConfiguration(ConfigurationBuilder · 메모리 설정)으로 AddEmployeeInfrastructure를 부르고,
-    S03-T07 WebApplicationFactory<Program>도 같은 프레임워크를 쓴다(패키지 추가 없음).
+    S03-T07 WebApplicationFactory<Program>도 같은 프레임워크를 쓴다(Microsoft.AspNetCore.Mvc.Testing 추가).
   -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -27,12 +27,18 @@
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Respawn" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
   </ItemGroup>
 
+  <!--
+    Api 참조: WebApplicationFactory<EmergencyHub.Employee.Api.Program>로 실제 파이프라인(Controller · 검증 · 예외 처리 · 요청 로그)을 띄운다(S03-T07).
+    Microsoft.AspNetCore.Mvc.Testing이 Api의 .deps.json을 출력 폴더로 복사한다.
+  -->
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\Services\Employee\EmergencyHub.Employee.Api\EmergencyHub.Employee.Api.csproj" />
     <ProjectReference Include="..\..\..\..\src\Services\Employee\EmergencyHub.Employee.Infrastructure\EmergencyHub.Employee.Infrastructure.csproj" />
   </ItemGroup>
 
