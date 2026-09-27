@@ -143,6 +143,8 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 
 | 패키지 | 버전 | 용도 | 라이선스 | 대상 프레임워크 | 출처 | 비고 |
 |---|---|---|---|---|---|---|
+| Microsoft.Extensions.DependencyInjection.Abstractions | 10.0.0 | BuildingBlocks.Application 추상화(`GetService<T>`, ADR-0015) | MIT | net462, netstandard2.0, netstandard2.1, net8.0, net9.0, net10.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencyinjection.abstractions/10.0.0/microsoft.extensions.dependencyinjection.abstractions.nuspec) | 2025-11-11. net8.0 그룹 의존 없음. **8.0.x가 아니라 10.0.0**: Scrutor 7이 `>= 10.0.0`을 요구해 8.0.2로 고정하면 전이 고정 하향 NU1109(스크래치 restore 실측, S02-T01). 최신 패치 10.0.12 대신 전이 요구 하한과 같은 10.0.0으로 두어 다른 전이 버전을 올리지 않음(TD-008) |
+| Microsoft.Extensions.Logging.Abstractions | 10.0.0 | BuildingBlocks.Application 로깅 추상화(데코레이터 `ILogger<T>`, S02-T02) | MIT | net462, netstandard2.0, net8.0, net9.0, net10.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.extensions.logging.abstractions/10.0.0/microsoft.extensions.logging.abstractions.nuspec) | net8.0 그룹 의존 DependencyInjection.Abstractions 10.0.0 · System.Diagnostics.DiagnosticSource 10.0.0. 위와 같은 이유로 10.0.0. `dotnet list package --vulnerable --include-transitive` 취약 패키지 없음 (S02-T01) |
 | Scrutor | 7.0.0 | 어셈블리 검색 DI 자동 등록(ADR 0010 구체화) | MIT | net462, netstandard2.0, net8.0, net10.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/scrutor/7.0.0/scrutor.nuspec) | net8.0에서 Microsoft.Extensions.DependencyInjection.Abstractions · DependencyModel **10.0.0** 전이. 6.1.0은 8.0.x 의존 |
 | FluentValidation | 12.1.1 | 입력 검증 | Apache-2.0 | net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/fluentvalidation/12.1.1/fluentvalidation.nuspec) | 12.x에서도 라이선스 변경 없음(저장소 라이선스 Apache-2.0). 12부터 net8.0 전용 |
 | FluentValidation.DependencyInjectionExtensions | 12.1.1 | `AddValidatorsFromAssembly` | Apache-2.0 | net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/fluentvalidation.dependencyinjectionextensions/12.1.1/fluentvalidation.dependencyinjectionextensions.nuspec) | |
@@ -263,7 +265,7 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 | 기술부채 | TD-005 Aspire 9.x 지원 종료 상태로 9.5.2 사용 | 기존, 재검토 BL-002(.NET 10 · Aspire 13 전환) |
 | 기술부채 | TD-006 클라이언트 통합 사용 시 OTel 버전 혼재 | 기존. 위 판단 자료로 해소 가능 |
 | 기술부채 | TD-007 Aspire.Hosting 9.5.2 전이 MessagePack 취약 → 수동 고정 유지 | 기존 |
-| 기술부채 | TD-008 net8.0 앱에 Microsoft.Extensions.* · DiagnosticSource 10.0.0 전이 유입(Scrutor 7, Serilog 10, OTel 1.19) | 기존. OTel은 피할 수 없음(취약점 없는 버전이 모두 DiagnosticSource 10 요구) |
+| 기술부채 | TD-008 net8.0 앱에 Microsoft.Extensions.* · DiagnosticSource 10.0.0 전이 유입(Scrutor 7, Serilog 10, OTel 1.19) | 기존. OTel은 피할 수 없음(취약점 없는 버전이 모두 DiagnosticSource 10 요구). S02-T01 관찰: BuildingBlocks.Application이 DependencyInjection · Logging.Abstractions 10.0.0을 직접 고정(8.0.x 고정은 NU1109), net8.0 빌드 · 단위 테스트 51건에서 이상 없음. 런타임 호환은 S03 호스트 실행 때 계속 관찰 |
 
 ---
 
@@ -275,3 +277,4 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 | 2026-09-27 | developer | ADR 0011 · 0020 · 0021 · 0022 반영: 클라이언트 통합 미사용 · 의존 버전, 폐기 표시(클라이언트 통합 · Dashboard.Sdk · Orchestration), `WithInitFiles`, Npgsql.OpenTelemetry · HealthChecks.EFCore · Serilog.Sinks.Async · Serilog.Enrichers.Environment 행, PostgreSQL 이미지 · .NET SDK 라이선스, xUnit v3 확정, 결정 · 미해결 표 갱신 (S01-T04) |
 | 2026-09-27 | developer | 테스트 표 사이 설명 문단을 표 뒤로 이동(표 끊김 수정), CI 작업 번호를 S01-T07로 정정(2곳), xUnit 용도 열 "채택" / "비교용 · 미사용" (S01-T04) |
 | 2026-09-27 | developer | GitHub Actions 고정 방식 결정(커밋 SHA + 버전 주석, 태그 → SHA 일치 확인), NuGet 캐시 미사용, 결정 · 미해결 표 갱신 (S01-T07) |
+| 2026-09-27 | developer | Microsoft.Extensions.DependencyInjection.Abstractions · Logging.Abstractions 10.0.0 행 추가(8.0.x 고정 시 NU1109 실측), TD-008 관찰 기록 (S02-T01) |

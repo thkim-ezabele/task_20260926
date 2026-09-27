@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    공통 설정은 Directory.Build.props. Application은 Domain과 Microsoft.Extensions.*.Abstractions만 참조하고
+    EF Core · Scrutor · ASP.NET Core는 참조하지 않는다(ADR-0003, ADR-0015, ADR-0024). FluentValidation은 S02-T02에서 추가한다.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EmergencyHub.BuildingBlocks.Domain\EmergencyHub.BuildingBlocks.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

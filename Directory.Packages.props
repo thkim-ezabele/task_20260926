@@ -38,6 +38,13 @@
   </ItemGroup>
 
   <ItemGroup Label="애플리케이션 (ADR-0017 ~ ADR-0020)">
+    <!--
+      BuildingBlocks.Application의 추상화(ADR-0015). 8.0.x가 아니라 10.0.0인 이유: Scrutor 7 · Serilog.AspNetCore 10 ·
+      OpenTelemetry 1.19가 net8.0에서 이미 10.0.0 이상을 요구해(TD-008) 8.0.x로 고정하면 전이 고정 하향(NU1109)이 된다.
+      요구 하한과 같은 10.0.0으로 두어 DiagnosticSource 등 다른 전이 버전을 더 올리지 않는다(package-versions.md).
+    -->
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
     <PackageVersion Include="Scrutor" Version="7.0.0" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />

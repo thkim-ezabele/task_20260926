@@ -74,6 +74,7 @@ updated: 2026-09-27
 | 2026-09-27 | S02-T08 | reviewer | PASS | 템플릿 · frontmatter · 링크 결함 0, 0001~0023 불변, 완료 조건 · 사용자 확인 · dba 입력 4건 반영, ADR-0014 · 0016 · 0017 · 0019 · 0020 정합. handoff: T06 Api에 EF · Npgsql · Infrastructure 참조 시 반려, 분류기 0개 엣지 테스트 / T05 규칙마다 테스트 1개 · 대상 1개 이상 단언 |
 | 2026-09-27 | S02-T08 | tester | PASS | 명령 기반 점검 9개 통과: check-docs 81개 · 결함 2건(기준선), ADR 템플릿 4절 · wikilink 0, 목록 행, 0001~0023 불변, 완료 조건 7항목, PRD FR-09 비고 · 변경 이력, FR-07 구성 요소 배치 대조. handoff: T05 타입 의존 기준 단언, T06 tester 확인 항목 |
 | 2026-09-27 | S02-T01 | dba | PASS | 해당 없음(DB 변경 없음). CommitAsync → Task<Result>가 ADR-0014와 맞음. 주의: IUnitOfWork에 SaveChanges · BeginTransaction 공개 금지, 분류 포트는 System.Exception만, 실패 Result는 롤백 완료 전제를 XML 주석에. handoff: T02 실패 Result 전달, T07 UoW 순서(원문 T04 → T07로 정정) |
+| 2026-09-27 | S02-T01 | developer | PASS | Red(컴파일 오류 34) → Green. 계약(Unit, ICommand · IQuery · Handler, ISender, IUnitOfWork.CommitAsync → Task<Result>, IReadRepository, IService, IIdGenerator, IExceptionClassifier.Classify(Exception) → Error?), internal sealed Sender + RequestInvokerCache(키 = 요청 · 응답 형식, Lazy). 테스트 51건(캐시 판정 ByCount · ByReference 등, 동시 64건, 누락 예외, 토큰 전달), Application 커버리지 line · branch 100%. Abstractions 10.0.0 고정(8.0.2는 Scrutor 7로 NU1109). build 경고 0, test 253 통과, format 통과. 후보 BL-065(IService 마커 위치). handoff: T02 · T03 · T05 · T06 · T07 |
 
 ## 계획 리뷰
 
