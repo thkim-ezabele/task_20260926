@@ -95,6 +95,7 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T04 | developer 1차 | PASS | ADR 0021~0023 초안, 기준 문서 10개 수정(🟡 대상 6개 0건, ADR 충돌 수정, package-versions BL-010 · 011 · 013 · 016 · 026, PRD Q9 주석). Aspire.Dashboard.Sdk는 Microsoft 사용 조건(무료) |
 | 2026-09-27 | S01-T04 | 사용자 확인 | 승인 | 초안 3건 수정 없음. xUnit v3, 보류 재검토 트리거 그대로, Respawn · 커버리지 한 ADR(총 13건), NFR-03 BuildingBlocks = Domain · Application |
 | 2026-09-27 | S01-T04 | developer 2차 | PASS | ADR 0021~0023 `accepted`(초안과 diff 동일), ADR 목록 · design.md · PRD 링크, check-docs wiki 전체 결함은 raw-log 2건(BL-018)뿐, 0001~0020 불변 |
+| 2026-09-27 | S01-T04 | reviewer | REJECT → developer | [형식] 반려 1회. ① package-versions.md:176 설명 문단이 테스트 표 중간에 들어가 coverlet.collector 행이 표에서 떨어짐 ② package-versions.md:207 · 254 CI 작업 번호 S01-T06 → S01-T07(tech-stack · ADR과 불일치). 나머지(ADR 형식 · 불변, 🟡 0, ADR 충돌 수정, 0004 유지, 규칙 삭제 없음) 통과 |
 
 ## 계획 리뷰
 
@@ -184,6 +185,8 @@ updated: 2026-09-27
 | BL-039 | coding-conventions `IIdGenerator.NewId()` 이름 S02-T01에 맞춤 | S01-T04 | |
 | BL-040 | T06: `Result<T>` 값 암시적 변환 여부 | S01-T04 | |
 | TD-013 | NetArchTest.Rules · NSubstitute.Analyzers 유지 중단 | S01-T04 | |
+| BL-041 | package-versions 테스트 표 용도 열 "추천/대안" → "채택/미사용" | S01-T04 | |
+| BL-042 | clean-architecture 서비스 카탈로그 🟡(도메인 항목) 정리 위치 | S01-T04 | |
 
 ## 회고
 
