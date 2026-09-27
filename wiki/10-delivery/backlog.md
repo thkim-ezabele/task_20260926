@@ -116,6 +116,7 @@ updated: 2026-09-27
 | BL-087 | S04-T02 문서 반영 묶음: clean-architecture 의존성 규칙 표 Api · MigrationService 행 + testing-strategy 아키텍처 테스트 절 동기화 + 규칙 Source 문자열 변경, database.md xmin 설명과 구현(IsConcurrencyToken + OnAddOrUpdate)이 같은 구성이라는 한 줄 | S02 결과 리뷰 | 중 | planned:S04 | S04-T02 입력 |
 | BL-088 | Flags · owned 실측(S03 계획 리뷰에서 이관): [Flags] 미정의 비트 ck_ 거부(BL-082 S4 Flags), owned ck_ · bigint 마스크(S5), owned 하위 값만 바뀔 때 소유자 UPDATE · xmin 충돌(BL-081 P5 owned) | S03 계획 리뷰 | 중 | open | 재검토 트리거: 제품 코드의 첫 [Flags] 코드 또는 owned 타입(예: Contact Network 알림 채널). 생성 SQL은 S02 설계 시점 단위 테스트로 확인됨 |
 | BL-089 | 기준 문서가 S03 결정과 어긋남: coding-conventions DDD 구현 규칙(불변식 위반 시 Result 실패, Email.Create → Result 값 객체, CQRS 예시 Handler)과 S03 결정(Aggregate 불변식 위반은 예외, Email은 정규화한 string), logging-observability 20001 예시 템플릿과 실제 정의(Employee {EmployeeId} registered) | S03-T01 | | new | 원본은 S03 계획 리뷰 결정과 error-codes.md Employee 절 |
+| BL-090 | 아키텍처 규칙 ClassesAreSealed가 internal 생성 형식(EmployeeDbContextModelSnapshot, partial, sealed 아님)은 잡지 않고 public InitialCreate만 잡음: 규칙 범위(가시성)와 EF 생성 형식 처리 기준을 아키텍처 테스트 문서에 적을지 결정 | S03-T02 reviewer | | new | S03-T02 반려 조치는 sealed partial 선언 추가(규칙 변경 없음) |
 
 ---
 
