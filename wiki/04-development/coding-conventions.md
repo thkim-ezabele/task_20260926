@@ -123,19 +123,20 @@ Application 레이어는 **Command(상태 변경)와 Query(조회)를 분리**�
 | 구분 | Command | Query |
 |---|---|---|
 | 목적 | 상태 변경 | 데이터 조회 |
-| 반환 | `Result` 또는 `Result<TId>` (생성한 ID 정도만) | `Result<TResponse>` (DTO) |
+| 반환 | `Result<Unit>`(`ICommand`, 반환 값 없음) 또는 `Result<TId>`(`ICommand<TId>`, 생성한 ID 정도만) | `Result<TResponse>` (DTO) |
 | 부작용 | 있음 | **없음** |
 | 도메인 모델 | Repository로 Aggregate를 불러와 도메인 메서드 호출 | 도메인 모델을 거치지 않는다. **Read Repository**가 읽기 전용 DbContext에서 DTO로 바로 프로젝션한다 |
 | DB 연결 | 쓰기 DbContext (`ConnectionStrings:Write`) | 읽기 전용 DbContext (`ConnectionStrings:Read`) |
-| 트랜잭션 | Command 하나 = 트랜잭션 하나 = Aggregate 하나 | 없음 |
+| 트랜잭션 | Command 하나 = 트랜잭션 하나 = Aggregate 하나. 저장 · 커밋은 트랜잭션 데코레이터 → `IUnitOfWork`가 한다(Handler는 저장하지 않음) | 없음 |
 | 검증 | FluentValidation Validator (파이프라인에서 자동 실행) | 필요 시 Validator |
 
 - Handler 하나는 요청 하나만 처리한다.
-- Command Handler는 다른 Command를 직접 호출하지 않는다. 후속 처리는 도메인 이벤트 / 통합 이벤트로 연결한다.
-- 공통 관심사(검증, 로깅, 트랜잭션)는 **파이프라인 동작(behavior)**으로 처리한다.
-- Application 코드는 BuildingBlocks의 추상화(`ICommand`, `IQuery`, `ICommandHandler`, `IQueryHandler`)에만 의존한다.
+- Command Handler는 다른 Command를 직접 호출하지 않는다. Handler는 `ISender`를 주입받지 않는다(중첩 `SendAsync`는 커밋이 두 번 일어남). 후속 처리는 도메인 이벤트 / 통합 이벤트로 연결한다.
+- 공통 관심사(로깅, 검증, 트랜잭션)는 **Handler 데코레이터 파이프라인**으로 처리한다. 순서는 Command가 로깅 → 검증 → 트랜잭션 → Handler, Query가 로깅 → 검증 → Handler다(트랜잭션은 Command에만).
+- **Handler와 Repository는 `SaveChanges`를 부르지 않는다.** Handler가 성공 `Result`를 돌려주면 트랜잭션 데코레이터가 `IUnitOfWork.CommitAsync`를 부르고, 실패 `Result`면 저장하지 않는다. Handler는 DbContext를 받지 않는다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)).
+- Application 코드는 BuildingBlocks의 추상화(`ICommand`, `ICommand<TResponse>`, `IQuery<TResponse>`, `ICommandHandler<,>`, `IQueryHandler<,>`, `ISender`)에만 의존한다. 반환 값 없는 Command는 `ICommand : ICommand<Unit>`이고 `Result<Unit>`을 돌려준다.
 
-> 🟡 **Mediator 구현체 미정**: MediatR는 v13부터 상용 라이선스로 바뀌었습니다. 추상화를 직접 두고 구현체(MediatR / 소스 생성기 기반 Mediator / 직접 구현)는 기반 구축 토픽에서 ADR로 정합니다.
+> **Mediator는 직접 구현한다**([ADR-0015](../03-architecture/adr/0015-custom-mediator-pipeline.md)). MediatR는 v13부터 상용 라이선스라 쓰지 않는다. 디스패처(`ISender`)는 Handler 타입을 캐시하고, 등록되지 않은 Handler는 `InvalidOperationException`을 던진다.
 
 기능 폴더 구조 (Application)
 
@@ -159,21 +160,35 @@ EmergencyHub.Employee.Application/
 public sealed record RegisterEmployeeCommand(string Name, string Email, NotificationChannels Channels)
     : ICommand<EmployeeId>;
 
+// 저장 · 커밋은 이 Handler가 아니라 트랜잭션 데코레이터 → IUnitOfWork가 한다(ADR-0014).
+// ID는 Handler가 IIdGenerator로 만든다(ADR-0013). IIdGenerator의 메서드 이름은 S02에서 확정한다.
 internal sealed class RegisterEmployeeCommandHandler(
     IEmployeeRepository repository,
-    IUnitOfWork unitOfWork,
+    IIdGenerator idGenerator,
     TimeProvider timeProvider) : ICommandHandler<RegisterEmployeeCommand, EmployeeId>
 {
     public async Task<Result<EmployeeId>> Handle(RegisterEmployeeCommand command, CancellationToken cancellationToken)
     {
-        var result = Employee.Register(command.Name, command.Email, command.Channels, timeProvider.GetUtcNow());
+        var email = Email.Create(command.Email);
+        if (email.IsFailure)
+        {
+            return email.Error;
+        }
+
+        // 사전 조회는 1차 방어이고, 동시 요청 경합은 유니크 인덱스(ux_employees_email) → 23505 변환이 막는다.
+        if (await repository.ExistsByEmailAsync(email.Value, cancellationToken))
+        {
+            return EmployeeErrors.EmailAlreadyInUse;
+        }
+
+        var id = new EmployeeId(idGenerator.NewId());
+        var result = Employee.Register(id, command.Name, email.Value, command.Channels, timeProvider.GetUtcNow());
         if (result.IsFailure)
         {
             return result.Error;
         }
 
         repository.Add(result.Value);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
         return result.Value.Id;
     }
 }
@@ -245,7 +260,7 @@ BuildingBlocks에 등록 기준이 되는 **마커 인터페이스와 기반 클
 | Write Repository | 인터페이스: `IRepository` 상속 / 구현: `RepositoryBase<TDbContext>` 상속 | Scoped |
 | Read Repository | 인터페이스: `IReadRepository` 상속 / 구현: `ReadRepositoryBase<TDbContext>` 상속 | Scoped |
 | 서비스 (도메인 서비스, 외부 연동 어댑터 등) | 인터페이스: `IService` 상속 | Scoped |
-| Command / Query Handler, Validator | `ICommandHandler<,>` / `IQueryHandler<,>` / `AbstractValidator<T>` | Mediator / FluentValidation의 어셈블리 검색으로 등록 |
+| Command / Query Handler, Validator | `ICommandHandler<,>` / `IQueryHandler<,>` / `AbstractValidator<T>` | `AddConventionalServices` 안에서 Scoped 등록(Handler는 Scrutor `Scan`, Validator는 `AddValidatorsFromAssemblies`). 데코레이터는 Scrutor `Decorate` |
 
 ```csharp
 // BuildingBlocks: 마커와 기반 클래스
@@ -274,7 +289,7 @@ builder.Services.AddConventionalServices(
 - `Singleton` / `Transient`가 필요한 인프라 요소(`TimeProvider`, `HttpClient` 등)는 BuildingBlocks의 공통 등록 코드에서만 등록한다. 서비스 코드에서 직접 등록하지 않는다.
 - 등록 누락은 통합 테스트(모든 마커 구현 타입이 컨테이너에서 해석되는지)로 검증하고, `ValidateOnBuild` / `ValidateScopes`를 개발 환경에서 켠다.
 
-> 🟡 타입 검색 구현: Scrutor(`services.Scan`)를 쓸지, BuildingBlocks에서 리플렉션으로 직접 구현할지 기반 구축 토픽에서 정합니다.
+> **타입 검색은 Scrutor로 구현한다**([ADR-0017](../03-architecture/adr/0017-scrutor-for-convention-based-di.md), ADR-0010 구체화). Scrutor는 BuildingBlocks.Infrastructure만 참조한다. 같은 서비스 인터페이스를 두 구현이 등록하면 시작 시 실패한다(`RegistrationStrategy.Throw`). Handler는 두 제네릭 인자 형태(`ICommandHandler<,>` / `IQueryHandler<,>`)로만 등록해 데코레이터를 우회하는 경로를 만들지 않는다.
 
 ## 비동기 프로그래밍 규칙
 
@@ -300,7 +315,7 @@ builder.Services.AddConventionalServices(
 - 다른 Aggregate는 **ID로만** 참조한다.
 - ID는 강타입 `record struct`(`EmployeeId`)를 쓴다.
 - Value Object는 `record`로 만들고, 생성 시 검증한다(`Email.Create(string)` → `Result<Email>`).
-- 도메인 이벤트는 Aggregate가 발생시키고, 저장 후 디스패치한다. 다른 서비스로 알릴 것은 통합 이벤트로 바꿔 Outbox에 넣는다([ADR-0004](../03-architecture/adr/0004-adopt-event-driven-architecture.md)).
+- 도메인 이벤트는 Aggregate가 발생시켜 수집한다. 지금은 **수집까지만** 하고 커밋 뒤 UnitOfWork가 `ClearDomainEvents`로 비운다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)). 디스패치는 이후 토픽, 다른 서비스로 알릴 통합 이벤트 · Outbox는 도입 보류다([ADR-0023](../03-architecture/adr/0023-deferred-adoptions.md), [ADR-0004](../03-architecture/adr/0004-adopt-event-driven-architecture.md) 유지).
 - Domain 프로젝트는 EF Core, ASP.NET Core 등 프레임워크를 참조하지 않는다(데이터 어노테이션 금지).
 
 ## 코드 스타일 (.editorconfig)
@@ -336,3 +351,4 @@ builder.Services.AddConventionalServices(
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 기본 컨벤션 초안: 네이밍, C# 12 기능, 정수 코드 / 비트 마스킹, CQRS, 비동기, Result 기반 예외 처리, DDD |
 | 2026-09-27 | - | 모델은 모두 `record`, Repository 규칙(쿼리만, 람다 식), 읽기 / 쓰기 DbContext 분리, DI 자동 등록(마커 + Scoped) 추가 |
+| 2026-09-27 | developer | ADR 0013~0015 · 0017 · 0023 반영: Handler 예시에서 `SaveChanges` 제거, Command 반환 `Result<Unit>`, Mediator 직접 구현 · Scrutor 확정, 파이프라인 순서, 도메인 이벤트 수집만 (S01-T04) |

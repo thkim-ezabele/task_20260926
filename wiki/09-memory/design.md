@@ -34,27 +34,24 @@ updated: 2026-09-27
 | [0018](../03-architecture/adr/0018-use-fluentvalidation.md) | FluentValidation | 검증 데코레이터에서만 실행 → `ValidationError`(1001 + 필드별 정수 코드), `WithError(Error)`로 `CustomState`, enum 1002, Validator DB 접근 금지 |
 | [0019](../03-architecture/adr/0019-use-swashbuckle-openapi.md) | Swashbuckle | 10.2.3, Development에서만 노출, 문서 `v1`, 정수 enum 설명 필터, ProblemDetails 스키마 |
 | [0020](../03-architecture/adr/0020-logging-with-serilog-and-otlp.md) | Serilog + OTLP | 로그는 Serilog OTLP 싱크 단일 경로(OTel 로그 공급자 없음, 신호별 exporter, `writeToProviders: false`), OTel 1.19.x, EF 계측 미추가, `EnableSensitiveDataLogging`은 Development opt-in, SQL 파라미터 값 미기록 |
+| [0021](../03-architecture/adr/0021-test-tooling-xunit-v3-and-awesomeassertions.md) | 테스트 도구 | xUnit v3(`xunit.v3` 4.0.1, VSTest 경로, SDK 8.0.4xx 필요), AwesomeAssertions 9.6.0(FluentAssertions 금지), NSubstitute · TimeProvider.Testing · Testcontainers · NetArchTest 버전 고정 |
+| [0022](../03-architecture/adr/0022-respawn-and-coverage-tooling.md) | Respawn · 커버리지 | Respawn 7.0.0(public, `__EFMigrationsHistory` 따옴표 없이 제외, 쓰기 연결, 테스트 시작 전 Reset), fixture는 `employee_app` 재현 · `postgres:17`, coverlet.collector + ReportGenerator(도구 매니페스트), 80%는 보고만(BuildingBlocks · Employee Domain / Application) |
+| [0023](../03-architecture/adr/0023-deferred-adoptions.md) | 도입 보류 | 브로커 · Outbox / Inbox · Gateway · 로그 수집기 보류(재검토 트리거 표), ADR-0004 유지, 로컬 관측은 Aspire 대시보드 |
 
 형상관리는 GitHub로 확정했습니다(ADR 없음).
 
-## 방향 결정 (PRD-001, 남은 항목은 S01-T04에서 ADR로 확정 예정)
+## 방향 결정 (PRD-001)
 
 원본: [PRD-001 질문과 답변](../10-delivery/prd/PRD-001-foundation.md#질문과-답변)
 
-- **로컬 인프라 · 마이그레이션 · UUID · 트랜잭션 · 리셋 정책**: ADR 0011~0014로 확정(위 표)
-- **애플리케이션**(Mediator, Controller, Scrutor, FluentValidation, Serilog + OTLP, Swashbuckle): ADR 0015~0020으로 확정(위 표)
-- **도입 보류**: 메시지 브로커, Outbox / Inbox, API Gateway, 로그 수집기(로컬 관측은 Aspire 대시보드)
-- **테스트**: AwesomeAssertions, Respawn, coverlet + ReportGenerator (S01-T04)
-- **정책**: 도메인 이벤트는 수집만
-- 해소: 고정할 Aspire 9.x 마이너 버전 → 9.5.2 (S01-T01)
+- PRD-001 방향 결정은 **S01 ADR 13건(0011~0023)으로 모두 확정**했습니다(위 표). 남은 방향 결정 항목은 없습니다.
+- 정책: 도메인 이벤트는 수집만(디스패치는 이후 토픽). Aspire 9.x 마이너 버전은 9.5.2(S01-T01).
 
 ## 검토 중 (초안 기본값)
 
-- **메시지 브로커**(보류 후 재검토): RabbitMQ 추천안 / Kafka. MassTransit은 v9부터 상용
-- **API Gateway**(보류 후 재검토): YARP 추천안 / Ocelot
-- **공통 라이브러리**: OpenTelemetry, Polly, Redis(필요 시)
-- **테스트 도구**: xUnit, NSubstitute, Testcontainers, NetArchTest
-- **인프라**: GitHub Actions, Docker, Kubernetes(필요 시, Phase 4)
+- **보류**([ADR-0023](../03-architecture/adr/0023-deferred-adoptions.md), 재검토 트리거 있음): 메시지 브로커(RabbitMQ 추천안 / Kafka, MassTransit v9+ 상용 제외), Outbox / Inbox, API Gateway(YARP 추천안 / Ocelot), 로그 수집기 · 추적 백엔드
+- **이후 토픽**: Polly(나가는 HTTP 호출이 생길 때), Redis(필요 시), Kubernetes · CD(Phase 4). 처리 방식 표는 [기술 스택](../03-architecture/tech-stack.md#남은-항목-처리-방식)
+- 확정으로 옮김: 테스트 도구(ADR-0021 · 0022), OpenTelemetry(ADR-0020), GitHub Actions(CI, S01-T07), Docker
 
 ## 기준 문서 (draft)
 

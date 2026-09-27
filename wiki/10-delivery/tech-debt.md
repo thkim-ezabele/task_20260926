@@ -39,6 +39,7 @@ updated: 2026-09-27
 | TD-010 | 커밋 응답 중 연결이 끊기면 실행 전략이 SaveChanges를 재실행해 pk_ 23505 · xmin 충돌을 잘못 보고할 수 있음. 운영 전 verifySucceeded 또는 멱등 키로 해소 | 설계 | | S01-T02 | | new |
 | TD-011 | EF Core 8 MigrateAsync에 마이그레이션 잠금 없음(EF 9 추가): 적용 주체를 MigrationService 1개로 제한, Phase 4는 번들 / 스크립트 | 인프라 | | S01-T02 | | new |
 | TD-012 | ServiceDefaults가 Aspire 템플릿과 달라짐(OTel 로그 공급자 제거, 신호별 OTLP 내보내기, ADR-0020). Aspire 버전을 올릴 때 차이를 다시 적용해야 함 | 인프라 | | S01-T03 | | new |
+| TD-013 | NetArchTest.Rules 1.3.2(2021-05 이후 릴리스 없음) · NSubstitute.Analyzers.CSharp 1.0.17(2024-02 이후 없음) 유지 중단. 막히면 ArchUnitNET 전환 검토(ADR-0021) | 테스트 | | S01-T04 | | new |
 
 ---
 

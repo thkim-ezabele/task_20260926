@@ -122,20 +122,20 @@ updated: 2026-09-27
 | Q2 | 인프라는 어느 환경까지인가 | 로컬만. Aspire AppHost로 구성(docker compose 없음) | FR-03, 범위 밖 |
 | Q3 | Aspire 버전과 SDK | Aspire 9.x + .NET 8 SDK | FR-01, FR-02 |
 | Q4 | 솔루션 범위 | BuildingBlocks + Employee 샘플 1개 | FR-04~08 |
-| Q5 | 미정 기술 선택 | 브로커 · Gateway · 로그 수집기 미도입, Mediator 직접 구현, Controller, 나머지 추천안(Scrutor, UUIDNext, AwesomeAssertions) | FR-01, [ADR-0015](../../03-architecture/adr/0015-custom-mediator-pipeline.md), [ADR-0016](../../03-architecture/adr/0016-use-controllers-for-api.md), [ADR-0017](../../03-architecture/adr/0017-scrutor-for-convention-based-di.md) |
+| Q5 | 미정 기술 선택 | 브로커 · Gateway · 로그 수집기 미도입, Mediator 직접 구현, Controller, 나머지 추천안(Scrutor, UUIDNext, AwesomeAssertions) | FR-01, [ADR-0015](../../03-architecture/adr/0015-custom-mediator-pipeline.md), [ADR-0016](../../03-architecture/adr/0016-use-controllers-for-api.md), [ADR-0017](../../03-architecture/adr/0017-scrutor-for-convention-based-di.md), [ADR-0021](../../03-architecture/adr/0021-test-tooling-xunit-v3-and-awesomeassertions.md)(AwesomeAssertions), [ADR-0023](../../03-architecture/adr/0023-deferred-adoptions.md)(미도입 항목) |
 | Q6 | 결정 기록 시점 | 이 토픽 안에서 ADR로 확정 | FR-01 |
 | Q7 | CI 포함 여부 | 포함 | FR-10 |
 | Q8 | Database 이름 | 기준 문서대로 `emergency_hub_employee`(리뷰 3건 일치, 질문 없이 반영) | FR-03, 영향 범위 |
-| Q9 | Command 저장 · 커밋 주체와 재시도 실행 전략 (BQ1) | 트랜잭션 데코레이터가 실행 전략 안에서 트랜잭션 → SaveChanges → 커밋. Handler는 저장하지 않음. 재시도 유지 | FR-05, FR-11, [ADR-0014](../../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md) |
+| Q9 | Command 저장 · 커밋 주체와 재시도 실행 전략 (BQ1) | 트랜잭션 데코레이터가 실행 전략 안에서 트랜잭션 → SaveChanges → 커밋. Handler는 저장하지 않음. 재시도 유지 | FR-05, FR-11, [ADR-0014](../../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md). 구체화: ADR-0014 · [ADR-0015](../../03-architecture/adr/0015-custom-mediator-pipeline.md)(데코레이터는 Handler를 전략 밖에서 1회 실행 후 `IUnitOfWork.CommitAsync`를 부르고, 트랜잭션 → SaveChanges → 커밋은 UnitOfWork가 실행 전략 안에서 수행) |
 | Q10 | 로컬 마이그레이션 적용 방식 (BQ2) | 별도 MigrationService(Worker), Api는 완료 대기 | FR-03, FR-08, NFR-04, [ADR-0012](../../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md) |
-| Q11 | FR-01 추가 확정 범위 (BQ3) | FluentValidation, 로깅(Serilog + OTLP), Swashbuckle, Respawn + 커버리지 도구 모두 확정. Outbox / Inbox는 보류 ADR에 포함 | FR-01, FR-03, FR-05, FR-07, FR-09, FR-10, NFR-03, [ADR-0018](../../03-architecture/adr/0018-use-fluentvalidation.md), [ADR-0019](../../03-architecture/adr/0019-use-swashbuckle-openapi.md), [ADR-0020](../../03-architecture/adr/0020-logging-with-serilog-and-otlp.md) |
+| Q11 | FR-01 추가 확정 범위 (BQ3) | FluentValidation, 로깅(Serilog + OTLP), Swashbuckle, Respawn + 커버리지 도구 모두 확정. Outbox / Inbox는 보류 ADR에 포함 | FR-01, FR-03, FR-05, FR-07, FR-09, FR-10, NFR-03, [ADR-0018](../../03-architecture/adr/0018-use-fluentvalidation.md), [ADR-0019](../../03-architecture/adr/0019-use-swashbuckle-openapi.md), [ADR-0020](../../03-architecture/adr/0020-logging-with-serilog-and-otlp.md), [ADR-0022](../../03-architecture/adr/0022-respawn-and-coverage-tooling.md)(Respawn · 커버리지), [ADR-0023](../../03-architecture/adr/0023-deferred-adoptions.md)(Outbox / Inbox 보류) |
 | Q12 | 로컬 DB 계정 | 생성 스크립트로 `employee_app` 롤 생성 | FR-03, [ADR-0011](../../03-architecture/adr/0011-use-aspire-local-orchestration.md) |
 | Q13 | 운영 전 마이그레이션 리셋 | 운영 배포(Phase 4) 전까지 허용 | FR-01, FR-11, 범위 밖, [ADR-0012](../../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md) |
 | Q14 | 파이프라인 순서 | 로깅 → 검증 → 트랜잭션 → Handler | FR-05, [ADR-0015](../../03-architecture/adr/0015-custom-mediator-pipeline.md) |
 | Q15 | 도메인 이벤트 범위 | 수집까지만, 디스패치는 이후 토픽 | FR-04, 범위 밖 |
 | Q16 | 샘플 테이블 구성 | id · display_name · email(ux_) · employee_status(smallint + ck_) · 감사 컬럼 · xmin + 이메일 중복 검사. 세부는 스프린트 계획 리뷰에서 확정 | FR-08 |
 | Q17 | Idempotency-Key | 이 토픽에서는 적용하지 않음 | 범위 밖 |
-| Q18 | ADR 단위 | 결정마다 1건, 도입 보류 항목만 1건으로 묶음 | FR-01 |
+| Q18 | ADR 단위 | 결정마다 1건, 도입 보류 항목만 1건으로 묶음 | FR-01, [ADR-0023](../../03-architecture/adr/0023-deferred-adoptions.md) |
 | Q19 | 고정할 Aspire 9.x 마이너 버전 | 해소: Aspire 9.5.2 (S01-T01, [패키지 버전 · 라이선스](../../03-architecture/package-versions.md#aspire)) | FR-01 |
 
 ---
@@ -150,3 +150,4 @@ updated: 2026-09-27
 | 2026-09-27 | developer | Q19 해소: Aspire 9.5.2 (S01-T01) |
 | 2026-09-27 | developer | Q9 · Q10 · Q12 · Q13 반영 열에 ADR 0011 · 0012 · 0014 링크 추가 (S01-T02) |
 | 2026-09-27 | developer | Q5 · Q11 · Q14 반영 열에 ADR 0015~0020 링크 추가 (S01-T03) |
+| 2026-09-27 | developer | Q9 반영 열에 "구체화: ADR-0014 · 0015" 주석, Q5 · Q11 · Q18 반영 열에 ADR 0021~0023 링크 추가, 결론 본문 불변 (S01-T04) |

@@ -63,6 +63,10 @@ updated: 2026-09-27
 | BL-034 | HasData 기준 데이터 도입 시 해당 테이블을 Respawn TablesToIgnore에 추가하거나 초기화 뒤 재시드(database.md 시드 절에 규칙 명시) | S01-T04 | | new | |
 | BL-035 | 순환 FK 금지: Respawn의 DISABLE TRIGGER ALL은 슈퍼유저 필요 → employee_app에서 실패. 스키마 리뷰 항목 추가 검토 | S01-T04 | | new | |
 | BL-036 | 마이그레이션 SQL 검토 때 이력 테이블이 정확히 `public."__EFMigrationsHistory"`인지 확인(TablesToIgnore 일치) | S01-T04 | | new | S03-T02 |
+| BL-037 | CPM에 OpenTelemetry.Api 1.19.1 전이 고정(Npgsql.OpenTelemetry 8.0.9가 OpenTelemetry.API >= 1.6.0 의존, 미고정 시 NU1902) | S01-T04 | | new | S01-T05 |
+| BL-038 | grep 대상 밖 문서(event-driven-architecture, service-communication, architecture-overview)의 보류 항목 🟡를 ADR-0023 링크 "보류"로 교체 | S01-T04 | | new | S04-T02 |
+| BL-039 | coding-conventions Handler 예시의 `IIdGenerator.NewId()` 이름을 S02-T01 계약에 맞춤 | S01-T04 | | new | S02-T01 |
+| BL-040 | `Result<T>` 값 → `Result<T>` 암시적 변환 여부 확인(coding-conventions 예시 `return result.Value.Id;`) | S01-T04 | | new | S01-T06 |
 
 ---
 

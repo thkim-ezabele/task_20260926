@@ -10,6 +10,7 @@ updated: 2026-09-27
 # 로깅 & 관측성
 
 > 로그 출력 형식, 레벨, 작성 규칙과 분산 추적 · 헬스체크 기본 정책을 정의합니다. developer는 이 규칙대로 로그를 남기고, reviewer는 이 기준으로 판정합니다.
+> 결정 근거: [ADR-0020 로깅 · 관측 구현](../03-architecture/adr/0020-logging-with-serilog-and-otlp.md), [ADR-0023 도입 보류](../03-architecture/adr/0023-deferred-adoptions.md)(로그 수집기 · 추적 백엔드)
 >
 > [위키 홈](../README.md)
 
@@ -31,7 +32,8 @@ flowchart LR
     A["ILogger&lt;T&gt;<br/>(애플리케이션 코드)"] --> S[Serilog]
     S -->|텍스트| C[Console]
     S -->|JSON · NDJSON| F["logs/*.json<br/>(일 단위 롤링)"]
-    F -.->|추후| K[로그 수집기]
+    S -->|OTLP| D["Aspire 대시보드<br/>(로컬)"]
+    F -.->|보류| K[로그 수집기]
 ```
 
 | 항목 | 콘솔 | 파일 |
@@ -42,9 +44,22 @@ flowchart LR
 | 롤링 | - | 일 단위 + 파일당 100MB 초과 시 분할 |
 | 보관 | - | 최근 14개 파일 (수집기 도입 후 조정) |
 | 최소 레벨 | 개발 `Debug` / 그 외 `Information` | `Information` |
-| 쓰기 방식 | 동기 | 비동기(`Serilog.Sinks.Async`)로 요청 처리를 막지 않음 |
+| 쓰기 방식 | 동기 | 비동기(`Serilog.Sinks.Async`, [패키지 버전](../03-architecture/package-versions.md#애플리케이션))로 요청 처리를 막지 않음 |
 
-> 🟡 **로그 수집기 미정**(Seq / Loki / ELK). CLEF는 Seq와 여러 수집기가 바로 읽고, ELK를 택하면 ECS 포매터(`Elastic.CommonSchema.Serilog`)로 바꿀 수 있습니다. 필드 규칙은 아래 표를 기준으로 유지합니다.
+> **로그 수집기는 도입 보류**입니다([ADR-0023](../03-architecture/adr/0023-deferred-adoptions.md), 재검토: 로컬 밖 공유 환경 구성 또는 알림 기준 설계 때). 로컬 관측은 Aspire 대시보드(OTLP)로 합니다. 후보는 Seq / Loki / ELK이고, CLEF는 Seq와 여러 수집기가 바로 읽으며 ELK를 택하면 ECS 포매터(`Elastic.CommonSchema.Serilog`)로 바꿀 수 있습니다. 필드 규칙은 아래 표를 기준으로 유지합니다.
+
+### 등록과 설정 (ADR-0020)
+
+- ServiceDefaults의 공통 확장(`AddServiceDefaults`)이 `builder.Services.AddSerilog((services, configuration) => ...)`로 등록한다. Api와 MigrationService가 같은 코드를 쓴다. 정적 `Log`와 부트스트랩 로거는 쓰지 않는다.
+- 싱크 · 수준은 `appsettings*.json`의 `Serilog` 절(`ReadFrom.Configuration`)로 관리한다. **수준은 `Serilog:MinimumLevel`에서만 정하고 `Logging:LogLevel` 절은 두지 않는다**(Serilog가 로거 팩터리를 교체하므로 쓰이지 않는다). 테스트 · CI 호스트는 설정으로 파일 싱크를 끈다.
+- OTLP 싱크(Serilog.Sinks.OpenTelemetry)는 `OTEL_EXPORTER_OTLP_ENDPOINT`가 있을 때만 코드에서 붙인다(Aspire가 주입. 테스트 · CI에는 없음). 싱크가 `OTEL_*` 환경 변수를 읽어 로그가 트레이스와 같은 서비스로 묶인다.
+
+**Serilog / OpenTelemetry 로그 중복 방지**:
+
+1. ServiceDefaults는 OpenTelemetry SDK 로그 공급자를 등록하지 않는다(Aspire 템플릿의 `builder.Logging.AddOpenTelemetry(...)` 제거, TD-012).
+2. OTLP 내보내기는 `UseOtlpExporter()` 대신 `WithTracing` · `WithMetrics` 안의 `AddOtlpExporter()`로 트레이스 · 메트릭에만 붙인다.
+3. Serilog는 `writeToProviders: false`(기본)로 등록한다.
+4. 대시보드에서 같은 이벤트가 한 번만 보이는지는 S03-T04에서 확인한다.
 
 ### 콘솔 출력 (텍스트)
 
@@ -64,7 +79,7 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 
 - 시각(`@t`)은 **UTC ISO 8601**
 - 코드값은 JSON에서도 **정수**로 남긴다([ADR-0008](../03-architecture/adr/0008-integer-codes-and-bitmask.md)). 콘솔에서 읽기 어려우면 메시지에 이름을 함께 쓰지 말고 코드 정의 표를 본다.
-- 설정은 코드가 아니라 `appsettings.json`의 `Serilog` 절(`ReadFrom.Configuration`)로 관리하고, 환경별 파일에서 레벨만 바꾼다.
+- 설정은 코드가 아니라 `appsettings.json`의 `Serilog` 절(`ReadFrom.Configuration`)로 관리하고, 환경별 파일에서 레벨만 바꾼다(`Logging:LogLevel`은 쓰지 않음).
 
 ### 공통 필드 (Enricher)
 
@@ -72,7 +87,7 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 |---|---|---|
 | `ServiceName` | `employee`, `notification` 등 | 설정 (`Serilog:Properties:ServiceName`) |
 | `Environment` | `Development` / `Staging` / `Production` | 호스트 환경 |
-| `MachineName` | 호스트 이름 | `Enrich.WithMachineName()` |
+| `MachineName` | 호스트 이름 | `Enrich.WithMachineName()` (Serilog.Enrichers.Environment) |
 | `@tr` / `@sp` (`TraceId` / `SpanId`) | W3C Trace Context | `Activity.Current` (OpenTelemetry) |
 | `SourceContext` | 로그를 남긴 클래스 | `ILogger<T>` |
 | `EventId` | 로그 이벤트 번호 · 이름 | `[LoggerMessage]` |
@@ -91,7 +106,9 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 | `Trace` | 아주 상세한 내부 상태 | 운영에서 켜지 않음 |
 
 - **예상 가능한 실패(`Result` 실패)는 `Error`가 아니다.** 검증 실패 · 대상 없음 · 규칙 위반은 요청 로그의 상태 코드로 충분하고, 업무상 의미가 있을 때만 `Information` / `Warning`으로 남긴다.
-- 프레임워크 로그는 `Microsoft`, `System`을 `Warning`으로 낮추고 `Microsoft.Hosting.Lifetime`만 `Information`으로 둔다. EF Core SQL 로그는 개발 환경에서만 `Information`으로 켠다.
+- 프레임워크 로그는 `Microsoft`, `System`을 `Warning`으로 낮추고 `Microsoft.Hosting.Lifetime`만 `Information`으로 둔다. `Microsoft.AspNetCore` = `Warning`으로 ASP.NET Core 자체 요청 로그를 낮춰 `UseSerilogRequestLogging()`과 중복되지 않게 한다.
+- EF Core 로그 수준(`Serilog:MinimumLevel:Override`): 기본 `Microsoft.EntityFrameworkCore` = `Warning`, `Microsoft.EntityFrameworkCore.Database.Command` = `Warning`. `appsettings.Development.json`에서만 `Microsoft.EntityFrameworkCore.Database.Command` = `Information`(SQL 문장 · 소요 시간, 파라미터 값은 `?`). Npgsql 자체 로그는 켜지 않는다(SQL 로그는 EF Core 범주 하나로, [ADR-0020](../03-architecture/adr/0020-logging-with-serilog-and-otlp.md)).
+- 정상 경합의 `23505`에서 EF Core가 남기는 `Error` 로그 2건의 수준 조정 여부는 S02-T04에서 정한다(BL-023).
 
 ## 로그 작성 규칙
 
@@ -130,6 +147,14 @@ logger.LogInformation("Employee {Email} registered", employee.Email); // 개인�
 | 외부 발송 메시지 본문 | 발송 ID, 채널 코드, 결과 코드 |
 
 - 불가피하게 식별 정보가 필요하면 마스킹한다(예: 전화번호 뒤 4자리 `***-****-1234`). 마스킹 유틸리티는 BuildingBlocks에 둔다.
+
+EF Core · Npgsql 민감 데이터 규칙([ADR-0020](../03-architecture/adr/0020-logging-with-serilog-and-otlp.md)):
+
+- `EnableSensitiveDataLogging`은 **Development에서만, 설정 플래그로 켤 수 있고 기본은 꺼짐**이다(`IHostEnvironment.IsDevelopment() && Database:EnableSensitiveDataLogging`). Testing · CI · Staging · Production에서는 설정과 무관하게 끈다. 판단은 DbContext 공용 등록 확장 메서드 한 곳에서만 한다.
+- `EnableDetailedErrors`는 Development에서만 켠다.
+- SQL 파라미터 값은 기록하지 않는다: Npgsql `parameterLoggingEnabled` · `EnableParameterLogging`을 쓰지 않는다.
+- 연결 문자열에 `Include Error Detail=true`(제약 위반 예외에 값 노출) · `Persist Security Info=true`를 쓰지 않는다. 제약 위반 변환 로그에는 SqlState, 제약 이름, 엔티티 형식 이름만 남긴다.
+- `IConfiguration`, `ConnectionStrings` 절, `ConnectionStrings__*` 환경 변수를 통째로 로그에 쓰지 않는다. 시작 로그는 호스트 · DB 이름 · 사용자까지만 남긴다.
 - 로그 파일은 저장소에 커밋하지 않는다(`.gitignore`에 `logs/`).
 
 ## 분산 추적 (OpenTelemetry / Correlation ID)
@@ -139,11 +164,14 @@ logger.LogInformation("Employee {Email} registered", employee.Email); // 개인�
 - 로그의 `@tr` / `@sp`는 현재 `Activity`에서 채워지므로, 로그와 추적이 TraceId로 연결된다.
 - 응답 헤더에 `traceparent`를 돌려주어 문제 신고 시 TraceId로 로그를 찾을 수 있게 한다.
 
-> 🟡 추적 수집 백엔드(Jaeger / Tempo 등)와 OTLP 내보내기 설정은 인프라 구성 때 정합니다.
+- **OTLP 내보내기**: ServiceDefaults가 트레이스 · 메트릭을 OTLP로 Aspire 대시보드에 보낸다(OpenTelemetry 1.19.x, 템플릿의 1.9.0은 취약점 대상이라 쓰지 않음). 계측은 ASP.NET Core · HttpClient · Npgsql.OpenTelemetry `AddNpgsql()`이고, EF Core용 OTel 계측은 Npgsql span과 중복되므로 추가하지 않는다. 헬스체크 경로는 추적에서 뺀다([ADR-0020](../03-architecture/adr/0020-logging-with-serilog-and-otlp.md)).
+- **추적 수집 백엔드(Jaeger / Tempo 등)는 도입 보류**다([ADR-0023](../03-architecture/adr/0023-deferred-adoptions.md)). OTLP 표준 출력을 유지하므로 도입할 때는 내보내기 대상 설정만 바꾼다.
 
 ## 메트릭
 
-> TODO: OpenTelemetry Metrics로 기본 계측(ASP.NET Core, HttpClient, 런타임)을 켜고, 업무 메트릭(전파 소요 시간, 응답률)은 긴급 상황 전파 토픽에서 정합니다.
+OpenTelemetry Metrics로 기본 계측(ASP.NET Core, HttpClient, 런타임)을 켜고 OTLP로 Aspire 대시보드에 보낸다([ADR-0020](../03-architecture/adr/0020-logging-with-serilog-and-otlp.md)).
+
+> TODO: 업무 메트릭(전파 소요 시간, 응답률)은 긴급 상황 전파 토픽에서 정합니다.
 
 ## 헬스체크
 
@@ -152,7 +180,7 @@ logger.LogInformation("Employee {Email} registered", employee.Email); // 개인�
 
 ## 알림 기준
 
-> TODO: 로그 수집기 도입 후 정합니다. 기본안은 `Critical` 즉시, `Error` 급증(5분 N건 이상) 시 알림입니다.
+> TODO: 로그 수집기 도입 후 정합니다(보류, [ADR-0023](../03-architecture/adr/0023-deferred-adoptions.md)). 기본안은 `Critical` 즉시, `Error` 급증(5분 N건 이상) 시 알림입니다.
 
 ---
 
@@ -163,3 +191,4 @@ logger.LogInformation("Employee {Email} registered", employee.Email); // 개인�
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 로그 이벤트 ID 범위를 에러 코드 문서로 연결, 예시 ID 수정(20001) |
 | 2026-09-27 | - | 로그 컨벤션 초안: 콘솔 텍스트 / 파일 JSON(CLEF), 공통 필드, 레벨 기준, 작성 규칙(`[LoggerMessage]`, 정수 이벤트 ID), 개인정보, 분산 추적, 헬스체크 |
+| 2026-09-27 | developer | ADR 0020 · 0023 반영: 등록 · 설정(`Logging:LogLevel` 미사용), OTLP 중복 방지, EF 로그 수준, EF · Npgsql 민감 데이터 규칙, 로그 수집기 · 추적 백엔드 보류 (S01-T04) |

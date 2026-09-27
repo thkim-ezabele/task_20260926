@@ -14,7 +14,7 @@ updated: 2026-09-27
 >
 > [위키 홈](../README.md)
 
-> 🟡 API 스타일(Minimal API / Controller)과 OpenAPI 도구는 기반 구축 토픽에서 정합니다. 아래 규칙은 어느 쪽이든 같습니다.
+> API 스타일은 `[ApiController]` Controller([ADR-0016](../03-architecture/adr/0016-use-controllers-for-api.md)), OpenAPI 도구는 Swashbuckle([ADR-0019](../03-architecture/adr/0019-use-swashbuckle-openapi.md))입니다.
 
 ## URL 및 리소스 네이밍
 
@@ -136,3 +136,4 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 기본 규칙 초안: URL, 메서드 · 상태 코드(CQRS), 멱등성(`Idempotency-Key`), 버저닝, 정수 코드 직렬화, ProblemDetails(`code`, `traceId`), 페이징 · 정렬 · 필터, 인증 헤더 |
+| 2026-09-27 | developer | API 스타일(Controller, ADR-0016) · OpenAPI 도구(Swashbuckle, ADR-0019) 확정 반영 (S01-T04) |

@@ -48,7 +48,7 @@ flowchart LR
 
 | 흐름 | 경로 |
 |---|---|
-| Command | Api → Command → (검증 · 트랜잭션 파이프라인) → Handler → Write Repository(쓰기 DbContext) → **Aggregate(도메인 규칙)** → Unit of Work 저장 → Outbox |
+| Command | Api(Controller) → Command → (로깅 → 검증 → 트랜잭션 파이프라인) → Handler → Write Repository(쓰기 DbContext) → **Aggregate(도메인 규칙)** → 트랜잭션 데코레이터가 Unit of Work 커밋([ADR-0014](adr/0014-command-transaction-boundary-and-unit-of-work.md)) → Outbox(도입 보류, [ADR-0023](adr/0023-deferred-adoptions.md)) |
 | Query | Api → Query → Handler → **Read Repository(읽기 DbContext) 프로젝션** → 응답 `record` (도메인 모델을 거치지 않음) |
 
 - Query Handler는 Application에 두고, 조회는 Application에 정의한 **Read Repository 인터페이스**(`IEmployeeReadRepository`)로 한다. 구현은 Infrastructure에 둔다.
@@ -123,7 +123,7 @@ EmergencyHub.Employee.Infrastructure/
 └── EmployeeInfrastructureAssembly.cs  # 어셈블리 검색용 마커
 
 EmergencyHub.Employee.Api/
-├── Endpoints/                   # 기능별 엔드포인트 그룹
+├── Controllers/                 # [ApiController] Controller (ISender만 주입)
 ├── Program.cs
 └── appsettings.json
 ```
@@ -131,7 +131,7 @@ EmergencyHub.Employee.Api/
 - 루트 네임스페이스: `EmergencyHub.<Service>.<Layer>`
 - 폴더는 기술 종류(Entities, Services)가 아니라 **Aggregate / 기능 단위**로 나눈다.
 
-> 🟡 **API 스타일 미정**: Minimal API(엔드포인트 그룹)와 Controller 중 기반 구축 토픽에서 정합니다. 기본안은 Minimal API입니다.
+> **API 스타일은 Controller**입니다([ADR-0016](adr/0016-use-controllers-for-api.md)). Controller는 `public sealed class`, `ControllerBase` 상속, `ISender`만 주입받고 요청 → Command / Query 변환, `Result` → HTTP 응답 변환만 합니다. 공통 API 처리 위치는 S02-T06에서 정합니다.
 
 ## 공통 빌딩 블록 (BuildingBlocks / Shared Kernel)
 
@@ -170,3 +170,4 @@ EmergencyHub.Employee.Api/
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 기본 구조 초안: 레이어 책임, 의존성 규칙, CQRS 적용, 저장소 · 프로젝트 구조, BuildingBlocks, 공통 빌드 설정 |
 | 2026-09-27 | - | 읽기 / 쓰기 DbContext 분리, Read Repository로 Query 구현 위치 확정, DI 자동 등록 구조 반영 |
+| 2026-09-27 | developer | ADR 0014 · 0016 · 0023 반영: Api `Endpoints/` → `Controllers/`, API 스타일 확정, Command 흐름의 커밋 주체 · Outbox 보류 (S01-T04). 저장소 구조 전체 갱신은 S04-T02 |

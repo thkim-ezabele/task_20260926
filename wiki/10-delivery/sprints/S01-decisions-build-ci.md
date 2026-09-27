@@ -92,6 +92,9 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T03 | reviewer | PASS | 템플릿 · frontmatter · 링크 결함 0, 0010 불변, 0003 / 0007 / 0010 / 0014 정합, 완료 조건 · dba 필수 문장 전부 반영, PRD Q5 · Q11 · Q14 일치 |
 | 2026-09-27 | S01-T03 | tester | PASS | Q5 · Q11 · Q14 결론과 결정 문장 grep 대조 일치, 6건 accepted, 목록 6행 일치, check-docs 23개 결함 0, 필수 문장 7종 존재, 0001~0014 불변 |
 | 2026-09-27 | S01-T04 | dba | PASS | Respawn 7.0.0 API 소스 확인, ADR 입력 확정(`TablesToIgnore`는 따옴표 없이 `public.__EFMigrationsHistory`, 쓰기 연결, employee_app 재현 추천, 테스트 전 ResetAsync, WithReseed false). database.md 12곳 · testing-strategy.md 2곳 수정안. Docker 꺼짐으로 실측은 S03-T05 |
+| 2026-09-27 | S01-T04 | developer 1차 | PASS | ADR 0021~0023 초안, 기준 문서 10개 수정(🟡 대상 6개 0건, ADR 충돌 수정, package-versions BL-010 · 011 · 013 · 016 · 026, PRD Q9 주석). Aspire.Dashboard.Sdk는 Microsoft 사용 조건(무료) |
+| 2026-09-27 | S01-T04 | 사용자 확인 | 승인 | 초안 3건 수정 없음. xUnit v3, 보류 재검토 트리거 그대로, Respawn · 커버리지 한 ADR(총 13건), NFR-03 BuildingBlocks = Domain · Application |
+| 2026-09-27 | S01-T04 | developer 2차 | PASS | ADR 0021~0023 `accepted`(초안과 diff 동일), ADR 목록 · design.md · PRD 링크, check-docs wiki 전체 결함은 raw-log 2건(BL-018)뿐, 0001~0020 불변 |
 
 ## 계획 리뷰
 
@@ -176,6 +179,11 @@ updated: 2026-09-27
 | BL-034 | HasData 기준 데이터 → Respawn TablesToIgnore 규칙 | S01-T04 | |
 | BL-035 | 순환 FK 금지(Respawn DISABLE TRIGGER 슈퍼유저 필요) 스키마 리뷰 항목 | S01-T04 | |
 | BL-036 | S03-T02: 이력 테이블 이름이 TablesToIgnore와 일치하는지 확인 | S01-T04 | |
+| BL-037 | T05: CPM에 OpenTelemetry.Api 1.19.1 전이 고정 | S01-T04 | |
+| BL-038 | grep 대상 밖 문서 보류 🟡 → ADR-0023 링크 | S01-T04 | |
+| BL-039 | coding-conventions `IIdGenerator.NewId()` 이름 S02-T01에 맞춤 | S01-T04 | |
+| BL-040 | T06: `Result<T>` 값 암시적 변환 여부 | S01-T04 | |
+| TD-013 | NetArchTest.Rules · NSubstitute.Analyzers 유지 중단 | S01-T04 | |
 
 ## 회고
 
