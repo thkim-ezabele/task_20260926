@@ -12,7 +12,7 @@ retro:
 aliases: [PRD-001]
 tags: [delivery, prd]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # PRD-001: 기반 구축 (인프라 · .NET 8 솔루션 기본 설계)
@@ -153,3 +153,4 @@ updated: 2026-09-27
 | 2026-09-27 | developer | Q9 반영 열에 "구체화: ADR-0014 · 0015" 주석, Q5 · Q11 · Q18 반영 열에 ADR 0021~0023 링크 추가, 결론 본문 불변 (S01-T04) |
 | 2026-09-27 | developer | FR-09 테스트 프로젝트 목록에 `EmergencyHub.BuildingBlocks.Api.UnitTests` 비고(ADR-0024) 추가 (S02-T08) |
 | 2026-09-27 | orchestrator | S02 결과 리뷰: FR-05 본문의 "트랜잭션 데코레이터가 실행 전략 안에서 SaveChanges · 커밋"은 ADR-0014 · 0015 기준으로 해석(데코레이터는 `CommitAsync`만, 실행 전략 · SaveChanges는 UnitOfWork). FR-06의 `Decorate`는 ADR-0017의 `TryDecorate`로 해석. 결론 본문 불변 |
+| 2026-09-28 | orchestrator | S04 계획 확정: 인수 조건 해석 기록(결론 본문 불변). FR-03 스크린샷은 실행 기록 · 대시보드 DOM 덤프 · dev-certs 출력으로 대체(스크린샷은 사용자 추가 항목), 선택 스모크는 미도입 · BL. FR-10 실패 표시는 임시 Draft PR로 확인. FR-11 재현 기록 위치는 S04 스프린트 문서 증빙 절. NFR-03 "BuildingBlocks"는 Domain · Application · Infrastructure · Api 4개. NFR-04 같은 머신 재현의 warm 한계 기록. NFR-07은 S04 DoD에서 판정 |

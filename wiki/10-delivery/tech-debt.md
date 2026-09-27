@@ -5,7 +5,7 @@ status: stable
 tags: [delivery, tech-debt]
 aliases: [Tech Debt]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 기술부채
@@ -50,9 +50,9 @@ updated: 2026-09-27
 | TD-021 | BadHttpRequestException의 원래 상태 코드(413 · 408 등)를 모두 400 · 1001로 응답(원래 코드는 로그 302에만) | 설계 | 하 | S02-T06 | api-guidelines 정비 때(S04-T02 또는 이후) 413 · 408 상태 코드 보존 여부 결정. S03-T05 H2 현행 확인(31MiB 초과 → 400 · 1001, 413은 로그 302에만). BL-106 · BL-107과 함께 | open |
 | TD-022 | ExceptionHandlerMiddleware 범주 전체를 로그 필터로 끄므로 같은 범주의 다른 로그(응답 시작 후 Warning, 요청 중단 Debug)도 사라짐. 이벤트 ID 단위 필터 불가 | 설계 | 중 | S02-T06 | .NET 10 전환(BL-002 · TD-002) 때 ExceptionHandlerOptions 억제 옵션으로 범주 전체 필터 대체. BL-075와 짝 | open |
 | TD-023 | 바인딩 오류 errors 키 순서가 ModelStateDictionary 열거 순서를 따르고 요청 속성 순서를 보장하지 않음 | 설계 | 하 | S02-T06 | 클라이언트 요구가 생기면 정렬 규칙 결정(T06 tester 후보 병합) | open |
-| TD-024 | 아키텍처 테스트 프로젝트는 coverlet.collector를 쓰지 못함(계측된 제품 DLL을 검사해 Domain 규칙 실패). CI 로그에 수집기 없음 메시지 | 테스트 | 하 | S02-T05 | S04-T01 커버리지 점검 때 ArchitectureTests 수집 제외 확정, CI 로그 '수집기 없음' 메시지 문서화 | open |
+| TD-024 | 아키텍처 테스트 프로젝트는 coverlet.collector를 쓰지 못함(계측된 제품 DLL을 검사해 Domain 규칙 실패). CI 로그에 수집기 없음 메시지 | 테스트 | 하 | S02-T05 | S04 계획 확정: S04-T01(수집 제외 확정) · S04-T03(ci-cd 문서) 편입. S04-T01 커버리지 점검 때 ArchitectureTests 수집 제외 확정, CI 로그 '수집기 없음' 메시지 문서화 | planned:S04 |
 | TD-025 | Controller ↛ Repository 아키텍처 규칙은 시그니처 기준이라 메서드 본문 서비스 로케이터(GetRequiredService<IXxxRepository>())는 잡지 못함 | 테스트 | 하 | S02-T05 | 그 전까지 reviewer 점검표에 'Controller 본문 서비스 로케이터 금지', 필요해지면 Mono.Cecil IL 피연산자 규칙 추가 | open |
-| TD-026 | Employee.Infrastructure가 IConfiguration을 전이 참조(Microsoft.Extensions.Configuration.Abstractions 8.0.0, BuildingBlocks.Infrastructure 경유)로 사용: 직접 참조 · package-versions.md 등록 여부 판단 필요(현재 빌드 · 감사 문제 없음) | 의존성 | 하 | S03-T02 | 빌드 · 감사 문제 없음. S04-T02에서 package-versions.md에 전이 사용(BuildingBlocks.Infrastructure 경유) 한 줄, 직접 참조 여부는 .NET 10 전환(TD-002) 때 TD-019와 함께 | open |
+| TD-026 | Employee.Infrastructure가 IConfiguration을 전이 참조(Microsoft.Extensions.Configuration.Abstractions 8.0.0, BuildingBlocks.Infrastructure 경유)로 사용: 직접 참조 · package-versions.md 등록 여부 판단 필요(현재 빌드 · 감사 문제 없음) | 의존성 | 하 | S03-T02 | S04 계획 확정: S04-T02 편입(문서 한 줄). 빌드 · 감사 문제 없음. S04-T02에서 package-versions.md에 전이 사용(BuildingBlocks.Infrastructure 경유) 한 줄, 직접 참조 여부는 .NET 10 전환(TD-002) 때 TD-019와 함께 | planned:S04 |
 | TD-027 | 테스트 fixture의 ApplyMigrationsAsync가 MigrationWorker 적용 코드를 복제(차이가 생겨도 못 잡음), EmployeeDatabaseFixture.OpenAsync · TestTriggers.OpenAsync 중복 | 테스트 | 하 | S03 결과 리뷰(S03-T06) | BL-103 해결 때 적용 코드를 Infrastructure 공용 메서드 하나로 모아 Worker · fixture가 같이 쓰고, OpenAsync는 fixture 한 곳으로. 그 전까지 fixture 주석에 복제 사실 · 원본 위치 | open |
 
 ---
@@ -66,3 +66,4 @@ updated: 2026-09-27
 | 2026-09-27 | - | S01 종료 정리: TD-001~018 (resolved 2, planned 3, open 13, TD-005는 TD-002에 병합) |
 | 2026-09-27 | orchestrator | S02 종료 정리: TD-015 resolved, TD-019~025 정리(planned:S03 1 · open 6), TD-013 · 014 상환 계획 갱신, `new` 0 |
 | 2026-09-28 | orchestrator | S03 종료 정리: TD-004 · TD-020 resolved(TD-020은 TD-008 병합), TD-008 · 010 · 011 · 012 · 021 · 026 상환 계획 갱신, TD-027 추가, `new` 0 |
+| 2026-09-28 | orchestrator | S04 계획 확정: TD-024 · TD-026 open → planned:S04, TD-016 배정을 S04-T01(코드) · S04-T05(문서)로 나눔 |

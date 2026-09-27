@@ -5,7 +5,7 @@ status: stable
 tags: [delivery]
 aliases: [개발 흐름, Delivery]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 개발 관리 (Delivery)
@@ -128,7 +128,7 @@ gitGraph
 | [S01](sprints/S01-decisions-build-ci.md) | 기술 결정 확정과 빌드 · CI 기반 | PRD-001 | done |
 | [S02](sprints/S02-building-blocks.md) | BuildingBlocks Application · Infrastructure와 공통 API 처리 | PRD-001 | done |
 | [S03](sprints/S03-aspire-employee.md) | Aspire와 Employee 샘플 서비스 전 구간 | PRD-001 | done |
-| [S04](sprints/S04-tests-docs-evidence.md) | 테스트 보강 · 문서 · 인수 증빙 | PRD-001 | planned |
+| [S04](sprints/S04-tests-docs-evidence.md) | 테스트 보강 · 문서 · 인수 증빙 | PRD-001 | active |
 
 ---
 

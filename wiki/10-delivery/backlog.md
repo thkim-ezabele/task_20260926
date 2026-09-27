@@ -5,7 +5,7 @@ status: stable
 tags: [delivery, backlog]
 aliases: [Backlog]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 백로그
@@ -64,7 +64,7 @@ updated: 2026-09-27
 | BL-035 | 순환 FK 금지: Respawn의 DISABLE TRIGGER ALL은 슈퍼유저 필요 → employee_app에서 실패. 스키마 리뷰 항목 추가 검토 | S01-T04 | 하 | open | 스키마 리뷰 규칙 문서 작업. 현재 FK 없음 |
 | BL-036 | 마이그레이션 SQL 검토 때 이력 테이블이 정확히 `public."__EFMigrationsHistory"`인지 확인(TablesToIgnore 일치) | S01-T04 | 중 | done | S03-T02 a11883e: 이력 테이블 public."__EFMigrationsHistory", 스키마 한정자 없음 |
 | BL-037 | CPM에 OpenTelemetry.Api 1.19.1 전이 고정(Npgsql.OpenTelemetry 8.0.9가 OpenTelemetry.API >= 1.6.0 의존, 미고정 시 NU1902) | S01-T04 | 상 | done | Directory.Packages.props OpenTelemetry.Api 1.19.1 전이 고정 (기존: S01-T05) |
-| BL-038 | grep 대상 밖 문서(event-driven-architecture, service-communication, architecture-overview)의 보류 항목 🟡를 ADR-0023 링크 "보류"로 교체 | S01-T04 | 중 | open | BL-043 · 044 병합. S04 계획 리뷰에서 S04-T02 편입 검토 (기존: S04-T02) |
+| BL-038 | grep 대상 밖 문서(event-driven-architecture, service-communication, architecture-overview)의 보류 항목 🟡를 ADR-0023 링크 "보류"로 교체 | S01-T04 | 중 | planned:S04 | S04 계획 확정: S04-T02 편입. BL-043 · 044 병합. S04 계획 리뷰에서 S04-T02 편입 검토 (기존: S04-T02) |
 | BL-039 | coding-conventions Handler 예시의 `IIdGenerator.NewId()` 이름을 S02-T01 계약에 맞춤 | S01-T04 | 하 | planned:S04 | S04-T02 coding-conventions 코드 일치(S02-T01에서 이름이 바뀌면 그때 수정 가능) (기존: S02-T01) |
 | BL-040 | `Result<T>` 값 → `Result<T>` 암시적 변환 여부 확인(coding-conventions 예시 `return result.Value.Id;`) | S01-T04 | 중 | done | T → Result<T> 암시적 변환 구현 · 테스트 (df00b97) (기존: S01-T06) |
 | BL-041 | package-versions.md 테스트 표 용도 열 "v3, 추천" / "v2, 대안"을 "v3, 채택" / "v2, 비교용 · 미사용"으로 | S01-T04 | 하 | done | package-versions 용도 열 채택 / 비교용 · 미사용 (26b2ce4) |
@@ -149,3 +149,4 @@ updated: 2026-09-27
 | 2026-09-27 | - | S01 종료 정리: BL-001~064 (done 22, 병합 7, planned 18, open 15, dropped 2) |
 | 2026-09-27 | orchestrator | S02 종료 정리: BL-065~080 정리(done 5 · dropped 6 · planned 9 · open 6), 인계 메모로 BL-081~087 추가(S03-T05 실측 묶음 3, S03-T02 · 아키텍처 편입 · AppHost 제외 · S04 문서 묶음), `new` 0 |
 | 2026-09-28 | orchestrator | S03 종료 정리: BL-089~108 정리(planned:S04 8 · open 12), S03 편입분 done 15 · BL-057은 CI 판정 대기, 결과 리뷰에서 BL-109 · 110 추가, `new` 0 |
+| 2026-09-28 | orchestrator | S04 계획 확정: BL-038 open → planned:S04(S04-T02), BL-110 배정을 S04-T01(코드) · S04-T03(기록)으로 나눔 |
