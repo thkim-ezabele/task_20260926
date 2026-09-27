@@ -95,6 +95,7 @@ updated: 2026-09-27
 | BL-066 | ADR-0018 본문의 Validator 형태(AbstractValidator<TRequest>)와 S02-T02에서 정한 공통 기반 RequestValidator<TRequest>(RuleLevelCascadeMode = Stop) 불일치: clean-architecture · testing-strategy 문구 정리, ADR 보충 여부 판단 | S02-T02 | 중 | new | S04-T02 기준 문서 정리 후보 |
 | BL-067 | ADR-0013 '자동 등록' 문구와 ADR-0017 '명시 등록' 불일치: S02-T03에서 ADR-0017(명시, Scoped)로 해석. 해석 기록 위치(결과 리뷰 / S04-T02 명문화) 판단 | S02-T03 | 하 | new |  |
 | BL-068 | coverlet.runsettings Include에 BuildingBlocks.Infrastructure(및 Api)가 없음: 80% 보고 대상 포함 여부 결정 | S02-T03 | 중 | new | NFR-03 대상 어셈블리 범위 |
+| BL-069 | 테스트 Samples 형식의 파일 규칙: 한 파일 한 형식을 테스트에도 적용한다고 명문화할지, 예외(시나리오 묶음 파일)를 둘지 결정(결정 전에는 현행 규칙 적용) | S02-T03 | 하 | new | S04-T02 기준 문서 정리 후보 |
 
 ---
 
