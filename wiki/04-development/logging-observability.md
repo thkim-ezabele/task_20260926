@@ -75,7 +75,7 @@ flowchart LR
 - 로그는 **Serilog OTLP 싱크 한 경로로만** 나간다. OpenTelemetry 로그 공급자는 등록하지 않는다(위 중복 방지 1 ~ 3). 싱크가 `OTEL_*` 환경 변수를 읽으므로 로그와 트레이스가 대시보드에서 같은 서비스 · TraceId로 묶인다.
 - `OTEL_EXPORTER_OTLP_ENDPOINT` 등 `OTEL_*` 값은 AppHost가 프로젝트 리소스(Api · MigrationService)에 주입한다. 서비스 코드 · `appsettings*.json`에 엔드포인트를 적지 않는다. 테스트 · CI 호스트에는 값이 없어 OTLP 연결을 시도하지 않는다.
 - 대시보드 OTLP 수신 주소는 AppHost `launchSettings.json` 프로필이 정한다: `https` 프로필(기본) `ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL` = `https://localhost:21180`, `http` 프로필 `http://localhost:19180`(+ `ASPIRE_ALLOW_UNSECURED_TRANSPORT=true`).
-- **`https` 프로필은 ASP.NET Core 개발 인증서를 신뢰해야 대시보드에 로그 · 트레이스가 보인다.** 신뢰하지 않으면 OTLP 전송이 TLS에서 실패해 구조화 로그 · 추적이 0건이고, 앱 파일 로그와 HTTP 동작은 정상이다(S03-T05 실측, [증빙](../10-delivery/evidence/S03-T05/README.md), BL-099). 확인 · 신뢰 명령과 `http` 프로필 대안은 [로컬 개발 환경 구성](../01-getting-started/local-setup.md)에서 다룬다(S04-T03).
+- **`https` 프로필은 ASP.NET Core 개발 인증서를 신뢰해야 대시보드에 로그 · 트레이스가 보인다.** 신뢰하지 않으면 OTLP 전송이 TLS에서 실패해 구조화 로그 · 추적이 0건이고, 앱 파일 로그와 HTTP 동작은 정상이다(S03-T05 실측, [증빙](../10-delivery/evidence/S03-T05/README.md), BL-099). 확인 · 신뢰 명령과 `http` 프로필 대안은 [로컬 개발 환경 구성 · 개발 인증서 (https 프로필)](../01-getting-started/local-setup.md#개발-인증서-https-프로필)에서 다룬다(S04-T03).
 
 ### 콘솔 출력 (텍스트)
 
@@ -229,3 +229,4 @@ ServiceDefaults의 `MapDefaultEndpoints`가 매핑합니다(S03-T03, BL-030). �
 | 2026-09-28 | developer | EF 실패 이벤트 3개 `Debug`(BL-023 결정), 설정 위치 한 곳과 경계 로그 (S03-T06) |
 | 2026-09-28 | developer | 요청 로그 로거를 DI Serilog 로거로 채우는 위치(ServiceDefaults `RequestLoggingOptions`, 정적 `Log` 무음 결함 수정) (S03-T07) |
 | 2026-09-28 | developer | Aspire 연동 절(Serilog → OTLP 로그 한 경로, 트레이스 · 메트릭 exporter, 프로필별 OTLP 주소, https 프로필 dev-certs 신뢰 필요 BL-099), 20001 예시를 실제 템플릿(`Employee {EmployeeId} registered`)으로(BL-089), 수준 기준에 9003 = `Warning`(301)과 최종 실패 `Error` 차이(BL-105), `EnableSensitiveDataLogging` opt-in 미구현 · 꺼짐(BL-094 기록), DB 정지 때 `/health/ready` 약 15.0초 뒤 503 실측(BL-108 기록) (S04-T05) |
+| 2026-09-28 | developer | Aspire 연동 절의 local-setup 링크에 `#개발-인증서-https-프로필` 앵커 추가 (S04-T03) |

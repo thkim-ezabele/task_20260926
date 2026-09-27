@@ -260,7 +260,7 @@ var smsEnabled = await db.Employees
   - `EnableSensitiveDataLogging`: Api는 켜지 않는다(추가 옵션 콜백을 넘기지 않음). [ADR-0020](../03-architecture/adr/0020-logging-with-serilog-and-otlp.md)의 Development opt-in 경로(`IsDevelopment() && Database:EnableSensitiveDataLogging`, 공용 등록 확장 한 곳에서 판단)는 아직 구현되지 않았고, 호스트 Program에서 직접 판단 · 설정하지 않는다(판단 위치 한 곳 규칙). 모든 환경에서 꺼진 상태는 ADR-0020의 기본값과 같다.
   - 마이그레이션: Api는 `Migrate` · `MigrateAsync` · `EnsureCreated`를 부르지 않는다(적용 주체는 MigrationService 1개, TD-011 · [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md)). EF Design 패키지도 참조하지 않는다.
 - DbContext는 `AddDbContext`로 `Scoped` 등록한다. `AddDbContextPool`과 Aspire 클라이언트 통합(`AddNpgsqlDbContext`)은 쓰지 않는다(풀 강제, DI의 `SaveChangesInterceptor`를 붙일 수 없음, [ADR-0011](../03-architecture/adr/0011-use-aspire-local-orchestration.md)).
-- 연결 문자열은 설정 / 시크릿으로 주입한다([설정 & 시크릿 관리](../06-deployment/configuration.md)).
+- 연결 문자열은 설정 / 시크릿으로 주입한다([설정 & 시크릿 관리](../06-deployment/configuration.md#시크릿-관리-user-secrets--github-secrets)).
 
 ## EF Core 공통 모델 규칙 (BuildingBlocks.Infrastructure)
 
@@ -475,3 +475,4 @@ InitialCreate 대조(S04-T02 dba, 마이그레이션 `20260927134235_InitialCrea
 | 2026-09-28 | dba | ERD · Employee 코드 표를 InitialCreate · 스냅샷 · idempotent SQL과 대조(대조 표 추가), `xmin` 설명을 구현(`IsConcurrencyToken` + `OnAddOrUpdate` = `IsRowVersion` 구성, 마이그레이션 C#에는 있고 생성 SQL에는 없음)에 맞춤(BL-087), 이미지 태그 한 곳 확정 문구, 초기화 절차(볼륨 + user-secrets 함께, `AppHost:OtlpApiKey` · `Aspire:VersionCheck:*` 포함, BL-100 · BL-097), 42P04 · 3D000 · psql 10번 판정 확정 문구(S03-T05), MigrationService Development 주입(BL-110), 이력 테이블 ADR 후보 문구 (S04-T02) |
 | 2026-09-28 | dba | S04-T02 재작업(tester 반려): InitialCreate 대조의 따옴표 식별자 문장을 idempotent SQL 실측에 맞춤(DDL · 이력 `INSERT`는 `"__EFMigrationsHistory"`만, 조회 조건 3곳의 `"migration_id"`는 EF 생성) (S04-T02) |
 | 2026-09-28 | dba | local-setup 앵커 링크: 초기화 셸별 명령 → `#초기화-볼륨--user-secrets`, 마이그레이션 규칙에 허용 / 금지 `dotnet ef` 명령 원본 링크 `#db-마이그레이션` 추가. configuration 링크 앵커는 제목 확정 뒤(developer) (S04-T03) |
+| 2026-09-28 | developer | 연결 문자열 주입 문장의 configuration 링크에 `#시크릿-관리-user-secrets--github-secrets` 앵커 추가 (S04-T03) |
