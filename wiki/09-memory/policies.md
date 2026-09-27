@@ -33,7 +33,7 @@ updated: 2026-09-28
 ## 기록
 
 - **ADR**: 아키텍처, 기술 선택처럼 "왜"가 중요한 결정. 한 번 쓰면 고치지 않고, 바뀌면 새 ADR로 대체한다. ADR 파일은 사용자에게 확인한 뒤에 만든다.
-- **Worklog**: 세션마다 "무엇을 요청하고 무엇을 했나". 사용자가 세션 종료 전에 직접 `/worklog`를 실행해서 작성한다. **Claude가 알아서 작성하지 않는다.**
+- **Worklog**: 세션마다 "무엇을 요청하고 무엇을 했나". 사용자가 세션 종료 전에 직접 `/worklog`를 실행해서 작성한다. **Claude가 알아서 작성하지 않는다.** (2026-09-28 사용자 지시로 `sprint` · `worklog` · `retro`의 `disable-model-invocation`을 제거해 오케스트레이션 세션이 대신 실행함. 유지 여부는 사용자 결정 대기, [RETRO-PRD-001](../10-delivery/retros/RETRO-PRD-001.md#사용자-결정-필요))
 - **프롬프트 원문**: `UserPromptSubmit` hook이 `08-worklog/raw/`에 자동으로 기록한다.
 - **장기기억**: 이 폴더. `/worklog` 실행 시 함께 갱신한다.
 
