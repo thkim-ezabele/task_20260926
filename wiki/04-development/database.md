@@ -181,6 +181,7 @@ var smsEnabled = await db.Employees
   - 연결 문자열이 없거나 비어 있으면 **시작 시** 예외로 멈춘다(첫 요청까지 미루지 않음). 예외 메시지 · 로그에 연결 문자열 값을 넣지 않는다(비밀번호).
   - 서비스 하나에 쓰기 DbContext는 하나다. `AddUnitOfWork<TContext>()`는 `IUnitOfWork`를 그 쓰기 DbContext에 묶어 Scoped로 등록하고, UnitOfWork와 Write Repository는 같은 스코프의 **같은 DbContext 인스턴스**를 쓴다. 다른 `TContext`로 다시 부르면 시작 시 예외다.
   - `EnableRetryOnFailure`는 Npgsql 기본값(최대 6회, 최대 지연 30초)을 쓴다. 요청 시간과의 관계는 S03-T05에서 실측한 뒤 조정한다.
+  - 구현(BuildingBlocks.Infrastructure): 옵션 구성 `UseBuildingBlocksNpgsql(연결)`, 등록 `AddWriteDbContext<T>(연결, 추가 옵션?)` · `AddReadDbContext<T>(연결, 추가 옵션?)` · `AddUnitOfWork<T>(errors => errors.Map(인덱스 상수, 서비스 Error))`, Outbox 확장 지점 `IPreCommitHook`(구현 없음, 멱등 필수). 재시도 한도 초과 분류기(`IExceptionClassifier`, 9003)는 `AddBuildingBlocksInfrastructure`가 Singleton으로 등록한다.
 - DbContext는 `AddDbContext`로 `Scoped` 등록한다. `AddDbContextPool`과 Aspire 클라이언트 통합(`AddNpgsqlDbContext`)은 쓰지 않는다(풀 강제, DI의 `SaveChangesInterceptor`를 붙일 수 없음, [ADR-0011](../03-architecture/adr/0011-use-aspire-local-orchestration.md)).
 - 연결 문자열은 설정 / 시크릿으로 주입한다([설정 & 시크릿 관리](../06-deployment/configuration.md)).
 
@@ -342,3 +343,4 @@ var smsEnabled = await db.Employees
 | 2026-09-27 | developer | 마이그레이션 생성 코드에 CS1591 none 병기 (S01-T05, BL-047) |
 | 2026-09-27 | dba | EF Core 공통 모델 규칙 절 추가(snake_case · `ux_` 덮어쓰기와 이름 상수 공유 · `ck_` 도우미 · 강타입 ID · DomainEvents 제외 · 감사 shadow property · `xmin`), `xmin`을 shadow property로 정정, `[Flags]` 체크 제약을 마스크 조건으로 정정, 63바이트 식별자 한도, 읽기 DbContext SaveChanges 4개 차단 (S02-T04) |
 | 2026-09-27 | dba | 공통 DbContext 등록 규칙(옵션 구성 한 곳, 인터셉터 쓰기만 · Singleton, 쓰기 / 읽기 등록 분리, 연결 문자열 시작 시 검사, UoW와 Repository 같은 인스턴스), UnitOfWork 커밋 순서(이벤트 대상 수집 → AcceptAllChanges, 변환은 전략 밖)와 재시도 때 상태, 영속성 예외 변환 규칙표(1~9), 23505 매핑 레지스트리 계약, 변환 로그 필드 · 수준 (S02-T07) |
+| 2026-09-27 | developer | 공통 DbContext 등록 구현 이름(`UseBuildingBlocksNpgsql`, `AddWriteDbContext` · `AddReadDbContext` · `AddUnitOfWork`, `IPreCommitHook`, 분류기 등록 위치) (S02-T07) |

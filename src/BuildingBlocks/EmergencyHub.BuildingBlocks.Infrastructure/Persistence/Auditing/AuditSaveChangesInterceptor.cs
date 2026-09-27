@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -13,12 +12,11 @@ namespace EmergencyHub.BuildingBlocks.Infrastructure.Persistence.Auditing;
 /// 시각은 <see cref="TimeProvider.GetUtcNow"/>이고 저장 전에 오프셋 0으로 정규화합니다. 로컬 시간대가 +09:00이거나 공급자 구현이 오프셋을 붙여 돌려줘도
 /// UTC로 저장합니다(Npgsql은 오프셋이 0이 아닌 값을 timestamptz에 쓰지 않음).
 /// </para>
-/// <para>실행 전략이 재시도하면 다시 실행되어 시각이 다시 계산됩니다. 이것은 허용합니다(S02 계획 리뷰, ADR-0014). 쓰기 DbContext에만 붙입니다.</para>
+/// <para>
+/// 실행 전략이 재시도하면 다시 실행되어 시각이 다시 계산됩니다. 이것은 허용합니다(S02 계획 리뷰, ADR-0014).
+/// 쓰기 DbContext 등록(<c>AddWriteDbContext</c>)만 Singleton 한 인스턴스를 붙입니다.
+/// </para>
 /// </remarks>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "공통 DbContext 등록 확장(S02-T07)이 쓰기 DbContext에 붙인다. 등록 코드가 생기면 이 억제를 지운다.")]
 internal sealed class AuditSaveChangesInterceptor(TimeProvider timeProvider) : SaveChangesInterceptor
 {
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));

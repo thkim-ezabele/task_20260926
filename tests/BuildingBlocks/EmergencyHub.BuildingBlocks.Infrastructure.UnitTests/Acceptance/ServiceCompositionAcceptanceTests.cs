@@ -1,16 +1,21 @@
 using System.Reflection;
 using EmergencyHub.BuildingBlocks.Application.Cqrs;
+using EmergencyHub.BuildingBlocks.Application.Exceptions;
 using EmergencyHub.BuildingBlocks.Application.Identifiers;
 using EmergencyHub.BuildingBlocks.Application.Persistence;
 using EmergencyHub.BuildingBlocks.Infrastructure.DependencyInjection;
 using EmergencyHub.BuildingBlocks.Infrastructure.Identifiers;
+using EmergencyHub.BuildingBlocks.Infrastructure.Persistence.Auditing;
+using EmergencyHub.BuildingBlocks.Infrastructure.Persistence.Exceptions;
+using EmergencyHub.BuildingBlocks.Infrastructure.UnitTests.Samples.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace EmergencyHub.BuildingBlocks.Infrastructure.UnitTests.Acceptance;
 
 // PRD-001 FR-06 인수 조건 "ValidateOnBuild / ValidateScopes 상태에서 마커 구현 타입이 모두 Scoped로 해석된다"를
-// 서비스 초기화 코드와 같은 조합(AddBuildingBlocksInfrastructure + AddConventionalServices)으로 전수 확인한다.
+// 서비스 초기화 코드와 같은 조합(AddBuildingBlocksInfrastructure + AddConventionalServices + 쓰기 · 읽기 DbContext + AddUnitOfWork)으로 전수 확인한다.
+// IUnitOfWork는 대역이 아니라 실제 등록 확장(AddUnitOfWork, S02-T07)이 등록한다. DbContext는 더미 연결 문자열이라 연결을 열지 않는다.
 // 개별 타입 목록(ConventionalServiceCollectionExtensionsTests)이 아니라 두 확장이 추가한 등록 전체를 대상으로 하므로,
 // 새 샘플이나 FluentValidation의 부가 등록이 Scoped가 아니거나 해석되지 않으면 여기서 드러난다.
 [Trait("FR", "PRD-001/FR-06")]
@@ -19,13 +24,21 @@ public sealed class ServiceCompositionAcceptanceTests
     private static readonly Assembly SampleAssembly = typeof(ServiceCompositionAcceptanceTests).Assembly;
     private static readonly ServiceProviderOptions StrictOptions = new() { ValidateOnBuild = true, ValidateScopes = true };
 
-    // 두 확장이 추가하는 Singleton은 이 둘뿐이다(TimeProvider.System, 두 번째 호출 방지 표식). 나머지는 모두 Scoped여야 한다.
-    private static readonly Type[] ExpectedSingletons = [typeof(TimeProvider), typeof(ConventionalServicesRegistration)];
+    // 확장들이 추가하는 Singleton은 아래뿐이고 나머지는 모두 Scoped여야 한다. 모두 상태가 없거나 등록 뒤 바뀌지 않는다.
+    private static readonly Type[] ExpectedSingletons =
+    [
+        typeof(TimeProvider), // TimeProvider.System 인스턴스(ADR-0017 공통 인프라).
+        typeof(ConventionalServicesRegistration), // AddConventionalServices 두 번째 호출 방지 표식.
+        typeof(AuditSaveChangesInterceptor), // 상태 없는 감사 인터셉터 한 인스턴스를 모든 쓰기 DbContext에 붙인다(database.md "공통 DbContext 등록").
+        typeof(UniqueConstraintErrorRegistry), // 23505 매핑 레지스트리. 등록 뒤 불변(database.md "23505 매핑 레지스트리 계약").
+        typeof(IExceptionClassifier), // 상태 없는 분류기. 전역 예외 처리기(Singleton인 ASP.NET IExceptionHandler)가 쓸 수 있게 Singleton(S02-T06 인계).
+        typeof(Microsoft.EntityFrameworkCore.Infrastructure.ServiceProviderAccessor), // EF Core AddDbContext가 스스로 추가하는 루트 공급자 접근자(EF 내부 등록).
+    ];
 
     // ---- 성공: 전수 Scoped · 전수 해석 ----
 
     [Fact]
-    public void Compose_InfrastructureAndConventional_EveryAddedRegistrationIsScopedExceptTimeProviderAndMarker()
+    public void Compose_ServiceComposition_EveryAddedRegistrationIsScopedExceptDocumentedSingletons()
     {
         var (services, added) = ComposeAndCaptureAdded();
 
@@ -62,6 +75,11 @@ public sealed class ServiceCompositionAcceptanceTests
             typeof(ISender),
             typeof(IIdGenerator),
             typeof(TimeProvider),
+            typeof(IUnitOfWork),
+            typeof(IExceptionClassifier),
+            typeof(SampleWriteDbContext),
+            typeof(SampleReadDbContext),
+            typeof(UniqueConstraintErrorRegistry),
         ]);
 
         var unresolved = targets.Where(type => scope.ServiceProvider.GetService(type) is null).ToList();
@@ -82,6 +100,9 @@ public sealed class ServiceCompositionAcceptanceTests
             typeof(IQueryHandler<GetSampleQuery, string>),
             typeof(ISender),
             typeof(IIdGenerator),
+            typeof(IUnitOfWork),
+            typeof(SampleWriteDbContext),
+            typeof(SampleReadDbContext),
         ];
 
         var leaked = scopedServices.Where(type => !ThrowsFromRoot(provider, type)).ToList();
@@ -110,6 +131,7 @@ public sealed class ServiceCompositionAcceptanceTests
         var services = CreateBaseServices();
         services.AddConventionalServices(SampleAssembly);
         services.AddBuildingBlocksInfrastructure();
+        AddPersistence(services);
 
         services.Count(d => d.ServiceType == typeof(ISender)).Should().Be(1);
         services.Count(d => d.ServiceType == typeof(TimeProvider)).Should().Be(1);
@@ -163,7 +185,6 @@ public sealed class ServiceCompositionAcceptanceTests
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.SetMinimumLevel(LogLevel.Trace));
         services.AddScoped<IPipelineProbe, CountingPipelineProbe>();
-        services.AddScoped<IUnitOfWork, CountingUnitOfWork>();
         return services;
     }
 
@@ -174,7 +195,15 @@ public sealed class ServiceCompositionAcceptanceTests
 
         services.AddBuildingBlocksInfrastructure();
         services.AddConventionalServices(SampleAssembly);
+        AddPersistence(services);
 
         return (services, [.. services.Where(d => !before.Contains(d))]);
+    }
+
+    private static void AddPersistence(ServiceCollection services)
+    {
+        services.AddWriteDbContext<SampleWriteDbContext>(SampleDbContexts.DummyConnectionString);
+        services.AddReadDbContext<SampleReadDbContext>(SampleDbContexts.DummyConnectionString);
+        services.AddUnitOfWork<SampleWriteDbContext>(SampleUniqueConstraintErrors.Configure);
     }
 }

@@ -12,7 +12,7 @@ namespace EmergencyHub.BuildingBlocks.Infrastructure.Persistence;
 /// <see cref="ReadDbContextBase"/>도 같은 진입점을 호출하므로 두 모델이 같습니다.
 /// </para>
 /// <para>
-/// 연결 · snake_case 명명 규칙 · 감사 인터셉터 · 실행 전략은 공통 등록 확장이 붙입니다(S02-T07).
+/// 연결 · snake_case 명명 규칙 · 실행 전략은 공통 옵션 구성(<see cref="DbContextOptionsBuilderExtensions"/>)이, 감사 인터셉터는 쓰기 등록(<c>AddWriteDbContext</c>)이 붙입니다.
 /// Handler · Repository는 <c>SaveChanges</c>를 부르지 않고 UnitOfWork가 저장합니다(ADR-0014).
 /// </para>
 /// </remarks>

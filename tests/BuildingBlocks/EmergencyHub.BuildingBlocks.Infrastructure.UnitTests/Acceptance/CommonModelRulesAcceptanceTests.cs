@@ -196,8 +196,7 @@ public sealed class CommonModelRulesAcceptanceTests : IDisposable
     public void ReadContext_OfSecondService_HasSameCreateScriptAndBlocksSaving()
     {
         using var read = new DispatchReadDbContext(new DbContextOptionsBuilder<DispatchReadDbContext>()
-            .UseNpgsql(SampleDbContexts.DummyConnectionString)
-            .UseSnakeCaseNamingConvention()
+            .UseBuildingBlocksNpgsql(SampleDbContexts.DummyConnectionString)
             .Options);
 
         read.Database.GenerateCreateScript().Should().Be(_dispatch.Database.GenerateCreateScript());
@@ -257,8 +256,7 @@ public sealed class CommonModelRulesAcceptanceTests : IDisposable
 
     private static DispatchWriteDbContext CreateDispatchWrite(params IInterceptor[] interceptors) =>
         new(new DbContextOptionsBuilder<DispatchWriteDbContext>()
-            .UseNpgsql(SampleDbContexts.DummyConnectionString)
-            .UseSnakeCaseNamingConvention()
+            .UseBuildingBlocksNpgsql(SampleDbContexts.DummyConnectionString)
             .AddInterceptors(interceptors)
             .Options);
 }

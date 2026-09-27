@@ -55,6 +55,7 @@ public sealed class DomainAssemblyAcceptanceTests
             typeof(Entity<>),
             typeof(AggregateRoot<>),
             typeof(IDomainEvent),
+            typeof(IHasDomainEvents),
             typeof(Error),
             typeof(ErrorType),
             typeof(Result),

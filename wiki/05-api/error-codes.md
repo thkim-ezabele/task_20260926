@@ -116,6 +116,19 @@ public static class EmployeeErrors
 - 실패 로그는 Handler 실패 · 검증 실패(1001) · 커밋 실패(3001 등)를 모두 포함합니다(로깅 데코레이터가 가장 바깥).
 - `RequestName`은 요청 형식의 짧은 이름(`Type.Name`)입니다. `ElapsedMilliseconds`는 `TimeProvider`로 잰 밀리초(실수)입니다.
 
+### 영속성 로그 이벤트
+
+UnitOfWork(`PersistenceLogs`, BuildingBlocks.Infrastructure)가 영속성 예외를 `Result`로 바꿀 때 한 줄을 남깁니다([데이터베이스 · 영속성 예외 변환](../04-development/database.md#영속성-예외-변환)). 속성은 제약 이름 · SqlState · 엔티티 형식 짧은 이름(중복 제거, 쉼표로 연결) · 에러 코드뿐이고 `Detail` · `MessageText` · 값 · 키와 예외 객체는 남기지 않습니다. 단위 테스트(`PersistenceLogsTests`)가 이 표와 정의를 대조합니다.
+
+| 이벤트 ID | 이름 | 수준 | 메시지 템플릿 |
+|---|---|---|---|
+| 201 | `UniqueConstraintViolationMapped` | `Debug` | `Unique constraint {ConstraintName} violated with SqlState {SqlState} on {EntityTypes}, returned error {ErrorCode}` |
+| 202 | `UniqueConstraintViolationUnmapped` | `Warning` | `Unique constraint {ConstraintName} violated with SqlState {SqlState} on {EntityTypes} has no error mapping, returned error {ErrorCode}` |
+| 203 | `ConcurrencyConflictDetected` | `Debug` | `Concurrency conflict on {EntityTypes}, returned error {ErrorCode}` |
+
+- 실패 `Result`는 로깅 데코레이터가 102(`Information`)로 이미 남기므로 변환 로그는 `Information`을 쓰지 않습니다. 202는 매핑 누락 또는 성공한 커밋의 재시도 오보(TD-010, 제약 이름 `pk_...`) 신호라 `Warning`입니다.
+- 재시도 로그는 따로 두지 않습니다(EF Core 실행 전략 자체 로그). 변환하지 않는 예외(23514 등)는 여기서 기록하지 않고 전역 예외 처리기(이벤트 ID 1)가 남깁니다.
+
 ## 공통 에러 코드
 
 BuildingBlocks가 정의하고 모든 서비스가 씁니다.
@@ -128,6 +141,7 @@ BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 | 2001 | `NotFound` | 404 | `Common.NotFound` | 리소스 없음 (서비스별 코드가 없을 때) |
 | 3001 | `Conflict` | 409 | `Common.ConcurrencyConflict` | 동시 수정 충돌 (낙관적 잠금) |
 | 3002 | `Conflict` | 409 | `Common.DuplicateRequest` | 같은 `Idempotency-Key`로 이미 처리됨 |
+| 3003 | `Conflict` | 409 | `Common.UniqueConstraintViolated` | 매핑 없는 유니크 제약 위반 (PostgreSQL `23505`, 서비스 매핑이 있으면 서비스 코드) |
 | 5001 | `Unauthorized` | 401 | `Common.Unauthenticated` | 인증 필요 |
 | 5002 | `Forbidden` | 403 | `Common.Forbidden` | 권한 없음 |
 | 9001 | `Internal` | 500 | `Common.Unexpected` | 예상하지 못한 오류 (전역 예외 처리기) |
@@ -150,3 +164,4 @@ BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 | 2026-09-27 | - | 에러 코드 체계(5자리 `S T NNN`), 유형 ↔ HTTP 대응, 로그 이벤트 ID 범위, 공통 에러 코드 |
 | 2026-09-27 | developer | `ErrorType` 2자리 값(10 · 20 · 30 · 40 · 51 · 52 · 91 · 92 · 93)과 `T = 값 / 10`, HTTP 상태는 `ErrorType`으로 정함, `Error` 생성 시 검증 규칙(범위 · NNN 000 · 예비 S · T 불일치), `ValidationError`, 공통 코드 표에 `ErrorType` · `CommonErrors` 대응 (S01-T06) |
 | 2026-09-27 | developer | 공통 로그 이벤트 ID 하위 범위(1 전역 예외, 101~199 Mediator, 201~299 영속성, 301~399 API)와 Mediator 로그 이벤트 101~104 (S02-T02, BL-028) |
+| 2026-09-27 | developer | 공통 코드 3003 `Common.UniqueConstraintViolated`(BL-019), 영속성 로그 이벤트 201~203 (S02-T07) |

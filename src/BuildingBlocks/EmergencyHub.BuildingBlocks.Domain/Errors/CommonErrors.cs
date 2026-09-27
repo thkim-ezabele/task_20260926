@@ -24,6 +24,12 @@ public static class CommonErrors
     /// <summary>3002 · 같은 <c>Idempotency-Key</c>로 이미 처리된 요청.</summary>
     public static readonly Error DuplicateRequest = Error.Conflict(3002, "이미 처리된 요청입니다.");
 
+    /// <summary>
+    /// 3003 · 서비스 매핑이 없는 유니크 제약 위반(PostgreSQL 23505). 매핑이 있으면 서비스 에러 코드(예: 23001 이메일 중복)를 씁니다.
+    /// 메시지는 고정 문구이며 제약 이름 · 중복 값을 담지 않습니다(database.md "영속성 예외 변환").
+    /// </summary>
+    public static readonly Error UniqueConstraintViolated = Error.Conflict(3003, "이미 존재하는 값과 중복됩니다.");
+
     /// <summary>5001 · 인증 필요.</summary>
     public static readonly Error Unauthenticated = Error.Unauthorized(5001, "인증이 필요합니다.");
 

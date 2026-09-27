@@ -9,11 +9,11 @@ namespace EmergencyHub.BuildingBlocks.Domain.Entities;
 /// <remarks>
 /// <para>상속을 위한 기반 클래스이므로 "클래스는 기본 <c>sealed</c>" 규칙의 예외로 <c>abstract</c>입니다.</para>
 /// <para>
-/// 수집한 이벤트는 커밋 뒤 UnitOfWork가 <see cref="ClearDomainEvents"/>로 비웁니다(ADR-0014).
+/// 수집한 이벤트는 커밋 뒤 UnitOfWork가 비제네릭 <see cref="IHasDomainEvents"/>로 찾아 <see cref="ClearDomainEvents"/>로 비웁니다(ADR-0014).
 /// 디스패치는 이후 토픽에서 다룹니다(ADR-0023).
 /// </para>
 /// </remarks>
-public abstract class AggregateRoot<TId> : Entity<TId>
+public abstract class AggregateRoot<TId> : Entity<TId>, IHasDomainEvents
     where TId : struct, IEquatable<TId>
 {
     private readonly List<IDomainEvent> _domainEvents = [];

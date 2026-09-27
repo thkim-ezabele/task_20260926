@@ -14,6 +14,7 @@ public sealed class CommonErrorsTests
         (nameof(CommonErrors.NotFound), 2001, ErrorType.NotFound),
         (nameof(CommonErrors.ConcurrencyConflict), 3001, ErrorType.Conflict),
         (nameof(CommonErrors.DuplicateRequest), 3002, ErrorType.Conflict),
+        (nameof(CommonErrors.UniqueConstraintViolated), 3003, ErrorType.Conflict),
         (nameof(CommonErrors.Unauthenticated), 5001, ErrorType.Unauthorized),
         (nameof(CommonErrors.Forbidden), 5002, ErrorType.Forbidden),
         (nameof(CommonErrors.Unexpected), 9001, ErrorType.Internal),

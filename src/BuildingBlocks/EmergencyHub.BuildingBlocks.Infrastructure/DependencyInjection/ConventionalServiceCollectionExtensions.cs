@@ -42,7 +42,7 @@ public static class ConventionalServiceCollectionExtensions
     /// <item><description>Validator: FluentValidation <c>AddValidatorsFromAssemblies</c>(Scoped, internal 포함, ADR-0018).</description></item>
     /// </list>
     /// 데코레이터 의존(<c>ISender</c> · <c>TimeProvider</c>)이 빠지지 않도록 <see cref="ApplicationServiceCollectionExtensions.AddBuildingBlocksApplication"/>도 부릅니다(TryAdd).
-    /// 트랜잭션 데코레이터가 쓰는 <c>IUnitOfWork</c>는 UnitOfWork 등록 확장(S02-T07)이, <c>ILogger&lt;T&gt;</c>는 호스트가 등록합니다.
+    /// 트랜잭션 데코레이터가 쓰는 <c>IUnitOfWork</c>는 <see cref="PersistenceServiceCollectionExtensions.AddUnitOfWork{TContext}"/>가, <c>ILogger&lt;T&gt;</c>는 호스트가 등록합니다.
     /// </remarks>
     public static IServiceCollection AddConventionalServices(this IServiceCollection services, params Assembly[] assemblies)
     {

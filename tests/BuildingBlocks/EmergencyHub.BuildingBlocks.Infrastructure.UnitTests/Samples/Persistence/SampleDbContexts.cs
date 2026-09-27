@@ -1,11 +1,13 @@
+using EmergencyHub.BuildingBlocks.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace EmergencyHub.BuildingBlocks.Infrastructure.UnitTests.Samples.Persistence;
 
 /// <remarks>
-/// Npgsql 공급자 + 더미 연결 문자열 + snake_case로 샘플 DbContext를 만든다. 모델 생성 · 변경 추적 · 스크립트 생성은 연결을 열지 않는다(DB 없음).
-/// 공통 등록 확장(UseNpgsql · UseSnakeCaseNamingConvention · 인터셉터)은 S02-T07이 만들고, 여기서는 같은 구성을 직접 조립한다.
+/// 공통 옵션 구성(<c>UseBuildingBlocksNpgsql</c>: Npgsql + 재시도 실행 전략 + snake_case)과 더미 연결 문자열로 샘플 DbContext를 만든다.
+/// 등록 확장(AddWriteDbContext · AddReadDbContext)과 같은 옵션 경로다. 모델 생성 · 변경 추적 · 스크립트 생성은 연결을 열지 않는다(DB 없음).
+/// 쓰기 등록이 붙이는 감사 인터셉터는 테스트가 필요할 때 직접 넘긴다.
 /// </remarks>
 public static class SampleDbContexts
 {
@@ -13,15 +15,13 @@ public static class SampleDbContexts
 
     public static SampleWriteDbContext CreateWrite(params IInterceptor[] interceptors) =>
         new(new DbContextOptionsBuilder<SampleWriteDbContext>()
-            .UseNpgsql(DummyConnectionString)
-            .UseSnakeCaseNamingConvention()
+            .UseBuildingBlocksNpgsql(DummyConnectionString)
             .AddInterceptors(interceptors)
             .Options);
 
     public static SampleReadDbContext CreateRead() =>
         new(new DbContextOptionsBuilder<SampleReadDbContext>()
-            .UseNpgsql(DummyConnectionString)
-            .UseSnakeCaseNamingConvention()
+            .UseBuildingBlocksNpgsql(DummyConnectionString)
             .Options);
 
     public static Order NewOrder(string orderNumber = "ORD-0001") =>
