@@ -48,6 +48,7 @@ updated: 2026-09-28
 - PRD-001 방향 결정은 **S01 ADR 13건(0011~0023)으로 모두 확정**했습니다(위 표). 남은 방향 결정 항목은 없습니다.
 - S02 구현 결정(ADR 아님, 원본은 기준 문서): xmin은 EF shadow property(Domain 무변경), 매핑 없는 23505 = 3003 `Common.UniqueConstraintViolated`, IIdGenerator는 ADR-0017대로 명시 Scoped 등록, Validator는 공통 기반 `RequestValidator<T>`, enum 1002는 `MustBeDefinedEnum`([Flags] 조합 허용), 전역 예외 로그는 메시지를 뺀 사본으로 기록. ADR 후보 4건은 [S02 결과 리뷰](../10-delivery/sprints/S02-building-blocks.md#adr-후보-파일은-사용자-확인-후).
 - S03 구현 결정(ADR 아님, 원본은 기준 문서 · [S03 결과 리뷰](../10-delivery/sprints/S03-aspire-employee.md#결과-리뷰)): `employees` 확정안(Q16), 이메일은 Trim + 소문자 정규화 string, 에러 21001~21006 · 22001 · 23001, 헬스 `/health/live` · `/health/ready` 모든 환경, 비밀번호 `GenerateParameterDefault` + `persist`, 이력 테이블은 테이블 이름만 snake_case 예외(컬럼 · PK는 snake_case, 결정 A), EF 실패 로그 3종 Debug(BL-023), Api 재시도 3회 · 5초(BL-073), postgres 이미지 태그는 `Directory.Build.props` 한 곳, 요청 완료 로그 로거는 ServiceDefaults가 DI 로거로. ADR 후보 3건은 PRD-001 `/retro`에서.
+- S04 결정(ADR 아님, 원본은 기준 문서): 커버리지 대상 6개(BuildingBlocks 4 + Employee Domain / Application, `coverlet.runsettings`), Aspire 스모크 미도입(BL-111), 실패 처리 경계(요청 값만으로 판정 = Validator · Result, Aggregate 불변식 위반 = 예외, 저장 데이터 · 상태 의존 = Result), 경고 억제는 `[SuppressMessage]` + Justification과 승인 목록(coding-conventions). ADR 후보 4건은 [S04 결과 리뷰](../10-delivery/sprints/S04-tests-docs-evidence.md#adr-후보-파일은-만들지-않음-retro에서-판단).
 - 정책: 도메인 이벤트는 수집만(디스패치는 이후 토픽). Aspire 9.x 마이너 버전은 9.5.2(S01-T01).
 
 ## 검토 중 (초안 기본값)
@@ -58,9 +59,9 @@ updated: 2026-09-28
 
 ## 기준 문서 (draft)
 
-[코딩 컨벤션](../04-development/coding-conventions.md) · [데이터베이스](../04-development/database.md) · [테스트 전략](../04-development/testing-strategy.md)(성공 / 실패 / 엣지 필수) · [Clean Architecture](../03-architecture/clean-architecture.md) · [로깅](../04-development/logging-observability.md)(콘솔 텍스트 / 파일 JSON) · [TDD 가이드](../04-development/tdd-guide.md) · [API 설계](../04-development/api-guidelines.md)(ProblemDetails `code`, `Idempotency-Key`) · [에러 코드](../05-api/error-codes.md)(`S T NNN`, 로그 이벤트 ID `S0NNN`) · [기술 스택](../03-architecture/tech-stack.md)
+[코딩 컨벤션](../04-development/coding-conventions.md) · [데이터베이스](../04-development/database.md) · [테스트 전략](../04-development/testing-strategy.md)(성공 / 실패 / 엣지 필수) · [Clean Architecture](../03-architecture/clean-architecture.md) · [로깅](../04-development/logging-observability.md)(콘솔 텍스트 / 파일 JSON) · [TDD 가이드](../04-development/tdd-guide.md) · [API 설계](../04-development/api-guidelines.md)(ProblemDetails `code`, `Idempotency-Key`) · [에러 코드](../05-api/error-codes.md)(`S T NNN`, 로그 이벤트 ID `S0NNN`) · [기술 스택](../03-architecture/tech-stack.md) · [로컬 환경 구성](../01-getting-started/local-setup.md) · [설정](../06-deployment/configuration.md) · [환경](../06-deployment/environments.md) · [CI / CD](../06-deployment/ci-cd.md) · [문제 해결](../01-getting-started/troubleshooting.md)(S04에서 draft)
 
 
 ## 미착수
 
-도메인 모델(유비쿼터스 언어, 바운디드 컨텍스트, Aggregate), 서비스 상세와 의존 관계, 이벤트 명세, 두 번째 서비스. Employee 샘플 서비스는 S03에서 전 구간 구현(PRD-001 S04는 테스트 · 문서 · 증빙 정리)
+도메인 모델(유비쿼터스 언어, 바운디드 컨텍스트, Aggregate), 서비스 상세와 의존 관계, 이벤트 명세, 두 번째 서비스. Employee 샘플 서비스는 S03에서 전 구간 구현, S04에서 테스트 · 문서 · 증빙 정리 완료
