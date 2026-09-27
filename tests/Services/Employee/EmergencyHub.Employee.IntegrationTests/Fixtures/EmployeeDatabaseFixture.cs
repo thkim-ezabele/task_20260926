@@ -173,6 +173,30 @@ public sealed class EmployeeDatabaseFixture : IAsyncLifetime
     public Task<string?> SaveContainerLogsAsync(string? directory) =>
         ContainerLogs.SaveAsync(_container ?? throw NotInitialized(), ContainerLogName, directory);
 
+    /// <summary>
+    /// SQL 스크립트를 컨테이너 안 <c>psql</c>로 <c>employee_app</c>(유닉스 소켓, 비밀번호 없음)이 실행합니다(<c>-v ON_ERROR_STOP=1</c>, testing-strategy.md Q12).
+    /// 운영 적용 방식(스크립트를 psql로 실행)을 재현하는 재적용 멱등 테스트에만 씁니다.
+    /// </summary>
+    /// <param name="script">실행할 SQL 전문.</param>
+    /// <param name="cancellationToken">취소 토큰.</param>
+    /// <returns>psql 종료 코드와 표준 출력 · 표준 오류(NOTICE는 표준 오류).</returns>
+    /// <exception cref="InvalidOperationException">fixture가 준비되기 전인 경우.</exception>
+    public async Task<PsqlResult> ExecutePsqlScriptAsync(string script, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(script);
+
+        var container = _container ?? throw NotInitialized();
+        var path = $"/tmp/employee-it-{Guid.NewGuid():N}.sql";
+
+        await container.CopyAsync(System.Text.Encoding.UTF8.GetBytes(script), path, ct: cancellationToken);
+        var result = await container.ExecAsync(
+            ["psql", "-X", "-q", "-v", "ON_ERROR_STOP=1", "-U", EmployeeDatabaseSettings.AppRoleName, "-d", EmployeeDatabaseSettings.DatabaseName, "-f", path],
+            cancellationToken);
+        await container.ExecAsync(["rm", "-f", path], cancellationToken);
+
+        return new PsqlResult(result.ExitCode ?? throw new InvalidOperationException("psql 종료 코드를 받지 못했습니다."), result.Stdout, result.Stderr);
+    }
+
     /// <summary>쓰기 연결 문자열을 바꾼 사본을 만듭니다(예: P1 <c>Options=-c default_transaction_isolation=serializable</c>, 잘못된 비밀번호).</summary>
     /// <param name="configure">연결 문자열 빌더 변경.</param>
     /// <returns>바뀐 연결 문자열.</returns>

@@ -130,6 +130,8 @@ updated: 2026-09-27
 | BL-101 | 운영 PostgreSQL 서버 로그 DETAIL 노출: 기본 설정에서 23505 · 23514 때 Key (email)=(...)와 위반 행 전체가 서버 로그에 남음. log_error_verbosity=terse 등 서버 로그 설정 검토 | S03-T06 dba | | new | 재검토 트리거: 배포 토픽(Phase 4) 또는 로그 수집기 도입 |
 | BL-102 | 로컬 Docker Engine API 1.44 미만(Docker Desktop 4.26 / Engine 24.0.7)이면 Testcontainers 4.15.0 연결 실패: local-setup에 최소 Docker 버전과 DOCKER_API_VERSION=1.43 대처 기록 또는 Docker Desktop 업그레이드 검토 | S03-T06 developer | | new | S04 local-setup 후보 |
 | BL-103 | MigrationService 실제 호스트(Program.Configure + MigrationWorker)를 컨테이너로 실행하는 통합 시나리오: Program · Configure가 internal이고 InternalsVisibleTo가 UnitTests만 허용해 참조 · 가시성 확장 필요 | S03-T03 tester · S03-T06 developer | | new | S03-T06에서는 fixture가 같은 등록 · 적용 경로로 대신 검증 |
+| BL-104 | 로그 수집기 · 알림 도입 때 알림 조건에 301 · ErrorCode 9003(재시도 한도 초과) 포함: BL-023 뒤 DB 장애는 Warning으로만 남아 Error 급증 규칙으로는 안 잡힘(logging-observability 196행 TODO) | S03-T06 reviewer | | new | 재검토 트리거: ADR-0023 로그 수집기 도입 |
+| BL-105 | logging-observability 수준 표에 재시도 한도 초과(9003) = Warning(301) 예시를 적어 Outbox 발행 최종 실패 = Error 예시와의 차이 명시 | S03-T06 reviewer | | new | 문서 정리 후보 |
 
 ---
 
