@@ -15,10 +15,18 @@ public static class RuleScope
 
     /// <summary>레이어 하나의 제품 어셈블리.</summary>
     /// <param name="layer">레이어.</param>
-    /// <param name="buildingBlocksOnly"><see langword="true"/>이면 BuildingBlocks 어셈블리만(ADR-0024 BuildingBlocks 고유 행).</param>
+    /// <param name="ownership">
+    /// 지정하면 그 소유의 어셈블리만(BuildingBlocks: ADR-0024 BuildingBlocks 고유 행, Service: 서비스 행). <see langword="null"/>이면 모두.
+    /// </param>
     /// <returns>범위 생성 함수.</returns>
-    public static Func<PredicateList> Layer(ArchitectureLayer layer, bool buildingBlocksOnly = false) =>
-        () => ProductTypes([.. ArchitectureAssemblies.In(layer).Where(assembly => !buildingBlocksOnly || assembly.IsBuildingBlocks)]);
+    public static Func<PredicateList> Layer(ArchitectureLayer layer, AssemblyOwnership? ownership = null) =>
+        () => ProductTypes([.. ArchitectureAssemblies.In(layer).Where(assembly => ownership is null || assembly.Ownership == ownership)]);
+
+    /// <summary>서비스 하나의 제품 어셈블리 전체(모든 레이어).</summary>
+    /// <param name="service">서비스 접두사(<c>EmergencyHub.&lt;Service&gt;</c>).</param>
+    /// <returns>범위 생성 함수.</returns>
+    public static Func<PredicateList> Service(string service) =>
+        () => ProductTypes([.. ArchitectureAssemblies.All.Where(assembly => string.Equals(assembly.ServiceName, service, StringComparison.Ordinal))]);
 
     /// <summary>
     /// 이 테스트 어셈블리 안 표본 네임스페이스 하나(<typeparamref name="TSample"/>의 네임스페이스와 정확히 같은 것만).

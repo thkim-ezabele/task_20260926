@@ -36,6 +36,5 @@ public static class ForbiddenDependencies
     /// <param name="name">어셈블리 · 패키지 · 네임스페이스 이름.</param>
     /// <param name="prefix">금지 접두사.</param>
     /// <returns>판별 결과.</returns>
-    public static bool Matches(string name, string prefix) =>
-        string.Equals(name, prefix, StringComparison.Ordinal) || name.StartsWith(prefix + ".", StringComparison.Ordinal);
+    public static bool Matches(string name, string prefix) => ProductNames.IsUnder(name, prefix);
 }

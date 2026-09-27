@@ -17,4 +17,7 @@ public enum ArchitectureLayer : short
 
     /// <summary>Api 레이어(BuildingBlocks.Api, <c>&lt;Service&gt;.Api</c>).</summary>
     Api = 4,
+
+    /// <summary>마이그레이션 적용 워커(<c>&lt;Service&gt;.MigrationService</c>, ADR-0012). BuildingBlocks에는 없다.</summary>
+    MigrationService = 5,
 }

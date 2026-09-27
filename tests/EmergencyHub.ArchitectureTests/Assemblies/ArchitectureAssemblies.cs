@@ -23,11 +23,14 @@ public static class ArchitectureAssemblies
         new(typeof(RepositoryBase<>).Assembly, ArchitectureLayer.Infrastructure),
         new(typeof(ApiServiceCollectionExtensions).Assembly, ArchitectureLayer.Api),
 
-        // S03: Employee Domain · Application · Infrastructure · Api를 여기에 추가한다.
+        // S03: Employee Domain · Application · Infrastructure · Api · MigrationService를 여기에 추가한다.
     ];
 
     /// <summary>서비스 어셈블리가 하나라도 목록에 있으면 <see langword="true"/>.</summary>
     public static bool HasServiceAssemblies => All.Any(assembly => !assembly.IsBuildingBlocks);
+
+    /// <summary>목록에 있는 서비스 접두사(<c>EmergencyHub.&lt;Service&gt;</c>). 목록 순서를 유지하고 중복을 뺀다.</summary>
+    public static IReadOnlyList<string> ServiceNames => [.. All.Select(assembly => assembly.ServiceName).OfType<string>().Distinct(StringComparer.Ordinal)];
 
     /// <summary>레이어에 속한 어셈블리.</summary>
     /// <param name="layer">레이어.</param>

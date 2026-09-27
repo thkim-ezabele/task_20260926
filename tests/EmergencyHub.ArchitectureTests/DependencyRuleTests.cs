@@ -41,4 +41,21 @@ public sealed class DependencyRuleTests
     [Fact]
     public void BuildingBlocksApiDoesNotDependOnInfrastructureOrDatabase_ProductAssemblies_Holds() =>
         DependencyRules.BuildingBlocksApiDoesNotDependOnInfrastructureOrDatabase.CheckProduct().ShouldPassOnProduct();
+
+    // ADR-0024 표 <Service>.Api 행(Controller에서 Infrastructure 타입 · Repository 사용 금지), clean-architecture(Api는 Infrastructure를 DI 등록에만)
+    // 대상은 서비스 Api의 Controller(S03 전 건너뜀)
+    [Fact]
+    public void ControllersDoNotUseInfrastructureOrRepositories_ProductAssemblies_Holds() =>
+        DependencyRules.ControllersDoNotUseInfrastructureOrRepositories.CheckProduct().ShouldPassOnProduct();
+
+    // ADR-0024 표 <Service>.MigrationService 행(<Service>.Api · BuildingBlocks.Api) — 대상은 서비스 MigrationService(S03 전 건너뜀)
+    [Fact]
+    public void MigrationServiceDoesNotDependOnApi_ProductAssemblies_Holds() =>
+        DependencyRules.MigrationServiceDoesNotDependOnApi.CheckProduct().ShouldPassOnProduct();
+
+    // ADR-0024 표 아래 "서비스끼리는 프로젝트를 참조하지 않는다", clean-architecture 의존성 규칙, ADR-0024 <Service>.Domain 행(BuildingBlocks.Domain만)
+    // 서비스마다 규칙 1개(다른 서비스 접두사 금지). 서비스가 MinimumServiceCount(2)개 미만이면 건너뜀(S03은 Employee 1개).
+    [Fact]
+    public void ServicesDoNotDependOnOtherServices_ProductAssemblies_Holds() =>
+        DependencyRules.ServicesDoNotDependOnOtherServices.ShouldPassOnProduct();
 }

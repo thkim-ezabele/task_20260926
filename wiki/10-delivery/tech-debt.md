@@ -51,6 +51,7 @@ updated: 2026-09-27
 | TD-022 | ExceptionHandlerMiddleware 범주 전체를 로그 필터로 끄므로 같은 범주의 다른 로그(응답 시작 후 Warning, 요청 중단 Debug)도 사라짐. 이벤트 ID 단위 필터 불가 | 설계 | 중 | S02-T06 | .NET 10 전환(BL-002) 때 억제 옵션 검토 | new |
 | TD-023 | 바인딩 오류 errors 키 순서가 ModelStateDictionary 열거 순서를 따르고 요청 속성 순서를 보장하지 않음 | 설계 | 하 | S02-T06 | 클라이언트 요구가 생기면 정렬 규칙 결정 | new |
 | TD-024 | 아키텍처 테스트 프로젝트는 coverlet.collector를 쓰지 못함(계측된 제품 DLL을 검사해 Domain 규칙 실패). CI 로그에 수집기 없음 메시지 | 테스트 | 하 | S02-T05 | 수집기가 필요해지면 원본 DLL 경로(obj) 검사 또는 Coverlet 네임스페이스 예외 판단 | new |
+| TD-025 | Controller ↛ Repository 아키텍처 규칙은 시그니처 기준이라 메서드 본문 서비스 로케이터(GetRequiredService<IXxxRepository>())는 잡지 못함 | 테스트 | 하 | S02-T05 | Mono.Cecil IL 피연산자 검사 사용자 규칙으로 보완 가능, 그 전까지 reviewer 판정 | new |
 
 ---
 

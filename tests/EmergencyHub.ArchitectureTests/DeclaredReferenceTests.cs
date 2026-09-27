@@ -99,12 +99,80 @@ public sealed class DeclaredReferenceTests
     }
 
     [Fact]
-    public void FindViolations_ServiceApiWithoutDeclaredRestriction_ReturnsEmpty()
+    public void FindViolations_ServiceApiDeclaringOwnInfrastructureBuildingBlocksAndServiceDefaults_ReturnsEmpty()
     {
-        var serviceApi = new LayerAssembly(typeof(DeclaredReferenceTests).Assembly, ArchitectureLayer.Api);
-
-        var violations = DeclaredReferenceRules.FindViolations(serviceApi, ["EmergencyHub.Employee.Infrastructure", "Microsoft.EntityFrameworkCore"]);
+        var violations = DeclaredReferenceRules.FindViolations(
+            "EmergencyHub.Employee.Api",
+            ArchitectureLayer.Api,
+            ["EmergencyHub.Employee.Application", "EmergencyHub.Employee.Infrastructure", "EmergencyHub.BuildingBlocks.Api", "EmergencyHub.ServiceDefaults", "Microsoft.EntityFrameworkCore"]);
 
         violations.Should().BeEmpty("서비스 Api는 DI 등록에 Infrastructure를 참조할 수 있다(ADR-0024 <Service>.Api 행)");
+    }
+
+    // ---- 서비스 MigrationService (ADR-0024 <Service>.MigrationService 행) ----
+
+    [Fact]
+    public void FindViolations_MigrationServiceDeclaringApiProjects_ReturnsThoseButAllowsInfrastructureAndServiceDefaults()
+    {
+        var violations = DeclaredReferenceRules.FindViolations(
+            "EmergencyHub.Employee.MigrationService",
+            ArchitectureLayer.MigrationService,
+            ["EmergencyHub.Employee.Infrastructure", "EmergencyHub.ServiceDefaults", "Npgsql", "EmergencyHub.BuildingBlocks.Api"]);
+
+        violations.Should().BeEquivalentTo(["EmergencyHub.BuildingBlocks.Api"]);
+    }
+
+    // ---- 서비스 격리 (서비스끼리 프로젝트를 참조하지 않는다, ADR-0024 표 아래 · clean-architecture) ----
+
+    [Fact]
+    public void FindViolations_ServiceProjectDeclaringOtherServiceProjects_ReturnsOnlyOtherServiceReferences()
+    {
+        var violations = DeclaredReferenceRules.FindViolations(
+            "EmergencyHub.Employee.Application",
+            ArchitectureLayer.Application,
+            ["EmergencyHub.Employee.Domain", "EmergencyHub.BuildingBlocks.Application", "EmergencyHub.Notification.Domain", "EmergencyHub.Notification.Contracts"]);
+
+        violations.Should().BeEquivalentTo(["EmergencyHub.Notification.Domain", "EmergencyHub.Notification.Contracts"]);
+    }
+
+    [Fact]
+    public void FindViolations_ServiceDomainDeclaringOtherServiceDomain_ReturnsIt()
+    {
+        var violations = DeclaredReferenceRules.FindViolations(
+            "EmergencyHub.Employee.Domain",
+            ArchitectureLayer.Domain,
+            ["EmergencyHub.BuildingBlocks.Domain", "EmergencyHub.Notification.Domain"]);
+
+        violations.Should().BeEquivalentTo(["EmergencyHub.Notification.Domain"], "<Service>.Domain은 BuildingBlocks.Domain만 참조한다(ADR-0024 <Service>.Domain 행)");
+    }
+
+    [Fact]
+    public void FindViolations_ServiceDeclaringLookalikeServiceName_TreatsItAsOtherService()
+    {
+        var violations = DeclaredReferenceRules.FindViolations(
+            "EmergencyHub.Employee.Infrastructure",
+            ArchitectureLayer.Infrastructure,
+            ["EmergencyHub.Employee.Application", "EmergencyHub.EmployeeReports.Application"]);
+
+        violations.Should().BeEquivalentTo(["EmergencyHub.EmployeeReports.Application"], "서비스는 점 단위 두 번째 이름으로 구별한다");
+    }
+
+    [Fact]
+    public void FindViolations_ServiceMigrationServiceDeclaringOtherServiceInfrastructure_ReturnsIt()
+    {
+        var violations = DeclaredReferenceRules.FindViolations(
+            "EmergencyHub.Employee.MigrationService",
+            ArchitectureLayer.MigrationService,
+            ["EmergencyHub.Employee.Infrastructure", "EmergencyHub.Notification.Infrastructure"]);
+
+        violations.Should().BeEquivalentTo(["EmergencyHub.Notification.Infrastructure"]);
+    }
+
+    [Fact]
+    public void FindViolations_ProjectWithUnknownLayer_Throws()
+    {
+        var act = () => DeclaredReferenceRules.FindViolations("EmergencyHub.Employee.Worker", ArchitectureLayer.Unknown, []);
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
     }
 }

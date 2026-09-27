@@ -66,6 +66,16 @@ public static class TypeInspection
     public static bool InjectsAnyOf(Type type, params Type[] forbidden) =>
         ConstructorDependencies(type).Any(dependency => forbidden.Any(marker => marker.IsAssignableFrom(dependency)));
 
+    /// <summary>
+    /// 형식이 선언한 시그니처(생성자 · 메서드 매개변수 · 반환 · 필드 · 속성)에 주어진 형식에 할당 가능한 형식이 있으면 <see langword="true"/>.
+    /// 배열 · ref · 제네릭 인자(<c>Task&lt;T&gt;</c> 등) 안쪽 형식도 본다. 상속한 멤버는 보지 않는다.
+    /// </summary>
+    /// <param name="type">검사할 형식.</param>
+    /// <param name="forbidden">금지할 형식(마커 인터페이스 등).</param>
+    /// <returns>판별 결과.</returns>
+    public static bool SignaturesUseAnyOf(Type type, params Type[] forbidden) =>
+        SignatureTypes(type).Any(used => forbidden.Any(marker => marker.IsAssignableFrom(used)));
+
     /// <summary>제네릭 인자 수 표기(<c>`1</c>)를 뺀 형식 이름.</summary>
     /// <param name="type">검사할 형식.</param>
     /// <returns>형식 이름.</returns>
@@ -74,5 +84,27 @@ public static class TypeInspection
         var tick = type.Name.IndexOf('`', StringComparison.Ordinal);
 
         return tick < 0 ? type.Name : type.Name[..tick];
+    }
+
+    private static IEnumerable<Type> SignatureTypes(Type type)
+    {
+        const BindingFlags Declared = AllInstance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+
+        var constructors = type.GetConstructors(AllInstance).SelectMany(constructor => constructor.GetParameters()).Select(parameter => parameter.ParameterType);
+        var methods = type.GetMethods(Declared).SelectMany(method => method.GetParameters().Select(parameter => parameter.ParameterType).Append(method.ReturnType));
+        var fields = type.GetFields(Declared).Select(field => field.FieldType);
+        var properties = type.GetProperties(Declared).Select(property => property.PropertyType);
+
+        return constructors.Concat(methods).Concat(fields).Concat(properties).SelectMany(Unwrap).Distinct();
+    }
+
+    private static IEnumerable<Type> Unwrap(Type type)
+    {
+        if (type.HasElementType)
+        {
+            return Unwrap(type.GetElementType()!);
+        }
+
+        return type.IsGenericType ? type.GetGenericArguments().SelectMany(Unwrap).Prepend(type) : [type];
     }
 }
