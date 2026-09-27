@@ -52,6 +52,7 @@ updated: 2026-09-27
 | TD-023 | 바인딩 오류 errors 키 순서가 ModelStateDictionary 열거 순서를 따르고 요청 속성 순서를 보장하지 않음 | 설계 | 하 | S02-T06 | 클라이언트 요구가 생기면 정렬 규칙 결정(T06 tester 후보 병합) | open |
 | TD-024 | 아키텍처 테스트 프로젝트는 coverlet.collector를 쓰지 못함(계측된 제품 DLL을 검사해 Domain 규칙 실패). CI 로그에 수집기 없음 메시지 | 테스트 | 하 | S02-T05 | S04-T01 커버리지 점검 때 ArchitectureTests 수집 제외 확정, CI 로그 '수집기 없음' 메시지 문서화 | open |
 | TD-025 | Controller ↛ Repository 아키텍처 규칙은 시그니처 기준이라 메서드 본문 서비스 로케이터(GetRequiredService<IXxxRepository>())는 잡지 못함 | 테스트 | 하 | S02-T05 | 그 전까지 reviewer 점검표에 'Controller 본문 서비스 로케이터 금지', 필요해지면 Mono.Cecil IL 피연산자 규칙 추가 | open |
+| TD-026 | Employee.Infrastructure가 IConfiguration을 전이 참조(Microsoft.Extensions.Configuration.Abstractions 8.0.0, BuildingBlocks.Infrastructure 경유)로 사용: 직접 참조 · package-versions.md 등록 여부 판단 필요(현재 빌드 · 감사 문제 없음) | 의존성 | | S03-T02 | | new |
 
 ---
 

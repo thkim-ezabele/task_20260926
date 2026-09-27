@@ -70,6 +70,7 @@ updated: 2026-09-27
 | 2026-09-27 | S03-T01 | reviewer | PASS | 진입 점검 15항목 통과. 아키텍처 임시 확장은 scratchpad 복사본에서 실행(대상 0개 실패 3건 외 위반 0, 저장소 변경 없음). handoff → T02(ck_ IN (1, 2) 메타데이터 고정) · T04(대상 0개 3건 해소 확인) · T07(20001 → 102 순서) |
 | 2026-09-27 | S03-T01 | tester | PASS | 인수 조건 대조 결과 빈 곳 없음(추가 0). 전체 1,188건(통과 1,177 · 건너뜀 11 · 실패 0), 경고 0. FR-08 · 09 · 11의 T01 범위 확인. handoff → T02(EF private 생성자 구체화) · T04(건너뜀 11 → 0) · T07(경계값 1~2건 파이프라인 확인) |
 | 2026-09-27 | S03-T02 | dba | PASS | database.md 갱신: Employee 코드 정의 표(1 Active · 2 Inactive), Employee ERD · 인덱스 · 제약 표, 롤 이름 스키마 금지 규칙, 이력 테이블 PK · public 설명, 재시도 설정은 공통 옵션 구성 선택 인자(UseNpgsql 재호출 금지), UUID 정렬 검증 작업 번호 수정. developer 구현 사양 7개(이름 상수 EmployeeDbNames, EmployeeConfiguration, 모델 정의, Repository, 재시도 인자, 설계 시점 팩터리, 메타데이터 테스트) 전달. handoff → T02(dba 재확인 idempotent SQL 판정 a~g) · T05 · T06 |
+| 2026-09-27 | S03-T02 | developer | PASS | Employee.Infrastructure(매핑 · Repository · 등록 확장 · 설계 시점 팩터리) · InitialCreate 생성, BuildingBlocks DbRetryOptions 재시도 인자 추가. 테스트 68건 추가 · 전체 1,251 통과, 경고 0(생성 코드 포함), format 통과. 이력 테이블 컬럼 · PK가 snake_case(migration_id · product_version · pk___ef_migrations_history)로 생성되어 ADR-0012(EF 기본 이름 유지)와 불일치 → 결정 요청. 후보 TD(Configuration.Abstractions 전이 참조). handoff → T03 · T04 · T06 |
 
 ## 계획 리뷰
 

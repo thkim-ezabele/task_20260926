@@ -155,6 +155,48 @@ public sealed class PersistenceServiceCollectionExtensionsTests
         act.Should().Throw<ArgumentNullException>();
     }
 
+    [Fact]
+    public void AddWriteDbContext_WithRetryOptions_PassesThemToExecutionStrategy()
+    {
+        using var provider = new ServiceCollection()
+            .AddWriteDbContext<SampleWriteDbContext>(Connection, retry: new DbRetryOptions(3, TimeSpan.FromSeconds(5)))
+            .BuildServiceProvider(StrictOptions);
+        using var scope = provider.CreateScope();
+
+        var strategy = scope.ServiceProvider.GetRequiredService<SampleWriteDbContext>().Database.CreateExecutionStrategy();
+
+        ExecutionStrategySettings.MaxRetryCount(strategy).Should().Be(3);
+        ExecutionStrategySettings.MaxRetryDelay(strategy).Should().Be(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public void AddWriteDbContext_WithRetryOptionsAndConfigure_KeepsRetrySettingsAndAuditInterceptor()
+    {
+        // 엣지: 추가 옵션 콜백이 있어도 재시도 설정은 공통 옵션 구성 한 곳에서 정해진다(콜백은 UseNpgsql을 다시 부르지 않음).
+        var database = new FakeDatabase();
+        using var provider = new ServiceCollection()
+            .AddWriteDbContext<SampleWriteDbContext>(Connection, options => options.AddInterceptors(database), new DbRetryOptions(1, TimeSpan.FromSeconds(2)))
+            .BuildServiceProvider(StrictOptions);
+        using var scope = provider.CreateScope();
+
+        var context = scope.ServiceProvider.GetRequiredService<SampleWriteDbContext>();
+
+        ExecutionStrategySettings.MaxRetryCount(context.Database.CreateExecutionStrategy()).Should().Be(1);
+        Interceptors(context).Should().Contain(database).And.ContainSingle(interceptor => interceptor is AuditSaveChangesInterceptor);
+    }
+
+    [Fact]
+    public void AddWriteDbContext_WithoutRetryOptions_UsesNpgsqlDefaultRetrySettings()
+    {
+        using var provider = new ServiceCollection().AddWriteDbContext<SampleWriteDbContext>(Connection).BuildServiceProvider(StrictOptions);
+        using var scope = provider.CreateScope();
+
+        var strategy = scope.ServiceProvider.GetRequiredService<SampleWriteDbContext>().Database.CreateExecutionStrategy();
+
+        ExecutionStrategySettings.MaxRetryCount(strategy).Should().Be(6);
+        ExecutionStrategySettings.MaxRetryDelay(strategy).Should().Be(TimeSpan.FromSeconds(30));
+    }
+
     // ---- 읽기 DbContext ----
 
     [Fact]
@@ -197,6 +239,20 @@ public sealed class PersistenceServiceCollectionExtensionsTests
         var act = () => new ServiceCollection().AddReadDbContext<SampleReadDbContext>(connectionString);
 
         act.Should().Throw<InvalidOperationException>().WithMessage("*ConnectionStrings:Read*");
+    }
+
+    [Fact]
+    public void AddReadDbContext_WithRetryOptions_PassesThemToExecutionStrategy()
+    {
+        using var provider = new ServiceCollection()
+            .AddReadDbContext<SampleReadDbContext>(Connection, retry: new DbRetryOptions(2, TimeSpan.FromSeconds(3)))
+            .BuildServiceProvider(StrictOptions);
+        using var scope = provider.CreateScope();
+
+        var strategy = scope.ServiceProvider.GetRequiredService<SampleReadDbContext>().Database.CreateExecutionStrategy();
+
+        ExecutionStrategySettings.MaxRetryCount(strategy).Should().Be(2);
+        ExecutionStrategySettings.MaxRetryDelay(strategy).Should().Be(TimeSpan.FromSeconds(3));
     }
 
     // ---- UnitOfWork ----

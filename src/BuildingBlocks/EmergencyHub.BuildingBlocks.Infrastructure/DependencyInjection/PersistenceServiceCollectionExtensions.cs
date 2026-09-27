@@ -23,20 +23,22 @@ public static class PersistenceServiceCollectionExtensions
     private const string ReadConnectionKey = "ConnectionStrings:Read";
 
     /// <summary>
-    /// 서비스 쓰기 DbContext를 Scoped로 등록합니다. 공통 옵션(<see cref="DbContextOptionsBuilderExtensions.UseBuildingBlocksNpgsql(DbContextOptionsBuilder, string)"/>)에
+    /// 서비스 쓰기 DbContext를 Scoped로 등록합니다. 공통 옵션(<see cref="DbContextOptionsBuilderExtensions.UseBuildingBlocksNpgsql(DbContextOptionsBuilder, string, DbRetryOptions?)"/>)에
     /// 감사 인터셉터(Singleton 한 인스턴스)를 붙입니다.
     /// </summary>
     /// <typeparam name="TContext">서비스 쓰기 DbContext.</typeparam>
     /// <param name="services">서비스 컬렉션.</param>
     /// <param name="connectionString">쓰기 연결 문자열(<c>ConnectionStrings:Write</c>).</param>
     /// <param name="configure">공통 옵션 뒤에 적용할 추가 옵션(예: Development에서만 켜는 옵션). 없으면 <see langword="null"/>.</param>
+    /// <param name="retry">재시도 설정(공통 옵션 구성에 그대로 넘김). <see langword="null"/>이면 Npgsql 기본값입니다.</param>
     /// <returns>같은 <paramref name="services"/>(체이닝용).</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/>가 <see langword="null"/>인 경우.</exception>
     /// <exception cref="InvalidOperationException">연결 문자열이 없거나 비어 있는 경우(시작 시 실패, 값은 메시지에 넣지 않음).</exception>
     public static IServiceCollection AddWriteDbContext<TContext>(
         this IServiceCollection services,
         string? connectionString,
-        Action<DbContextOptionsBuilder>? configure = null)
+        Action<DbContextOptionsBuilder>? configure = null,
+        DbRetryOptions? retry = null)
         where TContext : WriteDbContextBase
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -46,7 +48,7 @@ public static class PersistenceServiceCollectionExtensions
         services.TryAddSingleton(provider => new AuditSaveChangesInterceptor(provider.GetRequiredService<TimeProvider>()));
         services.AddDbContext<TContext>((provider, options) =>
         {
-            options.UseBuildingBlocksNpgsql(connectionString).AddInterceptors(provider.GetRequiredService<AuditSaveChangesInterceptor>());
+            options.UseBuildingBlocksNpgsql(connectionString, retry).AddInterceptors(provider.GetRequiredService<AuditSaveChangesInterceptor>());
             configure?.Invoke(options);
         });
 
@@ -60,13 +62,15 @@ public static class PersistenceServiceCollectionExtensions
     /// <param name="services">서비스 컬렉션.</param>
     /// <param name="connectionString">읽기 연결 문자열(<c>ConnectionStrings:Read</c>).</param>
     /// <param name="configure">공통 옵션 뒤에 적용할 추가 옵션. 없으면 <see langword="null"/>.</param>
+    /// <param name="retry">재시도 설정(공통 옵션 구성에 그대로 넘김). <see langword="null"/>이면 Npgsql 기본값입니다.</param>
     /// <returns>같은 <paramref name="services"/>(체이닝용).</returns>
     /// <exception cref="ArgumentNullException"><paramref name="services"/>가 <see langword="null"/>인 경우.</exception>
     /// <exception cref="InvalidOperationException">연결 문자열이 없거나 비어 있는 경우(시작 시 실패, 값은 메시지에 넣지 않음).</exception>
     public static IServiceCollection AddReadDbContext<TContext>(
         this IServiceCollection services,
         string? connectionString,
-        Action<DbContextOptionsBuilder>? configure = null)
+        Action<DbContextOptionsBuilder>? configure = null,
+        DbRetryOptions? retry = null)
         where TContext : ReadDbContextBase
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -74,7 +78,7 @@ public static class PersistenceServiceCollectionExtensions
 
         services.AddDbContext<TContext>(options =>
         {
-            options.UseBuildingBlocksNpgsql(connectionString);
+            options.UseBuildingBlocksNpgsql(connectionString, retry);
             configure?.Invoke(options);
         });
 
