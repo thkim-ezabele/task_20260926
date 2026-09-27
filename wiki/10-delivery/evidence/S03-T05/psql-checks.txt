@@ -1,0 +1,154 @@
+# psql 확인 항목 1~11(database.md). 비밀번호는 컨테이너 환경 변수로만 전달.
+
+===== 1회차 1~11 (psql-run1.txt) =====
+$ docker ps --filter volume=emergency-hub-postgres-data  →  postgres-guvsqzev
+
+## 1~4 (postgres 슈퍼유저, 비밀번호는 컨테이너 환경 변수 $POSTGRES_PASSWORD)
+Pager usage is off.
+Q1 DB owner (expect employee_app)
+        datname         |    owner     
+------------------------+--------------
+ emergency_hub_employee | employee_app
+(1 row)
+
+Q2 role attributes (expect f f f f f t)
+   rolname    | rolsuper | rolcreatedb | rolcreaterole | rolreplication | rolbypassrls | rolcanlogin 
+--------------+----------+-------------+---------------+----------------+--------------+-------------
+ employee_app | f        | f           | f             | f              | f            | t
+(1 row)
+
+Q3 password stored as SCRAM (expect t, hash not printed)
+ scram 
+-------
+ t
+(1 row)
+
+Q4 server version (expect 17.x)
+         server_version          
+---------------------------------
+ 17.11 (Debian 17.11-1.pgdg13+2)
+(1 row)
+
+
+## 5~10 (employee_app, 비밀번호는 컨테이너 환경 변수 $EMPLOYEE_APP_PASSWORD)
+Pager usage is off.
+Q5 public owner (expect pg_database_owner)
+ nspname |       owner       
+---------+-------------------
+ public  | pg_database_owner
+(1 row)
+
+Q6 user schemas (expect public only; employee_app schema count 0)
+ nspname 
+---------
+ public
+(1 row)
+
+ employee_app_schema 
+---------------------
+                   0
+(1 row)
+
+      List of schemas
+  Name  |       Owner       
+--------+-------------------
+ public | pg_database_owner
+(1 row)
+
+Q7 history table (expect t, exactly 1 table named __EFMigrationsHistory)
+ history_exists 
+----------------
+ t
+(1 row)
+
+ history_tables 
+----------------
+              1
+(1 row)
+
+Q8 applied migrations (expect 1 row InitialCreate)
+         migration_id         | product_version 
+------------------------------+-----------------
+ 20260927134235_InitialCreate | 8.0.31
+(1 row)
+
+Q9 table owners (expect employee_app)
+       tablename       |  tableowner  
+-----------------------+--------------
+ __EFMigrationsHistory | employee_app
+ employees             | employee_app
+(2 rows)
+
+Q10 sessions on DB (expect usename employee_app only, application_name employee-*)
+   usename    |  application_name  | connections 
+--------------+--------------------+-------------
+ employee_app | employee-api-read  |           1
+ employee_app | employee-api-write |           1
+(2 rows)
+
+
+## 11 (employee_app, options='-c default_transaction_read_only=on')
+Pager usage is off.
+Q11 read connection (expect on, then 25006)
+ default_transaction_read_only 
+-------------------------------
+ on
+(1 row)
+
+ERROR:  25006: cannot execute CREATE TABLE in a read-only transaction
+LOCATION:  PreventCommandIfReadOnly, utility.c:407
+
+
+===== 1회차 10번 반복(헬스 주기 연결 수) (psql-q10-repeat.txt) =====
+## 10번 반복(10초 간격 3회, 전체 행 · application_name LIKE 'employee-%' 판정)
+-- 1회차 01:03:17
+   usename    |  application_name  |        datname         | connections 
+--------------+--------------------+------------------------+-------------
+ employee_app | employee-api-read  | emergency_hub_employee |           1
+ employee_app | employee-api-write | emergency_hub_employee |           1
+ postgres     |                    | emergency_hub_employee |           1
+ postgres     |                    | postgres               |           2
+(4 rows)
+
+-- 2회차 01:03:28
+   usename    |  application_name  |        datname         | connections 
+--------------+--------------------+------------------------+-------------
+ employee_app | employee-api-read  | emergency_hub_employee |           1
+ employee_app | employee-api-write | emergency_hub_employee |           1
+ postgres     |                    | emergency_hub_employee |           1
+ postgres     |                    | postgres               |           2
+(4 rows)
+
+-- 3회차 01:03:39
+   usename    |  application_name  |        datname         | connections 
+--------------+--------------------+------------------------+-------------
+ employee_app | employee-api-read  | emergency_hub_employee |           1
+ employee_app | employee-api-write | emergency_hub_employee |           1
+ postgres     |                    | emergency_hub_employee |           1
+ postgres     |                    | postgres               |           2
+(4 rows)
+
+
+
+===== 3회차 재확인 (psql-run3.txt) =====
+## 3회차 psql 7~9 재확인(재시작 뒤 이력 1행 유지)
+ history_tables 
+----------------
+              1
+(1 row)
+
+         migration_id         | product_version 
+------------------------------+-----------------
+ 20260927134235_InitialCreate | 8.0.31
+(1 row)
+
+ employees 
+-----------
+         2
+(1 row)
+
+   rolname    
+--------------
+ employee_app
+(1 row)
+

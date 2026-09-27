@@ -1,8 +1,17 @@
+---
+title: "도메인 모델"
+type: doc
+status: todo
+tags: [domain]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 도메인 모델
 
 > 바운디드 컨텍스트별 Aggregate, Entity, Value Object와 불변식(Invariant)을 정의합니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 모델링 규칙
 

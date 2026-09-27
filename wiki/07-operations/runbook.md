@@ -1,8 +1,17 @@
+---
+title: "운영 런북"
+type: doc
+status: todo
+tags: [operations]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 운영 런북
 
 > 장애 대응과 정기 운영 절차입니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 비상 연락망 (운영팀)
 

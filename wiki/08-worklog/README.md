@@ -1,8 +1,17 @@
+---
+title: "작업 로그 (Worklog)"
+type: index
+status: stable
+tags: [worklog]
+created: 2026-09-27
+updated: 2026-09-28
+---
+
 # 작업 로그 (Worklog)
 
 > 세션마다 무엇을 요청했고 무엇을 했는지 시간 순서대로 기록합니다.
 >
-> 상태: 🟢 확정 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## ADR과의 차이
 
@@ -19,22 +28,27 @@ Worklog의 결정 중 아키텍처에 영향을 주는 것은 [ADR](../03-archit
 ```
 08-worklog/
 ├── README.md        # 이 문서 (목록)
-├── _template.md     # 세션 로그 템플릿
 ├── raw/             # 프롬프트 원문 (hook이 자동 기록, 일 단위)
 │   └── YYYY-MM-DD.md
 └── YYYY-MM/         # 세션 정리본 (월 단위 폴더)
     └── YYYY-MM-DD-NN-kebab-title.md
 ```
 
-- **정리본**: 세션을 끝내기 전에 `/worklog` 스킬로 작성합니다. `NN`은 그날의 세션 순번입니다.
-- **원문**: `.claude/settings.json`의 `UserPromptSubmit` hook(`.claude/hooks/log-prompt.js`)이 프롬프트를 자동으로 덧붙입니다. 직접 수정하지 않습니다.
+- **정리본**: 세션을 끝내기 전에 `/worklog` 스킬로 작성합니다. `NN`은 그날의 세션 순번이고, 템플릿은 [`_templates/worklog.md`](../_templates/worklog.md)입니다. 이때 [장기기억](../09-memory/README.md)도 함께 갱신합니다.
+- **원문**: `.claude/settings.json`의 `UserPromptSubmit` hook(`.claude/hooks/log-prompt.js`)이 프롬프트를 자동으로 덧붙입니다. 직접 수정하지 않습니다. 검색 결과가 어수선해지지 않도록 Obsidian 검색과 그래프에서는 제외했습니다.
 
 ## 로그 목록
 
 | ID | 날짜 | 제목 | 관련 ADR |
 |---|---|---|---|
 | [WL-2026-09-27-01](2026-09/2026-09-27-01-wiki-structure.md) | 2026-09-27 | 위키 기본 구조 및 초기 ADR 작성 | 0001~0006 |
-| [WL-2026-09-27-02](2026-09/2026-09-27-02-worklog-convention.md) | 2026-09-27 | Worklog 체계 · 프롬프트 hook · Git 저장소 구성 | - |
+| [WL-2026-09-27-02](2026-09/2026-09-27-02-worklog-convention.md) | 2026-09-27 | Worklog 체계 · 장기기억 · Obsidian 재구성 | - |
+| [WL-2026-09-27-03](2026-09/2026-09-27-03-dev-workflow-and-agents.md) | 2026-09-27 | Git Flow · 개발 흐름 · 기준 문서 · 에이전트 워크플로우 · 위키 정비 | 0001~0010 |
+| [WL-2026-09-27-04](2026-09/2026-09-27-04-prd-001-foundation.md) | 2026-09-27 | PRD-001 기반 구축 토픽 생성 | - (후보 13건) |
+| [WL-2026-09-27-05](2026-09/2026-09-27-05-sprint-s01.md) | 2026-09-27 | 스프린트 S01 진행 (기술 결정 확정과 빌드 · CI 기반) | 0011~0023 |
+| [WL-2026-09-27-06](2026-09/2026-09-27-06-sprint-s02.md) | 2026-09-27 | 스프린트 S02 진행 (BuildingBlocks와 공통 API 처리) | 0024 |
+| [WL-2026-09-28-01](2026-09/2026-09-28-01-sprint-s03.md) | 2026-09-28 | 스프린트 S03 진행 (Aspire와 Employee 샘플 서비스 전 구간) | - (후보 3건) |
+| [WL-2026-09-28-02](2026-09/2026-09-28-02-sprint-s04.md) | 2026-09-28 | 스프린트 S04 진행 (테스트 보강 · 문서 · 인수 증빙) | - (후보 4건) |
 
 ---
 

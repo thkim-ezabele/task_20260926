@@ -1,8 +1,17 @@
+---
+title: "도메인 개요"
+type: doc
+status: todo
+tags: [domain]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 도메인 개요
 
 > 긴급연락망 도메인의 핵심 개념과 하위 도메인을 정의합니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 비즈니스 배경
 

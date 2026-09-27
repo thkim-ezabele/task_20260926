@@ -1,0 +1,52 @@
+---
+title: "WL-YYYY-MM-DD-NN: 세션 제목"
+type: worklog
+date: {{date}}
+session: "xxxxxxxx"
+model: "Claude Code · <모델명>"
+sprint: 
+adrs: []
+aliases: [WL-YYYY-MM-DD-NN]
+tags: [worklog]
+created: {{date}}
+updated: {{date}}
+---
+
+# WL-YYYY-MM-DD-NN: 세션 제목
+
+- 원문 로그: [raw/YYYY-MM-DD](../raw/YYYY-MM-DD.md)
+- 관련: 스프린트 / 작업(SNN-TNN), ADR-NNNN, PR, 커밋
+
+## 목표
+
+> 이번 세션에서 하려던 것
+
+## 주요 프롬프트
+
+> 핵심 요청을 원문이나 요약으로 적습니다. 전체 원문은 `raw/` 로그를 참고합니다.
+
+1. "..."
+
+## 작업 내용
+
+-
+
+### 변경 파일
+
+| 파일 | 변경 | 설명 |
+|---|---|---|
+| `path/to/file` | 추가 / 수정 / 삭제 | |
+
+## 결정 사항
+
+| 결정 | 이유 | ADR |
+|---|---|---|
+| | | - |
+
+## 이슈 / 배운 점
+
+-
+
+## 다음 할 일
+
+- [ ]

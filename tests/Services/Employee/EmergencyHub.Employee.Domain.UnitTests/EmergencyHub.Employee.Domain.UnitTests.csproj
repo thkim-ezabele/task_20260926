@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    OutputType=Exe · IsTestProject=true는 Directory.Build.props가 이름 규칙(*Tests)으로 지정한다(ADR-0021).
+    xunit.runner.visualstudio · coverlet.collector의 PrivateAssets=all은 Directory.Build.targets가 적용한다.
+    Domain 단위 테스트는 외부 의존이 없어 Test Double을 쓰지 않는다(testing-strategy "단위 테스트").
+  -->
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\Services\Employee\EmergencyHub.Employee.Domain\EmergencyHub.Employee.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

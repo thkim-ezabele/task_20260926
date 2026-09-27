@@ -1,8 +1,17 @@
+---
+title: "도메인 이벤트"
+type: doc
+status: todo
+tags: [domain]
+created: 2026-09-27
+updated: 2026-09-27
+---
+
 # 도메인 이벤트
 
 > 도메인 내부에서 발생하는 이벤트를 정의합니다. 서비스 간 통합 이벤트는 [이벤트 카탈로그](../05-api/event-catalog.md)를 참고합니다.
 >
-> 상태: ⚪ 미작성 · [위키 홈](../README.md)
+> [위키 홈](../README.md)
 
 ## 도메인 이벤트 vs 통합 이벤트
 

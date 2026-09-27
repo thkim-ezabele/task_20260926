@@ -1,0 +1,10 @@
+{
+  "useMarkdownLinks": true,
+  "newLinkFormat": "relative",
+  "alwaysUpdateLinks": true,
+  "attachmentFolderPath": "_assets",
+  "showFrontmatter": true,
+  "userIgnoreFilters": [
+    "08-worklog/raw/"
+  ]
+}

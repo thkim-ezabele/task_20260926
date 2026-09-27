@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 공통 설정은 Directory.Build.props. 서비스 Domain은 BuildingBlocks.Domain만 참조하고 프레임워크 패키지를 참조하지 않는다(ADR-0003). -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\EmergencyHub.BuildingBlocks.Domain\EmergencyHub.BuildingBlocks.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

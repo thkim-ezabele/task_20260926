@@ -1,6 +1,16 @@
 # Claude Code (개인 설정)
 .claude/settings.local.json
 
+# Obsidian (개인 작업 상태는 제외, vault 설정은 공유)
+wiki/.obsidian/workspace*.json
+wiki/.obsidian/cache
+wiki/.obsidian/plugins/
+wiki/.obsidian/.trash/
+wiki/.trash/
+
+# 로그
+logs/
+
 # .NET
 bin/
 obj/
@@ -20,3 +30,15 @@ Thumbs.db
 .env
 .env.*
 appsettings.*.local.json
+*.env
+appsettings.*.Local.json
+secrets.json
+*.pfx
+*.key
+*.pem
+
+# 테스트 · 커버리지 산출물
+coverage/
+coveragereport/
+*.coverage
+*.cobertura.xml

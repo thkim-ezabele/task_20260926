@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Employee HTTP API 호스트(ADR-0016, ADR-0024 <Service>.Api 행, database.md "공통 DbContext 등록 > Api 등록 사양(S03-T04)").
+    Application(Controller가 보내는 Command · Query), Infrastructure(DI 등록만, AddEmployeeInfrastructure), BuildingBlocks.Api(공통 HTTP 처리),
+    ServiceDefaults(OTel · Serilog · 헬스 엔드포인트)를 참조한다. Controller에서 Infrastructure 형식 · Repository를 쓰지 않는 것은 아키텍처 테스트가 막는다.
+    HealthChecks.EntityFrameworkCore는 /health/ready의 DbContext 검사 2개 때문에 이 프로젝트만 참조한다(ServiceDefaults는 EF 비참조).
+    EF Design은 참조하지 않는다(BL-046, 마이그레이션 적용은 MigrationService, TD-011).
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Aspire\EmergencyHub.ServiceDefaults\EmergencyHub.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EmergencyHub.BuildingBlocks.Api\EmergencyHub.BuildingBlocks.Api.csproj" />
+    <ProjectReference Include="..\EmergencyHub.Employee.Application\EmergencyHub.Employee.Application.csproj" />
+    <ProjectReference Include="..\EmergencyHub.Employee.Infrastructure\EmergencyHub.Employee.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
