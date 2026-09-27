@@ -34,7 +34,7 @@ flowchart LR
 | ③ 토픽 회고 | `/retro PRD-NNN` | 에이전트별 회고를 orchestrator가 통합한다(FR 충족 표, 파이프라인 분석, 개선안). | 회고 문서 |
 | ④ 병합 · 릴리스 | `/retro` 마지막 단계 | Draft PR → Ready → `develop`에 Merge commit → `release/0.N.0` → `main` `v0.N.0` | PRD `done` |
 
-에이전트 구성, 단계 인계 계약, 회귀 규칙은 [에이전트 워크플로우](agents.md)에 있습니다.
+에이전트 구성, 단계 인계 계약, 회귀 규칙은 [에이전트 워크플로우](agents.md)에 있습니다. 스킬은 모두 사용자가 직접 실행합니다(Claude가 알아서 실행하지 않음).
 
 ### 운영 원칙
 

@@ -10,7 +10,7 @@ updated: 2026-09-27
 
 > [장기기억](README.md) · 원본: [위키 홈 작성 규칙](../README.md), [Worklog](../08-worklog/README.md)
 
-## 개발 흐름 (설계 확정, 에이전트·스킬 구현 전)
+## 개발 흐름 (확정, 에이전트·스킬 구현 완료 / 시험 운영 전)
 
 원본: [개발 관리](../10-delivery/README.md), [에이전트 워크플로우](../10-delivery/agents.md)
 
@@ -21,7 +21,8 @@ updated: 2026-09-27
 - PRD 하나 = 토픽 브랜치 하나 = 릴리스 하나. 토픽은 한 번에 하나. 스프린트는 범위 고정.
 - 커밋은 작업자 단계마다 로컬 커밋(footer `Stage:`), push는 스프린트 종료 때. 재작업은 새 커밋(reset 금지).
 - 백로그(`BL-NNN`)·기술부채(`TD-NNN`)는 발견 즉시 `new`로 기록, 스프린트 종료 때 orchestrator가 정리.
-- 흐름 제어는 스킬(메인 세션), 판단은 orchestrator. 서브에이전트는 다른 서브에이전트를 부를 수 없다. 에이전트 모델은 메인 세션 상속.
+- 흐름 제어와 커밋은 스킬(메인 세션), 판단은 orchestrator. 서브에이전트는 다른 서브에이전트를 부를 수 없다. 에이전트 모델은 메인 세션 상속.
+- 구현: `.claude/agents/`(orchestrator, dba, developer, reviewer, tester), `.claude/skills/`(prd, sprint, retro). 에이전트는 프롬프트 첫 줄 `mode:`로 작업 구분.
 - 작업 관리는 GitHub Issues가 아니라 위키에서 한다.
 
 ## 기록
