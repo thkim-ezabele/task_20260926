@@ -161,8 +161,8 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 
 | 패키지 | 버전 | 용도 | 라이선스 | 대상 프레임워크 | 출처 | 비고 |
 |---|---|---|---|---|---|---|
-| xunit.v3 | 4.0.1 | 테스트 프레임워크(v3, 추천) | Apache-2.0 | net472, net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/xunit.v3/4.0.1/xunit.v3.nuspec) | Microsoft Testing Platform v2 내장. xunit.analyzers 2.1.0 → **SDK 8.0.4xx 이상 필요** |
-| xunit | 2.9.3 | 테스트 프레임워크(v2, 대안) | Apache-2.0 | (메타 패키지) | [nuspec](https://api.nuget.org/v3-flatcontainer/xunit/2.9.3/xunit.nuspec) | NuGet 폐기(`Legacy`): "security issues만 갱신, 기능은 v3로" |
+| xunit.v3 | 4.0.1 | 테스트 프레임워크(v3, 채택) | Apache-2.0 | net472, net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/xunit.v3/4.0.1/xunit.v3.nuspec) | Microsoft Testing Platform v2 내장. xunit.analyzers 2.1.0 → **SDK 8.0.4xx 이상 필요** |
+| xunit | 2.9.3 | 테스트 프레임워크(v2, 비교용 · 미사용) | Apache-2.0 | (메타 패키지) | [nuspec](https://api.nuget.org/v3-flatcontainer/xunit/2.9.3/xunit.nuspec) | NuGet 폐기(`Legacy`): "security issues만 갱신, 기능은 v3로" |
 | xunit.runner.visualstudio | 4.0.0 | VSTest 어댑터(`dotnet test`) | Apache-2.0 | net472, net8.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/xunit.runner.visualstudio/4.0.0/xunit.runner.visualstudio.nuspec) | v1 · v2 · v3 모두 실행. `PrivateAssets=all` |
 | Microsoft.NET.Test.Sdk | 18.10.1 | VSTest 호스트 | MIT | net8.0 외 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.net.test.sdk/18.10.1/microsoft.net.test.sdk.nuspec) | |
 | AwesomeAssertions | 9.6.0 | 단언(FluentAssertions 7 포크) | Apache-2.0 | net6.0, net8.0, netstandard2.0/2.1 | [nuspec](https://api.nuget.org/v3-flatcontainer/awesomeassertions/9.6.0/awesomeassertions.nuspec) | 의존 없음(net8.0) |
@@ -172,9 +172,9 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 | Respawn | 7.0.0 | 통합 테스트 DB 초기화 | Apache-2.0 | netstandard2.1 | [nuspec](https://api.nuget.org/v3-flatcontainer/respawn/7.0.0/respawn.nuspec) | dba 확인. 의존 없음 |
 | Microsoft.Extensions.TimeProvider.Testing | 10.10.0 | `FakeTimeProvider` | MIT | net8.0 외 | [nuspec](https://api.nuget.org/v3-flatcontainer/microsoft.extensions.timeprovider.testing/10.10.0/microsoft.extensions.timeprovider.testing.nuspec) | net8.0 그룹 의존 없음 → .NET 8 내장 `TimeProvider`와 그대로 호환 |
 | NetArchTest.Rules | 1.3.2 | 아키텍처 테스트 | MIT ([저장소](https://github.com/BenMorris/NetArchTest)) | netstandard2.0 | [nuspec](https://api.nuget.org/v3-flatcontainer/netarchtest.rules/1.3.2/netarchtest.rules.nuspec) | 2021-05 이후 릴리스 없음(nuspec에 라이선스 메타데이터 없음, 저장소 MIT). Mono.Cecil 0.11.3 전이 |
+| coverlet.collector | 10.0.1 | VSTest 커버리지 수집(`--collect:"XPlat Code Coverage"`) | MIT | 수집기(도구 패키지) | [nuspec](https://api.nuget.org/v3-flatcontainer/coverlet.collector/10.0.1/coverlet.collector.nuspec), [릴리스](https://github.com/coverlet-coverage/coverlet/releases/tag/v10.0.1) | 8.0.0부터 .NET 8 SDK · 런타임 이상 필요. `PrivateAssets=all` |
 
 테스트 도구 선택과 고정은 [ADR-0021](adr/0021-test-tooling-xunit-v3-and-awesomeassertions.md)(xUnit v3, AwesomeAssertions, 주변 도구), Respawn · 커버리지는 [ADR-0022](adr/0022-respawn-and-coverage-tooling.md)가 원본입니다. 목록의 `xunit` 2.9.3(v2)은 비교용으로 남긴 것이며 쓰지 않습니다.
-| coverlet.collector | 10.0.1 | VSTest 커버리지 수집(`--collect:"XPlat Code Coverage"`) | MIT | 수집기(도구 패키지) | [nuspec](https://api.nuget.org/v3-flatcontainer/coverlet.collector/10.0.1/coverlet.collector.nuspec), [릴리스](https://github.com/coverlet-coverage/coverlet/releases/tag/v10.0.1) | 8.0.0부터 .NET 8 SDK · 런타임 이상 필요. `PrivateAssets=all` |
 
 ### xUnit v2 / v3 차이
 
@@ -204,7 +204,7 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 | actions/setup-dotnet | v6.0.0 (메이저 `v6`) | `a98b56852c35b8e3190ac28c8c2271da59106c68` | node24 | MIT | [releases/latest](https://github.com/actions/setup-dotnet/releases/tag/v6.0.0) | 2026-07-16. `global-json-file` + `latestFeature` 지원 |
 | actions/upload-artifact | v7.0.1 (메이저 `v7`) | `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` | node24 | MIT | [releases/latest](https://github.com/actions/upload-artifact/releases/tag/v7.0.1) | 2026-04-10 |
 
-메이저 태그(`@v7`)와 커밋 SHA 고정 중 무엇을 쓸지는 S01-T06(CI)에서 정합니다.
+메이저 태그(`@v7`)와 커밋 SHA 고정 중 무엇을 쓸지는 S01-T07(CI)에서 정합니다.
 
 ## 라이선스 점검
 
@@ -251,7 +251,7 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 | 결정 | xUnit v3 · AwesomeAssertions · 테스트 도구 고정 | [ADR-0021](adr/0021-test-tooling-xunit-v3-and-awesomeassertions.md) (TD-009 해소) |
 | 결정 | ServiceDiscovery · Http.Resilience는 템플릿대로 포함 | [ADR-0011](adr/0011-use-aspire-local-orchestration.md) (BL-009) |
 | 결정 | ServiceDefaults OpenTelemetry 1.19.x | [ADR-0020](adr/0020-logging-with-serilog-and-otlp.md) (BL-007) |
-| 미해결 | GitHub Actions 메이저 태그 / SHA 고정 | S01-T06 |
+| 미해결 | GitHub Actions 메이저 태그 / SHA 고정 | S01-T07 |
 | 기술부채 | TD-003 Npgsql.EFCore EF 의존 상한 없음 → 전이 고정 | 기존 |
 | 기술부채 | TD-004 Testcontainers 이미지 인자 필수 | 기존 |
 | 기술부채 | TD-005 Aspire 9.x 지원 종료 상태로 9.5.2 사용 | 기존, 재검토 BL-002(.NET 10 · Aspire 13 전환) |
@@ -267,3 +267,4 @@ dba 확인 결과(S01-T01 dba 단계)를 옮깁니다.
 |---|---|---|
 | 2026-09-27 | developer | 문서 생성 (S01-T01 사전 확인: Aspire 9.5.2, SDK, 패키지 버전 · 라이선스, 스크래치 restore 검증) |
 | 2026-09-27 | developer | ADR 0011 · 0020 · 0021 · 0022 반영: 클라이언트 통합 미사용 · 의존 버전, 폐기 표시(클라이언트 통합 · Dashboard.Sdk · Orchestration), `WithInitFiles`, Npgsql.OpenTelemetry · HealthChecks.EFCore · Serilog.Sinks.Async · Serilog.Enrichers.Environment 행, PostgreSQL 이미지 · .NET SDK 라이선스, xUnit v3 확정, 결정 · 미해결 표 갱신 (S01-T04) |
+| 2026-09-27 | developer | 테스트 표 사이 설명 문단을 표 뒤로 이동(표 끊김 수정), CI 작업 번호를 S01-T07로 정정(2곳), xUnit 용도 열 "채택" / "비교용 · 미사용" (S01-T04) |
