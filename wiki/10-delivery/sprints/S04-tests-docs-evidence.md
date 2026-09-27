@@ -96,6 +96,8 @@ updated: 2026-09-28
 | 2026-09-28 | S04-T04 | developer | PASS | 스프린트 문서 '## 증빙' 절 틀: T04 하위 절 10개(환경 · 시작 조건, 삭제 전 대상 목록, 실행 절차 1~14단계, psql 1~11, 회차별 서버 로그, HTTP, 대시보드, https 확인, 재현 차이점, 정리 확인), 값 칸 '(tester 기록)', T06 자리. check-docs 4건 |
 | 2026-09-28 | S04-T04 | reviewer | REJECT → developer | 반려 1회(형식). 증빙 틀에 FR-03 시작 순서(PostgreSQL → 마이그레이션 종료 코드 0 → Api) 판정 칸 없음, 회차별 employee-migrations 종료 코드 · 앱 리소스 Error · Critical 수 칸 없음. 나머지(기대값 ↔ 원본, 비밀 칸 없음, http 결정 · 인수 조건 대비 변경 반영, check-docs 4) 통과 |
 | 2026-09-28 | S04-T04 | developer | PASS | 재작업: 대시보드 증빙에 시작 순서 행(local-setup 원문 순서), 회차별 서버 로그 표에 employee-migrations 종료 코드 · 앱 리소스 Error · Critical 열(판정은 두 기준 모두), 선행 작업 커밋 포함 행, '기타 ERROR · FATAL · PANIC', 7행 UserSecretsId 공유 안내. check-docs 4건 |
+| 2026-09-28 | S04-T04 | reviewer | PASS | 재판정: 시작 순서 행 · 회차별 앱 리소스 열로 반려 사유 해소, 다른 부분 불변, 표 구조 결함 0, check-docs 4건 |
+| 2026-09-28 | S04-T04 | tester | PASS | 재현 실행: 삭제 전 목록 기록 → C:\eh-s04 로컬 clone(HEAD bcf55f3 = 토픽 HEAD) → 문서 초기화 ①~③(볼륨 emergency-hub-postgres-data 이름 지정 삭제, user-secrets clear, 'No secrets configured' 확인) → http 1회차: 시작 순서 postgres → migrations(exitCode 0) → api, /health/ready 200, 등록 201 · 조회 200, structuredlogs 27 · traces 10(CDP DOM 덤프), psql 1~11 기대값 일치 → 2회차 재시작 · 3회차 https: 42P04 한 쌍 1 · 나머지 오류 0, 같은 id 조회 200, https 미신뢰(exit 7)에서 OTLP 로그 0 · 추적 0. 보호 대상(익명 볼륨 2, backend_postgres_data, vital-* · elastic8 · mysql) 불변, C:\eh-s04 삭제. 편차: 1회차 employee-api 첫 헬스 검사 Unhealthy Error 2건(서버 로그 오류 없음, 이후 Healthy) — 완료 조건(재시작 때 오류 0)과 FR-03은 충족, 틀의 1회차 앱 리소스 기준 불일치로 기록 → 새 BL-117, BL-118(CDP 덤프 방법) |
 
 ## 계획 리뷰
 
@@ -180,27 +182,27 @@ S03 인계: 로컬 통합 테스트 `DOCKER_API_VERSION=1.43`(BL-102), https 대
 
 | 항목 | 값 |
 |---|---|
-| 날짜 | (tester 기록) |
-| 토픽 HEAD(원래 트리 `git rev-parse HEAD`) | (tester 기록) |
-| clone 원본 · 경로 | (tester 기록) |
-| clone HEAD(`git -C C:\eh-s04 rev-parse HEAD`) | (tester 기록) |
-| init 스크립트 줄바꿈(`git ls-files --eol`, `01-create-employee-app-role.sh`) | (tester 기록) |
-| SDK(`dotnet --version`, clone 루트) | (tester 기록) |
-| Docker Engine / API | (tester 기록) |
-| dev-certs 상태(`dotnet dev-certs https --check --trust` 종료 코드) | (tester 기록) |
-| 프로필 | (tester 기록) |
-| 원래 트리에서 실행 중인 AppHost 없음 | (tester 기록) |
-| 선행 작업 T01 · T02 · T05 · T03 커밋 포함(`git merge-base --is-ancestor <커밋> HEAD` 또는 `git log`로 확인, clone HEAD 기준) | (tester 기록) |
+| 날짜 | 2026-09-28(KST 05:36~05:47, 대시보드 · DCP 시각은 UTC 2026-09-27 20:3x~20:4x) |
+| 토픽 HEAD(원래 트리 `git rev-parse HEAD`) | `bcf55f35188ce8345c54a5403d3fa9f3706f7a1e`(커밋되지 않은 변경은 이 스프린트 문서 진행 기록 · raw 로그뿐) |
+| clone 원본 · 경로 | 로컬 저장소 `C:\00. src\02. src\emergency-hub` → `C:\eh-s04`(`--branch feature/prd-001-foundation`, PowerShell) |
+| clone HEAD(`git -C C:\eh-s04 rev-parse HEAD`) | `bcf55f35188ce8345c54a5403d3fa9f3706f7a1e`(토픽 HEAD와 같음) |
+| init 스크립트 줄바꿈(`git ls-files --eol`, `01-create-employee-app-role.sh`) | `i/lf w/lf attr/text=auto eol=lf` |
+| SDK(`dotnet --version`, clone 루트) | `8.0.425` |
+| Docker Engine / API | Engine `24.0.7` / API `1.43`(AppHost 셸에 `DOCKER_API_VERSION` 없음: 셸 · 사용자 · 머신 환경 변수 모두 비어 있음 확인) |
+| dev-certs 상태(`dotnet dev-certs https --check --trust` 종료 코드) | `7`(미신뢰, 출력 `The following certificates were found, but none of them is trusted: 1 certificate`) |
+| 프로필 | 1 · 2회차 `http`(`--launch-profile http`), 3회차 기본 `https`(`--launch-profile` 없음) |
+| 원래 트리에서 실행 중인 AppHost 없음 | 확인. `tasklist`에 `EmergencyHub.AppHost` · `dcp` 없음, `docker ps -a --filter volume=emergency-hub-postgres-data` 출력 없음 |
+| 선행 작업 T01 · T02 · T05 · T03 커밋 포함(`git merge-base --is-ancestor <커밋> HEAD` 또는 `git log`로 확인, clone HEAD 기준) | 모두 포함(clone에서 `git merge-base --is-ancestor` 종료 코드 0): T01 `d699f27` · `8991b6c`, T02 `9141e31`, T05 `ccf2c85`, T03 `fcc6a0f` |
 
 #### 삭제 전 대상 목록
 
 | 구분 | 대상 | 확인 결과 |
 |---|---|---|
-| 볼륨 이름(삭제 대상) | `emergency-hub-postgres-data` | (tester 기록) |
-| user-secrets 키 이름(삭제 대상, 값 미기록) | `UserSecretsId` 4264c4b6-2b53-4765-93fd-f38191980ff4의 키 전부 | (tester 기록) |
-| 보호 대상 볼륨 | 익명 볼륨, `backend_postgres_data` | (tester 기록) |
-| 보호 대상 컨테이너 | `vital-*` | (tester 기록) |
-| 목록 스냅숏 파일(스크래치) | volumes-0 · containers-0 | (tester 기록) |
+| 볼륨 이름(삭제 대상) | `emergency-hub-postgres-data` | `docker volume ls --filter name=emergency-hub-postgres-data` 출력이 정확히 이 이름 1개. 쓰는 컨테이너 없음 |
+| user-secrets 키 이름(삭제 대상, 값 미기록) | `UserSecretsId` 4264c4b6-2b53-4765-93fd-f38191980ff4의 키 전부 | 5개: `AppHost:OtlpApiKey`, `Aspire:VersionCheck:KnownLatestVersion`, `Aspire:VersionCheck:LastCheckDate`, `Parameters:employee-app-password`, `Parameters:postgres-password`(`IgnoreVersion` 없음) |
+| 보호 대상 볼륨 | 익명 볼륨, `backend_postgres_data` | 익명 `5d710796…95d2f`, 익명 `fff0aace…591f8`, `backend_postgres_data` |
+| 보호 대상 컨테이너 | `vital-*` | `vital-api`, `vital-db`. 그 밖에 이 프로젝트가 아닌 `elastic8`, `mysql`도 있어 보호 대상에 포함 |
+| 목록 스냅숏 파일(스크래치) | volumes-0 · containers-0 | `t04/volumes-0.txt`(4개) · `t04/containers-0.txt`(4개) · `t04/secrets-keys-0.txt`, 삭제 직후 volumes-1 · containers-1, 마지막 volumes-2 · containers-2 |
 
 #### 실행 절차와 결과
 
@@ -208,20 +210,20 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 
 | # | 단계(local-setup 절) | 명령 | 셸 | 결과 |
 |---|---|---|---|---|
-| 1 | 사전 준비 | `dotnet --version`, `docker version --format '{{.Server.APIVersion}}'`, `dotnet dev-certs https --check --trust` | (tester 기록) | (tester 기록) |
-| 2 | 저장소 클론 | `git clone --branch feature/prd-001-foundation <원본> C:\eh-s04` | (tester 기록) | (tester 기록) |
-| 3 | 저장소 클론(도구) | `dotnet tool restore` | (tester 기록) | (tester 기록) |
-| 4 | 초기화 ① 컨테이너 없음 확인 | `docker ps -a --filter volume=emergency-hub-postgres-data --format '{{.Names}}'` | (tester 기록) | (tester 기록) |
-| 5 | 초기화 ② 볼륨 확인 · 삭제 | `docker volume ls --filter name=emergency-hub-postgres-data --format '{{.Name}}'`, `docker volume rm emergency-hub-postgres-data` | (tester 기록) | (tester 기록) |
-| 6 | 초기화 ③ user-secrets clear · 키 이름 확인 | `dotnet user-secrets clear --project src/Aspire/EmergencyHub.AppHost`, local-setup ③의 키 이름 확인 명령 | (tester 기록) | (tester 기록) |
-| 7 | 로컬 설정(User Secrets) 첫 실행 전 키 이름 | local-setup "로컬 설정" 절의 키 이름 확인 명령 | (tester 기록) | (tester 기록, 원래 트리와 같은 `UserSecretsId`라 키가 공유된다는 점을 함께 적고 재현 차이점 표 `UserSecretsId` 행에도 기록) |
-| 8 | 서비스 빌드 및 실행(1회차) | `dotnet run --project src/Aspire/EmergencyHub.AppHost --launch-profile http` | (tester 기록) | (tester 기록) |
-| 9 | 대시보드 확인 | Resources 화면 상태 | (tester 기록) | (tester 기록) |
-| 10 | 동작 확인 · 헬스 체크 | `curl -s -i http://localhost:5180/health/ready` 또는 `Invoke-RestMethod` | (tester 기록) | (tester 기록) |
-| 11 | 동작 확인 · 등록 → 조회 | local-setup "등록 → 조회" 명령 | (tester 기록) | (tester 기록) |
-| 12 | 첫 실행 뒤 키 이름 | local-setup "로컬 설정" 절의 키 이름 확인 명령 | (tester 기록) | (tester 기록) |
-| 13 | 중지(1회차) | Ctrl+C 또는 local-setup "중지" 절 명령, 뒤이어 컨테이너 없음 확인 | (tester 기록) | (tester 기록) |
-| 14 | 재시작(2회차 이후) | 8과 같은 명령(회차별 프로필은 서버 로그 표) | (tester 기록) | (tester 기록) |
+| 1 | 사전 준비 | `dotnet --version`, `docker version --format '{{.Server.APIVersion}}'`, `dotnet dev-certs https --check --trust` | PowerShell 5.1.26100 · Git Bash | `8.0.425`, `1.43`, 종료 코드 `7`(미신뢰, local-setup 출력 예와 같음) |
+| 2 | 저장소 클론 | `git clone --branch feature/prd-001-foundation <원본> C:\eh-s04` | PowerShell | 성공(파일 730개). 원본은 GitHub URL 대신 로컬 저장소 경로(재현 차이점 표) |
+| 3 | 저장소 클론(도구) | `dotnet tool restore` | PowerShell | 종료 코드 0, `dotnet-ef` 8.0.31 · `reportgenerator` 5.5.11 복원 |
+| 4 | 초기화 ① 컨테이너 없음 확인 | `docker ps -a --filter volume=emergency-hub-postgres-data --format '{{.Names}}'` | PowerShell | 출력 없음 |
+| 5 | 초기화 ② 볼륨 확인 · 삭제 | `docker volume ls --filter name=emergency-hub-postgres-data --format '{{.Name}}'`, `docker volume rm emergency-hub-postgres-data` | PowerShell | `emergency-hub-postgres-data` 1개 확인 → 삭제 종료 코드 0. volumes-0 → 1 diff는 이 볼륨 삭제 1건뿐 |
+| 6 | 초기화 ③ user-secrets clear · 키 이름 확인 | `dotnet user-secrets clear --project src/Aspire/EmergencyHub.AppHost`, local-setup ③의 키 이름 확인 명령 | PowerShell | clear 종료 코드 0, 확인 명령 출력 `No secrets configured for this application.`(키 0개). C:\eh-s04에서 성공해 원래 트리 대안은 쓰지 않음 |
+| 7 | 로컬 설정(User Secrets) 첫 실행 전 키 이름 | local-setup "로컬 설정" 절의 키 이름 확인 명령 | PowerShell | `No secrets configured for this application.`(미실측 (1) 해소: 문서의 "`No secrets configured`로 시작" 문구와 일치). 원래 트리와 같은 `UserSecretsId`라 이 clear로 원래 트리 키도 함께 지워짐(재현 차이점 표 `UserSecretsId` 행) |
+| 8 | 서비스 빌드 및 실행(1회차) | `dotnet run --project src/Aspire/EmergencyHub.AppHost --launch-profile http` | Git Bash(백그라운드) | 05:37:23 시작 → 05:38:48 `/health/ready` 200(빌드 포함 약 85초). 콘솔에 `Now listening on: http://localhost:15180`, `Login to the dashboard at http://localhost:15180/login?t=<토큰>` |
+| 9 | 대시보드 확인 | Resources 화면 상태 | Edge 헤드리스(CDP) | `postgres` Running, `employee-db` Running, `employee-migrations` Finished, `employee-api` Running(`http://localhost:5180`), 매개변수 2개 Running. 6개 리소스 |
+| 10 | 동작 확인 · 헬스 체크 | `curl -s -i http://localhost:5180/health/ready` 또는 `Invoke-RestMethod` | Git Bash | `HTTP/1.1 200 OK`, 본문 `Healthy` |
+| 11 | 동작 확인 · 등록 → 조회 | local-setup "등록 → 조회" 명령 | Git Bash | `201 Created` + `Location` → `GET` `200 OK`, 문서 명령 그대로(아래 HTTP 증빙) |
+| 12 | 첫 실행 뒤 키 이름 | local-setup "로컬 설정" 절의 키 이름 확인 명령 | Git Bash | 5개: `AppHost:OtlpApiKey`, `Aspire:VersionCheck:KnownLatestVersion`, `Aspire:VersionCheck:LastCheckDate`, `Parameters:employee-app-password`, `Parameters:postgres-password`(local-setup 출력 예와 같은 집합) |
+| 13 | 중지(1회차) | Ctrl+C 또는 local-setup "중지" 절 명령, 뒤이어 컨테이너 없음 확인 | Git Bash | `taskkill //F //IM EmergencyHub.AppHost.exe`(백그라운드라 Ctrl+C 불가) → 15초 뒤 컨테이너 확인 출력 없음, `EmergencyHub.AppHost` · `dcp` 프로세스 없음, 볼륨 남음 |
+| 14 | 재시작(2회차 이후) | 8과 같은 명령(회차별 프로필은 서버 로그 표) | Git Bash(백그라운드) | 2회차 `http` 05:42:57 → 05:43:23 Healthy, 3회차 기본 `https` 05:44:52 → 05:45:14 Healthy. 각 회차 뒤 같은 방법으로 중지, 컨테이너 0 |
 
 #### psql 확인 1~11 결과
 
@@ -229,17 +231,17 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 
 | # | 확인 내용 | 기대 | 실제 |
 |---|---|---|---|
-| 1 | `emergency_hub_employee` 소유자 | `employee_app` | (tester 기록) |
-| 2 | `employee_app` 롤 속성 | `f f f f f t` | (tester 기록) |
-| 3 | `employee_app` 비밀번호 SCRAM 여부 | `t`(해시 미출력) | (tester 기록) |
-| 4 | 서버 버전 | `17.x` | (tester 기록) |
-| 5 | `public` 스키마 소유자 | `pg_database_owner` | (tester 기록) |
-| 6 | 스키마 목록 · `employee_app` 스키마 수 | `public`만, `0` | (tester 기록) |
-| 7 | `__EFMigrationsHistory` 존재 · 수 | `t`, `1` | (tester 기록) |
-| 8 | 마이그레이션 이력 | 1행, `20260927134235_InitialCreate` · `8.0.31` | (tester 기록) |
-| 9 | 테이블 · 소유자 | `__EFMigrationsHistory` · `employees`, 둘 다 `employee_app` | (tester 기록) |
-| 10 | 연결(등록 → 조회 직후와 약 30초 뒤) | `employee-%` 행이 `employee-api-read` 1 · `employee-api-write` 1, `usename` `employee_app`만, 두 번 수 같음, `employee-migration` 행 없음(빈 `application_name`의 `postgres` 연결 제외) | (tester 기록) |
-| 11 | 읽기 전용 옵션 연결 | `on`, 그다음 `25006`(read-only transaction) | (tester 기록) |
+| 1 | `emergency_hub_employee` 소유자 | `employee_app` | `employee_app` |
+| 2 | `employee_app` 롤 속성 | `f f f f f t` | `f f f f f t` |
+| 3 | `employee_app` 비밀번호 SCRAM 여부 | `t`(해시 미출력) | `t` |
+| 4 | 서버 버전 | `17.x` | `17.11 (Debian 17.11-1.pgdg13+2)` |
+| 5 | `public` 스키마 소유자 | `pg_database_owner` | `pg_database_owner` |
+| 6 | 스키마 목록 · `employee_app` 스키마 수 | `public`만, `0` | `\dn` `public`(소유자 `pg_database_owner`) 1행, `0` |
+| 7 | `__EFMigrationsHistory` 존재 · 수 | `t`, `1` | `t`, `1` |
+| 8 | 마이그레이션 이력 | 1행, `20260927134235_InitialCreate` · `8.0.31` | 1행, `20260927134235_InitialCreate` · `8.0.31`. 2회차도 같은 1행 |
+| 9 | 테이블 · 소유자 | `__EFMigrationsHistory` · `employees`, 둘 다 `employee_app` | `__EFMigrationsHistory` · `employees`, 둘 다 `employee_app` |
+| 10 | 연결(등록 → 조회 직후와 약 30초 뒤) | `employee-%` 행이 `employee-api-read` 1 · `employee-api-write` 1, `usename` `employee_app`만, 두 번 수 같음, `employee-migration` 행 없음(빈 `application_name`의 `postgres` 연결 제외) | 05:39:14 · 05:40:19(65초 간격) 두 번 모두 `employee_app` · `employee-api-read` 1, `employee_app` · `employee-api-write` 1, `employee-migration` 행 없음(빈 `application_name` 행도 이번에는 없음). 2회차(조회만 한 직후)는 `employee-api-read` 1만(쓰기 연결을 아직 쓰지 않음) |
+| 11 | 읽기 전용 옵션 연결 | `on`, 그다음 `25006`(read-only transaction) | `on`, 그다음 `ERROR:  cannot execute CREATE TABLE in a read-only transaction` |
 
 #### 실행 회차별 서버 로그
 
@@ -247,62 +249,64 @@ local-setup 절 순서대로 적습니다. 명령은 문서의 명령 그대로 
 
 | 회차 | 프로필 | 42P04 쌍 | 3D000 | 25006 탐침 | 42710 | 기타 ERROR · FATAL · PANIC | `employee-migrations` 종료 코드 | `employee-migrations` · `employee-api` Error · Critical 수 | 판정 |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) |
-| 2 | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) |
-| 3 | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) | (tester 기록) |
+| 1 | `http` | 0 | 1(20:38:24 UTC, 기록 · 제외) | 1(기록 · 제외) | 0 | 0 | `0`(DCP API `Finished` · `exitCode 0`, InitialCreate 적용 로그) | `employee-migrations` 0 · `employee-api` Error 2(Critical 0): 첫 `/health/ready` 요청(20:38:47 UTC)에서 `Health check "EmployeeReadDbContext"`(95ms) · `"EmployeeDbContext"`(948ms) `with status Unhealthy ... with message 'null'`(EventId 103, `DefaultHealthCheckService`). 같은 시각 서버 로그에 연결 오류 없음. 다음 요청부터 Healthy | 서버 로그 통과, 앱 리소스 불일치(Error 2) |
+| 2 | `http` | 1(ERROR 1 + STATEMENT 1) | 0 | 0 | 0 | 0 | `0`(적용할 마이그레이션 없음: CREATE 문 없이 이력 조회만) | 0(대시보드 Error 행 0, 파일 로그 Error 수 1회차 뒤와 같음) | 통과 |
+| 3 | `https` | 1(ERROR 1 + STATEMENT 1) | 0 | 0 | 0 | 0 | `0`(DCP API) | 0(대시보드는 OTLP 0건이라 앱 파일 로그 `logs/*.json`으로 확인, Error · Fatal 증가 0) | 통과(앱 리소스는 파일 로그 기준) |
 
 #### HTTP 증빙
 
 | 확인 | 회차 | 기대 | 실제 |
 |---|---|---|---|
-| 헬스(`/health/ready`) | (tester 기록) | `200`, `Healthy` | (tester 기록) |
-| 등록(`POST /api/v1/employees`) | (tester 기록) | `201`, `Location` · `id` | (tester 기록) |
-| 조회(`GET /api/v1/employees/{id}`) | (tester 기록) | `200`, `email` 소문자 정규화, `employeeStatus` 정수 | (tester 기록) |
-| 재시작 후 조회(1회차 등록 `id`) | (tester 기록) | `200`, 1회차 등록 값과 같음 | (tester 기록) |
+| 헬스(`/health/ready`) | 1(2 · 3회차도 같음) | `200`, `Healthy` | `HTTP/1.1 200 OK`, `Content-Type: text/plain`, 본문 `Healthy` |
+| 등록(`POST /api/v1/employees`) | 1 | `201`, `Location` · `id` | `HTTP/1.1 201 Created`, `Location: http://localhost:5180/api/v1/employees/01a0e497-a2d4-75d6-b954-8ee4c6400722`, 본문 `{"id":"01a0e497-a2d4-75d6-b954-8ee4c6400722"}` |
+| 조회(`GET /api/v1/employees/{id}`) | 1 | `200`, `email` 소문자 정규화, `employeeStatus` 정수 | `HTTP/1.1 200 OK`, `"displayName":"Hong Gildong"`, `"email":"hong.gildong@example.com"`(입력 `Hong.Gildong@Example.com`), `"employeeStatus":1`, `createdAt` · `updatedAt` `2026-09-27T20:38:58.312023+00:00` |
+| 재시작 후 조회(1회차 등록 `id`) | 2 · 3 | `200`, 1회차 등록 값과 같음 | 2 · 3회차 모두 `HTTP/1.1 200 OK`, 본문이 1회차 조회 응답과 글자 단위로 같음. 3회차 새 등록(`Kim.Https@Example.com`)도 `201` |
 
 #### 대시보드 증빙
 
 | 확인 | 회차 | 기대 | 실제 |
 |---|---|---|---|
-| 대시보드 로그인 URL | (tester 기록) | `login?t=<토큰>` 형식(토큰 미기록) | (tester 기록) |
-| 시작 순서 | (tester 기록) | local-setup "로컬 구성" 절 시작 순서: `postgres` → `employee-db` → `employee-migrations`(종료 코드 0) → `employee-api`(Healthy) | (tester 기록, 리소스별 시작 · 종료 시각 또는 `employee-api`가 `employee-migrations` 종료 전 `Waiting`이었다는 관찰) |
-| Resources 상태 | (tester 기록) | `postgres` Running, `employee-migrations` Finished, `employee-api` Running · Healthy | (tester 기록) |
-| `employee-migrations` 종료 코드 | (tester 기록) | `0`(2회차 이후는 적용할 마이그레이션 없음) | (tester 기록) |
-| Structured logs DOM 덤프 요지 | (tester 기록) | `employee-api` 로그 있음, `employee-migrations` · `employee-api` Error · Critical 0 | (tester 기록) |
-| Traces DOM 덤프 요지 | (tester 기록) | `employee-api` 등록 · 조회 추적 있음 | (tester 기록) |
+| 대시보드 로그인 URL | 1 · 2(`http`), 3(`https`) | `login?t=<토큰>` 형식(토큰 미기록) | `http://localhost:15180/login?t=<토큰>`(1 · 2회차), `https://localhost:17180/login?t=<토큰>`(3회차). 토큰은 32자, 스크래치 로그에서도 가림 |
+| 시작 순서 | 1(2 · 3회차도 같은 순서) | local-setup "로컬 구성" 절 시작 순서: `postgres` → `employee-db` → `employee-migrations`(종료 코드 0) → `employee-api`(Healthy) | DCP API(`/apis/usvc-dev.developer.microsoft.com/v1/executables` · `containers`) UTC: `postgres` 시작 20:38:20.40 → 서버 로그 3D000(`employee-db` 헬스 검사) 20:38:24 → `employee-migrations` 시작 20:38:27.19 · 종료 20:38:36.04(`exitCode 0`) → `employee-api` 시작 20:38:36.60(마이그레이션 종료 0.56초 뒤) → Healthy. 2회차 migrations 종료 20:43:19.06 → api 시작 20:43:19.64, 3회차 20:45:11.40 → 20:45:11.97 |
+| Resources 상태 | 1 · 2 · 3 | `postgres` Running, `employee-migrations` Finished, `employee-api` Running · Healthy | 세 회차 모두 `postgres` Running, `employee-db` Running, `employee-migrations` Finished, `employee-api` Running(`/health/ready` 200) |
+| `employee-migrations` 종료 코드 | 1 · 2 · 3 | `0`(2회차 이후는 적용할 마이그레이션 없음) | 세 회차 모두 DCP API `state Finished` · `exitCode 0`. 2회차 로그는 이력 조회 뒤 `Migrations applied for EmployeeDbContext in 1111.1461 ms`(CREATE 문 없음) |
+| Structured logs DOM 덤프 요지 | 1 · 2 | `employee-api` 로그 있음, `employee-migrations` · `employee-api` Error · Critical 0 | 1회차 27건(Information · Debug, Error 2): `employee-migrations` InitialCreate DDL · `Migrations applied ...`, `employee-api` `Employee 01a0e497-… registered`, `HTTP POST /api/v1/employees responded 201`, `HTTP GET /api/v1/employees/01a0e497-… responded 200`. Error 2건은 위 서버 로그 표 1회차의 헬스 검사 Unhealthy(`log-row-error`). 2회차 Error · Critical 0 |
+| Traces DOM 덤프 요지 | 1 · 2 | `employee-api` 등록 · 조회 추적 있음 | 1회차 10건: `employee-migrations: emergency_hub_employee` 8건, `employee-api: POST api/v1/employees`, `employee-api: GET api/v1/employees/{id}`. 2회차 6건(`employee-api: GET api/v1/employees/{id}` 포함) |
 | 스크린샷 | - | 사용자 추가 항목 | (사용자 추가) |
+
+- DOM 덤프 방법: `--dump-dom`은 Blazor 대화형 렌더링 전에 끝나 본문이 비어서, Edge 헤드리스를 원격 디버깅(CDP)으로 띄우고 로그인 URL 이동 → `structuredlogs` · `traces` · 리소스 화면에서 8초 기다린 뒤 `outerHTML` · `innerText`를 저장했다(스크래치 `t04/cdp-dump.js`, 덤프 원본 `t04/dom-run<N>-*.html`). 로그 수준은 행 CSS 클래스(`log-row-error` 등)로 셌다.
 
 #### https 프로필 확인
 
 | 확인 | 기대 | 실제 |
 |---|---|---|
-| `dotnet dev-certs https --check --trust` 출력 · 종료 코드 | 신뢰 여부 기록(미신뢰면 종료 코드 `7`) | (tester 기록) |
-| https 회차 실행 여부 | 실행 또는 미실측(사유) | (tester 기록) |
-| https 회차 OTLP(구조화 로그 · 추적) 건수 | 신뢰 시 0건 아님, 미신뢰 시 0건 여부 또는 미실측 | (tester 기록) |
+| `dotnet dev-certs https --check --trust` 출력 · 종료 코드 | 신뢰 여부 기록(미신뢰면 종료 코드 `7`) | `The following certificates were found, but none of them is trusted: 1 certificate`(지문 줄 1개), 종료 코드 `7`. `--trust`는 실행하지 않음 |
+| https 회차 실행 여부 | 실행 또는 미실측(사유) | 실행(3회차, `dotnet run --project src/Aspire/EmergencyHub.AppHost`). 대시보드 `https://localhost:17180`, Api `/health/ready` 200, 1회차 id 조회 200, 새 등록 201 |
+| https 회차 OTLP(구조화 로그 · 추적) 건수 | 신뢰 시 0건 아님, 미신뢰 시 0건 여부 또는 미실측 | 미신뢰 · 0건: 요청 뒤 10초 이상 지나 덤프한 구조화 로그 `0개의 구조적 로그`(구조화된 로그를 찾을 수 없음), 추적 `0개의 추적`. 앱 파일 로그에는 3회차 기록이 남음(미실측 (2) 해소, local-setup 설명과 일치) |
 
 #### 재현 차이점
 
 | 항목 | 새 환경이라면 | 이번 재현 | 영향 |
 |---|---|---|---|
-| warm 항목(SDK · NuGet 캐시 · `postgres:17` 이미지 · Docker) | 설치 · 다운로드부터 시작 | (tester 기록) | (tester 기록) |
-| clone 원본 | GitHub 원격 | (tester 기록, 로컬 저장소. 원격 토픽 브랜치가 24커밋 뒤) | (tester 기록) |
-| 초기화 실행 디렉터리 | clone 루트 | (tester 기록) | (tester 기록) |
-| `UserSecretsId` · 볼륨 이름 공유 | 다른 clone 없음 | (tester 기록) | (tester 기록) |
-| 원래 트리 상태 | 해당 없음 | (tester 기록, 원래 트리도 새 비밀번호 쌍 · 새 볼륨 사용) | (tester 기록) |
-| 프로필 | 기본 `https`(dev-certs 신뢰) | (tester 기록, `http`. dev-certs 미신뢰) | (tester 기록) |
-| https 회차 | 실행 | (tester 기록) | (tester 기록) |
+| warm 항목(SDK · NuGet 캐시 · `postgres:17` 이미지 · Docker) | 설치 · 다운로드부터 시작 | SDK 8.0.425 설치됨, NuGet 캐시(Aspire.Dashboard.Sdk 9.5.2 등) 있음, `postgres:17` 이미지 있음, Docker Desktop 실행 중 | 이미지 다운로드 · 패키지 복원 시간이 빠짐(1회차 빌드 포함 약 85초). 새 환경의 설치 절차(prerequisites)와 첫 다운로드는 검증하지 않음 |
+| clone 원본 | GitHub 원격 | 로컬 저장소 `C:\00. src\02. src\emergency-hub`(원격 토픽 브랜치가 24커밋 뒤라 GitHub clone 금지, 사전 결정) | clone HEAD = 토픽 HEAD `bcf55f3`로 내용은 같음. `gh` 인증 · GitHub URL clone은 검증하지 않음 |
+| 초기화 실행 디렉터리 | clone 루트 | clone 루트 `C:\eh-s04`(clear 성공, 원래 트리 대안 미사용) | 없음 |
+| `UserSecretsId` · 볼륨 이름 공유 | 다른 clone 없음 | 원래 트리와 같은 `UserSecretsId` 4264c4b6-… · 볼륨 `emergency-hub-postgres-data`를 공유. clone에서의 clear · 볼륨 삭제가 원래 트리 상태도 초기화 | 원래 트리의 이전 비밀번호 쌍 · 확인용 직원 행(t03bash · t03ps 등)이 사라짐. 다른 clone이 없는 새 환경과 결과는 같음 |
+| 원래 트리 상태 | 해당 없음 | 원래 트리도 T04가 만든 새 비밀번호 쌍 · 새 볼륨을 사용(복구 · 재초기화 안 함). 원래 트리 `user-secrets list` 키 이름 5개가 1회차 뒤 집합과 같음 | 원래 트리에서 다음 실행은 42P04 한 쌍이 남는 재시작 상태 |
+| 프로필 | 기본 `https`(dev-certs 신뢰) | `http`(1 · 2회차). dev-certs 미신뢰(`--check --trust` 종료 코드 7), `--trust` 실행 안 함(오케스트레이션 결정) | 신뢰된 https에서 OTLP 수신은 검증하지 않음(사용자 https 재확인 절차는 결과 리뷰 사용자 확인 사항) |
+| https 회차 | 실행 | 실행(3회차, 미신뢰). 기동 · HTTP 정상, 대시보드 OTLP 0건 | local-setup "신뢰하지 않으면 대시보드에 로그 · 추적이 0건" 설명을 실측으로 확인 |
 
 #### 정리 확인
 
 | 확인 | 기대 | 실제 |
 |---|---|---|
-| `C:\eh-s04` 삭제 | 경로 없음 | (tester 기록) |
-| 보호 대상 diff(볼륨 0 → 1) | `emergency-hub-postgres-data` 삭제 1건만 | (tester 기록) |
-| 보호 대상 diff(볼륨 1 → 2) | `emergency-hub-postgres-data` 재생성 1건만 | (tester 기록) |
-| 보호 대상 diff(컨테이너 0 → 1) | 차이 없음 | (tester 기록) |
-| user-secrets 키 집합(1회차 뒤와 마지막 회차 뒤) | 같음(키 이름만 비교) | (tester 기록) |
-| AppHost · 프로젝트 프로세스 | 0 | (tester 기록) |
-| 이 프로젝트 컨테이너 | 0 | (tester 기록) |
+| `C:\eh-s04` 삭제 | 경로 없음 | 삭제함. `Test-Path C:\eh-s04` = `False` |
+| 보호 대상 diff(볼륨 0 → 1) | `emergency-hub-postgres-data` 삭제 1건만 | `< emergency-hub-postgres-data` 1건만. 익명 2개 · `backend_postgres_data` 그대로 |
+| 보호 대상 diff(볼륨 1 → 2) | `emergency-hub-postgres-data` 재생성 1건만 | `> emergency-hub-postgres-data` 1건만(volumes-0과 volumes-2는 같은 집합) |
+| 보호 대상 diff(컨테이너 0 → 1) | 차이 없음 | 차이 없음(0 → 1, 0 → 2 모두). `elastic8`, `mysql`, `vital-api`, `vital-db` |
+| user-secrets 키 집합(1회차 뒤와 마지막 회차 뒤) | 같음(키 이름만 비교) | 같음(1회차 뒤 · 2회차 뒤 · 3회차 뒤 · 원래 트리 모두 같은 5개) |
+| AppHost · 프로젝트 프로세스 | 0 | 0(`EmergencyHub.AppHost` · `dcp` · `dcpctrl` 0, 명령줄에 `EmergencyHub.Employee` · CDP 포트가 있는 프로세스 0) |
+| 이 프로젝트 컨테이너 | 0 | 0(`docker ps -a --filter volume=emergency-hub-postgres-data` 출력 없음) |
 
 ### S04-T06 CI 실패 표시 확인
 

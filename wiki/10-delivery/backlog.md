@@ -143,6 +143,8 @@ updated: 2026-09-28
 | BL-114 | local-setup 동작 확인: PowerShell 5.1 Invoke-RestMethod는 409 응답 본문(code 23001)을 예외로 바꿔 바로 보여 주지 않음. 재등록 결과 확인 방법(try/catch 또는 Invoke-WebRequest) 안내 검토 | S04-T03 tester | 하 | new | |
 | BL-115 | database.md · troubleshooting 42P04 판정 문구 "(실행 횟수 − 1)"에 풀이 추가: 컨테이너가 세션 수명이라 서버 로그는 실행별, 첫 실행 0 · 이후 실행마다 한 쌍 1개 | S04-T04 dba | 하 | new | |
 | BL-116 | database.md psql 확인 절에 Git Bash heredoc 명령 틀(postgres · employee_app 접속, 11번 PGOPTIONS 읽기 전용 세션)과 PowerShell 5.1 인용 주의 추가 | S04-T04 dba | 하 | new | |
+| BL-117 | 새 볼륨 첫 실행에서 employee-api의 첫 /health/ready가 Unhealthy(Error 2건, EventId 103 DefaultHealthCheckService, CanConnect=false · 예외 메시지 없음, 같은 시각 서버 로그 오류 없음)로 나오는 원인 조사. 3D000처럼 첫 실행 잡음으로 판정에서 뺄지, 로깅 · 헬스 검사를 손볼지 결정 | S04-T04 tester | 중 | new | 재현 조건: 볼륨 삭제 + user-secrets clear 뒤 1회차. 2 · 3회차와 이전 11회 시작에서는 0건 |
+| BL-118 | 대시보드 DOM 증빙 방법 문서화: Edge --dump-dom은 Blazor 대화형 렌더링 전에 끝나 본문이 비므로 원격 디버깅(CDP)으로 렌더링 뒤 DOM을 덤프해야 함 | S04-T04 tester | 하 | new | |
 
 ---
 
