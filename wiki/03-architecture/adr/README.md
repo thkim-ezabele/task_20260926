@@ -34,3 +34,7 @@ updated: 2026-09-27
 | [0008](0008-integer-codes-and-bitmask.md) | 코드값 정수화와 비트 마스킹 | 승인 | 2026-09-27 |
 | [0009](0009-separate-read-write-db-context.md) | 읽기 / 쓰기 DB 연결 분리와 Repository 규칙 | 승인 | 2026-09-27 |
 | [0010](0010-convention-based-di-registration.md) | 규칙 기반 DI 자동 등록 | 승인 | 2026-09-27 |
+| [0011](0011-use-aspire-local-orchestration.md) | .NET Aspire 로컬 오케스트레이션 | 승인 | 2026-09-27 |
+| [0012](0012-migration-apply-and-pre-production-reset.md) | 마이그레이션 적용 방식과 운영 전 리셋 정책 | 승인 | 2026-09-27 |
+| [0013](0013-uuid-v7-with-uuidnext.md) | UUID v7 식별자 (IIdGenerator + UUIDNext) | 승인 | 2026-09-27 |
+| [0014](0014-command-transaction-boundary-and-unit-of-work.md) | Command 트랜잭션 경계와 Unit of Work | 승인 | 2026-09-27 |

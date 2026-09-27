@@ -24,6 +24,10 @@ updated: 2026-09-27
 | [0008](../03-architecture/adr/0008-integer-codes-and-bitmask.md) | 정수 코드 · 비트 마스킹 | 문자열 코드 절대 금지(`smallint` + enum), 조합 코드는 `[Flags]` 비트 마스킹, API · 이벤트 · 에러 코드도 정수 |
 | [0009](../03-architecture/adr/0009-separate-read-write-db-context.md) | 읽기 / 쓰기 분리 | 연결 문자열 · DbContext 분리(현재 같은 DB), Repository는 람다 LINQ 쿼리만 |
 | [0010](../03-architecture/adr/0010-convention-based-di-registration.md) | DI 자동 등록 | 마커 인터페이스 / 기반 클래스 + 어셈블리 검색, Scoped |
+| [0011](../03-architecture/adr/0011-use-aspire-local-orchestration.md) | Aspire 로컬 오케스트레이션 | Aspire 9.5.2(지원 종료 알고 유지, TD-005), `WithReference(db)` 금지 → Write / Read `ReferenceExpression` 주입, `employee_app` DB 소유자(롤은 init 스크립트, DB는 생성 스크립트), 클라이언트 통합 미사용(`AddDbContext` Scoped + `EnableRetryOnFailure`), ServiceDiscovery · Http.Resilience 포함 |
+| [0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md) | 마이그레이션 적용 · 리셋 | MigrationService 1개가 `MigrateAsync`만(Api는 `WaitForCompletion`), 운영은 번들 / 스크립트, Phase 4 전 전체 리셋 허용(`InitialCreate` 재생성 + 볼륨 삭제, 리셋 전용 커밋), `__EFMigrationsHistory` snake_case 예외 |
+| [0013](../03-architecture/adr/0013-uuid-v7-with-uuidnext.md) | UUID v7 | `IIdGenerator` + UUIDNext `NewDatabaseFriendly(PostgreSql)`, Handler가 생성 · `ValueGeneratedNever`, 프로세스 내 밀리초 단조성, DB 기본값 미사용 |
+| [0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md) | 트랜잭션 경계 · UoW | Handler 1회 실행, 실행 전략 안에서 Read Committed 트랜잭션 → SaveChanges(accept false) → [Outbox 지점] → 커밋, 23505 → Result는 Infrastructure(제약 이름 매핑), 23514는 미변환 |
 
 형상관리는 GitHub로 확정했습니다(ADR 없음).
 
@@ -31,12 +35,12 @@ updated: 2026-09-27
 
 원본: [PRD-001 질문과 답변](../10-delivery/prd/PRD-001-foundation.md#질문과-답변)
 
-- **로컬 인프라**: .NET Aspire 9.x AppHost(docker compose 없음), SDK .NET 8. PostgreSQL + MigrationService(Api는 완료 대기), DB `emergency_hub_employee` / 롤 `employee_app`, Write / Read 연결 주입(Read는 `default_transaction_read_only=on`)
+- **로컬 인프라 · 마이그레이션 · UUID · 트랜잭션 · 리셋 정책**: ADR 0011~0014로 확정(위 표)
 - **도입 보류**: 메시지 브로커, Outbox / Inbox, API Gateway, 로그 수집기(로컬 관측은 Aspire 대시보드)
-- **애플리케이션**: Mediator 직접 구현(로깅 → 검증 → 트랜잭션 → Handler), 트랜잭션 데코레이터가 실행 전략 안에서 SaveChanges · 커밋(Handler는 저장 안 함), Controller, Scrutor(0010 구체화), FluentValidation, Serilog + OTLP, Swashbuckle
-- **ID · 테스트**: UUID v7은 `IIdGenerator` + UUIDNext(Handler가 생성), AwesomeAssertions, Respawn, coverlet + ReportGenerator
-- **정책**: 운영 배포(Phase 4) 전까지 마이그레이션 리셋 허용, 도메인 이벤트는 수집만
-- 미해결: 고정할 Aspire 9.x 마이너 버전(S01-T01)
+- **애플리케이션**: Mediator 직접 구현(로깅 → 검증 → 트랜잭션 → Handler), Controller, Scrutor(0010 구체화), FluentValidation, Serilog + OTLP, Swashbuckle (S01-T03)
+- **테스트**: AwesomeAssertions, Respawn, coverlet + ReportGenerator (S01-T04)
+- **정책**: 도메인 이벤트는 수집만
+- 해소: 고정할 Aspire 9.x 마이너 버전 → 9.5.2 (S01-T01)
 
 ## 검토 중 (초안 기본값)
 

@@ -80,6 +80,9 @@ updated: 2026-09-27
 | 2026-09-27 | S01-T01 | reviewer | PASS | 코드 점검 15개 해당 없음. 출처 링크 · 버전 표기 · FR-01① · 완료 조건 전 항목 · frontmatter · 상대 링크 · ADR 불변 확인 |
 | 2026-09-27 | S01-T01 | tester | PASS | 표 6개 46행 버전 · 라이선스 · 출처 누락 0(Node 검사), 스크래치 net8.0 sln(고정 39개, CPM · 전이 고정 · `NuGetAuditMode=all` · global.json 8.0.400 latestFeature, SDK 8.0.425) `dotnet restore` 경고 0, 해석 버전 불일치 0, MessagePack 고정 제거 대조군 NU1902 9 · NU1903 2, 취약 패키지 0, Q19 링크 · 앵커 유효, 상용 0건 |
 | 2026-09-27 | S01-T02 | dba | PASS | ADR 4건 DB 입력 확정(Aspire 9.5.2 소스 확인): `WithReference(db)` 금지(슈퍼유저 자격 증명 주입) → Write / Read `ReferenceExpression` + `WithEnvironment`, 롤은 `WithInitFiles` init 스크립트 · 생성 스크립트는 CREATE DATABASE 한 문장, 클라이언트 통합 미사용 추천(풀 강제 · DI 인터셉터 불가), UUIDNext 단조성 · 바이트 순서 확인. Docker 꺼짐으로 BL-003 실측은 S03 이관 |
+| 2026-09-27 | S01-T02 | developer 1차 | PASS | ADR 0011~0014 초안(`adr_drafts`), `scripts/check-docs.js` 작성(wiki/ 전체 결함 2건: raw-log frontmatter, 기존) |
+| 2026-09-27 | S01-T02 | 사용자 확인 | 승인 | 초안 4건 수정 없음. 클라이언트 통합 미사용, ServiceDiscovery · Http.Resilience 0011 포함, 23514 미변환, 리셋 기록 footer 없음, Q12 롤 생성은 init 스크립트 + 생성 스크립트로 구체화 |
+| 2026-09-27 | S01-T02 | developer 2차 | PASS | ADR 0011~0014 `accepted` 생성(초안과 diff 동일), ADR 목록 · design.md · PRD Q9/Q10/Q12/Q13 링크 갱신, 점검 결함 0 |
 
 ## 계획 리뷰
 
@@ -144,6 +147,9 @@ updated: 2026-09-27
 | BL-017 | local-setup / troubleshooting: MigrationService Waiting 멈춤 대응 | S01-T02 | |
 | TD-010 | 커밋 결과 불명 시 재시도 오판(23505 · xmin) | S01-T02 | |
 | TD-011 | EF Core 8 MigrateAsync 잠금 없음 → 적용 주체 1개 | S01-T02 | |
+| BL-018 | raw-log frontmatter created · updated 누락(hook 템플릿 vs 예외) | S01-T02 | |
+| BL-019 | 매핑 없는 23505용 공통 Conflict 코드 할당 | S01-T02 | |
+| BL-020 | check-docs.js 유형별 추가 필드 점검 검토 | S01-T02 | |
 
 ## 회고
 
