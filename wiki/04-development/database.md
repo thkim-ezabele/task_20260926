@@ -24,6 +24,8 @@ updated: 2026-09-27
   - PostgreSQL 15+에서 `public` 스키마 소유자는 `pg_database_owner`이므로 DB 소유자인 앱 롤은 별도 `GRANT` 없이 `public`에 객체를 만든다.
   - 마이그레이션 전용 롤 분리는 TD-001, 서비스 DB가 2개 이상이 되면 `REVOKE CONNECT, TEMPORARY ON DATABASE ... FROM PUBLIC`을 적용한다(BL-015).
 - 테이블은 기본 스키마 `public`을 쓴다.
+  - 매핑 · 마이그레이션은 스키마를 지정하지 않는다(`HasDefaultSchema` · `ToTable(..., schema)` · `MigrationsHistoryTable(..., schema)` 없음). 생성 SQL의 이름은 스키마 없이 나오고, 서버가 `search_path`로 해석한다.
+  - **롤 이름과 같은 스키마(예: `employee_app`)를 만들지 않는다.** PostgreSQL 기본 `search_path`는 `"$user", public`이므로, 그런 스키마가 있으면 테이블과 `__EFMigrationsHistory`가 `public`이 아니라 그 스키마에 생긴다(통합 테스트 Respawn 제외 대상 · psql 확인과 어긋남, BL-036).
 
 ## 읽기 / 쓰기 연결 분리
 
@@ -99,7 +101,7 @@ UUID v7 생성([ADR-0013](../03-architecture/adr/0013-uuid-v7-with-uuidnext.md))
 - `IIdGenerator`(BuildingBlocks.Application)의 구현(BuildingBlocks.Infrastructure)이 UUIDNext의 `Uuid.NewDatabaseFriendly(Database.PostgreSql)`로 만든다(.NET 8에는 `Guid.CreateVersion7()`이 없다).
 - **Handler가 생성**해 Aggregate 팩토리에 넘긴다. EF 매핑은 `ValueGeneratedNever`다.
 - DB 기본값(`gen_random_uuid()`는 v4, `uuidv7()`는 PostgreSQL 18부터)은 쓰지 않는다.
-- PostgreSQL `uuid` 정렬 = 생성 순서다(Npgsql이 RFC 바이트 순서로 기록, S03-T05 통합 테스트로 검증). 메모리 안 정렬 검증은 `Guid.CompareTo`가 아니라 문자열 기준으로 한다.
+- PostgreSQL `uuid` 정렬 = 생성 순서다(Npgsql이 RFC 바이트 순서로 기록, S03-T06 통합 테스트로 검증). 메모리 안 정렬 검증은 `Guid.CompareTo`가 아니라 문자열 기준으로 한다.
 
 - 컬럼은 기본으로 `NOT NULL`이다. NULL은 "값이 없음"이 업무적으로 의미 있을 때만 허용한다.
 - 모든 테이블에 `created_at`, `updated_at`(timestamptz, NOT NULL)을 둔다. 값은 애플리케이션(`TimeProvider`)이 감사 인터셉터로 채운다. 대상은 **owned가 아닌 엔티티 형식**이고, owned 타입은 컬럼을 두지 않는다(소유자 행의 `updated_at`이 대신 바뀐다, [감사 컬럼](#감사-컬럼-created_at--updated_at)). 별도 테이블로 가는 owned 컬렉션(`OwnsMany`)도 예외이며, 행 단위 이력이 필요하면 owned가 아닌 엔티티로 설계한다.
@@ -156,11 +158,17 @@ var smsEnabled = await db.Employees
 
 서비스별 코드 값과 의미를 기록합니다. 코드를 추가 / 변경하는 작업은 이 표를 함께 갱신합니다.
 
-> TODO: 서비스 코드가 생기면 서비스별로 표를 추가합니다.
+- `0`(`Unknown` / `None`)은 모든 코드의 예약 값이라 표에 따로 적지 않는다. enum에 멤버로 두더라도 저장 값이 아니고 체크 제약에서 빠진다.
+
+### Employee
 
 | 서비스 | enum (컬럼) | 값 | 이름 | 의미 | 상태 |
 |---|---|---|---|---|---|
-| (예) Employee | `EmployeeStatus` (`employee_status`) | 1 | `Active` | 재직 | 사용 |
+| Employee | `EmployeeStatus` (`employees.employee_status`) | 1 | `Active` | 재직(활성) | 사용 |
+| Employee | `EmployeeStatus` (`employees.employee_status`) | 2 | `Inactive` | 비활성 | 사용 |
+
+- 체크 제약: `ck_employees_employee_status CHECK (employee_status IN (1, 2))`(공통 도우미가 enum 정의에서 생성, S03-T02).
+- 비트 플래그(`[Flags]`) 코드는 아직 없다(BL-088).
 
 ## EF Core 구성 (Npgsql)
 
@@ -180,7 +188,7 @@ var smsEnabled = await db.Employees
   - 쓰기와 읽기는 등록 메서드를 나눈다. MigrationService는 쓰기만 등록한다(`ConnectionStrings:Read`가 없어도 시작해야 함).
   - 연결 문자열이 없거나 비어 있으면 **시작 시** 예외로 멈춘다(첫 요청까지 미루지 않음). 예외 메시지 · 로그에 연결 문자열 값을 넣지 않는다(비밀번호).
   - 서비스 하나에 쓰기 DbContext는 하나다. `AddUnitOfWork<TContext>()`는 `IUnitOfWork`를 그 쓰기 DbContext에 묶어 Scoped로 등록하고, UnitOfWork와 Write Repository는 같은 스코프의 **같은 DbContext 인스턴스**를 쓴다. 다른 `TContext`로 다시 부르면 시작 시 예외다.
-  - `EnableRetryOnFailure`는 Npgsql 기본값(최대 6회, 최대 지연 30초)을 쓴다. 요청 시간과의 관계는 S03-T05에서 실측한 뒤 조정한다.
+  - `EnableRetryOnFailure`는 Npgsql 기본값(최대 6회, 최대 지연 30초)을 쓴다. 재시도 설정(최대 횟수 · 최대 지연)은 **공통 옵션 구성 메서드의 선택 인자**로 받고, 서비스 등록 확장(예: `AddEmployeeInfrastructure`)이 그 인자를 넘긴다. 등록 확장 밖에서 `UseNpgsql`을 다시 불러 실행 전략을 덮어쓰지 않는다(실행 전략 설정 한 곳). 기준: Api는 재시도 총 대기 < 요청 제한 시간, MigrationService는 기본값. 값은 S03-T06에서 실측한 뒤 정한다(BL-073).
   - 구현(BuildingBlocks.Infrastructure): 옵션 구성 `UseBuildingBlocksNpgsql(연결)`, 등록 `AddWriteDbContext<T>(연결, 추가 옵션?)` · `AddReadDbContext<T>(연결, 추가 옵션?)` · `AddUnitOfWork<T>(errors => errors.Map(인덱스 상수, 서비스 Error))`, Outbox 확장 지점 `IPreCommitHook`(구현 없음, 멱등 필수). 재시도 한도 초과 분류기(`IExceptionClassifier`, 9003)는 `AddBuildingBlocksInfrastructure`가 Singleton으로 등록한다.
 - DbContext는 `AddDbContext`로 `Scoped` 등록한다. `AddDbContextPool`과 Aspire 클라이언트 통합(`AddNpgsqlDbContext`)은 쓰지 않는다(풀 강제, DI의 `SaveChangesInterceptor`를 붙일 수 없음, [ADR-0011](../03-architecture/adr/0011-use-aspire-local-orchestration.md)).
 - 연결 문자열은 설정 / 시크릿으로 주입한다([설정 & 시크릿 관리](../06-deployment/configuration.md)).
@@ -233,7 +241,7 @@ var smsEnabled = await db.Employees
 - 운영 환경에서는 애플리케이션 시작 시 자동 적용하지 않는다(마이그레이션 번들 / 스크립트로 적용).
 - **로컬 적용**: MigrationService 하나가 Write 연결로 실행 전략 안에서 `MigrateAsync`만 하고 종료한다(실패 시 0이 아닌 종료 코드, Api는 `WaitForCompletion`으로 완료를 기다림). **Api는 시작할 때 마이그레이션하지 않는다.** DB 생성은 AppHost가 하고 `EnsureCreated`는 금지한다. EF Core 8 `MigrateAsync`에는 잠금이 없으므로 적용 주체는 하나다(TD-011, [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md)).
 - **설계 시점 팩터리**: `IDesignTimeDbContextFactory`는 쓰기 DbContext만 만들고, 연결 문자열은 환경 변수 또는 더미 값을 쓴다(비밀 없음). 한 어셈블리에 DbContext가 2개라 `dotnet ef`에는 `--context <Service>DbContext`가 필수다. `Migrations/**`는 생성 코드(`generated_code`)로 분석에서 뺀다. `generated_code`는 컴파일러 경고 CS1591을 끄지 못하므로 `.editorconfig` 같은 섹션에 `dotnet_diagnostic.CS1591.severity = none`을 함께 둔다(BL-047).
-- **`__EFMigrationsHistory`**: snake_case 규칙의 유일한 예외로 EF 기본 이름을 유지한다. 컬럼 `"MigrationId"` · `"ProductVersion"`은 SQL에서 따옴표가 필요하다. 통합 테스트 Respawn 초기화 대상에서 제외한다([ADR-0022](../03-architecture/adr/0022-respawn-and-coverage-tooling.md)).
+- **`__EFMigrationsHistory`**: snake_case 규칙의 유일한 예외로 EF 기본 이름을 유지한다. 컬럼 `"MigrationId"` · `"ProductVersion"`과 기본 키 제약 `"PK___EFMigrationsHistory"`는 SQL에서 따옴표가 필요하다(모두 같은 예외). 스키마를 지정하지 않으므로 `public."__EFMigrationsHistory"`에 생긴다([Database per Service 원칙](#database-per-service-원칙)의 스키마 규칙). 통합 테스트 Respawn 초기화 대상에서 제외한다([ADR-0022](../03-architecture/adr/0022-respawn-and-coverage-tooling.md)).
 - **운영 전 리셋 정책**: 운영 배포(Phase 4) 전까지(그보다 먼저 로컬 밖 지속 공유 DB가 생기면 그때까지) 마이그레이션 전체 리셋을 허용한다. 절차 ①~⑤와 기록 방법(리셋만 담은 커밋, 스프린트 기록, 이 문서 변경 이력 한 줄)은 [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md)를 따른다.
 
 ## 트랜잭션 & 동시성 제어
@@ -328,7 +336,28 @@ var smsEnabled = await db.Employees
 
 ## 서비스별 ERD
 
-> TODO: 서비스 스키마가 생기면 서비스별 Mermaid `erDiagram`을 추가합니다.
+서비스마다 Mermaid `erDiagram`을 둡니다. 서비스 사이 관계는 그리지 않습니다(다른 서비스 DB를 참조하지 않음).
+
+### Employee (`emergency_hub_employee`, 스키마 `public`)
+
+```mermaid
+erDiagram
+    employees {
+        uuid id PK "pk_employees, 기본값 없음(UUID v7, Handler 생성)"
+        varchar(100) display_name "NOT NULL, 앞뒤 공백 제거 값"
+        varchar(254) email UK "NOT NULL, ux_employees_email, Trim + 소문자(Invariant) 정규화 값"
+        smallint employee_status "NOT NULL, ck_employees_employee_status IN (1, 2)"
+        timestamptz created_at "NOT NULL, 감사(UTC)"
+        timestamptz updated_at "NOT NULL, 감사(UTC)"
+        xid xmin "시스템 컬럼, 동시성 토큰(마이그레이션 생성 없음)"
+    }
+```
+
+| 테이블 | 인덱스 · 제약 | 비고 |
+|---|---|---|
+| `employees` | `pk_employees`(id), `ux_employees_email`(email), `ck_employees_employee_status` | 인덱스는 2개. `CHECK (email = lower(email))`는 두지 않는다(DB collation과 .NET Invariant 소문자 변환 결과가 다를 수 있음, S03 계획 리뷰). 외래 키 없음 |
+
+- 이름 상수(테이블 `employees`, `ux_employees_email`)는 `EmergencyHub.Employee.Infrastructure`의 한 곳에 두고, 매핑(`ToTable` · `HasUniqueIndex`)과 23505 매핑 등록(`ux_employees_email` → 23001 `EmployeeErrors.DuplicateEmail`)이 같은 상수를 쓴다.
 
 ---
 
@@ -344,3 +373,4 @@ var smsEnabled = await db.Employees
 | 2026-09-27 | dba | EF Core 공통 모델 규칙 절 추가(snake_case · `ux_` 덮어쓰기와 이름 상수 공유 · `ck_` 도우미 · 강타입 ID · DomainEvents 제외 · 감사 shadow property · `xmin`), `xmin`을 shadow property로 정정, `[Flags]` 체크 제약을 마스크 조건으로 정정, 63바이트 식별자 한도, 읽기 DbContext SaveChanges 4개 차단 (S02-T04) |
 | 2026-09-27 | dba | 공통 DbContext 등록 규칙(옵션 구성 한 곳, 인터셉터 쓰기만 · Singleton, 쓰기 / 읽기 등록 분리, 연결 문자열 시작 시 검사, UoW와 Repository 같은 인스턴스), UnitOfWork 커밋 순서(이벤트 대상 수집 → AcceptAllChanges, 변환은 전략 밖)와 재시도 때 상태, 영속성 예외 변환 규칙표(1~9), 23505 매핑 레지스트리 계약, 변환 로그 필드 · 수준 (S02-T07) |
 | 2026-09-27 | developer | 공통 DbContext 등록 구현 이름(`UseBuildingBlocksNpgsql`, `AddWriteDbContext` · `AddReadDbContext` · `AddUnitOfWork`, `IPreCommitHook`, 분류기 등록 위치) (S02-T07) |
+| 2026-09-27 | dba | Employee 코드 정의 표(`EmployeeStatus` 1 · 2)와 ERD, 스키마 미지정 · 롤 이름 스키마 금지 규칙, 이력 테이블 PK 이름 예외, 재시도 설정 인자 규칙(BL-073), UUID 정렬 검증 작업 번호 정정 (S03-T02) |
