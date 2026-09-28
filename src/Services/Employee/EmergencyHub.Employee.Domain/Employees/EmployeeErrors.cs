@@ -54,6 +54,21 @@ public static class EmployeeErrors
     /// <summary>21017 · 입사일이 1900-01-01 이전. 판정 원본은 <see cref="JoinedOn.Create"/>.</summary>
     public static readonly Error JoinedOnTooEarly = Error.Validation(21017, "입사일은 1900-01-01 이후여야 합니다.");
 
+    /// <summary>21019 · CSV 행의 열 개수가 4가 아님(행 오류). 판정 원본은 Application CSV 파서.</summary>
+    public static readonly Error CsvColumnCountMismatch = Error.Validation(21019, "CSV 행의 열 개수는 4개여야 합니다.");
+
+    /// <summary>21020 · CSV 닫히지 않은 따옴표(행 오류, 레코드가 시작한 줄). 판정 원본은 Application CSV 파서.</summary>
+    public static readonly Error CsvUnclosedQuote = Error.Validation(21020, "CSV 따옴표가 닫히지 않았습니다.");
+
+    /// <summary>21021 · CSV 따옴표 없는 필드 안의 <c>"</c> 또는 닫는 따옴표 뒤의 문자(행 오류). 판정 원본은 Application CSV 파서.</summary>
+    public static readonly Error CsvUnexpectedQuote = Error.Validation(21021, "CSV 따옴표 위치가 올바르지 않습니다.");
+
+    /// <summary>21022 · 입력이 올바른 UTF-8이 아님(CP949 · UTF-8로 인코딩한 서로게이트 등, 요청 전체 오류). 판정 원본은 Application 해독 단계.</summary>
+    public static readonly Error ImportInvalidUtf8 = Error.Validation(21022, "입력이 올바른 UTF-8이 아닙니다.");
+
+    /// <summary>21027 · 행 수가 1,000을 넘음(요청 전체 오류). 판정 원본은 Application CSV · JSON 파서.</summary>
+    public static readonly Error ImportTooManyRows = Error.Validation(21027, "한 번에 1,000행까지 등록할 수 있습니다.");
+
     /// <summary>22001 · 직원 없음.</summary>
     public static readonly Error NotFound = Error.NotFound(22001, "직원을 찾을 수 없습니다.");
 

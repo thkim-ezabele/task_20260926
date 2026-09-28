@@ -211,15 +211,15 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 | 21016 | `Validation` | 400 | `Employee.JoinedOnInvalidFormat` | `joined`가 `yyyy-MM-dd` 정확 형식 · 있는 날짜가 아님 (`2000-2-3` · `2000-02-30`). 판정 원본은 JoinedOn Value Object | 사용 |
 | 21017 | `Validation` | 400 | `Employee.JoinedOnTooEarly` | `joined`가 1900-01-01 이전 (`1899-12-31`). 판정 원본은 JoinedOn Value Object | 사용 |
 | 21018 | `Validation` | 400 | `Employee.DuplicateEmailInRequest` | 같은 요청 안 이메일 중복 (`NormalizedEmail` 서수 비교, 두 행 모두 표시) | 예약: S06-T04 |
-| 21019 | `Validation` | 400 | `Employee.CsvColumnCountMismatch` | CSV 행의 열 개수가 4가 아님 | 예약: S06-T02 |
-| 21020 | `Validation` | 400 | `Employee.CsvUnclosedQuote` | CSV 닫히지 않은 따옴표 | 예약: S06-T02 |
-| 21021 | `Validation` | 400 | `Employee.CsvUnexpectedQuote` | CSV 따옴표 없는 필드 안의 `"` | 예약: S06-T02 |
-| 21022 | `Validation` | 400 | `Employee.ImportInvalidUtf8` | 입력이 올바른 UTF-8이 아님 (CP949 등, 경로 `""`) | 예약: S06-T02 |
+| 21019 | `Validation` | 400 | `Employee.CsvColumnCountMismatch` | CSV 행의 열 개수가 4가 아님 (행 오류, 경로 `rows[n]`). 판정 원본은 Application CSV 파서 | 사용 |
+| 21020 | `Validation` | 400 | `Employee.CsvUnclosedQuote` | CSV 닫히지 않은 따옴표 (행 오류, 레코드가 시작한 줄). 판정 원본은 Application CSV 파서 | 사용 |
+| 21021 | `Validation` | 400 | `Employee.CsvUnexpectedQuote` | CSV 따옴표 없는 필드 안의 `"`, 닫는 따옴표 뒤의 공백 아닌 문자 (`"a"b`, 행 오류). 판정 원본은 Application CSV 파서 | 사용 |
+| 21022 | `Validation` | 400 | `Employee.ImportInvalidUtf8` | 입력이 올바른 UTF-8이 아님 (CP949, UTF-8로 인코딩한 서로게이트 `ED A0 80` 등, 경로 `""`). BOM `EF BB BF`는 맨 앞 하나만 허용. 판정 원본은 Application 해독 단계 | 사용 |
 | 21023 | `Validation` | 400 | `Employee.JsonSyntaxInvalid` | JSON 문법 오류 (끝 쉼표 · 주석 · `[..],[..]`, 경로 `""`) | 예약: S06-T03 |
 | 21024 | `Validation` | 400 | `Employee.JsonItemNotObject` | JSON 항목이 객체가 아님 (`null` · 숫자, 경로 `rows[n]`) | 예약: S06-T03 |
 | 21025 | `Validation` | 400 | `Employee.JsonValueNotString` | JSON 항목의 필드 값이 문자열이 아님 (`"joined": 20000101` 등) | 예약: S06-T03 |
 | 21026 | `Validation` | 400 | `Employee.JsonDuplicateProperty` | JSON 항목에 대소문자만 다른 중복 속성 | 예약: S06-T03 |
-| 21027 | `Validation` | 400 | `Employee.ImportTooManyRows` | 행 수가 1,000을 넘음 (경로 `""`) | 예약: S06-T02 · S06-T03 |
+| 21027 | `Validation` | 400 | `Employee.ImportTooManyRows` | 행 수가 1,000을 넘음 (경로 `""`, 빈 줄 제외 · 행 오류 행 포함). 판정 원본은 Application 파서(CSV S06-T02, JSON S06-T03) | 사용 |
 | 21028 | `Validation` | 400 | `Employee.ImportInputEmpty` | 빈 입력 (입력 없음, 길이 0, BOM이나 공백만 있음, form-urlencoded `data` 키 없음) | 예약: S06-T04 |
 | 21029 | `Validation` | 400 | `Employee.ImportMultipleSources` | multipart `file`과 `data`를 함께 보냄 | 예약: S06-T04 |
 | 21030 | `Validation` | 400 | `Employee.RowErrorsTruncated` | 행 오류가 100개를 넘어 잘림 (101번째 항목, 경로 `""`) | 예약: S06-T04 |
@@ -249,3 +249,4 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 | 2026-09-28 | developer | Employee 21007 ~ 21017 상태를 예약 → 사용(Value Object `Name` · `PhoneNumber` · `JoinedOn`, 설명에 판정 원본 추가), 21003 ~ 21005 설명의 `(S05-T03부터)` 삭제, 필드별 판정 순서를 "첫 실패만 보고" 항목에 추가 (S05-T03) |
 | 2026-09-28 | developer | 폐기 상수 21001 · 21002 · 21006 삭제 완료 표시, 23001 설명의 옛 인덱스 이름 문구 삭제(매핑 `ux_employees_normalized_email` 교체 완료), 판정 순서 항목의 샘플 Validator 이름 삭제 (S05-T04) |
 | 2026-09-28 | developer | 공통 1004 · 1005 상태를 예약 → 사용(`CommonErrors.PayloadTooLarge` · `UnsupportedMediaType`), `ErrorType` 표의 "S06-T01에서 추가" 문구 정리, 1004 · 1005 설명을 구현 경로로 (S06-T01) |
+| 2026-09-28 | developer | Employee 21019 ~ 21022 · 21027 상태를 예약 → 사용(`EmployeeErrors`, CSV 파서 · UTF-8 해독 단계), 설명에 판정 원본 · 21021 닫는 따옴표 뒤 문자 · 21022 서로게이트와 BOM · 21027 행 수 세는 규칙 추가 (S06-T02) |

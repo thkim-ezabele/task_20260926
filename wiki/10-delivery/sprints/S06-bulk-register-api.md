@@ -74,6 +74,8 @@ updated: 2026-09-28
 | 2026-09-28 | S06-T01 | reviewer | PASS | b33d371 반려 사유 해소, 새 위반 없음 |
 | 2026-09-28 | S06-T01 | tester | PASS | build 경고 0, format 0, test 통과 1,737 · 건너뜀 4 · 실패 0(전체 1,741, 앞 행 1,741은 건너뜀 포함 수로 보임), check-docs 결함 4. 반려 1회 |
 | 2026-09-28 | S06-T02 | dba | 해당 없음 | 파이프라인 표 dba 열 "해당 없음"(호출 생략) |
+| 2026-09-28 | S06-T02 | developer | PASS | ImportTextDecoder(엄격 UTF-8) · CsvImportParser(상태 기계), 21019~21022 · 21027 사용, CR 단독 = 필드 문자, 공백만 줄 = 빈 줄. 테스트 +60 |
+| 2026-09-28 | S06-T02 | 기록 | handoff | T03: Decode 뒤 Result<ImportParseResult>(ImportRow · ImportRowError) 공유, 21027 = EmployeeErrors.ImportTooManyRows. T04: 파서 실패 → 경로 "" FieldError, 행 오류 → Rows[n] |
 
 ## 계획 리뷰
 
