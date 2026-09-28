@@ -2,7 +2,7 @@
 title: "PRD-002: 직원 연락처 조회 · 일괄 등록 (CSV / JSON)"
 type: prd
 prd: "002"
-status: stable
+status: done
 received: 2026-09-27
 sprints: [S05, S06, S07]
 branch: "feature/prd-002-employee-contacts"
@@ -202,3 +202,4 @@ updated: 2026-09-29
 | 2026-09-28 | developer | S05-T02 대리 승인(오케스트레이션 세션): RegisterEmployeesCommand 모양 변경(FR-06 `(Format, [Flags] Sources, ReadOnlyMemory<byte> Content)`, FR-05 바인더 문구를 같은 모양으로 맞춤, ADR-0026). 선행 조건 · 병행 진행 메모의 가번호 문장을 확정 문장으로 |
 | 2026-09-28 | orchestrator | S06 계획 리뷰 대리 승인(D1, BL-129): FR-01 email 규칙 · 인수 조건에 제어 문자(Cc) · 짝 없는 서로게이트 거부(21004) 추가 |
 | 2026-09-29 | developer | FR-06에 행 0개 입력 400 · 21028(Handler 파싱 직후) 추가(BL-137 사용자 결정 A, S07-T05) |
+| 2026-09-29 | orchestrator | `/retro PRD-002` 완료: 회고 [RETRO-PRD-002](../retros/RETRO-PRD-002.md), `status: done` |

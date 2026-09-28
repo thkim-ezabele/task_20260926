@@ -120,7 +120,7 @@ gitGraph
 | ID | 제목 | 상태 | 스프린트 | 브랜치 / PR | 릴리스 |
 |---|---|---|---|---|---|
 | [PRD-001](prd/PRD-001-foundation.md) | 기반 구축 (인프라 · .NET 8 솔루션 기본 설계) | done | S01~S04 | `feature/prd-001-foundation` / [#7](https://github.com/thkim-ezabele/task_20260926/pull/7) | `v0.1.0` · [회고](retros/RETRO-PRD-001.md) |
-| [PRD-002](prd/PRD-002-employee-contacts.md) | 직원 연락처 조회 · 일괄 등록 (CSV / JSON) | stable | S05~S07 | `feature/prd-002-employee-contacts` / [#8](https://github.com/thkim-ezabele/task_20260926/pull/8) | `v0.2.0` · [회고](retros/RETRO-PRD-002.md) |
+| [PRD-002](prd/PRD-002-employee-contacts.md) | 직원 연락처 조회 · 일괄 등록 (CSV / JSON) | done | S05~S07 | `feature/prd-002-employee-contacts` / [#8](https://github.com/thkim-ezabele/task_20260926/pull/8) | `v0.2.0` · [회고](retros/RETRO-PRD-002.md) |
 
 ## 스프린트 목록
 
