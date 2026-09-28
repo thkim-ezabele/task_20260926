@@ -80,6 +80,7 @@ updated: 2026-09-28
 - TD-010 위험 문구: "정상 요청이 409(3003, 행 번호 없음)로 보일 수 있음. pk와 ux 제약의 검사 순서는 S05-T06 실측 뒤 확정."
 - database.md 한 줄: 길이는 Domain(UTF-16)이 varchar(코드 포인트)보다 엄격해 22001이 생기지 않는다. `joined_on` 하한, 이름 · 전화 형식은 DB ck 없는 Domain 규칙.
 - error-codes 표 ↔ 코드 대조(S04-T05 방식)에서 예약 행은 따로 센다.
+- (T01 reviewer) PRD-002 78행(선행 조건) · 153행(병행 진행 메모)의 '가번호' 문장을 확정 문장으로 바꾸고 PRD 변경 이력에 한 줄 남긴다. Q12 답변 · 변경 이력의 당시 기록은 그대로 둔다.
 - (T01 developer) ADR 번호: 0025 ① · 0026 ② · 0027 ③ · 0028 ④. ADR ④ 근거 계약 사실: FieldError.Create는 Validation 유형만, ValidationError는 sealed · 1001 고정, ErrorProblemDetails의 `errors`는 ValidationError에만, ErrorStatusCodes 9종(그 밖 500), BadHttpRequestException은 전부 400 · 1001(TD-021). 413 · 415의 ErrorType 값과 코드 유형 자리(T=1의 1004 · 1005 후보 또는 예비 T=6~8)는 1차 초안의 확인 항목으로 올린다.
 
 **S05-T03**
@@ -100,7 +101,8 @@ updated: 2026-09-28
 - EmployeeRegisteredDomainEvent를 지우면 RequestAndResponseModelsAreRecords도 대상 0개가 되므로 유지.
 - IEmployeeReadRepository.GetById · EmployeeResponse는 샘플 Query와 함께 제거(인터페이스는 T06까지 비어도 됨). EmployeeLogs 20001은 남기고, 경고가 나면 BLOCKED.
 - EmployeeMigrationsTests 기대 SQL은 메타데이터 이름과 기존 문자열 형식으로(예: `CREATE UNIQUE INDEX ux_employees_normalized_email ON employees (normalized_email);`).
-- 실패 허용 목록: 단위는 `EmployeeMigrationsTests.ModelSnapshot_HasNoDifferencesFromCurrentModel` · `IdempotentScript_CreatesEmployeesAndHistoryWithoutSchemaXminOrDefault` 2건, 통합은 대응표 "수정(T05 뒤 green)" 행만. developer 단계에서 trx 이름으로 확정해 진행 기록에 남기고, **목록 밖 실패가 나오면 BLOCKED**.
+- (T01 tester) 기준선 TSV에 표시 이름이 같은 Theory 사례가 11종 있다. trx 이름으로 허용 목록 · 대응표를 대조할 때 이름 집합이 아니라 개수로 비교한다.
+- 실패 허용 목록: 단위는 `EmployeeMigrationsTests.ModelSnapshot_HasNoDifferencesFromCurrentModel` · `IdempotentScript_CreatesEmployeesAndHistoryWithoutSchemaXminOrDefault` 2건, 통합은 대응표 "수정(T05 뒤 green)" 행만. developer 단계에서 trx 이름으로 확정해 진행 기록에 남긴다. 스키마 불일치(옛 마이그레이션) 원인으로 trx에서 확인된 실패는 대응표에 "수정(T04, T05 뒤 green)" 또는 "이전(T06, T05 뒤 green)" 행으로 추가해 허용하고 행마다 실패 원인 한 줄(예: 42703 column does not exist)을 적는다(2026-09-28 결정). **스키마 불일치로 설명되지 않는 실패와 T05 리셋 뒤에도 남는 실패는 BLOCKED**.
 - reviewer grep: 패턴 `api/v1/employees|RegisterEmployee|GetEmployeeById|DisplayName|display_name|ux_employees_email`, 범위 `src/` · `tests/Services` · `tests/Aspire`. 제외: `Persistence/Migrations`(T05까지), `wiki`, `tests/BuildingBlocks`(리터럴 표본), HealthEndpointsTests InlineData, EF의 `DisplayName()` 호출.
 - EmployeeBuilder(Domain · Integration)는 새 필드로, 기본 이메일은 순번으로 고유하게.
 - (T01 developer) 대응표 "처리" 열이 원본이다. EmployeePersistenceRoundTripTests.GetByIdAsync_* 2건은 IEmployeeReadRepository.GetById 제거와 부딪히므로 수정 방식을 T04에서 정한다. PersistenceLogExposureTests는 샘플 의존 메서드가 0개라 2건 모두 "수정".
@@ -249,6 +251,9 @@ updated: 2026-09-28
 | 2026-09-28 | S05-T01 | developer | PASS | 문서 작업. ① `git merge-base --is-ancestor v0.1.0 HEAD` 0, `origin/develop`(210b128) 0, 병합 커밋 `7160967`(앞선 `1f671da`와 함께 v0.1.0 포함) ② 스프린트 S05~S07 확정, ADR 0025 ① API 규칙 예외 · 0026 ② 일괄 가져오기 입력 처리 · 0027 ③ 이메일 대소문자 무시 유일 · 0028 ④ BuildingBlocks 오류 계약 확장, Employee 새 검증 코드 21007~, 공통 413 · 415는 T02에서 할당. 사용 중 코드 Common 12 · Employee 8이 error-codes 표와 일치 ③ BL-121~127 · TD-028 new, BL-024 planned:S06 ④ README PRD-002 · S05~S07 행, roadmap Phase 2 행, S06-T01 의존 · S07-T01 dba 칸 S05-T05 → S05-T06, S06 계획 메모 '대상 대기' 해제, check-docs 94개 · 결함 4 ⑤ TD-010 위험 수용 · open(S05-T06 1회 실측), BL-019 done(3003), BL-023 done(d2263d6), BL-024 planned:S06 ⑥ 기준선 1,538개(통과 1,537 · 건너뜀 1, 13개 프로젝트, trx), 대응표 95행 · 226개(삭제 96 · 수정 35 · 이전 6 · 변경 없음 89) ⑦ build 경고 0 · 오류 0, test 실패 0 · 건너뜀 1. 새 BL-128(roadmap PRD-001 행 미갱신) |
 | 2026-09-28 | S05-T01 | developer | 기록 | S02-T06 계약 확인: ProblemDetails는 code · traceId 항상, `errors`는 ValidationError(400, 1001 고정, sealed)에만. FieldError는 Validation 유형만 받아 409 행 오류 표현 불가. ErrorType → HTTP 9종, 413 · 415 없음. BadHttpRequestException은 400 · 1001(TD-021), multipart InvalidDataException은 9001. `Rows[3].Email` → `rows[3].email`. **S06-T01 완료 조건 확정안**(S06 계획 리뷰 입력): ① ErrorType.Conflict + 행 경로 · 정수 코드 · 메시지 목록을 가진 상세 Conflict 오류(BuildingBlocks.Domain), 409 `errors`(ValidationError와 같은 키 · `{code, message}`) ② ErrorType PayloadTooLarge · UnsupportedMediaType → 413 · 415 + ADR-0028 공통 코드 ③ BadHttpRequestException 413은 413 · 새 코드, 그 밖은 400 · 1001 유지(TD-021 부분 상환, multipart InvalidDataException은 S06-T05) ④ 기존 409(3001 · 3003 · 23001) · 400 형식 · ErrorType 9종 · FieldError 제한 하위 호환 단위 테스트 ⑤ 23505 detail 비노출 ⑥ TD-010은 ADR ② 위험 문구 · S05-T06 실측만, BL-023 처리됨 ⑦ error-codes · api-guidelines · CommonErrorsTests 1:1 |
 | 2026-09-28 | S05-T01 | developer | 기록 | 비차단 질문 판단(추천안): 범위 밖 중 '→ 백로그' 표시 없는 4개(인증 / 권한, 프론트엔드, Idempotency-Key · 통합 이벤트, Employee 외 서비스)는 이미 roadmap · ADR-0023 · api-guidelines에 있어 등록하지 않음(완료 조건 ③ 해석). RETRO-PRD-001 ADR 후보는 0029부터 또는 PRD-002 병합 뒤(→ `/retro` 입력). 413 · 415 ErrorType 값 · 코드 자리는 T02 1차 초안에서 확인. T04 실패 허용 목록 범위는 오케스트레이션에 확인 요청 |
+| 2026-09-28 | S05-T04 | 결정 | 승인(대리) | 실패 허용 범위 변경: 보완 조건 (b)를 "스키마 불일치(옛 마이그레이션) 원인으로 trx에서 확인된 실패는 developer 단계에서 대응표에 추가해 허용(행마다 실패 원인 한 줄, 예: 42703 column does not exist)"으로. 스키마 불일치로 설명되지 않는 실패와 T05 리셋 뒤에도 남는 실패는 BLOCKED |
+| 2026-09-28 | S05-T01 | reviewer | PASS | D1 check-docs 94개 · 결함 4(기준선), D2 ADR 변경 0, D3 대응표 95행 · 226개를 기준선 TSV와 스크립트 대조해 행별 불일치 0, D4 ①~⑦ 대응 칸 있음, D5 roadmap PRD-001 행은 BL-128로. 번호 충돌 없음(BL-121 · TD-028 · ADR 0025 · 21007). handoff → T02(PRD 78 · 153행 '가번호' 문장), 범위 밖 미등록 4개는 오케스트레이션이 수용(T04 결정 메시지) |
+| 2026-09-28 | S05-T01 | tester | PASS | 명령 점검: 병합 확인 v0.1.0 · origin/develop 조상 0(7160967, v0.1.0은 1f671da 경유), check-docs 94개 · 결함 4(기준선), ADR 변경 0, 코드 Common 12 · Employee 8, 대응표 95행 · 226개 기준선 TSV와 따로 대조해 불일치 0, build 경고 0 · 오류 0, test 1,538(통과 1,537 · 건너뜀 1 · 실패 0, 13개 프로젝트). 파일 변경 없음. handoff → T04(표시 이름이 같은 Theory 사례 11종, 대조는 개수로) |
 
 ## 계획 리뷰
 
@@ -314,6 +319,7 @@ updated: 2026-09-28
 | 날짜 | 승인 지점 | 승인 내용 | 승인한 세션 | 근거 (진행 기록) | 추인 |
 |---|---|---|---|---|---|
 | 2026-09-28 | ① 계획 리뷰 | 작업 5 → 6 분할, 막히는 질문 1~6 추천안, 세부 기본값 · 위험 기록, 보완 조건 3개 | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 계획 리뷰 행 | 대기 |
+| 2026-09-28 | 결정(S05-T04 실패 허용 범위) | 스키마 불일치 원인 실패는 developer 단계에서 대응표에 추가해 허용(원인 한 줄), 그 밖은 BLOCKED | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 S05-T04 결정 행 | 대기 |
 
 ## 결과 리뷰
 
