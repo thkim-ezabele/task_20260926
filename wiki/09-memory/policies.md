@@ -3,7 +3,7 @@ title: "정책 / 규칙"
 type: memory
 tags: [memory]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 정책 / 규칙
@@ -63,5 +63,5 @@ updated: 2026-09-28
 - `python`은 Windows 스토어 스텁이라 실행되지 않는다. 스크립트는 **Node.js**로 작성한다.
 - .NET SDK(8.0.425 사용, `global.json` 8.0.400 + latestFeature), Docker, GitHub CLI(`gh`, 로그인됨)가 설치되어 있다.
 - Windows 깊은 경로에서 clone하면 MAX_PATH로 빌드가 실패할 수 있다(짧은 경로 사용).
-- 이 PC Docker Desktop 4.26(Engine API 1.43)에서는 통합 테스트(Testcontainers 4.15.0)에 `DOCKER_API_VERSION=1.43`이 필요하다(CI 무관, BL-102). 개발 인증서 미신뢰면 AppHost https 프로필 대시보드에 로그 · 추적이 안 보이므로 `--launch-profile http`를 쓴다(BL-099).
+- 이 PC Docker Desktop 4.26(Engine API 1.43)에서는 통합 테스트(Testcontainers 4.15.0)에 `DOCKER_API_VERSION=1.43`이 필요하다(CI 무관, BL-102). 개발 인증서 미신뢰면 AppHost https 프로필 대시보드에 로그 · 추적이 안 보이므로 `--launch-profile http`를 쓴다(BL-099). Git Bash 내장 curl 8.6.0은 명령줄 한글을 CP949로 보내므로 인라인 한글 요청은 `C:\Windows\System32\curl.exe`로 보낸다(BL-142).
 - 실행 증빙은 `wiki/10-delivery/evidence/<작업 ID>/`에 README(요약) · 마스킹한 원문 로그 · 캡처로 둔다(S03). 로컬 AppHost 볼륨은 `emergency-hub-postgres-data`만 지울 수 있다(다른 프로젝트 볼륨 금지).
