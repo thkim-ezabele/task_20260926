@@ -163,6 +163,8 @@ updated: 2026-09-28
 | BL-134 | employee-api.md 83행 409 설명이 옛 `ux_employees_email`로 남아 있음(샘플 API 제거된 PRD-001 문서) | S05-T05 reviewer | 중 | planned:S07 | S06 API 문서 작업에서 다시 쓸 대상. S05 종료 정리: S07-T04 API 명세에서 다시 씀 |
 | BL-135 | database.md '알려진 잡음 로그' 표가 BL-117(첫 /health/ready Unhealthy Error 2건)을 '잡음 아님 · 제외하지 않음'으로 두어, RETRO-PRD-001 유지 판단(BL-117 잡음 제외) · S05 계획 인계 메모와 다름. 한쪽으로 맞춤 | S05-T05 tester | 중 | dropped | S05-T05에서는 승인된 인계 메모 기준으로 개수 기록 후 제외. S05-T05 관찰: Api 시작 약 2.6초 뒤 첫 요청, EmployeeDbContext 924 ms · ReadDbContext 108 ms, 두 번째 요청부터 200. S05 종료 정리: BL-117로 병합. 기준 원본은 database.md 155행 · S04 결과 리뷰(BL-117은 기록 유지 · 제외 아님 · 판정은 완료 조건 기준). 어긋난 쪽은 S05 계획 인계 메모(WL-04 인용 오류). S05-T05 PASS는 완료 조건 ④가 BL-117과 무관하게 충족되어 추인 |
 | BL-136 | check-docs.js에 U+FFFD(EF BF BD) 문자 검사 추가: 도구 인자에서 `\uXXXX` 이스케이프가 문자로 풀려 문서 · 테스트 데이터가 조용히 바뀌는 현상 방지(S06-T03 error-codes 217행 사례) | S06-T03 tester | 중 | new | |
+| BL-137 | 내용은 있지만 행이 0개인 일괄 등록 입력(JSON `[]`, NBSP만 있는 CSV 줄 등 Validator 공백 집합 밖이지만 파서가 빈 줄로 보는 입력)이 201 `{count:0, ids:[]}`로 처리됨. 21028로 거부할지 결정(PRD · ADR 규정 없음) | S06-T04 developer | 중 | new | |
+| BL-138 | 일괄 등록 성공 로그 20001(Information)이 직원마다 1줄이라 1,000행이면 1,000줄. 요약 로그(건수 1줄)로 바꿀지 검토(NFR-02 측정 때 로그 비용 확인) | S06-T04 developer | 하 | new | |
 
 ---
 

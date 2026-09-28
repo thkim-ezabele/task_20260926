@@ -1,7 +1,5 @@
 using System.Text.RegularExpressions;
 using EmergencyHub.ArchitectureTests.Samples.ControllerDependencies;
-using EmergencyHub.ArchitectureTests.Samples.ValidatorBases;
-using EmergencyHub.ArchitectureTests.Samples.ValidatorInjection;
 using Xunit.Sdk;
 
 namespace EmergencyHub.ArchitectureTests;
@@ -15,37 +13,47 @@ public sealed partial class PendingTargetRuleTests
     // 표본 범위에는 규칙 대상(Validator · Controller)이 있으므로, 대기 규칙에 "제품 대상이 생긴" 상황을 재현한다.
     private static readonly Dictionary<string, Func<RuleCheck>> ChecksWithTargets = new(StringComparer.Ordinal)
     {
-        [nameof(ConventionRules.ValidatorsDeriveFromRequestValidator)] = () =>
-            ConventionRules.ValidatorsDeriveFromRequestValidator.Check(RuleScope.Samples<PlainSampleCommandValidator>()),
-        [nameof(InjectionRules.ValidatorsDoNotInjectRepositoriesOrServices)] = () =>
-            InjectionRules.ValidatorsDoNotInjectRepositoriesOrServices.Check(RuleScope.Samples<TimeAwareSampleValidator>()),
         [nameof(DependencyRules.ControllersDoNotUseInfrastructureOrRepositories)] = () =>
             DependencyRules.ControllersDoNotUseInfrastructureOrRepositories.Check(RuleScope.Samples<SenderOnlySampleController>()),
     };
 
     private static readonly Dictionary<string, ArchitectureRule> RulesByName = new(StringComparer.Ordinal)
     {
-        [nameof(ConventionRules.ValidatorsDeriveFromRequestValidator)] = ConventionRules.ValidatorsDeriveFromRequestValidator,
-        [nameof(InjectionRules.ValidatorsDoNotInjectRepositoriesOrServices)] = InjectionRules.ValidatorsDoNotInjectRepositoriesOrServices,
         [nameof(DependencyRules.ControllersDoNotUseInfrastructureOrRepositories)] = DependencyRules.ControllersDoNotUseInfrastructureOrRepositories,
     };
 
     // ---- 성공: 목록은 testing-strategy 표와 1:1 ----
 
     [Fact]
-    public void All_IsExactlyTheDocumentedThreeRulesWithReleaseTaskIds()
+    public void All_IsExactlyTheDocumentedRulesWithReleaseTaskIds()
     {
+        // S06-T04가 Validator 규칙 2개(ValidatorsDeriveFromRequestValidator · ValidatorsDoNotInjectRepositoriesOrServices)를 해제했다.
         PendingTargetRules.All.Select(pending => (pending.Rule, pending.ReleaseTaskId)).Should().Equal(
-            (ConventionRules.ValidatorsDeriveFromRequestValidator, "S06-T04"),
-            (InjectionRules.ValidatorsDoNotInjectRepositoriesOrServices, "S06-T04"),
             (DependencyRules.ControllersDoNotUseInfrastructureOrRepositories, "S06-T05"));
         PendingTargetRules.All.Should().OnlyContain(pending => TaskId().IsMatch(pending.ReleaseTaskId));
         PendingTargetRules.All.Select(pending => pending.Rule).Should().OnlyHaveUniqueItems();
     }
+    [Fact]
+    public void ReleasedValidatorRules_AreOutsideListAndHaveProductTargets()
+    {
+        // S06-T04 해제: RegisterEmployeesCommandValidator가 생겨 대상 1개 이상 단언(ConventionRuleTests · 목록 밖 공허 통과 실패)으로 되돌아간다.
+        ArchitectureRule[] released =
+        [
+            ConventionRules.ValidatorsDeriveFromRequestValidator,
+            InjectionRules.ValidatorsDoNotInjectRepositoriesOrServices,
+        ];
+
+        foreach (var rule in released)
+        {
+            PendingTargetRules.Find(rule).Should().BeNull();
+            var check = rule.CheckProduct();
+            check.TargetNames.Should().Contain(name => name.EndsWith("RegisterEmployeesCommandValidator", StringComparison.Ordinal));
+            check.ShouldPassOnProduct();
+        }
+    }
+
 
     [Theory]
-    [InlineData(nameof(ConventionRules.ValidatorsDeriveFromRequestValidator), "S06-T04")]
-    [InlineData(nameof(InjectionRules.ValidatorsDoNotInjectRepositoriesOrServices), "S06-T04")]
     [InlineData(nameof(DependencyRules.ControllersDoNotUseInfrastructureOrRepositories), "S06-T05")]
     public void ShouldPassOnProduct_PendingRuleWithoutProductTargets_SkipsWithReleaseTaskId(string ruleName, string releaseTaskId)
     {
@@ -60,8 +68,6 @@ public sealed partial class PendingTargetRuleTests
     // ---- 실패: 안전장치 ----
 
     [Theory]
-    [InlineData(nameof(ConventionRules.ValidatorsDeriveFromRequestValidator), "S06-T04")]
-    [InlineData(nameof(InjectionRules.ValidatorsDoNotInjectRepositoriesOrServices), "S06-T04")]
     [InlineData(nameof(DependencyRules.ControllersDoNotUseInfrastructureOrRepositories), "S06-T05")]
     public void ShouldPassOnProduct_PendingRuleWithTargets_FailsAskingToRemoveItFromList(string ruleName, string releaseTaskId)
     {
@@ -81,7 +87,7 @@ public sealed partial class PendingTargetRuleTests
     public void ShouldPassOnProduct_SameRuleOutsideListWithoutTargets_FailsAsVacuousPass()
     {
         // 목록은 같은 인스턴스로 찾는다. 사본(with)은 목록 밖이므로 대상 0개면 공허 통과로 실패한다(대기 해제 뒤의 동작과 같다).
-        var outsideList = ConventionRules.ValidatorsDeriveFromRequestValidator with { Name = "대기 목록 밖 사본" };
+        var outsideList = DependencyRules.ControllersDoNotUseInfrastructureOrRepositories with { Name = "대기 목록 밖 사본" };
         var check = outsideList.CheckProduct();
 
         var act = check.ShouldPassOnProduct;

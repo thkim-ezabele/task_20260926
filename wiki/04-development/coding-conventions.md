@@ -38,10 +38,10 @@ CQRS 타입 이름
 
 | 대상 | 규칙 | 예 |
 |---|---|---|
-| Command | 동사 + 대상 + `Command` | `RegisterEmployeeCommand` |
+| Command | 동사 + 대상 + `Command` | `RegisterEmployeesCommand` |
 | Query | `Get` / `Search` + 대상 + `Query` | `GetEmployeeByIdQuery` |
-| Handler | 요청 이름 + `Handler` | `RegisterEmployeeCommandHandler` |
-| Validator | 요청 이름 + `Validator` | `RegisterEmployeeCommandValidator` |
+| Handler | 요청 이름 + `Handler` | `RegisterEmployeesCommandHandler` |
+| Validator | 요청 이름 + `Validator` | `RegisterEmployeesCommandValidator` |
 | 응답 DTO | 대상 + `Response` / `Dto` | `EmployeeResponse` |
 | 도메인 이벤트 | 과거형 + `DomainEvent` | `EmployeeRegisteredDomainEvent` |
 | 통합 이벤트 | 과거형 + `IntegrationEvent` | `EmployeeRegisteredIntegrationEvent` |
@@ -163,56 +163,75 @@ Application 레이어는 **Command(상태 변경)와 Query(조회)를 분리**�
 기능 폴더 구조 (Application)
 
 - 규칙: 기능마다 `Employees/Commands/<기능>/`에 Command · Handler · Validator를, `Employees/Queries/<기능>/`에 Query · Handler · 응답 `record`를 한 폴더로 둔다. 기능 폴더 밖에는 여러 기능이 함께 쓰는 로그 정의 · Read Repository 인터페이스 · Read Repository가 돌려주는 프로젝션 `record`(여러 Query가 함께 쓰는 것)만 둔다. Query 하나만 쓰는 프로젝션은 그 기능 폴더 안에 둔다.
-- 현재 구성(S05-T06, PRD-001 샘플 Command · Query 제거 뒤): 기능 폴더가 없다. Read Repository와 그 프로젝션 `record`는 S05-T06에서 생겼고, 일괄 등록(`Commands/RegisterEmployees/`)은 S06-T04, 목록 · 이름 조회 Query는 S07에서 생긴다.
+- 현재 구성(S06-T04): 기능 폴더는 일괄 등록 `Commands/RegisterEmployees/` 하나다. Read Repository와 그 프로젝션 `record`는 S05-T06에서, 파서(`Import/`, `internal`)는 S06-T02 · T03에서 생겼고, 목록 · 이름 조회 Query는 S07에서 생긴다. Command 입력 코드(`EmployeeImportFormat` · `EmployeeImportSources`)는 Command와 같은 기능 폴더에 둔다.
 
 ```
 EmergencyHub.Employee.Application/
 ├── EmployeeApplicationAssembly.cs
 └── Employees/
+    ├── Commands/
+    │   └── RegisterEmployees/       # Command · Response · Validator · Handler · 입력 코드 enum 2개
+    ├── Import/                      # CSV · JSON 파서, 해독, 행 · 오류 record(internal)
     ├── EmployeeContactResponse.cs   # Read Repository 프로젝션 record(목록 · 이름 조회 공용)
-    ├── EmployeeLogs.cs              # 로그 이벤트 20001(배포된 ID라 유지, S06 등록 Handler가 다시 씀)
+    ├── EmployeeLogs.cs              # 로그 이벤트 20001(일괄 등록 Handler가 직원마다 씀)
     └── IEmployeeReadRepository.cs   # 목록 · 개수 · 이름 단건
 ```
 
-> 아래 Handler 예시는 PRD-001 샘플(`v0.1.0` 태그의 `Employees/Commands/RegisterEmployee/`)이고 S05-T04에서 코드에서 지웠다. 예시는 S06-T04에서 일괄 등록(`RegisterEmployeesCommand`, 처리 순서와 검증 위치는 [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md))의 실제 코드로 바꾼다. 그때까지 예시는 Handler 형태(주입 · 저장하지 않음 · `Result` 반환)의 설명용이고, `Employee.Register` 호출 모양은 지금 코드와 다르다(아래 목록 참고).
-
-아래 예시는 `v0.1.0`의 `RegisterEmployeeCommand.cs`와 `RegisterEmployeeCommandHandler.cs` 두 파일을 이어 붙이고, using · namespace · XML 문서 주석 · `[SuppressMessage]`(CA1812, [경고 억제 규칙](#경고-억제-규칙))를 뺀 것이다.
+아래 예시는 일괄 등록(S06-T04, 처리 순서와 검증 위치는 [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md) 7절)의 `RegisterEmployeesCommand.cs`와 `RegisterEmployeesCommandHandler.cs`에서 Command 선언과 `Handle` 메서드만 옮기고, using · namespace · XML 문서 주석 · `[SuppressMessage]`(CA1812, [경고 억제 규칙](#경고-억제-규칙)) · 도우미 메서드(`ParseAndValidate` · `FindStoredEmailRows` · `ToConflictError` 등)를 뺀 것이다.
 
 ```csharp
-public sealed record RegisterEmployeeCommand(string DisplayName, string Email, EmployeeStatus? EmployeeStatus)
-    : ICommand<EmployeeId>;
+public sealed record RegisterEmployeesCommand(EmployeeImportFormat Format, EmployeeImportSources Sources, ReadOnlyMemory<byte> Content)
+    : ICommand<RegisterEmployeesResponse>;
 
-internal sealed class RegisterEmployeeCommandHandler(
+internal sealed class RegisterEmployeesCommandHandler(
     IEmployeeRepository repository,
     IIdGenerator idGenerator,
-    ILogger<RegisterEmployeeCommandHandler> logger) : ICommandHandler<RegisterEmployeeCommand, EmployeeId>
+    ILogger<RegisterEmployeesCommandHandler> logger) : ICommandHandler<RegisterEmployeesCommand, RegisterEmployeesResponse>
 {
-    public async Task<Result<EmployeeId>> Handle(RegisterEmployeeCommand command, CancellationToken cancellationToken)
+    public async Task<Result<RegisterEmployeesResponse>> Handle(RegisterEmployeesCommand command, CancellationToken cancellationToken)
     {
-        // 누락(21006)은 검증 데코레이터가 먼저 막는다. 여기까지 null이 오면 예약 값 0으로 넘겨 도메인 불변식이 예외로 막게 한다.
-        var employee = Domain.Employees.Employee.Register(
-            new EmployeeId(idGenerator.NewId()),
-            command.DisplayName,
-            command.Email,
-            command.EmployeeStatus ?? EmployeeStatus.Unknown);
-
-        if (await repository.ExistsByEmailAsync(employee.Email, cancellationToken))
+        var validated = ParseAndValidate(command);
+        if (validated.IsFailure)
         {
-            return EmployeeErrors.DuplicateEmail;
+            return Result.Failure<RegisterEmployeesResponse>(validated.Error);
         }
 
-        repository.Add(employee);
-        logger.EmployeeRegistered(employee.Id.Value);
+        var rows = validated.Value;
+        if (rows.Count == 0)
+        {
+            return new RegisterEmployeesResponse(0, []);
+        }
 
-        return employee.Id;
+        var existing = await repository.ListExistingNormalizedEmailsAsync(
+            [.. rows.Select(row => row.Email.NormalizedEmail)], cancellationToken);
+        var conflictRows = FindStoredEmailRows(rows, existing);
+        if (conflictRows.Count > 0)
+        {
+            return ToConflictError(conflictRows);
+        }
+
+        List<Domain.Employees.Employee> employees =
+        [
+            .. rows.Select(row => Domain.Employees.Employee.Register(
+                new EmployeeId(idGenerator.NewId()), row.Name, row.Email, row.PhoneNumber, row.JoinedOn)),
+        ];
+        repository.AddRange(employees);
+
+        foreach (var employee in employees)
+        {
+            logger.EmployeeRegistered(employee.Id.Value);
+        }
+
+        return new RegisterEmployeesResponse(employees.Count, [.. employees.Select(employee => employee.Id.Value)]);
     }
 }
 ```
 
+- `ParseAndValidate`(동기)는 ① 파싱 → ② 행 검증(파서 행 오류 + Value Object `Create` 결과) → ③ 요청 안 이메일 중복을 차례로 하고, 실패하면 Handler가 만든 `ValidationError`(1001)를 돌려준다. `ValidationError`를 Handler가 만드는 것은 이 Handler에만 허용한 ADR-0018 범위 예외다(ADR-0026 7절). 400 · 409 목록은 각각 최대 100개 + 잘림 항목(21030 · 23002, 경로 `""`)이다.
 - 저장 · 커밋은 이 Handler가 아니라 트랜잭션 데코레이터 → `IUnitOfWork`가 한다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)). Handler는 `SaveChanges`를 부르지 않는다.
 - ID는 Handler가 `IIdGenerator.NewId()`로 만든다([ADR-0013](../03-architecture/adr/0013-uuid-v7-with-uuidnext.md)).
-- `Employee.Register`는 `Result`가 아니라 `Employee`를 돌려주고, 불변식을 어기면 예외를 던진다([DDD 구현 규칙](#ddd-구현-규칙-aggregate--value-object)). S05-T04부터 시그니처는 `Register(EmployeeId id, Name name, Email email, PhoneNumber phoneNumber, JoinedOn joinedOn)`이다. 필드 규칙은 호출한 쪽이 Value Object `Create`의 `Result`로 먼저 판정하고, 상태는 입력으로 받지 않고 Active(1)로 고정한다.
-- 이메일은 Email Value Object(입력 표기 `Value`, `NormalizedEmail` = `Value.ToLowerInvariant()`)이고, Aggregate는 `NormalizedEmail` 문자열 속성을 가진다. 사전 중복 검사는 정규화 값 목록으로 한 번에 하고(`IEmployeeRepository.ListExistingNormalizedEmailsAsync`, `= ANY` 배열 매개변수 1개, S05-T06), 동시 요청 경합은 유니크 인덱스 `ux_employees_normalized_email` → 23505 → Infrastructure 매핑이 같은 `EmployeeErrors.DuplicateEmail`(23001) 인스턴스로 막는다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)). 위 예시의 `employee.Email`(정규화 `string`, PRD-001)은 지금 `employee.NormalizedEmail`이다.
+- `Employee.Register`는 `Result`가 아니라 `Employee`를 돌려주고, 불변식을 어기면 예외를 던진다([DDD 구현 규칙](#ddd-구현-규칙-aggregate--value-object)). 시그니처는 `Register(EmployeeId id, Name name, Email email, PhoneNumber phoneNumber, JoinedOn joinedOn)`이다. 필드 규칙은 Handler가 `ParseAndValidate`에서 Value Object `Create`의 `Result`로 먼저 판정하고, 상태는 입력으로 받지 않고 Active(1)로 고정한다.
+- 이메일은 Email Value Object(입력 표기 `Value`, `NormalizedEmail` = `Value.ToLowerInvariant()`)이고, Aggregate는 `NormalizedEmail` 문자열 속성을 가진다. 사전 중복 검사는 정규화 값 목록으로 한 번에 하고(`IEmployeeRepository.ListExistingNormalizedEmailsAsync`, `= ANY` 배열 매개변수 1개, S05-T06, 결과 순서를 가정하지 않고 정규화 값 → 행 번호 사전으로 짝지음), 동시 요청 경합은 유니크 인덱스 `ux_employees_normalized_email` → 23505 → Infrastructure 매핑이 같은 `EmployeeErrors.DuplicateEmail`(23001) 인스턴스로 막는다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)).
 - 시각이 필요한 Handler는 `TimeProvider`를 주입받는다. 이 Handler는 시각을 쓰지 않는다(감사 시각은 Infrastructure 감사 인터셉터가 채움).
 
 ## Repository 규칙 (EF Core)
@@ -440,9 +459,9 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 - 새 억제는 developer가 억제를 추가한 같은 작업에서 아래 승인 목록에 행을 추가하고(승인 기록 칸은 해당 작업 reviewer), reviewer가 진행 기록에 승인을 남긴다. 목록에 행이 없거나 reviewer 승인 기록이 없는 억제는 반려 사유다.
   - **억제와 승인 목록 행은 함께 제출한다.** 승인 목록 행 없이 억제만 제출하면 reviewer는 PASS할 수 없다. 승인을 다음 작업으로 미루지 않는다(PRD-001에서 Employee CA1812 3건이 S03-T01에 들어오고 S04-T05에서 사후 승인됨).
   - **앞선 작업의 같은 유형을 grep한다.** 새 억제의 규칙 ID로 저장소 전체를 찾아, 같은 ID의 억제가 모두 승인 목록에 있는지 대조한다. 목록에 없는 것이 나오면 developer는 제출 내용에 적고, reviewer는 그 억제를 들여온 작업을 밝혀 승인 여부를 판정받는다.
-  - 규칙 ID 검색(Git Bash, 속성이 여러 줄이라 ID 문자열로 찾음): `git ls-files src tests | grep '\.cs$' | xargs grep -n '"<ID>:'`. 예: `"CA1812:`은 2026-09-28 현재 13줄이고 승인 목록 CA1812 행의 파일 수 합계(2 + 5 + 1 + 2 + 3)와 같다(S05-T04에서 Employee.Application 샘플 3개 파일과 함께 3줄이 없어짐).
+  - 규칙 ID 검색(Git Bash, 속성이 여러 줄이라 ID 문자열로 찾음): `git ls-files src tests | grep '\.cs$' | xargs grep -n '"<ID>:'`. 예: `"CA1812:`은 2026-09-28 현재 15줄이고 승인 목록 CA1812 행의 파일 수 합계(2 + 5 + 1 + 2 + 2 + 3)와 같다(S05-T04에서 Employee.Application 샘플 3개 파일과 함께 3줄이 없어지고, S06-T04에서 일괄 등록 Handler · Validator 2줄이 생김).
 
-승인 목록 (2026-09-28 현재 코드 전수, 17건 = 제품 11 + 테스트 6. S05-T04에서 Employee.Application CA1812 3건은 억제한 파일과 함께 삭제)
+승인 목록 (2026-09-28 현재 코드 전수, 19건 = 제품 13 + 테스트 6. S05-T04에서 Employee.Application CA1812 3건은 억제한 파일과 함께 삭제, S06-T04에서 Employee.Application CA1812 2건 추가)
 
 | ID | 위치 (파일) | 사유 요약 | 승인 기록 |
 |---|---|---|---|
@@ -450,6 +469,7 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 | CA1812 | BuildingBlocks.Application `Cqrs/CommandInvoker{TCommand,TResponse}.cs`, `Cqrs/QueryInvoker{TQuery,TResponse}.cs` | `RequestInvokerCache`가 `MakeGenericType` + `Activator`로 생성 | S02-T01 reviewer |
 | CA1812 | BuildingBlocks.Application `Pipeline/`의 `LoggingCommandHandlerDecorator.cs`, `LoggingQueryHandlerDecorator.cs`, `ValidationCommandHandlerDecorator.cs`, `ValidationQueryHandlerDecorator.cs`, `TransactionCommandHandlerDecorator.cs` | Scrutor `TryDecorate`로 DI가 생성 | S02-T02 reviewer |
 | CA1812 | BuildingBlocks.Infrastructure `Persistence/Conventions/StronglyTypedIdValueConverter.cs` | EF Core가 형식으로 받아 생성 | S02-T04 reviewer |
+| CA1812 | Employee.Application `Employees/Commands/RegisterEmployees/RegisterEmployeesCommandHandler.cs`, `RegisterEmployeesCommandValidator.cs` | `AddConventionalServices`가 Scrutor(`ICommandHandler<,>`) · FluentValidation 어셈블리 검색으로 등록해 DI가 생성 | S06-T04 reviewer |
 | CA1032, CA1064 | BuildingBlocks.Api `Exceptions/RedactedException.cs` | 던지지 않는 로그 전용 내부 사본(메시지 제거가 목적) | S02-T06 reviewer |
 | CA1812 | 테스트 BuildingBlocks.Infrastructure.UnitTests `Samples/InternalSampleService.cs`, `Samples/CreateSampleCommandValidator.cs` | 어셈블리 검색 등록을 검증하는 샘플, DI가 생성 | S02-T03 reviewer |
 | EF1001 | 테스트 BuildingBlocks.Infrastructure.UnitTests `Samples/Persistence/SamplePostgresExceptions.cs` | `DbUpdateConcurrencyException` 모양 재현에 EF 내부 엔트리 필요(테스트 전용) | S02-T07 reviewer |
@@ -460,6 +480,8 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 ## 로깅
 
 로그는 [로깅 & 관측성](logging-observability.md) 규칙을 따른다. `ILogger<T>` + 메시지 템플릿, 반복 로그는 `[LoggerMessage]`, 개인정보 금지.
+
+- **Value Object · Command · Query를 로그 템플릿 인자로 넘기지 않는다**(BL-130). `record`의 기본 `ToString`이 값을 그대로 출력한다(`Name { Value = 홍길동 }`). 로그에는 ID · 개수 · 정수 코드처럼 개인정보가 아닌 원시 값만 넘긴다(예: `logger.EmployeeRegistered(employee.Id.Value)`). Value Object의 `ToString`은 재정의하지 않고 이 규칙으로 막는다(reviewer 점검). 로깅 데코레이터는 요청 형식 이름(`RequestName`) · 에러 코드 · 경과 시간만 남긴다.
 
 ## 주석 및 문서화
 
@@ -496,3 +518,4 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 | 2026-09-28 | developer | Repository 실제 코드를 S05-T06 구현으로(`ListExistingNormalizedEmailsAsync` · `AddRange`, Read Repository 목록 · 개수 · 이름 단건, `ExistsByNormalizedEmailAsync` 제거), 목록 쿼리 형태(`ThenBy(Id)` · `Contains` → `= ANY` · 개수 분리, 실측), 기능 폴더 밖에 둘 수 있는 것에 Read Repository 프로젝션 `record` 추가 (S05-T06) |
 | 2026-09-28 | orchestrator | S05 결과 리뷰: 기능 폴더 밖 프로젝션 `record` 규칙 추인(대리 승인), 조건 "Query 하나만 쓰는 프로젝션은 기능 폴더 안" 추가 (S05) |
 | 2026-09-28 | developer | `Error` 파생에 `ConflictError`, `ErrorType` 목록에 본문 크기 초과 · 지원하지 않는 Content-Type 추가(ADR-0028) (S06-T01) |
+| 2026-09-28 | developer | CQRS Handler 예시를 일괄 등록 `RegisterEmployeesCommandHandler` 실제 코드로(BL-132), 기능 폴더 현재 구성 · 트리(`Commands/RegisterEmployees/` · `Import/`), 로깅에 Value Object · Command · Query 로그 인자 금지(BL-130), 경고 억제 승인 목록 CA1812 Employee.Application 2건(19건, CA1812 15줄), 명명 예시를 `RegisterEmployeesCommand`로 (S06-T04) |

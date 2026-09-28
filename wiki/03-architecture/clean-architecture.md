@@ -157,12 +157,16 @@ EmergencyHub.Employee.Domain/
     ├── Email.cs                 # Value Object (입력 표기 Value + NormalizedEmail)
     ├── PhoneNumber.cs           # Value Object
     ├── JoinedOn.cs              # Value Object (DateOnly)
+    ├── EmployeeTextRules.cs     # internal 문자 판정 (Name 21009 · Email 21004 공용, 제어 문자 · 짝 없는 서로게이트)
     ├── EmployeeErrors.cs
     ├── IEmployeeRepository.cs   # Write Repository 인터페이스 (IRepository 상속)
     └── Events/
 
 EmergencyHub.Employee.Application/
 ├── Employees/
+│   ├── Commands/
+│   │   └── RegisterEmployees/        # 일괄 등록 Command · Response · Validator · Handler · 입력 코드 enum 2개 (S06-T04)
+│   ├── Import/                       # CSV · JSON 파서 · UTF-8 해독 (internal 순수 클래스, S06-T02 · T03)
 │   ├── EmployeeContactResponse.cs    # Read Repository 프로젝션 record (목록 · 이름 조회 공용)
 │   ├── EmployeeLogs.cs               # [LoggerMessage]
 │   └── IEmployeeReadRepository.cs    # Read Repository 인터페이스 (IReadRepository 상속, 목록 · 개수 · 이름 단건)
@@ -195,7 +199,7 @@ EmergencyHub.Employee.MigrationService/
 ```
 
 - PRD-002에서 Domain `Employees/`에 Value Object 4개(`Name` · `Email` · `PhoneNumber` · `JoinedOn`)를 두었고(S05-T03, Aggregate가 한 곳에서만 써서 `ValueObjects/`가 아니라 Aggregate 폴더), S05-T04에서 Aggregate가 이 Value Object를 속성으로 가지게 했다(이메일은 `Email` VO + `NormalizedEmail` 문자열, [ADR-0026](adr/0026-employee-bulk-import-input-processing.md) 8절, [ADR-0027](adr/0027-case-insensitive-unique-email-with-normalized-column.md)).
-- S05-T04에서 PRD-001 샘플(`EmployeeEmail.cs`, Application `Commands/RegisterEmployee/` · `Queries/GetEmployeeById/`, Api `Controllers/` · `Employees/` Request / Response)을 지웠다. 그래서 지금 Application에는 기능 폴더가 없고 Api에는 Controller가 없다(HTTP 엔드포인트는 헬스 경로뿐). 일괄 등록 기능 폴더 · Validator는 S06-T04, `/api/employee` Controller는 S06-T05에서 생긴다. 이 트리는 코드가 바뀌는 작업에서 실제 구성으로 갱신한다.
+- S05-T04에서 PRD-001 샘플(`EmployeeEmail.cs`, Application `Commands/RegisterEmployee/` · `Queries/GetEmployeeById/`, Api `Controllers/` · `Employees/` Request / Response)을 지웠다. S06-T04에서 일괄 등록 기능 폴더(`Commands/RegisterEmployees/`)와 Validator가 생겼고, Api에는 아직 Controller가 없다(HTTP 엔드포인트는 헬스 경로뿐, `/api/employee` Controller는 S06-T05). 이 트리는 코드가 바뀌는 작업에서 실제 구성으로 갱신한다.
 - 루트 네임스페이스: `EmergencyHub.<Service>.<Layer>`
 - 폴더는 기술 종류(Entities, Services)가 아니라 **Aggregate / 기능 단위**로 나눈다.
 - Application 기능 폴더 규칙(`Commands/<기능>/` · `Queries/<기능>/`)은 [코딩 컨벤션](../04-development/coding-conventions.md#cqrs-규칙)의 "기능 폴더 구조"가 원본이다.
@@ -260,3 +264,4 @@ EmergencyHub.Employee.MigrationService/
 | 2026-09-28 | developer | Domain 트리에 Value Object 4개(`Name` · `Email` · `PhoneNumber` · `JoinedOn`)와 Aggregate 폴더에 둔 이유 추가 (S05-T03) |
 | 2026-09-28 | developer | Application 트리에 `EmployeeContactResponse.cs`(Read Repository 프로젝션 record)와 `IEmployeeReadRepository` 멤버(목록 · 개수 · 이름 단건) 반영 (S05-T06) |
 | 2026-09-28 | developer | BuildingBlocks.Domain 행에 `ConflictError` · `ConflictDetail`(ADR-0028) 추가 (S06-T01) |
+| 2026-09-28 | developer | Employee 트리에 Domain `EmployeeTextRules.cs`, Application `Commands/RegisterEmployees/` · `Import/` 추가, 샘플 제거 문단을 S06-T04 구성으로 (S06-T04) |

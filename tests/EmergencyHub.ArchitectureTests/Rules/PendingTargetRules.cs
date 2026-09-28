@@ -5,7 +5,7 @@ namespace EmergencyHub.ArchitectureTests.Rules;
 /// </summary>
 /// <remarks>
 /// <para>
-/// PRD-001 샘플 API · Validator를 지워(S05-T04) 제품 대상이 0개가 된 서비스 전용 규칙 3개만 둡니다. 이 규칙들은 대상 0개일 때
+/// PRD-001 샘플 API · Validator를 지워(S05-T04) 제품 대상이 0개가 된 서비스 전용 규칙만 둡니다(처음 3개, S06-T04가 Validator 규칙 2개를 해제해 지금 1개). 이 규칙들은 대상 0개일 때
 /// "공허 통과 실패" 대신 해제 작업 ID를 적은 건너뜀으로 표시합니다(<see cref="RuleCheck.ShouldPassOnProduct"/>).
 /// </para>
 /// <para>
@@ -18,8 +18,6 @@ public static class PendingTargetRules
     /// <summary>대기 중인 규칙과 해제 작업 ID.</summary>
     public static IReadOnlyList<PendingTargetRule> All { get; } =
     [
-        new(ConventionRules.ValidatorsDeriveFromRequestValidator, "S06-T04"),
-        new(InjectionRules.ValidatorsDoNotInjectRepositoriesOrServices, "S06-T04"),
         new(DependencyRules.ControllersDoNotUseInfrastructureOrRepositories, "S06-T05"),
     ];
 

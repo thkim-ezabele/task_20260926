@@ -8,7 +8,8 @@ namespace EmergencyHub.Employee.Domain.Employees;
 /// <remarks>
 /// <para>
 /// 판정 순서(첫 실패 하나만 돌려줌): 앞뒤 공백 제거 → 비었으면 21003 → 길이 <see cref="MaxLength"/> 초과면 21005 →
-/// 형식이 틀리면 21004. 형식: <c>@</c>가 정확히 하나이고 앞뒤가 비지 않음, 공백(<see cref="char.IsWhiteSpace(char)"/>) 없음,
+/// 형식이 틀리면 21004. 형식: 제어 문자(Cc, 탭 · DEL 포함) · 짝 없는 서로게이트 없음(<see cref="Name"/>과 같은 판정, BL-129),
+/// <c>@</c>가 정확히 하나이고 앞뒤가 비지 않음, 공백(<see cref="char.IsWhiteSpace(char)"/>) 없음,
 /// domain에 <c>.</c>가 있고 첫 · 끝 <c>.</c>과 연속 <c>.</c>이 없음(<c>a@.com</c> · <c>a@com.</c> · <c>a@b..c</c> 거부).
 /// local 부분에는 <c>.</c> 규칙을 적용하지 않습니다.
 /// </para>
@@ -63,6 +64,11 @@ public sealed record Email
 
     private static bool IsWellFormed(string value)
     {
+        if (EmployeeTextRules.ContainsControlOrUnpairedSurrogate(value))
+        {
+            return false;
+        }
+
         var at = value.IndexOf('@', StringComparison.Ordinal);
         if (at <= 0 || at == value.Length - 1 || at != value.LastIndexOf('@'))
         {

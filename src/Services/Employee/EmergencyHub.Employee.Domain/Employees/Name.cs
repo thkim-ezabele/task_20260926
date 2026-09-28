@@ -42,7 +42,7 @@ public sealed record Name
         }
 
         var trimmed = value.Trim();
-        if (ContainsInvalidCharacter(trimmed))
+        if (EmployeeTextRules.ContainsControlOrUnpairedSurrogate(trimmed))
         {
             return EmployeeErrors.NameInvalidCharacter;
         }
@@ -54,29 +54,5 @@ public sealed record Name
         }
 
         return new Name(normalized);
-    }
-
-    private static bool ContainsInvalidCharacter(string value)
-    {
-        for (var i = 0; i < value.Length; i++)
-        {
-            var current = value[i];
-            if (char.IsControl(current) || char.IsLowSurrogate(current))
-            {
-                return true;
-            }
-
-            if (char.IsHighSurrogate(current))
-            {
-                if (i + 1 >= value.Length || !char.IsLowSurrogate(value[i + 1]))
-                {
-                    return true;
-                }
-
-                i++;
-            }
-        }
-
-        return false;
     }
 }

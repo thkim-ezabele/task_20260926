@@ -30,6 +30,7 @@ public sealed class EmployeeErrorsTests
         ("JoinedOnRequired", 21015, ErrorType.Validation),
         ("JoinedOnInvalidFormat", 21016, ErrorType.Validation),
         ("JoinedOnTooEarly", 21017, ErrorType.Validation),
+        ("DuplicateEmailInRequest", 21018, ErrorType.Validation),
         ("CsvColumnCountMismatch", 21019, ErrorType.Validation),
         ("CsvUnclosedQuote", 21020, ErrorType.Validation),
         ("CsvUnexpectedQuote", 21021, ErrorType.Validation),
@@ -39,18 +40,20 @@ public sealed class EmployeeErrorsTests
         ("JsonValueNotString", 21025, ErrorType.Validation),
         ("JsonDuplicateProperty", 21026, ErrorType.Validation),
         ("ImportTooManyRows", 21027, ErrorType.Validation),
+        ("ImportInputEmpty", 21028, ErrorType.Validation),
+        ("ImportMultipleSources", 21029, ErrorType.Validation),
+        ("RowErrorsTruncated", 21030, ErrorType.Validation),
         ("NotFound", 22001, ErrorType.NotFound),
         ("DuplicateEmail", 23001, ErrorType.Conflict),
+        ("RowConflictsTruncated", 23002, ErrorType.Conflict),
     ];
 
     // '폐기' 행(21001 · 21002 · 21006). 상수는 S05-T04에서 지웠고 번호는 재사용하지 않는다.
     private static readonly int[] DeprecatedCodes = [21001, 21002, 21006];
 
-    // '예약' 행. 구현 작업(S06-T03 · T04)이 상수를 추가하면서 '사용'으로 옮긴다(S06-T02가 21019 ~ 21022 · 21027, S06-T03이 21023 ~ 21026을 옮김).
-    private static readonly int[] ReservedCodes =
-    [
-        21018, 21028, 21029, 21030, 23002,
-    ];
+    // '예약' 행. 구현 작업이 상수를 추가하면서 '사용'으로 옮긴다(S06-T02가 21019 ~ 21022 · 21027, S06-T03이 21023 ~ 21026,
+    // S06-T04가 21018 · 21028 ~ 21030 · 23002를 옮겨 지금은 없음). 새 예약 행이 생기면 여기에 넣는다.
+    private static readonly int[] ReservedCodes = [];
 
     [Fact]
     public void Fields_MatchDocumentedUsedRows()
@@ -69,10 +72,10 @@ public sealed class EmployeeErrorsTests
     [Fact]
     public void DocumentedRows_CountByStatus()
     {
-        // S06-T03 기준선: 사용 25 · 폐기 3(상수 없음) · 예약 5(error-codes Employee 표 행 수 33).
-        UsedRows.Should().HaveCount(25);
+        // S06-T04 기준선: 사용 30 · 폐기 3(상수 없음) · 예약 0(error-codes Employee 표 행 수 33).
+        UsedRows.Should().HaveCount(30);
         DeprecatedCodes.Should().HaveCount(3).And.OnlyHaveUniqueItems().And.NotIntersectWith(ReservedCodes);
-        ReservedCodes.Should().HaveCount(5).And.OnlyHaveUniqueItems();
+        ReservedCodes.Should().BeEmpty();
     }
 
     [Fact]

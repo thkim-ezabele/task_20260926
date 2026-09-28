@@ -3,11 +3,13 @@ using EmergencyHub.BuildingBlocks.Application.Persistence;
 using EmergencyHub.BuildingBlocks.Infrastructure.Persistence;
 using EmergencyHub.BuildingBlocks.Infrastructure.Persistence.Exceptions;
 using EmergencyHub.Employee.Application.Employees;
+using EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployees;
 using EmergencyHub.Employee.Domain.Employees;
 using EmergencyHub.Employee.Infrastructure.Persistence;
 using EmergencyHub.Employee.Infrastructure.Persistence.ReadRepositories;
 using EmergencyHub.Employee.Infrastructure.Persistence.Repositories;
 using EmergencyHub.Employee.Infrastructure.UnitTests.TestDoubles;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -55,17 +57,34 @@ public sealed class EmployeeInfrastructureServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddEmployeeInfrastructure_EmployeeApplicationWithoutHandlers_RegistersNoHandlersAndStillBuilds()
+    public void AddEmployeeInfrastructure_EmployeeApplication_RegistersOnlyRegisterEmployeesHandlerAndValidatorScoped()
     {
-        // 엣지(S05-T04): PRD-001 샘플 Command · Query를 지워 Employee Application에 Handler가 없다(S06-T04에서 일괄 등록 Command Handler가 생김).
-        // Handler가 없어도 규칙 기반 등록 · 엄격 검증 빌드는 실패하지 않는다. AddConventionalServices는 한 번만 부를 수 있어 Application 어셈블리도 여기서 넘긴다.
+        // S06-T04: 일괄 등록 Command Handler · Validator가 규칙 기반 등록(Scrutor · FluentValidation 어셈블리 검색)으로 Scoped 등록된다.
+        // Query Handler는 S07에서 생긴다. AddConventionalServices는 한 번만 부를 수 있어 Application 어셈블리도 여기서 넘긴다.
         var services = CreateServices().AddEmployeeInfrastructure(Configuration());
 
-        services.Should().NotContain(d => d.ServiceType.IsGenericType
-            && (d.ServiceType.GetGenericTypeDefinition() == typeof(ICommandHandler<,>)
-                || d.ServiceType.GetGenericTypeDefinition() == typeof(IQueryHandler<,>)));
-        var build = () => services.BuildServiceProvider(StrictOptions).Dispose();
-        build.Should().NotThrow();
+        // 데코레이터(Scrutor)가 원래 등록을 키 있는 서비스로 옮기므로 키 없는 등록만 센다.
+        services.Where(d => !d.IsKeyedService && d.ServiceType.IsGenericType && d.ServiceType.GetGenericTypeDefinition() == typeof(ICommandHandler<,>))
+            .Should().ContainSingle()
+            .Which.Should().Match<ServiceDescriptor>(d =>
+                d.ServiceType == typeof(ICommandHandler<RegisterEmployeesCommand, RegisterEmployeesResponse>) && d.Lifetime == ServiceLifetime.Scoped);
+        services.Should().NotContain(d => d.ServiceType.IsGenericType && d.ServiceType.GetGenericTypeDefinition() == typeof(IQueryHandler<,>));
+        services.Should().ContainSingle(d => d.ServiceType == typeof(IValidator<RegisterEmployeesCommand>))
+            .Which.Lifetime.Should().Be(ServiceLifetime.Scoped);
+    }
+
+    [Fact]
+    public void AddEmployeeInfrastructure_RegisterEmployeesHandler_ResolvesDecoratedInScope()
+    {
+        using var provider = CreateServices().AddEmployeeInfrastructure(Configuration()).BuildServiceProvider(StrictOptions);
+        using var scope = provider.CreateScope();
+
+        var handler = scope.ServiceProvider.GetRequiredService<ICommandHandler<RegisterEmployeesCommand, RegisterEmployeesResponse>>();
+
+        // 가장 바깥은 로깅 데코레이터다(로깅 → 검증 → 트랜잭션 → Handler, ADR-0015).
+        handler.GetType().Name.Should().StartWith("LoggingCommandHandlerDecorator");
+        scope.ServiceProvider.GetRequiredService<IValidator<RegisterEmployeesCommand>>().GetType().Name
+            .Should().Be("RegisterEmployeesCommandValidator");
     }
 
     [Fact]

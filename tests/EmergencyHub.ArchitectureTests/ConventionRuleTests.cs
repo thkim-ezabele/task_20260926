@@ -48,7 +48,7 @@ public sealed class ConventionRuleTests
     public void ImplementationsAreInternalSealed_ProductAssemblies_Holds() =>
         ConventionRules.ImplementationsAreInternalSealed.CheckProduct().ShouldPassOnProduct();
 
-    // coding-conventions Validator 규칙, ADR-0018 — 대상은 서비스 코드. 대상 대기(해제 S06-T04, PendingTargetRules)
+    // coding-conventions Validator 규칙, ADR-0018 — 대상은 서비스 코드(RegisterEmployeesCommandValidator). 대상 대기는 S06-T04에서 해제
     [Fact]
     public void ValidatorsDeriveFromRequestValidator_ProductAssemblies_Holds() =>
         ConventionRules.ValidatorsDeriveFromRequestValidator.CheckProduct().ShouldPassOnProduct();
@@ -73,7 +73,7 @@ public sealed class ConventionRuleTests
     public void HandlersDoNotDependOnSender_ProductAssemblies_Holds() =>
         InjectionRules.HandlersDoNotDependOnSender.CheckProduct().ShouldPassOnProduct();
 
-    // ADR-0018(Validator DB 접근 금지), BL-029 — 대상은 서비스 코드. 대상 대기(해제 S06-T04, PendingTargetRules)
+    // ADR-0018(Validator DB 접근 금지), BL-029 — 대상은 서비스 코드(RegisterEmployeesCommandValidator). 대상 대기는 S06-T04에서 해제
     [Fact]
     public void ValidatorsDoNotInjectRepositoriesOrServices_ProductAssemblies_Holds() =>
         InjectionRules.ValidatorsDoNotInjectRepositoriesOrServices.CheckProduct().ShouldPassOnProduct();

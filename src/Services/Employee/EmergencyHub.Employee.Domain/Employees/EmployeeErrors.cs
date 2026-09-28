@@ -15,7 +15,7 @@ public static class EmployeeErrors
     /// <summary>21003 · 이메일 필수.</summary>
     public static readonly Error EmailRequired = Error.Validation(21003, "이메일은 필수입니다.");
 
-    /// <summary>21004 · 이메일 형식 오류.</summary>
+    /// <summary>21004 · 이메일 형식 오류(제어 문자 · 짝 없는 서로게이트 포함). 판정 원본은 <see cref="Email.Create"/>.</summary>
     public static readonly Error EmailInvalid = Error.Validation(21004, "이메일 형식이 올바르지 않습니다.");
 
     /// <summary>21005 · 이메일 길이 초과(앞뒤 공백 제거 뒤 254자 초과).</summary>
@@ -54,6 +54,9 @@ public static class EmployeeErrors
     /// <summary>21017 · 입사일이 1900-01-01 이전. 판정 원본은 <see cref="JoinedOn.Create"/>.</summary>
     public static readonly Error JoinedOnTooEarly = Error.Validation(21017, "입사일은 1900-01-01 이후여야 합니다.");
 
+    /// <summary>21018 · 같은 요청 안 이메일 중복(<see cref="Email.NormalizedEmail"/> 서수 비교, 관련 행 모두 표시). 판정 원본은 일괄 등록 Handler.</summary>
+    public static readonly Error DuplicateEmailInRequest = Error.Validation(21018, "같은 요청 안에 중복된 이메일이 있습니다.");
+
     /// <summary>21019 · CSV 행의 열 개수가 4가 아님(행 오류). 판정 원본은 Application CSV 파서.</summary>
     public static readonly Error CsvColumnCountMismatch = Error.Validation(21019, "CSV 행의 열 개수는 4개여야 합니다.");
 
@@ -81,9 +84,21 @@ public static class EmployeeErrors
     /// <summary>21027 · 행 수가 1,000을 넘음(요청 전체 오류). 판정 원본은 Application CSV · JSON 파서.</summary>
     public static readonly Error ImportTooManyRows = Error.Validation(21027, "한 번에 1,000행까지 등록할 수 있습니다.");
 
+    /// <summary>21028 · 빈 입력(입력 출처 없음, 길이 0, BOM이나 공백만 있음, 요청 전체 오류 경로 ""). 판정 원본은 일괄 등록 Validator.</summary>
+    public static readonly Error ImportInputEmpty = Error.Validation(21028, "등록할 입력이 비어 있습니다.");
+
+    /// <summary>21029 · 입력 출처가 둘 이상(multipart <c>file</c>과 <c>data</c> 동시 전송 등, 요청 전체 오류 경로 ""). 판정 원본은 일괄 등록 Validator.</summary>
+    public static readonly Error ImportMultipleSources = Error.Validation(21029, "입력은 한 가지 방식으로만 보낼 수 있습니다.");
+
+    /// <summary>21030 · 400 행 오류가 100개를 넘어 잘림(101번째 항목, 경로 ""). 판정 원본은 일괄 등록 Handler.</summary>
+    public static readonly Error RowErrorsTruncated = Error.Validation(21030, "행 오류가 많아 일부만 표시합니다.");
+
     /// <summary>22001 · 직원 없음.</summary>
     public static readonly Error NotFound = Error.NotFound(22001, "직원을 찾을 수 없습니다.");
 
     /// <summary>23001 · 이메일 중복(<c>normalized_email</c> 기준, 대소문자만 다른 이메일 포함).</summary>
     public static readonly Error DuplicateEmail = Error.Conflict(23001, "이미 등록된 이메일입니다.");
+
+    /// <summary>23002 · 409 행 충돌이 100개를 넘어 잘림(101번째 항목, 경로 ""). 판정 원본은 일괄 등록 Handler.</summary>
+    public static readonly Error RowConflictsTruncated = Error.Conflict(23002, "행 충돌이 많아 일부만 표시합니다.");
 }

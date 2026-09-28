@@ -196,7 +196,7 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 | 21001 | `Validation` | 400 | `Employee.DisplayNameRequired` | PRD-001 샘플 `displayName` 필수 | 폐기 (PRD-002, 상수 삭제 완료 S05-T04) |
 | 21002 | `Validation` | 400 | `Employee.DisplayNameTooLong` | PRD-001 샘플 `displayName` 길이 초과 | 폐기 (PRD-002, 상수 삭제 완료 S05-T04) |
 | 21003 | `Validation` | 400 | `Employee.EmailRequired` | `email` 필수 (누락 · 빈 값 · 공백만). 판정 원본은 Email Value Object `Create` | 사용 |
-| 21004 | `Validation` | 400 | `Employee.EmailInvalid` | `email` 형식 오류. 앞뒤 공백 제거 뒤 `@`가 정확히 하나, 공백 없음, domain에 `.` 포함, 첫 · 끝 `.`과 연속 `.` 거부(예: `a@.com` · `a@com.` · `a@b..c`). 판정 원본은 Email Value Object | 사용 |
+| 21004 | `Validation` | 400 | `Employee.EmailInvalid` | `email` 형식 오류. 앞뒤 공백 제거 뒤 제어 문자(Cc, `char.IsControl`, 탭 · DEL · NUL 포함)와 짝 없는 서로게이트가 없음(Name 21009와 같은 판정, BL-129 · S06-T04), `@`가 정확히 하나, 공백 없음, domain에 `.` 포함, 첫 · 끝 `.`과 연속 `.` 거부(예: `a@.com` · `a@com.` · `a@b..c`). 판정 원본은 Email Value Object | 사용 |
 | 21005 | `Validation` | 400 | `Employee.EmailTooLong` | `email` 길이 초과 (앞뒤 공백 제거 뒤 254자 초과). 판정 원본은 Email Value Object | 사용 |
 | 21006 | `Validation` | 400 | `Employee.EmployeeStatusRequired` | PRD-001 샘플 `employeeStatus` 필수 (상태는 API에 노출하지 않음, 등록 시 Active 고정) | 폐기 (PRD-002, 상수 삭제 완료 S05-T04) |
 | 21007 | `Validation` | 400 | `Employee.NameRequired` | `name` 필수 (누락 · 빈 값 · 공백만). `GET /api/employee/{name}`의 공백 제거 뒤 빈 이름(400)에도 쓴다(S07-T02). 판정 원본은 Name Value Object | 사용 |
@@ -210,7 +210,7 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 | 21015 | `Validation` | 400 | `Employee.JoinedOnRequired` | `joined` 필수 (누락 · 빈 값 · 공백만). 판정 원본은 JoinedOn Value Object | 사용 |
 | 21016 | `Validation` | 400 | `Employee.JoinedOnInvalidFormat` | `joined`가 `yyyy-MM-dd` 정확 형식 · 있는 날짜가 아님 (`2000-2-3` · `2000-02-30`). 판정 원본은 JoinedOn Value Object | 사용 |
 | 21017 | `Validation` | 400 | `Employee.JoinedOnTooEarly` | `joined`가 1900-01-01 이전 (`1899-12-31`). 판정 원본은 JoinedOn Value Object | 사용 |
-| 21018 | `Validation` | 400 | `Employee.DuplicateEmailInRequest` | 같은 요청 안 이메일 중복 (`NormalizedEmail` 서수 비교, 두 행 모두 표시) | 예약: S06-T04 |
+| 21018 | `Validation` | 400 | `Employee.DuplicateEmailInRequest` | 같은 요청 안 이메일 중복 (`NormalizedEmail` 서수 비교, 같은 값의 행을 모두 표시, 경로 `rows[n].email`). 판정 원본은 일괄 등록 Handler | 사용 |
 | 21019 | `Validation` | 400 | `Employee.CsvColumnCountMismatch` | CSV 행의 열 개수가 4가 아님 (행 오류, 경로 `rows[n]`). 판정 원본은 Application CSV 파서 | 사용 |
 | 21020 | `Validation` | 400 | `Employee.CsvUnclosedQuote` | CSV 닫히지 않은 따옴표 (행 오류, 레코드가 시작한 줄). 판정 원본은 Application CSV 파서 | 사용 |
 | 21021 | `Validation` | 400 | `Employee.CsvUnexpectedQuote` | CSV 따옴표 없는 필드 안의 `"`, 닫는 따옴표 뒤의 공백 아닌 문자 (`"a"b`, 행 오류). 판정 원본은 Application CSV 파서 | 사용 |
@@ -220,15 +220,15 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 | 21025 | `Validation` | 400 | `Employee.JsonValueNotString` | JSON 항목의 필드 값이 문자열이 아님 (`"joined": 20000101` · `null` 등, 항목 오류, 경로 `rows[n].joined`처럼 그 필드). 속성이 없으면 이 코드가 아니라 그 필드의 필수 코드. 판정 원본은 Application JSON 파서 | 사용 |
 | 21026 | `Validation` | 400 | `Employee.JsonDuplicateProperty` | JSON 항목에 같은 필드 속성이 두 번 이상 (대소문자만 다른 이름 포함, 알 수 없는 속성은 판정 안 함, 항목 오류, 경로는 그 필드). 판정 원본은 Application JSON 파서 | 사용 |
 | 21027 | `Validation` | 400 | `Employee.ImportTooManyRows` | 행 수가 1,000을 넘음 (경로 `""`, 빈 줄 제외 · 행 오류 행 포함). 판정 원본은 Application 파서(CSV S06-T02, JSON S06-T03) | 사용 |
-| 21028 | `Validation` | 400 | `Employee.ImportInputEmpty` | 빈 입력 (입력 없음, 길이 0, BOM이나 공백만 있음, form-urlencoded `data` 키 없음) | 예약: S06-T04 |
-| 21029 | `Validation` | 400 | `Employee.ImportMultipleSources` | multipart `file`과 `data`를 함께 보냄 | 예약: S06-T04 |
-| 21030 | `Validation` | 400 | `Employee.RowErrorsTruncated` | 행 오류가 100개를 넘어 잘림 (101번째 항목, 경로 `""`) | 예약: S06-T04 |
+| 21028 | `Validation` | 400 | `Employee.ImportInputEmpty` | 빈 입력 (입력 없음(`Sources` = 0), 길이 0, 맨 앞 BOM 하나를 뗀 뒤 0x20 · 0x09 · 0x0D · 0x0A만 있음, form-urlencoded `data` 키 없음, 경로 `""`). 판정 원본은 일괄 등록 Validator | 사용 |
+| 21029 | `Validation` | 400 | `Employee.ImportMultipleSources` | multipart `file`과 `data`를 함께 보냄 (`Sources` 비트가 둘 이상, 경로 `""`). 판정 원본은 일괄 등록 Validator | 사용 |
+| 21030 | `Validation` | 400 | `Employee.RowErrorsTruncated` | 행 오류가 100개를 넘어 잘림 (101번째 항목, 경로 `""`). 판정 원본은 일괄 등록 Handler | 사용 |
 | 22001 | `NotFound` | 404 | `Employee.NotFound` | 직원 없음 (이름 조회에 일치하는 직원 없음, S07-T02) | 사용 |
 | 23001 | `Conflict` | 409 | `Employee.DuplicateEmail` | 이메일 중복 (`normalized_email` = Email Value Object의 `ToLowerInvariant` 값 기준). DB 중복 사전 조회(`409` + 충돌 행 번호, 상세 Conflict 오류)와 유니크 인덱스 `ux_employees_normalized_email` 위반(`23505`, 행 번호 없음) 매핑이 같은 인스턴스를 씀. 매핑 이름 교체 S05-T04 | 사용 |
-| 23002 | `Conflict` | 409 | `Employee.RowConflictsTruncated` | 행 충돌이 100개를 넘어 잘림 (101번째 항목, 경로 `""`) | 예약: S06-T04 |
+| 23002 | `Conflict` | 409 | `Employee.RowConflictsTruncated` | 행 충돌이 100개를 넘어 잘림 (101번째 항목, 경로 `""`). 판정 원본은 일괄 등록 Handler | 사용 |
 
 - 필드 코드(21003 ~ 21005, 21007 ~ 21017)는 Employee Value Object `Create(string?)`가 돌려주는 `Result`의 오류이고, 일괄 등록 Handler가 행 경로(`rows[n].email` 등, 1부터)로 `ValidationError`(1001)의 `errors`에 옮깁니다([ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md) 7 · 8절). 길이는 `string.Length`(UTF-16 코드 단위)로 잽니다(이모지는 한 글자가 2).
-- 파싱 · 입력 코드(21019 ~ 21030)도 같은 `errors`에 담깁니다. 요청 전체 오류(21022 · 21023 · 21027 · 21030)의 경로는 `""`, 행 전체 오류(21019 ~ 21021, 21024)는 `rows[n]`, JSON 필드 오류(21025 · 21026)는 그 필드의 `rows[n].joined` 등입니다(파서 `ImportRowError.Field`).
+- 파싱 · 입력 코드(21019 ~ 21030)도 같은 `errors`에 담깁니다. 요청 전체 오류(21022 · 21023 · 21027 · 21028 · 21029 · 21030)의 경로는 `""`, 행 전체 오류(21019 ~ 21021, 21024)는 `rows[n]`, JSON 필드 오류(21025 · 21026)는 그 필드의 `rows[n].joined` 등입니다(파서 `ImportRowError.Field`). 21028 · 21029와 입력 코드값 1002(경로 `sources` · `format`)는 Validator가 한 요청에 하나만 보고합니다(판정 순서 21028 → `sources` 1002 → 21029 → `format` 1002, S06-T04).
 - 한 필드 안에서는 첫 실패만 보고합니다. PRD-001 샘플 Validator의 판정 순서(이름: 필수 → 길이, 이메일: 필수 → 길이 → 형식)는 S05-T04에서 샘플과 함께 없어졌고, 지금 순서는 Value Object가 정합니다(S05-T03): name 21007 → 21009 → 21008, email 21003 → 21005 → 21004, tel 21010 → 21011 → 21013 → 21014 → 21012, joined 21015 → 21016 → 21017(`Name` · `Email` · `PhoneNumber` · `JoinedOn` 문서 주석과 단위 테스트가 원본).
 
 ---
@@ -251,3 +251,4 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 | 2026-09-28 | developer | 공통 1004 · 1005 상태를 예약 → 사용(`CommonErrors.PayloadTooLarge` · `UnsupportedMediaType`), `ErrorType` 표의 "S06-T01에서 추가" 문구 정리, 1004 · 1005 설명을 구현 경로로 (S06-T01) |
 | 2026-09-28 | developer | Employee 21019 ~ 21022 · 21027 상태를 예약 → 사용(`EmployeeErrors`, CSV 파서 · UTF-8 해독 단계), 설명에 판정 원본 · 21021 닫는 따옴표 뒤 문자 · 21022 서로게이트와 BOM · 21027 행 수 세는 규칙 추가 (S06-T02) |
 | 2026-09-28 | developer | Employee 21023 ~ 21026 상태를 예약 → 사용(`EmployeeErrors`, JSON 파서), 설명에 판정 원본 · 21023 최대 깊이와 루트 형식 · 21025 경로와 속성 누락 구분 · 21026 대상 속성 추가, 21022에 JSON 이스케이프의 짝 없는 서로게이트 추가 (S06-T03) |
+| 2026-09-28 | developer | 21018 · 21028 · 21029 · 21030 · 23002 상수 추가로 `사용`(판정 원본 · 경로), 21004 설명에 제어 문자 · 짝 없는 서로게이트(BL-129), 요청 전체 오류 목록에 21028 · 21029와 Validator 판정 순서 (S06-T04) |

@@ -8,7 +8,7 @@ namespace EmergencyHub.Employee.Application.Employees;
 /// </summary>
 /// <remarks>
 /// 개인정보(이름 · 이메일 · 전화번호)는 남기지 않고 직원 ID만 남깁니다(logging-observability "개인정보 · 보안").
-/// 20001은 배포된 이벤트 ID라 유지합니다. PRD-001 샘플 Handler를 지운 S05-T04부터 호출하는 곳이 없고, S06 등록 Handler가 다시 씁니다.
+/// 20001은 배포된 이벤트 ID라 유지합니다. S06-T04부터 일괄 등록 Handler(<c>RegisterEmployeesCommandHandler</c>)가 등록한 직원마다 한 줄씩 씁니다.
 /// </remarks>
 internal static partial class EmployeeLogs
 {

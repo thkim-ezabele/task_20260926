@@ -337,18 +337,17 @@ NetArchTest.Rules 1.3.2로 검증합니다([ADR-0021](../03-architecture/adr/002
 
 - **대상 어셈블리는 `ArchitectureAssemblies` 한곳에서 관리한다**(현재 BuildingBlocks 4개 + Employee 5개). 서비스를 추가하면 레이어별로 목록에 넣고 csproj에 참조를 더한다. 테스트 어셈블리는 넣지 않는다. ServiceDefaults · AppHost는 규칙 대상이 아니다.
 - 규칙마다 제품 대상 형식이 1개 이상임을 단언한다(공허 통과 방지). 대상이 서비스 코드에만 있는 규칙(현재 10개: 컨벤션 · 주입 8, Controller, MigrationService)은 서비스 어셈블리가 목록에 없을 때만 건너뜀(Skip)으로 표시하고, 서비스가 들어온 지금은 대상 0개면 실패다. 서비스 ↛ 다른 서비스 규칙은 서비스가 2개 미만이면 건너뛴다(금지할 다른 서비스가 없음). **지금 건너뛰는 제품 테스트는 1개**(`ServicesDoNotDependOnOtherServices`, 서비스 1개)다(S04-T02 실측: 아키텍처 테스트 전체 100 = 통과 99 · 건너뜀 1).
-- **대상 대기 목록**(S05-T04부터, PRD-002 샘플 제거): 샘플 API · Validator가 없어지면 대상이 0개가 되는 서비스 전용 규칙 3개는 "대상 0개면 실패" 대신, 해제할 작업 ID를 적은 **대상 대기 목록**에 올려 건너뜀(Skip)으로 표시한다. 건너뜀 메시지에 해제 작업 ID를 넣는다.
+- **대상 대기 목록**(S05-T04부터, PRD-002 샘플 제거): 샘플 API · Validator가 없어지면 대상이 0개가 되는 서비스 전용 규칙(처음 3개)은 "대상 0개면 실패" 대신, 해제할 작업 ID를 적은 **대상 대기 목록**에 올려 건너뜀(Skip)으로 표시한다. 건너뜀 메시지에 해제 작업 ID를 넣는다.
 
   | 규칙 | 해제 작업 | 대상이 생기는 코드 |
   |---|---|---|
-  | `ValidatorsDeriveFromRequestValidator` | S06-T04 | `RegisterEmployeesCommand` Validator |
-  | `ValidatorsDoNotInjectRepositoriesOrServices` | S06-T04 | `RegisterEmployeesCommand` Validator |
   | `ControllersDoNotUseInfrastructureOrRepositories` | S06-T05 | `/api/employee` Controller |
 
   - **안전장치**: 대기 목록에 있는 규칙의 제품 대상이 1개 이상이면 실패한다("목록에서 빼라"). 해제 작업은 목록에서 규칙을 빼고 대상 1개 이상 단언으로 되돌린다.
   - 구현(S05-T04): 목록은 `ArchitectureTests/Rules/PendingTargetRules.cs`(규칙 인스턴스 + 해제 작업 ID) 한 곳이고, `RuleCheck.ShouldPassOnProduct`가 목록 규칙을 판정한다. `PendingTargetRuleTests`가 목록 = 이 표(1:1), 대상 0개면 해제 작업 ID를 담은 건너뜀, 표본 범위(대상 있음)에 적용하면 "목록에서 빼라"로 실패, 목록 밖 사본은 대상 0개면 공허 통과로 실패하는지 확인한다.
   - 표본 테스트(위반 예시만 정확히 잡는지)는 대기 중에도 그대로 돈다. 대기 목록 밖의 규칙은 지금처럼 대상 0개면 실패다.
-  - 대기 중 건너뜀 수: 대기 3 + 서비스 격리 1(`ServicesDoNotDependOnOtherServices`). 대상 대기로 건너뛰는 이유는 [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md)의 구현 순서(Validator S06-T04, Controller S06-T05) 때문이다.
+  - 해제 기록: S06-T04가 `RegisterEmployeesCommandValidator`를 만들어 Validator 규칙 2개(`ValidatorsDeriveFromRequestValidator` · `ValidatorsDoNotInjectRepositoriesOrServices`)를 목록에서 뺐다(`PendingTargetRuleTests.ReleasedValidatorRules_AreOutsideListAndHaveProductTargets`). 지금 목록은 위 표 1행이다.
+  - 대기 중 건너뜀 수: 대기 1(`ControllersDoNotUseInfrastructureOrRepositories`) + 서비스 격리 1(`ServicesDoNotDependOnOtherServices`). S06-T04 실측: 아키텍처 테스트 전체 106 = 통과 104 · 건너뜀 2. 대상 대기로 건너뛰는 이유는 [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md)의 구현 순서(Validator S06-T04, Controller S06-T05) 때문이다.
 - **ClassesAreSealed 범위**: 대상은 `ArchitectureAssemblies.All`의 `EmergencyHub.*` 네임스페이스에 있는 추상 · static이 아닌 클래스 전부이며, **가시성(public / internal)과 관계없다**. 루트 네임스페이스 밖의 컴파일러 생성 형식(`<PrivateImplementationDetails>` 등)과 ServiceDefaults · AppHost는 대상 밖이다. EF 생성 형식도 대상이라 마이그레이션(public)과 모델 스냅샷(internal)에 직접 쓴 `*.Sealed.cs` partial 선언으로 sealed를 붙인다([데이터베이스 · 마이그레이션 규칙](database.md#마이그레이션-규칙)). S04-T02 실측: `EmployeeDbContextModelSnapshot.Sealed.cs`에서 `sealed`를 빼면 `ClassesAreSealed_ProductAssemblies_Holds`가 `EmployeeDbContextModelSnapshot`(internal)으로 실패한다. 따라서 BL-090의 "internal 생성 형식은 잡지 않음"은 현재 코드에서 재현되지 않는다(S03-T02 반려 때 InitialCreate만 보고된 원인은 확인하지 않았다). 생성 형식을 규칙에서 예외 처리하는 기준은 정하지 않았다(BL-090 트리거 대기).
 - 규칙마다 테스트 어셈블리 안 표본 네임스페이스에 위반 예시와 지킨 예시를 두고, 같은 규칙 객체가 위반 예시만 정확히 잡는지 확인한다.
 - 아키텍처 테스트 프로젝트에는 `coverlet.collector`를 넣지 않는다. 수집기가 출력 폴더의 제품 DLL을 계측하면 Coverlet 추적 형식 의존이 생겨 Domain 규칙이 실패한다(S02-T05 실측).
@@ -444,3 +443,4 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 | 2026-09-28 | developer | 장애 주입 P4 행을 새 스키마 실측으로(`ux_employees_normalized_email` → 23001, 대소문자만 다른 입력 포함, UnitOfWorkConflictTests green 뒤) (S05-T06) |
 | 2026-09-28 | developer | 장애 주입 도우미 표에 `EmployeeServicesOptions.ReadInterceptors`, `AddReadDbContextInterceptors`, `QueryPlans` 도우미(`CommandCaptureInterceptor` · `CapturedCommand` · `QueryPlan.ExplainAsync`) 추가 (S05-T06) |
 | 2026-09-28 | developer | `ErrorAndResultAreNotDerived` 예외 목록을 코드(`ErrorResultFamily`)와 1:1로: `ValidationError` · `ConflictError` · `Result<T>` (S06-T01) |
+| 2026-09-28 | developer | 대상 대기 목록에서 Validator 규칙 2개 해제(`RegisterEmployeesCommandValidator`), 표 1행 · 건너뜀 대기 1 + 격리 1(실측 106 = 통과 104 · 건너뜀 2) (S06-T04) |
