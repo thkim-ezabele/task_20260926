@@ -518,7 +518,11 @@ var smsEnabled = await db.Employees
 - 인덱스는 이 3개뿐이다(PK 제외). `email` 컬럼 인덱스, 옛 `ux_employees_email`, `CHECK (normalized_email = lower(email))`, 식 인덱스(`lower(...)`)는 두지 않는다(근거는 아래 인덱스 표 비고 · ADR-0027).
 - 체크 제약은 `ck_employees_employee_status` 하나다(`EmployeeStatus` Active=1 · Inactive=2 유지, `Deactivate` 유지). 외래 키 · `DEFERRABLE` · `CONCURRENTLY`는 없다.
 - 최장 식별자는 `ix_employees_name_joined_on_id` **30바이트**다(63바이트 한도 안). 계획 리뷰 인계 메모의 "29바이트"는 `ux_employees_normalized_email` 기준 값이며, `ix_` 2개를 포함하면 30이다(S05-T04 dba 계산).
-- 인덱스 용도(S05-T06 EXPLAIN으로 확인): `ix_employees_joined_on_id`는 목록 조회 `ORDER BY joined_on, id` + Skip / Take, `ix_employees_name_joined_on_id`는 이름 단건 조회(`WHERE name = @p ORDER BY joined_on, id LIMIT 1`, Sort 없음), `ux_employees_normalized_email`은 중복 판정 `normalized_email = ANY(@p)`와 23505.
+- 인덱스 용도(확인됨(실측 S05-T06), 10,000건 + ANALYZE에서 Repository가 보낸 SQL을 EXPLAIN, `EmployeeQueryPlanTests`): `ix_employees_joined_on_id`는 목록 조회 `ORDER BY joined_on, id` + Skip / Take, `ix_employees_name_joined_on_id`는 이름 단건 조회(`WHERE name = @p ORDER BY joined_on, id LIMIT 1`), `ux_employees_normalized_email`은 중복 판정 `normalized_email = ANY(@p)`와 23505.
+  - 목록(첫 페이지 `LIMIT 20 OFFSET 0`): `Index Scan using ix_employees_joined_on_id`, Sort 없음.
+  - 이름: `Index Scan using ix_employees_name_joined_on_id`, Sort 없음.
+  - `= ANY`(배열 매개변수 1개, 원소 1,000개): `Bitmap Index Scan on ux_employees_normalized_email`. ANALYZE만 하고 VACUUM 전이라(가시성 맵 없음) dba 예상 `Index Only Scan`과 다르다. 어느 쪽이든 같은 유니크 인덱스를 쓴다.
+  - 목록 끝 페이지(예: `OFFSET 9980`)는 Seq Scan + Sort가 될 수 있고 정상이다(dba 실측 S05-T06). 전체 개수(`count(*)`)도 Seq Scan이 정상이다.
 - 23505 매핑: `ux_employees_normalized_email` → 23001 `EmployeeErrors.DuplicateEmail`(`AddUnitOfWork`의 `errors.Map` 한 곳, 키는 위 이름 상수).
 
 **이름 상수 위치**: `EmergencyHub.Employee.Infrastructure.Persistence.EmployeeDbNames` 한 곳에 `EmployeesTable`(`employees`, 유지)과 `NormalizedEmailUniqueIndex`(`ux_employees_normalized_email`, 옛 `EmailUniqueIndex` 대체)만 둔다. `pk_` · `ck_` · `ix_` 이름은 상수로 두지 않는다(규칙 · 도우미가 만든다). `ix_` 2개의 이름과 열 순서는 모델 메타데이터 테스트(`GetDatabaseName()`)가 고정한다.
@@ -589,3 +593,4 @@ InitialCreate 대조(S05-T05 dba, 마이그레이션 `20260928090646_InitialCrea
 | 2026-09-28 | dba | Employee 새 스키마 명세 추가(실측 전, S05-T05 생성 SQL로 확정): 컬럼 9개 + `xmin` 열 순서 · 타입 · NOT NULL · 기본값 없음 · 매핑(VO 값 변환기 4개, `NormalizedEmail` 문자열), 제약 · 인덱스 5개 기대 SQL(`ux_employees_normalized_email` 이름 상수, `ix_` 2개 명명 규칙 생성), 최장 식별자 30바이트, 이름 상수 위치, `EmployeeImportFormat` DB 미저장. 옛 스키마(`20260927134235_InitialCreate`)와 기준 구분 문장, 이름 상수 문단 · 인덱스 표를 두 스키마로 구분 (S05-T04) |
 | 2026-09-28 | dba | ADR-0012 운영 전 리셋: Employee `InitialCreate` 재생성(`20260927134235` → `20260928090646_InitialCreate`, 리셋 커밋 5ee04a4, 로컬 볼륨 삭제 필요). 새 스키마 명세의 "실측 전" 표시 · 기준 구분 인용 블록 제거, 옛 ERD · InitialCreate 대조를 새 실측값으로 교체, 적용 범위 실측 표(`ix_` · 날짜 `_on` 적용됨, 최장 30바이트, 따옴표 7 · 5), 점검표 a~g 실측 열, 인덱스 표(4개, PK 포함) · 이름 상수 문단 · Sealed 파일 문구, 리셋 때 `--output-dir Persistence/Migrations` 필수 (S05-T05) |
 | 2026-09-28 | developer | 커밋 재시도 오보고(TD-010) 문단에 pk · ux 동시 위반 시 `pk_employees`가 먼저 보고되는 실측(인덱스 OID 순, 배치 재전송 오보고는 3003) 추가 (S05-T06) |
+| 2026-09-28 | developer | 인덱스 용도를 확인됨(실측 S05-T06)으로: 목록 · 이름 `Index Scan` Sort 없음, `= ANY` `Bitmap Index Scan on ux_employees_normalized_email`(VACUUM 전), 끝 페이지 Seq Scan + Sort 정상 (S05-T06) |

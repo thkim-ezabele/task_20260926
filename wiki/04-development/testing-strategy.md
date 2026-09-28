@@ -159,8 +159,9 @@ AppHost의 로컬 DB 구성([데이터베이스 · 로컬 DB 구성](database.md
 | `CommandFaultInterceptor(failure, failures, shouldFail?)` | `DbCommandInterceptor`. 조건에 맞는 명령을 `failures`회(`int.MaxValue`면 항상) 실패시키고 `Attempts`를 센다 |
 | `TransactionProbeInterceptor(commitFailure?, commitFailures)` | `DbTransactionInterceptor`. 요청 격리 수준(`StartedIsolationLevels`, 보조) · `CommitAttempts` · `Commits`, 커밋 직전 실패 주입(P2 대안) |
 | `InjectedFailures.SerializationFailure()` · `TransientTimeout()` | 인터셉터가 던질 `PostgresException`(40001) · `NpgsqlException(new TimeoutException())`(둘 다 일시 오류) |
-| `EmployeeServicesOptions` | `CreateServices` 인자: `Retry`(재시도 한도 축소, 예: `new DbRetryOptions(2, 10ms)`) · `WriteConnectionString` / `ReadConnectionString` · `TimeProvider`(운영 등록보다 먼저) · `WriteInterceptors` · `ConfigureServices`(운영 등록 뒤, 예: 테스트 `IPreCommitHook`) |
-| `DbContextInterceptorRegistration.AddWriteDbContextInterceptors` | 운영 등록이 만든 쓰기 DbContext 옵션 팩터리를 감싸 `AddInterceptors`만 더한다(`UseNpgsql` 재호출 없음, 감사 인터셉터 유지, EF8에 `ConfigureDbContext` 없음). `ConfigureTestServices`에서도 사용 |
+| `EmployeeServicesOptions` | `CreateServices` 인자: `Retry`(재시도 한도 축소, 예: `new DbRetryOptions(2, 10ms)`) · `WriteConnectionString` / `ReadConnectionString` · `TimeProvider`(운영 등록보다 먼저) · `WriteInterceptors` · `ReadInterceptors` · `ConfigureServices`(운영 등록 뒤, 예: 테스트 `IPreCommitHook`) |
+| `DbContextInterceptorRegistration.AddWriteDbContextInterceptors` · `AddReadDbContextInterceptors` | 운영 등록이 만든 쓰기(`EmployeeDbContext`) · 읽기(`EmployeeReadDbContext`) DbContext 옵션 팩터리를 감싸 `AddInterceptors`만 더한다(`UseNpgsql` 재호출 없음, 감사 인터셉터 유지, EF8에 `ConfigureDbContext` 없음). 팩터리 등록이 정확히 하나가 아니면 `InvalidOperationException`. `ConfigureTestServices`에서도 사용 |
+| `QueryPlans/CommandCaptureInterceptor` → `CapturedCommand(Text, Parameters)` · `QueryPlan.ExplainAsync(connection, command, cancellationToken)` | `DbCommandInterceptor`. 리더 실행 명령의 SQL 원문과 매개변수 사본(`NpgsqlParameter.Clone()`)을 `Commands`에 모으고 명령은 그대로 실행한다. `ExplainAsync`는 같은 SQL · 매개변수 앞에 `EXPLAIN (ANALYZE, BUFFERS, COSTS OFF, SUMMARY OFF) `를 붙여 실행하고 계획 줄을 돌려준다(Repository 인덱스 사용 확인, S05-T06 `EmployeeQueryPlanTests`) |
 | `TestData/EmployeeBuilder` · `EmployeeCommits.AddAndCommitAsync` | 테스트 데이터(기본 `example.com`)와 새 스코프의 Repository `Add` → `IUnitOfWork.CommitAsync`(Handler 사전 검사 없음, P4 경로) |
 
 **트리거 규칙**
@@ -441,3 +442,4 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 | 2026-09-28 | developer | 대상 대기 목록 구현 위치(`PendingTargetRules` · `RuleCheck.ShouldPassOnProduct` · `PendingTargetRuleTests`), Q5 유니크 인덱스 상수 `NormalizedEmailUniqueIndex` (S05-T04) |
 | 2026-09-28 | dba | Q1 · Q2 기대값을 S05-T05 리셋(`20260928090646_InitialCreate`) 뒤 실측값으로 교체: Q1 컬럼 9개(`name` · `normalized_email` · `phone_number` · `joined_on` 추가, `display_name` 제거, 모두 `NO` · 기본값 NULL), Q2 인덱스 `ix_employees_joined_on_id` · `ix_employees_name_joined_on_id` · `pk_employees` · `ux_employees_normalized_email`, 제약 2개 그대로 (S05-T05) |
 | 2026-09-28 | developer | 장애 주입 P4 행을 새 스키마 실측으로(`ux_employees_normalized_email` → 23001, 대소문자만 다른 입력 포함, UnitOfWorkConflictTests green 뒤) (S05-T06) |
+| 2026-09-28 | developer | 장애 주입 도우미 표에 `EmployeeServicesOptions.ReadInterceptors`, `AddReadDbContextInterceptors`, `QueryPlans` 도우미(`CommandCaptureInterceptor` · `CapturedCommand` · `QueryPlan.ExplainAsync`) 추가 (S05-T06) |
