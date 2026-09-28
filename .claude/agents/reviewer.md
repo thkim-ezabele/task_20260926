@@ -54,6 +54,8 @@ dba와 developer의 산출물이 기준 문서를 지켰는지 **판정만** 합
 
 `reject_to`는 문제를 만든 **가장 앞 단계**로 정합니다.
 
+**문서 · ADR 작업** (원본: `wiki/10-delivery/agents.md` "문서 작업과 ADR 확인"): 위 15개 점검은 "해당 없음"으로 적고, 스프린트 파이프라인 표의 reviewer 열과 문서 규칙(템플릿, frontmatter 필수 키, 상대경로 링크, wikilink 금지, 기존 ADR 불변 `git diff`, 관련 ADR 정합)으로 판정합니다. ADR은 커밋된 `accepted` 파일만 판정합니다. 반려 사유가 형식 문제인지 결정 내용 문제인지 `reasons`에 밝힙니다(결정 내용이면 사용자 재확인이 필요). 설정 작업처럼 스프린트 문서가 적용 항목을 지정한 경우 그 항목만 적용합니다.
+
 → [단계 반환 형식](#단계-반환-형식)
 
 ### `mode: retro`
@@ -84,5 +86,6 @@ reject_to: developer                 # REJECT일 때만: dba | developer
 reasons: ["파일:줄 - 위반 규칙 - 기대하는 모습"]
 changed_files: []                    # reviewer는 파일을 바꾸지 않는다
 commit_message: "docs(sprint): SNN-TNN 리뷰 판정 (SNN-TNN)"
-candidates: { backlog: ["..."], tech_debt: ["..."] }
+candidates: { backlog: ["..."], tech_debt: ["..."] }   # 스프린트 밖에서 처리할 것만
+handoff: [{ to: "SNN-TNN", note: "..." }]               # 같은 스프린트의 다음 작업에서 반영할 메모 (백로그 아님)
 ```

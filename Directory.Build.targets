@@ -1,0 +1,15 @@
+<Project>
+
+  <!--
+    설계 시점 · 분석기 · 테스트 도구 패키지는 참조하는 프로젝트 밖으로 전이되지 않게 한다.
+    csproj 본문보다 늦게 평가되므로 Update로 csproj의 PackageReference에 메타데이터를 일괄 적용한다.
+    (EF Design: package-versions.md · dba 입력 "PrivateAssets=all", ADR-0021 · ADR-0022 참조 방식)
+  -->
+  <ItemGroup>
+    <PackageReference Update="Microsoft.EntityFrameworkCore.Design;xunit.runner.visualstudio;coverlet.collector;NSubstitute.Analyzers.CSharp">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

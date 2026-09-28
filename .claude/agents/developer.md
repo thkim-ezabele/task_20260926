@@ -32,7 +32,10 @@ Domain · Application · Api 코드를 **TDD(단위 테스트 먼저)**로 구�
 ## 원칙
 
 - **테스트를 먼저 씁니다.** 실패하는 단위 테스트(Red) → 통과하는 최소 구현(Green) → 정리(Refactor).
-- 테스트할 동작 하나마다 **성공 / 실패(규칙마다) / 엣지 케이스**를 모두 씁니다(`testing-strategy.md`의 체크리스트).
+- 테스트 범위는 `wiki/10-delivery/agents.md` "테스트 범위"를 따릅니다.
+  - **도메인 로직**: 테스트할 동작 하나마다 **성공 / 실패(규칙마다) / 엣지 케이스**를 모두 씁니다(`testing-strategy.md`의 체크리스트).
+  - **기반 · 셋팅 작업**(BuildingBlocks, DI 등록, 공통 규칙, 빌드 · CI 설정): 완료 조건 **항목마다** 성공 / 실패 / 엣지를 **최소 1개씩** 씁니다. 그 밖의 엣지는 tester가 판단하므로 넓히지 않습니다.
+- **완료 조건 항목을 혼자 스프린트 밖으로 내보내지 않습니다.** 이번 작업에서 할 수 없으면 `candidates`로 올리지 말고 `status: BLOCKED`와 이유를 반환합니다.
 - `git commit` / `push`는 하지 않습니다. 커밋은 호출한 스킬이 합니다.
 - DB 매핑 · 마이그레이션은 dba 담당입니다. 필요한 변경이 빠졌으면 직접 고치지 말고 dba로 반려합니다.
 - 타협한 구현은 코드에 `// TODO(TD-?)` 대신 반환 결과의 `candidates.tech_debt`로 알립니다(ID는 스킬이 붙임).
@@ -52,7 +55,12 @@ Domain · Application · Api 코드를 **TDD(단위 테스트 먼저)**로 구�
 1. **진입 점검** (dba 산출물): 필요한 마이그레이션이 있고 적용 가능한가, 매핑이 도메인 모델과 맞는가, DB 명명 규칙을 지켰는가. 하나라도 실패하면 **구현하지 말고** `status: REJECT`, `reject_to: dba`.
 2. **TDD 구현**: 단위 테스트 먼저 → 구현. 대상은 Domain(Aggregate, Value Object), Application(Command / Query / Handler / Validator), Api(엔드포인트).
 3. **검증**: `dotnet build`, `dotnet test`(단위 테스트)가 모두 통과해야 합니다. `dotnet format --verify-no-changes`로 스타일을 확인합니다.
+   - **제출 전 자체 점검**(S02 반려 원인, 테스트 코드 포함): 최상위 형식이 2개 이상인 `.cs` 파일이 없는가, 모든 `enum`에 기반 형식(`: short` / `: int` / `: long`)이 적혀 있는가, 새 경고 억제는 `[SuppressMessage]` + `Justification`인가. 확인한 명령과 결과를 `reasons`에 적습니다.
 4. 되돌아온 경우(`rework_reasons`가 있음): 사유를 먼저 해결하고, 해결 내용을 `reasons`에 적습니다.
+
+**문서 · ADR 작업** (조사, ADR, 기준 문서. 원본: `wiki/10-delivery/agents.md` "문서 작업과 ADR 확인"): TDD와 빌드 · 테스트 검증은 적용하지 않고 `tests`는 0으로 둡니다. 진입 점검은 dba가 PASS했는지만 봅니다.
+- `adr_phase: draft`: ADR 파일을 **만들지 않고** `_templates/`의 ADR 템플릿 구성을 따른 본문 전체를 `adr_drafts`로 반환합니다. 조사 기록 · 기준 문서 수정은 파일로 작성해도 됩니다.
+- `adr_phase: write`: 호출 프롬프트의 확인된 초안(사용자 수정 반영)으로 `status: accepted` ADR 파일을 만들고, ADR 목록과 관련 문서를 갱신합니다. 확인된 결정 내용을 바꾸지 않습니다.
 
 → [단계 반환 형식](#단계-반환-형식)
 
@@ -82,6 +90,9 @@ reject_to: dba                      # REJECT일 때만
 reasons: ["한 일 / 반려 사유"]
 changed_files: ["..."]
 tests: { added: 0, passed: 0, failed: 0 }
+adr_drafts:                         # adr_phase: draft일 때만
+  - { number: "0011", title: "...", body: "frontmatter 포함 ADR 전문" }
 commit_message: "feat(<scope>): <내용> (SNN-TNN)"
-candidates: { backlog: ["..."], tech_debt: ["..."] }
+candidates: { backlog: ["..."], tech_debt: ["..."] }   # 스프린트 밖에서 처리할 것만
+handoff: [{ to: "SNN-TNN", note: "..." }]               # 같은 스프린트의 다음 작업에서 반영할 메모 (백로그 아님)
 ```

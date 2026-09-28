@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [architecture]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 아키텍처 개요
@@ -29,14 +29,14 @@ flowchart LR
     MAIL -.-> Employee
 ```
 
-- 프론트엔드는 범위 밖입니다(확정 전). 클라이언트는 API Gateway의 HTTP API만 사용합니다.
+- 프론트엔드는 범위 밖입니다(확정 전). 클라이언트는 HTTP API만 사용합니다. API Gateway는 도입 보류라 지금은 서비스 Api를 직접 호출합니다([ADR-0023](adr/0023-deferred-adoptions.md)).
 - 외부 발송 사업자는 🟡 미정입니다.
 
 ### 컨테이너 구성
 
 ```mermaid
 flowchart TB
-    Client["클라이언트"] --> GW["API Gateway<br/>🟡 YARP / Ocelot"]
+    Client["클라이언트"] --> GW["API Gateway<br/>보류 (ADR-0023)"]
 
     subgraph Services["서비스 (🟡 후보, 서비스 카탈로그 확정 전)"]
         ID["Identity"]
@@ -54,19 +54,19 @@ flowchart TB
     EMG --- DB4[("emergency DB")]
     NOTI --- DB5[("notification DB")]
 
-    Services <-->|"통합 이벤트<br/>(Outbox / Inbox)"| MQ["메시지 브로커<br/>🟡 RabbitMQ / Kafka<br/>(🟡 MassTransit)"]
+    Services <-->|"통합 이벤트<br/>(Outbox / Inbox, 보류)"| MQ["메시지 브로커<br/>보류 (ADR-0023)"]
     NOTI --> EXT["SMS / 푸시 / 메일"]
 ```
 
 | 구성 요소 | 역할 | 상태 |
 |---|---|---|
-| API Gateway | 외부 진입점, 라우팅, 인증 토큰 검증, 요청 제한 | 🟡 YARP / Ocelot |
+| API Gateway | 외부 진입점, 라우팅, 인증 토큰 검증, 요청 제한 | 보류([ADR-0023](adr/0023-deferred-adoptions.md), 재검토 추천안 YARP) |
 | Identity | 인증 / 권한 (권한은 비트 마스킹, [ADR-0008](adr/0008-integer-codes-and-bitmask.md)) | 🟡 검토 중 |
 | Employee | 직원 / 조직 관리 | 🟡 검토 중 |
 | ContactNetwork | 연락망 구성(전파 순서, Call Tree) | 🟡 검토 중 |
 | Emergency | 긴급 상황 발령, 응답(안부) 수집 · 집계 | 🟡 검토 중 |
 | Notification | 채널별 알림 발송(SMS / 푸시 / 이메일) | 🟡 검토 중 |
-| 메시지 브로커 | 서비스 간 통합 이벤트 전달 | 🟡 RabbitMQ / Kafka |
+| 메시지 브로커 | 서비스 간 통합 이벤트 전달 | 보류([ADR-0023](adr/0023-deferred-adoptions.md), 재검토 추천안 RabbitMQ) |
 | PostgreSQL | 서비스별 Database (Database per Service) | 🟢 [ADR-0005](adr/0005-use-postgresql.md) |
 
 서비스 목록과 책임은 [서비스 카탈로그](service-catalog.md)가 원본입니다.
@@ -96,11 +96,11 @@ sequenceDiagram
     participant DB as 서비스 DB
 
     C->>G: HTTP 요청 (traceparent)
-    G->>A: 라우팅 (인증 토큰 검증 🟡)
+    G->>A: 라우팅 (인증 토큰 검증, Gateway 보류 중에는 직접 호출)
     A->>H: Command / Query
     alt Command
         H->>D: 도메인 메서드 (불변식 검증)
-        H->>DB: 쓰기 DbContext 저장 + Outbox (한 트랜잭션)
+        H->>DB: 쓰기 DbContext 변경, 트랜잭션 데코레이터가 커밋 (Outbox는 보류)
     else Query
         H->>DB: 읽기 DbContext 프로젝션
     end
@@ -132,7 +132,7 @@ sequenceDiagram
     end
 ```
 
-상세 규칙(봉투 필드, 버저닝, 재시도, DLQ)은 [이벤트 기반 아키텍처](event-driven-architecture.md)에 있습니다.
+이벤트 처리 흐름 전체(브로커 · Outbox / Inbox)는 도입 보류입니다([ADR-0023](adr/0023-deferred-adoptions.md)). 상세 규칙(봉투 필드, 버저닝, 재시도, DLQ)은 [이벤트 기반 아키텍처](event-driven-architecture.md)에 있습니다.
 
 ## 외부 시스템 연동 (SMS / 푸시 / 이메일)
 
@@ -165,3 +165,4 @@ sequenceDiagram
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 초안 작성: 시스템 컨텍스트 · 컨테이너 구성도, 아키텍처 원칙, 요청 · 이벤트 처리 흐름, 외부 연동, 품질 속성 |
+| 2026-09-28 | developer | API Gateway · 메시지 브로커 · Outbox 미정 표시를 보류([ADR-0023](adr/0023-deferred-adoptions.md) 링크)로 교체, Gateway 도입 전 직접 호출 · Outbox 보류를 흐름도에 표시 (S04-T02, BL-038) |

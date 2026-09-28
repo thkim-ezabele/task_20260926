@@ -146,7 +146,7 @@ Stage: developer
 - 토픽 PR 제목: `feat(<scope>): PRD-NNN <토픽 제목>`
 - **모든 PR은 Merge commit으로 병합한다.** feature 브랜치의 커밋이 `develop`에 그대로 남아 과제 증빙으로 추적할 수 있다. 병합 커밋 제목은 PR 제목이 되므로 **PR 제목을 Conventional Commits 형식으로** 쓴다.
 - 병합 전에 feature 브랜치의 커밋 메시지가 커밋 규칙을 지켰는지 확인한다(개별 커밋이 그대로 남기 때문).
-- PR 병합 전 테스트 통과가 필수다([ADR-0006](../03-architecture/adr/0006-adopt-tdd.md)). CI 구성 후 필수 체크로 건다.
+- PR 병합 전 테스트 통과가 필수다([ADR-0006](../03-architecture/adr/0006-adopt-tdd.md)). CI 워크플로 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)이 `develop` · `main` 대상 PR(Draft 포함)마다 restore → build → format 검사 → test → 커버리지 보고를 실행한다(S01-T07). 브랜치 보호를 쓸 수 없어 GitHub 필수 체크로는 걸 수 없으므로, **CI가 통과하지 않은 PR은 병합하지 않는다**를 규칙으로 지킨다.
 - 템플릿: 저장소 루트의 [`.github/pull_request_template.md`](../../.github/pull_request_template.md)
 
 > 🟡 1인 과제 기준으로 리뷰어 승인은 필수로 두지 않습니다.
@@ -194,3 +194,4 @@ Stage: developer
 | 2026-09-27 | - | 병합 방식을 Merge commit으로 통일(Squash · Rebase 끔), 병합 커밋 제목 = PR 제목 |
 | 2026-09-27 | - | 역병합 브랜치 `chore/backmerge-*` 추가 |
 | 2026-09-27 | - | 개발 관리(10-delivery)와 연결: 토픽 브랜치(`feature/prd-*`), 단계별 커밋, 토픽 PR은 Draft → Merge commit, 토픽 = 릴리스 |
+| 2026-09-27 | developer | PR 규칙에 CI 워크플로 링크 추가, 브랜치 보호 불가로 "CI 미통과 PR 병합 금지"를 규칙으로 명시 (S01-T07) |

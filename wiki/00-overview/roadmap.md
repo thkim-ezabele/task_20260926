@@ -20,16 +20,17 @@ updated: 2026-09-27
 | 구분 | 내용 | 상태 |
 |---|---|---|
 | 위키 · 개발 흐름 | 위키 구조, ADR 0001 ~ 0010, Git Flow, 개발 흐름(토픽 → 스프린트 → 회고), 에이전트 · 스킬, 기준 문서 기본판 | 🟢 완료 |
-| **PRD-001 기반 구축** | 솔루션 구조([Clean Architecture](../03-architecture/clean-architecture.md)), BuildingBlocks(`Result` / `Error`, 마커 인터페이스, `AddConventionalServices`, 읽기 전용 DbContext 기반), 빌드 설정(`.editorconfig`, `Directory.Build.props`, `Directory.Packages.props`, `global.json`), 아키텍처 테스트, CI(GitHub Actions) | ⚪ 다음 토픽 |
+| **[PRD-001 기반 구축](../10-delivery/prd/PRD-001-foundation.md)** | 기술 결정 ADR, Aspire 9.x 로컬 인프라(AppHost + PostgreSQL + MigrationService), 솔루션 구조([Clean Architecture](../03-architecture/clean-architecture.md)), BuildingBlocks(직접 구현 Mediator 파이프라인, `AddConventionalServices`, EF 공통 규칙), Employee 샘플, 빌드 설정, 단위 · 통합 · 아키텍처 테스트, CI(GitHub Actions) | 🔵 진행 중 |
 
-PRD-001에서 ADR로 결정할 미정 항목:
+PRD-001에서 정한 방향 (S01에서 ADR로 확정 예정, [PRD-001 질문과 답변](../10-delivery/prd/PRD-001-foundation.md#질문과-답변)):
 
-- Mediator 구현체 (MediatR v13+ 상용 / 소스 생성기 기반 / 직접 구현)
-- 단언 라이브러리 (FluentAssertions v7 고정 / Shouldly / AwesomeAssertions)
-- UUID v7 생성 방식 (.NET 8에 기본 제공 없음)
-- API 스타일 (Minimal API 기본안 / Controller)
-- DI 타입 검색 구현 (Scrutor / 직접 구현)
-- 로그 수집기 (Seq / Loki / ELK)
+- Mediator: 직접 구현 (로깅 → 검증 → 트랜잭션 데코레이터 파이프라인)
+- API 스타일: Controller
+- DI 타입 검색: Scrutor
+- UUID v7: `IIdGenerator` + UUIDNext
+- 단언 라이브러리: AwesomeAssertions
+- 로컬 인프라: .NET Aspire 9.x (docker compose 미사용)
+- 도입 보류: 메시지 브로커, Outbox / Inbox, API Gateway, 로그 수집기
 
 ## Phase 2 - 핵심 도메인 서비스 개발
 
@@ -63,7 +64,7 @@ PRD-001에서 ADR로 결정할 미정 항목:
 
 | Phase | 스프린트 | PRD | 릴리스 | 상태 |
 |---|---|---|---|---|
-| 1 | - | PRD-001 기반 구축 (예정) | `v0.1.0` (예정) | ⚪ 예정 |
+| 1 | [S01](../10-delivery/sprints/S01-decisions-build-ci.md) ~ [S04](../10-delivery/sprints/S04-tests-docs-evidence.md) | [PRD-001](../10-delivery/prd/PRD-001-foundation.md) 기반 구축 | `v0.1.0` (예정) | 🔵 진행 중 |
 
 스프린트 상세는 [개발 관리](../10-delivery/README.md)를 참고합니다.
 
@@ -76,3 +77,4 @@ PRD-001에서 ADR로 결정할 미정 항목:
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 일정표에 Phase ↔ 스프린트 연결 표 추가 |
 | 2026-09-27 | - | Phase별 토픽 작성: Phase 1 = PRD-001 기반 구축(미정 ADR 항목), Phase 2 ~ 4는 후보 토픽 |
+| 2026-09-27 | - | PRD-001 토픽 시작(S01~S04), 결정 방향 반영 |

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    공통 API 처리(ADR-0024): Result → ProblemDetails, 바인딩 오류 1001, 전역 예외 처리, Controller 기본 설정, Swashbuckle.
+    Application · Domain만 참조한다. BuildingBlocks.Infrastructure · EF Core · Npgsql은 참조하지 않는다(ADR-0024 의존성 규칙 표).
+    서비스 Api 레이어만 이 프로젝트를 참조한다.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EmergencyHub.BuildingBlocks.Application\EmergencyHub.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\EmergencyHub.BuildingBlocks.Domain\EmergencyHub.BuildingBlocks.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

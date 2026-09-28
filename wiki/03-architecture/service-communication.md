@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [architecture]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 서비스 간 통신
@@ -17,7 +17,7 @@ updated: 2026-09-27
 
 | 상황 | 방식 | 예 |
 |---|---|---|
-| 클라이언트가 **즉시 결과**가 필요한 조회 · 명령 | 동기 HTTP (API Gateway 경유) | 직원 조회, 긴급 상황 발령 요청 |
+| 클라이언트가 **즉시 결과**가 필요한 조회 · 명령 | 동기 HTTP (API Gateway 도입 전에는 서비스 Api 직접 호출, [ADR-0023](adr/0023-deferred-adoptions.md)) | 직원 조회, 긴급 상황 발령 요청 |
 | 다른 서비스에 **상태 변화를 알림** | **비동기 통합 이벤트** | 직원 등록 → 연락망에 반영 |
 | 다른 서비스의 데이터가 **조회에 필요** | 이벤트로 **자기 DB에 복제**한 데이터 사용 | 연락망 서비스가 직원 이름 · 채널을 복제 보유 |
 | 서비스 간 즉시 응답이 꼭 필요하고 복제로 해결할 수 없음 | 동기 HTTP (예외, 최소화) | 🟡 해당 사례가 생기면 작업 문서에 사유 기록 |
@@ -42,7 +42,7 @@ updated: 2026-09-27
 - 상태 전파는 통합 이벤트(`*IntegrationEvent`, 과거형)로 한다.
 - 발행은 Transactional Outbox, 소비는 Inbox로 멱등 처리한다.
 - 메시지 헤더에 W3C `traceparent`를 넣어 추적을 잇는다.
-- 브로커는 🟡 RabbitMQ / Kafka, 추상화는 🟡 MassTransit.
+- 브로커(RabbitMQ / Kafka) · 추상화(MassTransit 8.x 등) · Outbox / Inbox 구현은 보류다([ADR-0023](adr/0023-deferred-adoptions.md)).
 
 상세: [이벤트 기반 아키텍처](event-driven-architecture.md), 이벤트 목록: [이벤트 카탈로그](../05-api/event-catalog.md)
 
@@ -54,7 +54,7 @@ updated: 2026-09-27
 
 ## API Gateway
 
-> 🟡 **미정**: YARP / Ocelot 중 선택합니다(기반 구축 이후 ADR).
+> **보류**([ADR-0023](adr/0023-deferred-adoptions.md)): Gateway 프로젝트를 두지 않고 클라이언트가 서비스 Api를 직접 호출합니다. 재검토 때 YARP(추천안) / Ocelot 중 선택합니다. 아래 표는 도입 때의 책임 설계안입니다.
 
 | 책임 | 내용 |
 |---|---|
@@ -97,3 +97,4 @@ updated: 2026-09-27
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 초안 작성: 동기 / 비동기 선택 기준, REST 규칙, 이벤트 · 데이터 복제, API Gateway(미정), 인증 전파, 디스커버리, 장애 격리 |
+| 2026-09-28 | developer | 브로커 · 메시징 추상화 · API Gateway 미정 표시를 보류([ADR-0023](adr/0023-deferred-adoptions.md) 링크)로 교체, Gateway 도입 전 직접 호출 명시 (S04-T02, BL-038) |

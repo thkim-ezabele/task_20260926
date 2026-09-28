@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [getting-started]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 사전 준비 사항
@@ -17,7 +17,7 @@ updated: 2026-09-27
 
 | 도구 | 버전 / 비고 | 확인 명령 |
 |---|---|---|
-| .NET SDK | 8.0.x (현재 개발 환경 8.0.202) | `dotnet --list-sdks` |
+| .NET SDK | 8.0.400 이상 8.0.x(`global.json` 8.0.400 + `latestFeature`) | `dotnet --list-sdks` |
 | Docker Desktop | Testcontainers, 로컬 PostgreSQL | `docker version` |
 | Git for Windows | git-flow(AVH Edition 1.12.3) 포함 | `git flow version` |
 | GitHub CLI | 로그인 필요 | `gh auth status` |
@@ -27,13 +27,8 @@ updated: 2026-09-27
 ## .NET 8 SDK
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)를 설치합니다. 모든 서비스의 Target Framework는 `net8.0`입니다([ADR-0001](../03-architecture/adr/0001-use-dotnet8.md)).
-- SDK 버전은 저장소 루트의 `global.json`으로 고정합니다(기반 구축 토픽에서 추가).
-- EF Core 마이그레이션을 만들거나 적용하려면 `dotnet-ef` 도구가 필요합니다.
-
-```bash
-dotnet tool install --global dotnet-ef
-dotnet ef --version
-```
+- SDK 버전은 저장소 루트의 `global.json`(`8.0.400` + `rollForward: latestFeature`)이 정합니다. **8.0.400 이상 8.0.x SDK**를 설치합니다(8.0.400 미만만 있으면 저장소 안의 `dotnet` 명령이 실패). 확인 방법은 [로컬 개발 환경 구성 · 사전 준비](local-setup.md#사전-준비)에 있습니다.
+- `dotnet-ef` 등 .NET 도구는 전역 설치하지 않고 저장소의 도구 매니페스트로 씁니다(clone 뒤 `dotnet tool restore`, [DB 마이그레이션](local-setup.md#db-마이그레이션)).
 
 ## IDE (Visual Studio 2022 / Rider / VS Code)
 
@@ -49,7 +44,7 @@ dotnet ef --version
 ## Docker Desktop
 
 - 통합 테스트는 **Testcontainers로 실제 PostgreSQL**을 띄우므로 Docker가 반드시 실행 중이어야 합니다([테스트 전략](../04-development/testing-strategy.md#통합-테스트-testcontainers)).
-- 로컬 PostgreSQL · 메시지 브로커는 docker compose로 띄웁니다(구성은 [컨테이너 & 로컬 인프라](../06-deployment/containers.md), 기반 구축 토픽에서 작성).
+- 로컬 PostgreSQL은 Aspire AppHost가 컨테이너로 띄웁니다(docker compose 없음, 메시지 브로커 없음). 최소 Docker Engine API 조건은 [로컬 개발 환경 구성 · 사전 준비](local-setup.md#사전-준비)에 있습니다.
 - Windows에서는 WSL 2 백엔드를 사용합니다.
 
 ## PostgreSQL 클라이언트
@@ -83,7 +78,7 @@ git config gitflow.prefix.versiontag v
 ## 설치 확인
 
 ```bash
-dotnet --list-sdks     # 8.0.x 포함
+dotnet --list-sdks     # 8.0.400 이상 8.0.x 포함
 docker version         # Server 정보가 나와야 함 (Docker Desktop 실행 중)
 git flow version       # 1.12.3 (AVH Edition)
 gh auth status         # Logged in
@@ -98,3 +93,4 @@ node -v
 |---|---|---|
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 도구별 설치 · 버전 · 확인 명령 작성 (.NET 8 SDK, dotnet-ef, IDE, Docker, PostgreSQL 클라이언트, Git · git-flow · gh, Node.js, Claude Code) |
+| 2026-09-28 | developer | local-setup과 맞춤: SDK 조건을 `global.json`(8.0.400 이상 8.0.x)으로, `dotnet-ef` 전역 설치 안내를 도구 매니페스트(`dotnet tool restore`)로, docker compose 문장을 Aspire AppHost로 바꿈 (S04-T03) |

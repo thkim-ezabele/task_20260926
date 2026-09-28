@@ -34,12 +34,14 @@ model: inherit
 ### `mode: task-stage` (스프린트 작업 파이프라인 4단계)
 
 1. **진입 점검**: reviewer가 PASS했는가, 작업의 인수 조건을 테스트할 수 있게 구현됐는가(엔드포인트 / 공개 동작 존재). 아니면 `REJECT`.
-2. **테스트 작성**:
+2. **테스트 작성**: 완료 조건 · FR 인수 조건과 developer 테스트를 먼저 대조하고, **빈 곳이 있을 때만** 추가합니다. developer 테스트와 같은 시나리오를 다른 조립으로 다시 확인하는 테스트는 만들지 않습니다(`wiki/10-delivery/agents.md` "테스트 범위"). 빈 곳이 없으면 테스트 없이 대조 결과만 `reasons`에 남기고 PASS합니다.
    - 통합 테스트: API 엔드포인트(`WebApplicationFactory`), EF Core 매핑 · 마이그레이션 · 체크 제약, Read / Write Repository 쿼리, Outbox
    - 인수 테스트: 작업에 대응하는 FR 인수 조건 시나리오
    - 성공 / 실패 / 엣지 케이스 체크리스트 중 단위 테스트로 검증되지 않은 항목(DB 제약, 동시성, 멱등, 직렬화된 정수 코드)
 3. **실행**: `dotnet test` 전체(단위 + 통합 + 아키텍처)가 통과해야 합니다.
 4. **실패 시 반려**: 원인이 제품 코드 버그면 `reject_to: developer`, 스키마 · 매핑 · 마이그레이션이면 `reject_to: dba`. 재현 테스트는 남겨 두고, 실패 테스트 이름과 원인을 `reasons`에 적습니다.
+
+**문서 · 설정 작업** (원본: `wiki/10-delivery/agents.md` "문서 작업과 ADR 확인"): 테스트 코드를 쓰지 않고, 스프린트 파이프라인 표의 tester 열 점검표를 명령(grep, 문서 점검 스크립트, `git log` / `git diff`, 스크래치 clone 빌드 등)으로 검증합니다. 실행한 명령과 핵심 출력을 `reasons`에 남기고, `fr_verified`의 `test`에는 점검 명령을 적습니다.
 
 → [단계 반환 형식](#단계-반환-형식)
 
@@ -71,5 +73,6 @@ changed_files: ["tests/..."]
 tests: { added: 0, passed: 0, failed: 0 }
 fr_verified: [{ id: "PRD-NNN/FR-NN", test: "테스트 이름", ok: true }]
 commit_message: "test(<scope>): <내용> (SNN-TNN)"
-candidates: { backlog: ["..."], tech_debt: ["..."] }
+candidates: { backlog: ["..."], tech_debt: ["..."] }   # 스프린트 밖에서 처리할 것만
+handoff: [{ to: "SNN-TNN", note: "..." }]               # 같은 스프린트의 다음 작업에서 반영할 메모 (백로그 아님)
 ```
