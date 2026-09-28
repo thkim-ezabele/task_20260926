@@ -66,6 +66,18 @@ public static class EmployeeErrors
     /// <summary>21022 · 입력이 올바른 UTF-8이 아님(CP949 · UTF-8로 인코딩한 서로게이트 등, 요청 전체 오류). 판정 원본은 Application 해독 단계.</summary>
     public static readonly Error ImportInvalidUtf8 = Error.Validation(21022, "입력이 올바른 UTF-8이 아닙니다.");
 
+    /// <summary>21023 · JSON 문법 오류(끝 쉼표 · 주석 · <c>[..],[..]</c> · 최대 깊이 64 초과 등, 요청 전체 오류). 판정 원본은 Application JSON 파서.</summary>
+    public static readonly Error JsonSyntaxInvalid = Error.Validation(21023, "JSON 문법이 올바르지 않습니다.");
+
+    /// <summary>21024 · JSON 항목이 객체가 아님(<c>null</c> · 숫자 등, 항목 오류). 판정 원본은 Application JSON 파서.</summary>
+    public static readonly Error JsonItemNotObject = Error.Validation(21024, "JSON 항목은 객체여야 합니다.");
+
+    /// <summary>21025 · JSON 항목의 필드 값이 문자열이 아님(<c>"joined": 20000101</c> · <c>null</c> 등, 항목 오류). 판정 원본은 Application JSON 파서.</summary>
+    public static readonly Error JsonValueNotString = Error.Validation(21025, "JSON 필드 값은 문자열이어야 합니다.");
+
+    /// <summary>21026 · JSON 항목에 같은 필드 속성이 두 번 이상 있음(대소문자만 다른 이름 포함, 항목 오류). 판정 원본은 Application JSON 파서.</summary>
+    public static readonly Error JsonDuplicateProperty = Error.Validation(21026, "JSON 항목에 중복된 속성이 있습니다.");
+
     /// <summary>21027 · 행 수가 1,000을 넘음(요청 전체 오류). 판정 원본은 Application CSV · JSON 파서.</summary>
     public static readonly Error ImportTooManyRows = Error.Validation(21027, "한 번에 1,000행까지 등록할 수 있습니다.");
 

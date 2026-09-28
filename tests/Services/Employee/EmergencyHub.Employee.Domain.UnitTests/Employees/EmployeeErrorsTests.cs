@@ -34,6 +34,10 @@ public sealed class EmployeeErrorsTests
         ("CsvUnclosedQuote", 21020, ErrorType.Validation),
         ("CsvUnexpectedQuote", 21021, ErrorType.Validation),
         ("ImportInvalidUtf8", 21022, ErrorType.Validation),
+        ("JsonSyntaxInvalid", 21023, ErrorType.Validation),
+        ("JsonItemNotObject", 21024, ErrorType.Validation),
+        ("JsonValueNotString", 21025, ErrorType.Validation),
+        ("JsonDuplicateProperty", 21026, ErrorType.Validation),
         ("ImportTooManyRows", 21027, ErrorType.Validation),
         ("NotFound", 22001, ErrorType.NotFound),
         ("DuplicateEmail", 23001, ErrorType.Conflict),
@@ -42,10 +46,10 @@ public sealed class EmployeeErrorsTests
     // '폐기' 행(21001 · 21002 · 21006). 상수는 S05-T04에서 지웠고 번호는 재사용하지 않는다.
     private static readonly int[] DeprecatedCodes = [21001, 21002, 21006];
 
-    // '예약' 행. 구현 작업(S06-T03 · T04)이 상수를 추가하면서 '사용'으로 옮긴다(S06-T02가 21019 ~ 21022 · 21027을 옮김).
+    // '예약' 행. 구현 작업(S06-T03 · T04)이 상수를 추가하면서 '사용'으로 옮긴다(S06-T02가 21019 ~ 21022 · 21027, S06-T03이 21023 ~ 21026을 옮김).
     private static readonly int[] ReservedCodes =
     [
-        21018, 21023, 21024, 21025, 21026, 21028, 21029, 21030, 23002,
+        21018, 21028, 21029, 21030, 23002,
     ];
 
     [Fact]
@@ -65,10 +69,10 @@ public sealed class EmployeeErrorsTests
     [Fact]
     public void DocumentedRows_CountByStatus()
     {
-        // S06-T02 기준선: 사용 21 · 폐기 3(상수 없음) · 예약 9(error-codes Employee 표 행 수 33).
-        UsedRows.Should().HaveCount(21);
+        // S06-T03 기준선: 사용 25 · 폐기 3(상수 없음) · 예약 5(error-codes Employee 표 행 수 33).
+        UsedRows.Should().HaveCount(25);
         DeprecatedCodes.Should().HaveCount(3).And.OnlyHaveUniqueItems().And.NotIntersectWith(ReservedCodes);
-        ReservedCodes.Should().HaveCount(9).And.OnlyHaveUniqueItems();
+        ReservedCodes.Should().HaveCount(5).And.OnlyHaveUniqueItems();
     }
 
     [Fact]
