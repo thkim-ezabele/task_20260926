@@ -218,7 +218,10 @@ public sealed class EmailTests
     public void Create_FormatCharacterInside_IsNotRejectedByControlRule()
     {
         // 서식 문자(Cf, U+200D ZWJ)는 Cc가 아니므로 이 규칙으로 거부하지 않는다(FR-01은 Cc만, Name 21009와 같은 범위).
-        var result = Email.Create("hong‍@example.com");
+        var input = "hong\u200D@example.com";
+        input[4].Should().Be((char)0x200D, "테스트 데이터가 서식 문자 U+200D를 담아야 한다(이스케이프 보존)");
+
+        var result = Email.Create(input);
 
         result.IsSuccess.Should().BeTrue();
     }
