@@ -70,6 +70,7 @@ updated: 2026-09-28
 | 2026-09-28 | S06-T01 | 결정 | 승인(대리) | 완료 조건 ② "Content-Type 없음"은 [FromBody] 경로 · [Consumes] 불일치 경로로 충족, 전용 바인더 경로의 Content-Type 없음은 T05 바인더가 판정(ADR-0026 1절) |
 | 2026-09-28 | S06-T01 | reviewer | REJECT → developer | [컨벤션] ApiServiceCollectionExtensions.cs:114 `ImplementationType!` null-forgiving 금지. 테스트 주석 3곳 415 경로 정정(handoff). TD-029 new |
 | 2026-09-28 | S06-T01 | tester | PASS | build 경고 0, format 0, test 통과 1,741 · 실패 0, check-docs 결함 4. StatusCodePagesPipelineTests +3(404 빈 본문 유지). 405 · 엔드포인트 415 확인은 T05로 |
+| 2026-09-28 | S06-T01 | developer | PASS | 재작업 1: CreateInner `!` 제거(속성 패턴 switch + InvalidOperationException), 실패 테스트 +1, 테스트 주석 3곳 415 경로 정정. BB.Api 200/200. 후보는 TD-029에 포함 |
 
 ## 계획 리뷰
 

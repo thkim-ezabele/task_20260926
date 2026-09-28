@@ -7,7 +7,8 @@ using Microsoft.AspNetCore.Routing;
 
 namespace EmergencyHub.BuildingBlocks.Api.UnitTests.Errors;
 
-// ADR-0028 "[Consumes] 불일치 415": ClientErrorResultFilter가 부르는 IClientErrorFactory를 감싸 415만 1005 ProblemDetails로 바꾼다.
+// ADR-0028 "[Consumes] 불일치 415" 중 [FromBody] 액션에 Content-Type 없음 경로(UnsupportedContentTypeFilter → ClientErrorResultFilter → IClientErrorFactory)를
+// 감싸 415만 1005 ProblemDetails로 바꾼다. 라우팅 [Consumes] 불일치(본문 없는 415)는 UseStatusCodePages 처리기가 맡는다.
 // 그 밖의 클라이언트 오류 결과는 프레임워크 기본 팩토리(안쪽)에 그대로 맡긴다.
 public sealed class UnsupportedMediaTypeClientErrorFactoryTests
 {

@@ -108,8 +108,16 @@ public static class ApiServiceCollectionExtensions
         services.AddSingleton<IClientErrorFactory>(provider => new UnsupportedMediaTypeClientErrorFactory(CreateInner(provider, descriptor)));
     }
 
-    private static IClientErrorFactory CreateInner(IServiceProvider provider, ServiceDescriptor descriptor) =>
-        (IClientErrorFactory)(descriptor.ImplementationInstance
-            ?? descriptor.ImplementationFactory?.Invoke(provider)
-            ?? ActivatorUtilities.CreateInstance(provider, descriptor.ImplementationType!));
+    /// <summary>
+    /// 기본 팩토리 등록을 등록 방식 그대로 만듭니다. 인스턴스 · 팩토리 · 형식이 모두 없으면 <see cref="InvalidOperationException"/>을 던집니다.
+    /// </summary>
+    internal static IClientErrorFactory CreateInner(IServiceProvider provider, ServiceDescriptor descriptor) =>
+        descriptor switch
+        {
+            { ImplementationInstance: { } instance } => (IClientErrorFactory)instance,
+            { ImplementationFactory: { } factory } => (IClientErrorFactory)factory(provider),
+            { ImplementationType: { } type } => (IClientErrorFactory)ActivatorUtilities.CreateInstance(provider, type),
+            _ => throw new InvalidOperationException(
+                "IClientErrorFactory 기본 등록에 인스턴스 · 팩토리 · 구현 형식이 모두 없어 감쌀 수 없습니다."),
+        };
 }

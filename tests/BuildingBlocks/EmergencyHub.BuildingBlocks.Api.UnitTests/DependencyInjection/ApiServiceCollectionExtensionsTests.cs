@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using EmergencyHub.BuildingBlocks.Api.DependencyInjection;
 using EmergencyHub.BuildingBlocks.Api.Errors;
@@ -58,7 +59,7 @@ public sealed class ApiServiceCollectionExtensionsTests
     [Fact]
     public async Task AddBuildingBlocksApi_ClientErrorFactory_Maps415To1005AndWrapsFrameworkFactoryOnce()
     {
-        // ADR-0028: [Consumes] 불일치 415(ClientErrorResultFilter 경로)는 1005. 프레임워크 기본 팩토리는 안쪽에 남긴다(등록 1개).
+        // ADR-0028: [FromBody] 액션에 Content-Type 없음 415(ClientErrorFactory 경로)는 1005. 프레임워크 기본 팩토리는 안쪽에 남긴다(등록 1개).
         var services = CreateServices();
         await using var provider = services.BuildServiceProvider();
 
@@ -177,6 +178,18 @@ public sealed class ApiServiceCollectionExtensionsTests
         var act = () => new ServiceCollection().AddBuildingBlocksApi(null!);
 
         act.Should().Throw<ArgumentNullException>().WithParameterName("apiTitle");
+    }
+
+    [Fact]
+    public async Task CreateInner_DescriptorWithoutInstanceFactoryOrType_ThrowsInvalidOperationException()
+    {
+        // 공개 생성자로는 만들 수 없는 등록(인스턴스 · 팩토리 · 형식이 모두 없음)은 null-forgiving 없이 명시적으로 실패한다.
+        var descriptor = (ServiceDescriptor)RuntimeHelpers.GetUninitializedObject(typeof(ServiceDescriptor));
+        await using var provider = new ServiceCollection().BuildServiceProvider();
+
+        var act = () => ApiServiceCollectionExtensions.CreateInner(provider, descriptor);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*IClientErrorFactory*");
     }
 
     // ---- 엣지 ----
