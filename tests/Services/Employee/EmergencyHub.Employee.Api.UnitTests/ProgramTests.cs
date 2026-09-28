@@ -66,9 +66,9 @@ public sealed class ProgramTests : IDisposable
     }
 
     [Fact]
-    public async Task ConfigurePipeline_Development_ServesOpenApiDocumentWithEmployeePathOnly()
+    public async Task ConfigurePipeline_Development_ServesOpenApiDocumentWithEmployeePathsOnly()
     {
-        // S06-T05: 일괄 등록 Controller(/api/employee POST)가 생겼다. 조회 2개는 S07에서 더한다(헬스 경로는 문서에 없음).
+        // S06-T05: 일괄 등록(/api/employee POST), S07-T01: 목록(GET), S07-T02: 이름 조회(/api/employee/{name} GET). 헬스 경로는 문서에 없음.
         await using var app = BuildApp("Development", BothConnections());
         Program.ConfigurePipeline(app);
 
@@ -77,7 +77,7 @@ public sealed class ProgramTests : IDisposable
         context.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
         var document = ReadJson(context);
         document.GetProperty("info").GetProperty("title").GetString().Should().Be(Program.ApiTitle);
-        document.GetProperty("paths").EnumerateObject().Select(path => path.Name).Should().Equal("/api/employee");
+        document.GetProperty("paths").EnumerateObject().Select(path => path.Name).Should().Equal("/api/employee", "/api/employee/{name}");
     }
 
     // ---- 실패 ----

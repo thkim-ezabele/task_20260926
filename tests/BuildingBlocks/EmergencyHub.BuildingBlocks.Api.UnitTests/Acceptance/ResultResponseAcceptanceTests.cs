@@ -1,6 +1,7 @@
 using System.Text.Json;
 using EmergencyHub.BuildingBlocks.Api.DependencyInjection;
 using EmergencyHub.BuildingBlocks.Api.Errors;
+using EmergencyHub.BuildingBlocks.Api.UnitTests.Routing;
 using EmergencyHub.BuildingBlocks.Application.Cqrs;
 using EmergencyHub.BuildingBlocks.Domain.Errors;
 using EmergencyHub.BuildingBlocks.Domain.Results;
@@ -25,7 +26,9 @@ namespace EmergencyHub.BuildingBlocks.Api.UnitTests.Acceptance;
 [Trait("FR", "PRD-001/FR-07")]
 public sealed class ResultResponseAcceptanceTests
 {
-    private const string RequestPath = "/api/v1/employees";
+    // S07-T02(ADR-0025): instance는 요청 경로가 아니라 라우트 템플릿이다. 요청 경로의 경로 매개변수 값(7)이 응답에 없다.
+    private const string RequestPath = "/api/v1/employees/7";
+    private const string RouteTemplate = "api/v1/employees/{id}";
 
     // ErrorType마다 대표 오류 하나(None 제외 전수). 공통 코드가 없는 BusinessRule만 서비스 코드 예시(24001)를 쓴다.
     private static readonly Error[] OneErrorPerType =
@@ -77,7 +80,7 @@ public sealed class ResultResponseAcceptanceTests
         json.GetProperty("title").GetString().Should().Be(title);
         json.GetProperty("status").GetInt32().Should().Be(status);
         json.GetProperty("detail").GetString().Should().Be(error.Message);
-        json.GetProperty("instance").GetString().Should().Be(RequestPath);
+        json.GetProperty("instance").GetString().Should().Be("/" + RouteTemplate);
         json.GetProperty("code").ValueKind.Should().Be(JsonValueKind.Number, "ADR-0008: 에러 코드는 문자열이 아니라 정수");
         json.GetProperty("code").GetInt32().Should().Be(error.Code);
         json.GetProperty("traceId").GetString().Should().Be(HttpContexts.TraceIdentifier, "Activity가 없으면 TraceIdentifier");
@@ -249,6 +252,10 @@ public sealed class ResultResponseAcceptanceTests
 
     private static WebApplication Compose() => CreateBuilder().Build();
 
-    private static ActionContext CreateActionContext(IServiceProvider services) =>
-        new(HttpContexts.Create(RequestPath, services), new RouteData(), new ActionDescriptor());
+    private static ActionContext CreateActionContext(IServiceProvider services)
+    {
+        var httpContext = HttpContexts.Create(RequestPath, services);
+        httpContext.SetEndpoint(RouteTemplatePathTests.RouteEndpointOf(RouteTemplate));
+        return new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
+    }
 }

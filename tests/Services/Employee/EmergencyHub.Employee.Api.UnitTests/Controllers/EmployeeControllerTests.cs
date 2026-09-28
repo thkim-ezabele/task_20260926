@@ -6,7 +6,9 @@ using EmergencyHub.BuildingBlocks.Domain.Errors;
 using EmergencyHub.BuildingBlocks.Domain.Results;
 using EmergencyHub.Employee.Api.Controllers;
 using EmergencyHub.Employee.Api.Employees.Import;
+using EmergencyHub.Employee.Application.Employees;
 using EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployees;
+using EmergencyHub.Employee.Application.Employees.Queries.GetEmployeeByName;
 using EmergencyHub.Employee.Application.Employees.Queries.ListEmployees;
 using EmergencyHub.Employee.Domain.Employees;
 using Microsoft.AspNetCore.Http;
@@ -19,6 +21,7 @@ namespace EmergencyHub.Employee.Api.UnitTests.Controllers;
 // 액션 선언: POST api/employee, [Consumes] 4종, 크기 한도 3개(1 MiB), 폼 값 공급자 제외.
 [Trait("FR", "PRD-002/FR-05")]
 [Trait("FR", "PRD-002/FR-07")]
+[Trait("FR", "PRD-002/FR-08")]
 [Trait("FR", "PRD-002/FR-09")]
 [Trait("NFR", "PRD-002/NFR-01")]
 public sealed class EmployeeControllerTests
@@ -214,6 +217,86 @@ public sealed class EmployeeControllerTests
         await CreateController().ListAsync(null, null, CancellationToken.None);
 
         await _sender.Received(1).QueryAsync(new ListEmployeesQuery(ListEmployeesQuery.DefaultPage, ListEmployeesQuery.DefaultPageSize), Arg.Any<CancellationToken>());
+    }
+
+    // ---- 이름 조회(S07-T02, PRD-002 FR-08): 성공 ----
+
+    [Fact]
+    public async Task GetByNameAsync_QuerySucceeds_Returns200WithSameResponse()
+    {
+        var response = new EmployeeResponse(FirstId, "홍길동", "hong@example.com", "010-1234-5678", new DateOnly(2020, 1, 2));
+        _sender.QueryAsync(Arg.Any<GetEmployeeByNameQuery>(), Arg.Any<CancellationToken>()).Returns(Result.Success(response));
+
+        var result = await CreateController().GetByNameAsync("홍길동", CancellationToken.None);
+
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(response);
+    }
+
+    [Fact]
+    public async Task GetByNameAsync_Name_SendsQueryWithRouteValueAsIsAndToken()
+    {
+        // 정규화(Trim + NFC)는 Validator · Handler(Name.Create) 몫이라 Controller는 받은 값을 그대로 넘긴다.
+        _sender.QueryAsync(Arg.Any<GetEmployeeByNameQuery>(), Arg.Any<CancellationToken>()).Returns(Result.Failure<EmployeeResponse>(EmployeeErrors.NotFound));
+        using var cancellation = new CancellationTokenSource();
+
+        await CreateController().GetByNameAsync(" 홍길동 ", cancellation.Token);
+
+        await _sender.Received(1).QueryAsync(new GetEmployeeByNameQuery(" 홍길동 "), cancellation.Token);
+    }
+
+    [Fact]
+    public void GetByNameAction_IsGetOnNameRouteTemplate()
+    {
+        var action = typeof(EmployeeController).GetMethod(nameof(EmployeeController.GetByNameAsync))!;
+
+        action.GetCustomAttribute<HttpGetAttribute>()!.Template.Should().Be("{name}");
+        action.GetParameters().Select(parameter => (parameter.Name, parameter.ParameterType))
+            .Should().Equal(("name", typeof(string)), ("cancellationToken", typeof(CancellationToken)));
+    }
+
+    // ---- 이름 조회: 실패 ----
+
+    [Fact]
+    public async Task GetByNameAsync_NotFound_ReturnsProblemResultWith22001()
+    {
+        _sender.QueryAsync(Arg.Any<GetEmployeeByNameQuery>(), Arg.Any<CancellationToken>()).Returns(Result.Failure<EmployeeResponse>(EmployeeErrors.NotFound));
+
+        var result = await CreateController().GetByNameAsync("없는사람", CancellationToken.None);
+
+        result.Result.Should().BeOfType<ErrorProblemResult>().Which.Error.Should().BeSameAs(EmployeeErrors.NotFound);
+    }
+
+    [Fact]
+    public async Task GetByNameAsync_ValidationFailed_ReturnsProblemResultWithSameError()
+    {
+        var validation = ValidationError.Create([FieldError.Create("Name", EmployeeErrors.NameRequired)]);
+        _sender.QueryAsync(Arg.Any<GetEmployeeByNameQuery>(), Arg.Any<CancellationToken>()).Returns(Result.Failure<EmployeeResponse>(validation));
+
+        var result = await CreateController().GetByNameAsync(" ", CancellationToken.None);
+
+        result.Result.Should().BeOfType<ErrorProblemResult>().Which.Error.Should().BeSameAs(validation);
+    }
+
+    // ---- 이름 조회: 엣지 ----
+
+    [Fact]
+    public async Task GetByNameAsync_NullName_SendsQueryWithNull()
+    {
+        // 공백만 있는 경로 값은 단순 형식 바인더가 null로 바꾼다. 판정(21007)은 Validator 몫이라 Controller는 그대로 넘긴다.
+        _sender.QueryAsync(Arg.Any<GetEmployeeByNameQuery>(), Arg.Any<CancellationToken>()).Returns(Result.Failure<EmployeeResponse>(EmployeeErrors.NotFound));
+
+        await CreateController().GetByNameAsync(null, CancellationToken.None);
+
+        await _sender.Received(1).QueryAsync(new GetEmployeeByNameQuery(null), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void GetByNameAction_DeclaresOkBadRequestAndNotFoundProblemResponses()
+    {
+        var action = typeof(EmployeeController).GetMethod(nameof(EmployeeController.GetByNameAsync))!;
+
+        action.GetCustomAttributes<ProducesResponseTypeAttribute>().Select(attribute => attribute.StatusCode)
+            .Should().BeEquivalentTo([StatusCodes.Status200OK, StatusCodes.Status400BadRequest, StatusCodes.Status404NotFound]);
     }
 
     private static EmployeeImportPayload Payload() =>

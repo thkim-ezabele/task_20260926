@@ -60,6 +60,8 @@ public sealed class UnsupportedMediaTypeAcceptanceTests : IAsyncLifetime
         json.GetProperty("title").GetString().Should().Be("Unsupported Media Type");
         json.GetProperty("status").GetInt32().Should().Be(415);
         json.GetProperty("detail").GetString().Should().Be(CommonErrors.UnsupportedMediaType.Message);
+        // ADR-0025 fallback: [Consumes] 불일치는 라우팅이 RouteEndpoint가 아닌 415 엔드포인트를 골라 라우트 템플릿이 없다. instance는 요청 경로 그대로다.
+        // 경로 매개변수가 있는 라우트에서도 요청 경로인지는 RouteTemplateAcceptanceTests가 본다.
         json.GetProperty("instance").GetString().Should().Be(ImportPath);
         json.GetProperty("code").GetInt32().Should().Be(1005);
         json.TryGetProperty("errors", out _).Should().BeFalse();

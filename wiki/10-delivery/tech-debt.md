@@ -56,6 +56,7 @@ updated: 2026-09-28
 | TD-027 | 테스트 fixture의 ApplyMigrationsAsync가 MigrationWorker 적용 코드를 복제(차이가 생겨도 못 잡음), EmployeeDatabaseFixture.OpenAsync · TestTriggers.OpenAsync 중복 | 테스트 | 하 | S03 결과 리뷰(S03-T06) | BL-103 해결 때 적용 코드를 Infrastructure 공용 메서드 하나로 모아 Worker · fixture가 같이 쓰고, OpenAsync는 fixture 한 곳으로. 그 전까지 fixture 주석에 복제 사실 · 원본 위치 | open |
 | TD-028 | CSV 헤더 행 미지원(PRD-002 FR-03, S06-T02 구현): 헤더를 넣으면 첫 줄을 데이터로 읽어 날짜 형식 오류로 요청 전체를 거부함 | 설계 | 하 | PRD-002 범위 밖 (Q7 · FR-03) | BL-122(헤더 지원) 결정 때 함께 상환 · S05 종료 정리: S06-T02는 FR-03대로 헤더 미지원 구현, S07-T04 API 명세에 명시 | open |
 | TD-029 | 제품 코드의 null-forgiving `!`(coding-conventions Nullable 규칙 위반): `InvalidModelStateResponses.cs:57` `FullName!`, `Employee.cs:40-44` EF 생성자 `null!`. EF 생성자 예외 규칙을 둘지 고칠지, 분석기 · 아키텍처 테스트 검사 방안 | 코드 | 하 | S06-T01 reviewer | /retro PRD-002에서 결정: (1) EF 생성자 `null!` 예외 명시 또는 수정 (2) InvalidModelStateResponses.cs:57은 다음 BuildingBlocks.Api 변경 때 속성 패턴으로 (3) 분석기 · grep 점검을 reviewer 진입 점검 · CI에 둘지. S06에서 같은 위반이 반려 2회 | open |
+| TD-030 | 라우트 템플릿 도우미 RouteTemplatePath(약 10줄)를 BuildingBlocks.Api와 ServiceDefaults에 같은 internal 코드로 중복, 테스트 표도 두 벌. 두 프로젝트는 서로 참조할 수 없음(ADR-0024 의존성 표) | 설계 | 하 | S07-T02 developer | 트리거: 두 번째 서비스가 생길 때 공통 위치 재검토(S07 계획 리뷰 Q2 대리 승인) | new |
 
 ---
 

@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [development]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # API 설계 가이드
@@ -114,7 +114,7 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 | `status` | `ErrorType`으로 정한다([에러 코드 체계](../05-api/error-codes.md#에러-코드-체계)). `PayloadTooLarge` → `413`, `UnsupportedMediaType` → `415`(ADR-0028). 예약 값 `None` · 정의되지 않은 값은 `500` |
 | `type` / `title` | `https://httpstatuses.io/{status}` / 상태 코드의 표준 문구(`Conflict` 등) |
 | `detail` | `Error.Message`. 전역 예외 처리기는 오류의 고정 메시지만 쓴다(예외 메시지 · 스택 미노출) |
-| `instance` | 요청 경로(`PathBase + Path`). 쿼리 문자열은 넣지 않는다(개인정보가 들어갈 수 있음). **S07-T02부터 라우트 템플릿이 있는 엔드포인트는 라우트 템플릿**(`/api/employee/{name}`)을 쓰고, 템플릿이 없는 응답만 요청 경로를 쓴다. 요청 완료 로그 `RequestPath`와 추적 span `url.path`도 같다([ADR-0025](../03-architecture/adr/0025-api-rule-exceptions-for-assignment-endpoints.md#이름-경로-매개변수와-개인정보)) |
+| `instance` | 라우트 템플릿이 있으면 `PathBase` + 라우트 템플릿(예: `/api/employee/{name}`, 대소문자 그대로, 모든 엔드포인트), 없으면 요청 경로(`PathBase + Path`)다. 템플릿은 현재 엔드포인트, 없으면 `IExceptionHandlerFeature.Endpoint`(500 경로)의 `RouteEndpoint` 템플릿이다. 템플릿이 없는 응답: 라우팅 전 오류, 일치하는 엔드포인트 없음(404 · 405), `[Consumes]` 불일치 415(라우팅이 `RouteEndpoint`가 아닌 엔드포인트를 고름). 쿼리 문자열은 넣지 않는다(개인정보가 들어갈 수 있음). 요청 완료 로그 `RequestPath` · 추적 span `url.path` · 요청 안 로그의 호스팅 범위 `RequestPath`도 같은 템플릿이다(`PathBase` 없음, [로깅 · 공통 필드](logging-observability.md#공통-필드-enricher), [ADR-0025](../03-architecture/adr/0025-api-rule-exceptions-for-assignment-endpoints.md#이름-경로-매개변수와-개인정보)) |
 | `code` | JSON 숫자 |
 | `traceId` | W3C trace-id(`Activity.Current.TraceId`, 32자리 16진수). `Activity`가 없거나 W3C 형식이 아니면 `HttpContext.TraceIdentifier` |
 | `errors` | `ValidationError`(`400`)와 `ConflictError`(`409`, ADR-0028)일 때만. 상세 없는 `409`(`3001` · `3003` · `23001` 경합)에는 없다. 키는 속성 경로를 `.` 조각마다 camelCase로 바꾼 값(`Items[0].Name` → `items[0].name`, 객체 수준은 `""`), 값은 `{ code, message }` 배열(생성 순서 유지) |
@@ -173,3 +173,4 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 | 2026-09-28 | developer | ADR-0025 · 0026 · 0028 반영: 규칙 예외 절(과제 3개 엔드포인트, ADR 링크), 실패 상태 `413` · `415`, 409 `errors`(상세 Conflict 오류), `instance` · 요청 로그 · 추적 span의 라우트 템플릿(S07-T02), `BadHttpRequestException` 413 · `[Consumes]` 415 변환(S06-T01), 400 예시 코드 21001(폐기) → 21004, 409 예시 `instance`를 `/api/employee`로 (S05-T02) |
 | 2026-09-28 | developer | S06-T01 구현 반영: 공통 변환 규칙의 "S06-T01부터" 문구를 현재형으로, `errors`(`ConflictError`, 상세 없는 409 제외), `415` 행(라우팅 415 → 상태 코드 페이지, `[FromBody]` Content-Type 없음 → 클라이언트 오류 팩토리, 실측) (S06-T01) |
 | 2026-09-28 | developer | 규칙 예외 절에 일괄 등록 크기 한도 · 전송 형식 오류 판정 문단(바이트 수 기준 413 · 1004, 형식 오류 400 · 1001, 폼 값 공급자 제외), `415` 행에 Content-Type 없음의 판정 결과(내용 판별) (S06-T05) |
+| 2026-09-29 | developer | `instance` 행을 구현으로: `PathBase` + 라우트 템플릿(500 경로는 `IExceptionHandlerFeature.Endpoint`), 템플릿 없는 응답 목록(404 · 405 · `[Consumes]` 415), 호스팅 로그 범위 `RequestPath` 포함 (S07-T02) |

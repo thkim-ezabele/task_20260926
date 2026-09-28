@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [development]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 로깅 & 관측성
@@ -107,7 +107,8 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 | `@tr` / `@sp` (`TraceId` / `SpanId`) | W3C Trace Context | `Activity.Current` (OpenTelemetry) |
 | `SourceContext` | 로그를 남긴 클래스 | `ILogger<T>` |
 | `EventId` | 로그 이벤트 번호 · 이름 | `[LoggerMessage]` |
-| `RequestPath`, `StatusCode`, `Elapsed` | 요청 로그 | `UseSerilogRequestLogging()` |
+| `RequestPath`, `StatusCode`, `Elapsed` | 요청 로그. `RequestPath`는 라우트 템플릿이 있으면 템플릿(`/api/employee/{name}`, `PathBase` 없음), 없으면 요청 경로(쿼리 문자열 없음, ADR-0025) | `UseSerilogRequestLogging()` + ServiceDefaults `RequestLoggingOptions.GetMessageTemplateProperties` |
+| `RequestId`, `RequestPath`, `ConnectionId` | 요청 안에서 남긴 모든 로그(ASP.NET Core 호스팅 로그 범위). `RequestPath`는 원래 퍼센트 인코딩한 요청 경로라 경로 매개변수 값(이름)이 남으므로, 라우트 템플릿이 있으면 템플릿으로 덮는다(S07-T02 실측) | 호스팅 로그 범위 + ServiceDefaults 보강기 `RouteTemplateRequestPathEnricher` |
 | `UserId` | 인증된 사용자 ID (ID만) | 미들웨어 `LogContext` |
 
 ## 로그 레벨 기준
@@ -232,3 +233,4 @@ ServiceDefaults의 `MapDefaultEndpoints`가 매핑합니다(S03-T03, BL-030). �
 | 2026-09-28 | developer | Aspire 연동 절(Serilog → OTLP 로그 한 경로, 트레이스 · 메트릭 exporter, 프로필별 OTLP 주소, https 프로필 dev-certs 신뢰 필요 BL-099), 20001 예시를 실제 템플릿(`Employee {EmployeeId} registered`)으로(BL-089), 수준 기준에 9003 = `Warning`(301)과 최종 실패 `Error` 차이(BL-105), `EnableSensitiveDataLogging` opt-in 미구현 · 꺼짐(BL-094 기록), DB 정지 때 `/health/ready` 약 15.0초 뒤 503 실측(BL-108 기록) (S04-T05) |
 | 2026-09-28 | developer | Aspire 연동 절의 local-setup 링크에 `#개발-인증서-https-프로필` 앵커 추가 (S04-T03) |
 | 2026-09-28 | developer | 출력 예시 · 사용 예시의 Handler 이름을 `RegisterEmployeesCommandHandler`로(BL-132), 금지 예시에 Command · Value Object 로그 인자(BL-130) (S06-T04) |
+| 2026-09-29 | developer | 공통 필드 `RequestPath`를 라우트 템플릿으로(요청 완료 로그 · 호스팅 로그 범위, 템플릿 없으면 요청 경로), 호스팅 범위 `RequestId` · `ConnectionId` 행 (S07-T02) |

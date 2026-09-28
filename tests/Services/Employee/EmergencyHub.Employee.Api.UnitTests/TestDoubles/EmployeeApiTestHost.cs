@@ -34,7 +34,12 @@ internal sealed class EmployeeApiTestHost : IAsyncDisposable
     /// <param name="sender">Controller가 받을 <see cref="ISender"/> 대역.</param>
     /// <param name="environment">환경 이름. Swagger는 Development에서만 노출됩니다.</param>
     /// <param name="cancellationToken">취소 토큰.</param>
-    public static async Task<EmployeeApiTestHost> StartAsync(ISender sender, string environment, CancellationToken cancellationToken)
+    /// <param name="configure">운영 등록 뒤 추가 설정(로그 수집 싱크 · 설정 값 등). 없으면 <see langword="null"/>.</param>
+    public static async Task<EmployeeApiTestHost> StartAsync(
+        ISender sender,
+        string environment,
+        CancellationToken cancellationToken,
+        Action<WebApplicationBuilder>? configure = null)
     {
         // 테스트 출력 폴더의 appsettings.json(파일 싱크)을 읽지 않도록 빈 폴더를 콘텐츠 루트로 쓴다(ProgramTests와 같음).
         var contentRoot = Directory.CreateTempSubdirectory("employee-api-host-").FullName;
@@ -53,6 +58,7 @@ internal sealed class EmployeeApiTestHost : IAsyncDisposable
 
         Program.ConfigureServices(builder);
         builder.Services.AddSingleton(sender);
+        configure?.Invoke(builder);
 
         var app = builder.Build();
         Program.ConfigurePipeline(app);

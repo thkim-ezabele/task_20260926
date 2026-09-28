@@ -145,6 +145,8 @@ public sealed class ExceptionResponseAcceptanceTests
     [Fact]
     public async Task UnhandledException_NoActivity_TraceIdIsTraceIdentifierAndInstanceHasNoQuery()
     {
+        // 엔드포인트 없는 파이프라인(app.Run)이라 라우트 템플릿이 없다. instance는 요청 경로 fallback이다(ADR-0025, S07-T02 새 계약).
+        // 템플릿이 있는 500 경로는 RouteTemplateAcceptanceTests가 본다.
         await using var app = CreateApp(() => new InvalidOperationException("boom"));
 
         var context = await InvokeAsync(app, "?email=hong@example.com");
