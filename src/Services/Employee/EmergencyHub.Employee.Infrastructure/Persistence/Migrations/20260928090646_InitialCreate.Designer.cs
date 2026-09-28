@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EmergencyHub.Employee.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(EmployeeDbContext))]
-    [Migration("20260927134235_InitialCreate")]
+    [Migration("20260928090646_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -35,12 +35,6 @@ namespace EmergencyHub.Employee.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("display_name");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(254)
@@ -50,6 +44,28 @@ namespace EmergencyHub.Employee.Infrastructure.Persistence.Migrations
                     b.Property<short>("EmployeeStatus")
                         .HasColumnType("smallint")
                         .HasColumnName("employee_status");
+
+                    b.Property<DateOnly>("JoinedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("joined_on");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NormalizedEmail")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("normalized_email");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("phone_number");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -64,9 +80,15 @@ namespace EmergencyHub.Employee.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_employees");
 
-                    b.HasIndex("Email")
+                    b.HasIndex("NormalizedEmail")
                         .IsUnique()
-                        .HasDatabaseName("ux_employees_email");
+                        .HasDatabaseName("ux_employees_normalized_email");
+
+                    b.HasIndex("JoinedOn", "Id")
+                        .HasDatabaseName("ix_employees_joined_on_id");
+
+                    b.HasIndex("Name", "JoinedOn", "Id")
+                        .HasDatabaseName("ix_employees_name_joined_on_id");
 
                     b.ToTable("employees", null, t =>
                         {
