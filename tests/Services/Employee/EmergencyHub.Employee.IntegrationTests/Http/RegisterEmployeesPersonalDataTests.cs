@@ -10,7 +10,7 @@ namespace EmergencyHub.Employee.IntegrationTests.Http;
 // S06-T06 완료 조건 ⑤(PRD-002 NFR-04 · FR-10 개인정보 테스트, BL-024 · BL-130): 400 / 409 / 500 응답 본문과 캡처한 로그(Serilog 수집 싱크)에
 // 입력한 이름 · 이메일 · 전화번호 값이 없다. 이메일은 전체 · 로컬 부분 · 도메인 부분을 따로 찾는다(부분 노출도 잡음, reviewer 메모 1).
 // 경로: 로깅 데코레이터(102), FluentValidation({PropertyValue} 없음), 파서 오류, 23505 detail(Include Error Detail 없음), 전역 예외 처리기(메시지 제거).
-// BL-024: ActivityListener(NpgsqlActivityCollector)로 모은 Npgsql span 태그 · 이벤트 · 상태 설명에 DB 비밀번호와 입력 값이 없다(대시보드 수동 확인은 S07-T04).
+// BL-024: ActivityListener(ActivityCollector)로 모은 Npgsql span 태그 · 이벤트 · 상태 설명에 DB 비밀번호와 입력 값이 없다(대시보드 수동 확인은 S07-T04).
 // 환경은 Development(EF Database.Command Information → SQL 문이 로그에 남는 가장 넓은 설정, EnableSensitiveDataLogging 끔)이다.
 [Collection(EmployeeDatabaseCollectionDefinition.Name)]
 [Trait("FR", "PRD-002/FR-10")]
@@ -100,7 +100,7 @@ public sealed class RegisterEmployeesPersonalDataTests(EmployeeDatabaseFixture d
         });
         using var client = factory.CreateClient();
         factory.Logs.Clear();
-        using var spans = new NpgsqlActivityCollector();
+        using var spans = new ActivityCollector(ActivityCollector.NpgsqlSource);
         using var content = ImportContent.Raw(EmployeeImportData.Csv(2, "race"), "text/csv");
 
         using var response = await client.PostAsync(ImportContent.RegisterUri, content, CancellationToken);
@@ -144,7 +144,7 @@ public sealed class RegisterEmployeesPersonalDataTests(EmployeeDatabaseFixture d
         await using var factory = new EmployeeApiFactory(Database, new EmployeeApiFactoryOptions { WriteConnectionString = Database.ReadConnectionString });
         using var client = factory.CreateClient();
         factory.Logs.Clear();
-        using var spans = new NpgsqlActivityCollector();
+        using var spans = new ActivityCollector(ActivityCollector.NpgsqlSource);
         using var content = ImportContent.MultipartFile(EmployeeImportData.Json(2, "ro"), "employees.json");
 
         using var response = await client.PostAsync(ImportContent.RegisterUri, content, CancellationToken);
@@ -165,7 +165,7 @@ public sealed class RegisterEmployeesPersonalDataTests(EmployeeDatabaseFixture d
     {
         await using var factory = new EmployeeApiFactory(Database);
         using var client = factory.CreateClient();
-        using var spans = new NpgsqlActivityCollector();
+        using var spans = new ActivityCollector(ActivityCollector.NpgsqlSource);
         using var content = ImportContent.Raw(EmployeeImportData.Csv(1000, "span"), "text/csv");
 
         using var response = await client.PostAsync(ImportContent.RegisterUri, content, CancellationToken);
@@ -214,7 +214,7 @@ public sealed class RegisterEmployeesPersonalDataTests(EmployeeDatabaseFixture d
         factory.Logs.Events.Should().NotBeEmpty("로그를 실제로 모았는지(빈 수집으로 통과하지 않음)");
     }
 
-    private void SpansShouldNotExpose(NpgsqlActivityCollector spans, IEnumerable<string> values)
+    private void SpansShouldNotExpose(ActivityCollector spans, IEnumerable<string> values)
     {
         var passwords = new[] { Database.WriteConnectionString, Database.ReadConnectionString }
             .Select(connectionString => new NpgsqlConnectionStringBuilder(connectionString).Password)

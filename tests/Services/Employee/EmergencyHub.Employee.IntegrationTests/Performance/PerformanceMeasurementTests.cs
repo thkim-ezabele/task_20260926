@@ -34,6 +34,26 @@ public sealed class PerformanceMeasurementTests
     }
 
     [Fact]
+    public async Task MeasureAsync_WithoutPrepare_RunsActionForWarmupsAndIterationsOnly()
+    {
+        var runs = 0;
+
+        var result = await PerformanceMeasurement.MeasureAsync(
+            warmupCount: 1,
+            iterationCount: 5,
+            action: _ =>
+            {
+                runs++;
+                return Task.CompletedTask;
+            },
+            CancellationToken);
+
+        runs.Should().Be(6, "S07-T03 조회 측정: 워밍업 1 + 5회, 회차 사이 준비 작업(시드 삭제) 없음");
+        result.Warmups.Should().HaveCount(1);
+        result.Samples.Should().HaveCount(5);
+    }
+
+    [Fact]
     public void Median_OddAndEvenCounts_ReturnsMiddleOrAverageOfMiddleTwo()
     {
         var odd = new MeasurementResult([], [Ms(30), Ms(10), Ms(20)]);
@@ -52,6 +72,8 @@ public sealed class PerformanceMeasurementTests
         var act = () => PerformanceMeasurement.MeasureAsync(0, 0, _ => Task.CompletedTask, _ => Task.CompletedTask, CancellationToken);
 
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
+        var withoutPrepare = () => PerformanceMeasurement.MeasureAsync(1, 0, _ => Task.CompletedTask, CancellationToken);
+        await withoutPrepare.Should().ThrowAsync<ArgumentOutOfRangeException>("준비 없는 오버로드도 같은 범위 검사");
     }
 
     // ---- 엣지 ----

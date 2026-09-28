@@ -72,6 +72,7 @@ updated: 2026-09-29
 | 2026-09-29 | S07-T02 | reviewer | PASS | ADR-0025 3행 · 계약 테스트 6곳 대조 일치, 보강기 부작용 없음, CA1812 2건 승인(GetEmployeeByNameQueryHandler · Validator). BL-140 · 141 |
 | 2026-09-29 | S07-T02 | tester | PASS | 인코딩 형태(NFC · NFD × 대소문자) 부재 테스트 10 보강, build 경고 0 · format 0, test 2,470 통과 · 1 건너뜀 · 실패 0, check-docs 6(BL-018) |
 | 2026-09-29 | S07-T03 | dba | PASS | 시더 EmployeeBulkSeeder(generate_series + ANALYZE). EXPLAIN: 목록 Index Scan ix_employees_joined_on_id 0.06ms · 깊은 7.1ms 이하, 이름 ix_employees_name_joined_on_id 0.02ms, 개수 1.3ms |
+| 2026-09-29 | S07-T03 | developer | PASS | 도구 준비: UnexpectedErrors ID + SourceContext(BL-139), ActivityCollector 일반화, PersonalValueForms, 준비 없는 측정 오버로드, AspNetCore Warning 고정 테스트. IntegrationTests 274 통과 |
 
 ## 계획 리뷰
 

@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [development]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 테스트 전략
@@ -167,9 +167,9 @@ AppHost의 로컬 DB 구성([데이터베이스 · 로컬 DB 구성](database.md
 | `TestData/ScriptedIdGenerator` | 정해 둔 ID를 순서대로 돌려주는 `IIdGenerator` 대역(`WithRandomIds(n)`, 다 쓰면 `InvalidOperationException`, `Rewind()`로 처음부터, 스레드 안전). `EmployeeApiFactoryOptions.IdGenerator`로 주입(같은 ID 재전송 → `pk_employees` 3003 · 로그 202, S06-T06) |
 | `FaultInjection/EmailLookupHookRepository` | `EmployeeApiFactoryOptions.AfterEmailLookup`이 있으면 붙는 `IEmployeeRepository` 데코레이터. 사전 조회 결과를 돌려주기 직전에 hook을 실행한다(hook 안에서 `EmployeeCommits.AddAndCommitAsync(factory.Services, …)`로 충돌 행을 먼저 커밋 → 요청 INSERT 23505 → 23001). hook 예외는 그대로 전파(500) |
 | `TestData/EmployeeImportData` · `ExampleFiles` · `EmployeeRows` | 요청 본문 생성(`Csv(rows, prefix)` · `Json(rows, prefix)`, 행마다 다른 이메일, `PersonalValues`로 노출 검사 값), 과제 원문 예시 fixture(`TestData/Examples/original-example.csv` 3행 · `.json` 대괄호 없는 2행, 출력 폴더 복사), `employees` 행 수 · (ID, 정규화 이메일) 조회 |
-| `Http/PersonalDataScan` · `LogEventText.RawValues` · `UnexpectedErrors` | 개인정보 값 검색(NFR-04): `FindIn`(텍스트) · `FindInJson`(원문 + 디코딩한 문자열, 기본 인코더가 한글을 이스케이프하므로 필요) · `FindInLogs` → `LogExposure`(이벤트 ID · 수준 · 범주 · 템플릿 · 값). 대소문자 무시 서수 비교. `UnexpectedErrors(ids)`는 Error 이상 중 단언한 이벤트 ID를 뺀 나머지 |
-| `Observability/NpgsqlActivityCollector` → `CapturedActivity` | `ActivityListener`(소스 `Npgsql`, `AllDataAndRecorded`)로 끝난 span의 태그 · 이벤트 · 상태 사본을 모은다(`Tag(key)` · `Dump()`, 선택 필터, `Clear`). 프로세스 전체 리스너라 테스트 안에서 만들고 폐기한다(BL-024) |
-| `Performance/PerformanceMeasurement.MeasureAsync` → `MeasurementResult` · `CommandCountingInterceptor` · `DbContextOptionsInspection` | 워밍업 뒤 N회(회차마다 `prepare`는 측정 제외) `Median` · `Max` · `Describe()`, 명령 실행 직전 수 세기(`Commands` · `InsertCommands` · `InsertStatementCount`, 매개변수는 개수만), 호스트 DbContext의 `EnableSensitiveDataLogging` 여부(NFR-02, S06-T06) |
+| `Http/PersonalDataScan` · `LogEventText.RawValues` · `UnexpectedErrors` | 개인정보 값 검색(NFR-04): `FindIn`(텍스트) · `FindInJson`(원문 + 디코딩한 문자열, 기본 인코더가 한글을 이스케이프하므로 필요) · `FindInLogs` → `LogExposure`(이벤트 ID · 수준 · 범주 · 템플릿 · 값). 대소문자 무시 서수 비교. `UnexpectedErrors(ids)`는 Error 이상 중 단언한 이벤트 ID를 뺀 나머지, `UnexpectedErrors(ExpectedLogEvent, …)`는 이벤트 ID + 범주(`SourceContext`)가 모두 같은 것만 뺀다(`ExpectedLogEvent.GlobalException` = ID 1 · `GlobalExceptionHandler`, 프레임워크 `RequestSizeLimitFilter`도 ID 1이라 새 테스트는 이쪽, BL-139). `PersonalValueForms.Name(name)`은 이름의 NFC · NFD 원문과 대문자 · 소문자 퍼센트 인코딩(서수 중복 제거, 비교가 정규화를 하지 않으므로 필요) |
+| `Observability/ActivityCollector(sourceName, filter?)` → `CapturedActivity` | `ActivityListener`(소스 `NpgsqlSource` = `Npgsql` · `AspNetCoreSource` = `Microsoft.AspNetCore`, `AllDataAndRecorded`)로 끝난 span의 태그 · 이벤트 · 상태 · `TraceId` 사본을 모은다(`Tag(key)` · `Dump()`, 선택 필터, `Clear`). 요청 span은 응답 뒤에 끝나므로 `WaitForAsync(predicate, ct, count, timeout)`로 기다리고, TestServer는 보낸 `traceparent`의 trace ID, Kestrel은 `ServerPort(port)`로 고른다(같은 프로세스 HttpClient 계측이 `traceparent`를 덮음). 프로세스 전체 리스너라 테스트 안에서 만들고 폐기한다(BL-024, S07-T03) |
+| `Performance/PerformanceMeasurement.MeasureAsync` → `MeasurementResult` · `CommandCountingInterceptor` · `DbContextOptionsInspection` | 워밍업 뒤 N회(회차마다 `prepare`는 측정 제외, 조회 측정은 `prepare` 없는 오버로드: 시드는 측정 전 1회, 회차마다 `ResetAsync` 금지) `Median` · `Max` · `Describe()`, 명령 실행 직전 수 세기(`Commands` · `InsertCommands` · `InsertStatementCount`, 매개변수는 개수만), 호스트 DbContext의 `EnableSensitiveDataLogging` 여부(NFR-02, S06-T06) |
 
 **트리거 규칙**
 
@@ -457,3 +457,4 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 | 2026-09-28 | developer | 대상 대기 목록에서 Validator 규칙 2개 해제(`RegisterEmployeesCommandValidator`), 표 1행 · 건너뜀 대기 1 + 격리 1(실측 106 = 통과 104 · 건너뜀 2) (S06-T04) |
 | 2026-09-28 | developer | 대상 대기 목록에서 Controller 규칙 해제(`EmployeeController`), 목록 0개 · 해제 기록 표 3행, 안전장치는 표본 목록으로, 건너뜀 대기 0 + 격리 1(실측 108 = 통과 107 · 건너뜀 1) (S06-T05) |
 | 2026-09-28 | developer | 통합 테스트 도구 추가: `EmployeeApiFactoryOptions`의 `IdGenerator` · `AfterEmailLookup` · `UseKestrel`(실제 Kestrel 호스트), `KestrelSend`, `RequestStatusCodes`, `ScriptedIdGenerator` · `EmailLookupHookRepository` · `EmployeeImportData` · `ExampleFiles` · `EmployeeRows` · `PersonalDataScan` · `NpgsqlActivityCollector` · 성능 측정 도우미 (S06-T06) |
+| 2026-09-29 | developer | 통합 테스트 도구 확장: `UnexpectedErrors(ExpectedLogEvent, …)`(이벤트 ID + 범주, BL-139), `PersonalValueForms.Name`, `NpgsqlActivityCollector` → `ActivityCollector`(소스 지정 · `TraceId` · `WaitForAsync` · `ServerPort`), `PerformanceMeasurement.MeasureAsync` 준비 없는 오버로드, 호스트가 Api `Microsoft.AspNetCore` Warning 재정의를 쓰는지 고정 테스트 (S07-T03) |

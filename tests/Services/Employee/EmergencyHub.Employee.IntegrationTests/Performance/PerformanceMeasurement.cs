@@ -46,6 +46,23 @@ public static class PerformanceMeasurement
         return new MeasurementResult(warmups, samples);
     }
 
+    /// <summary>
+    /// 준비 작업 없이 측정합니다(조회 측정, S07-T03 NFR-03). 시드는 측정 전에 한 번만 넣고 회차마다 비우지 않습니다
+    /// (회차마다 <c>Database.ResetAsync</c>를 부르면 시드가 지워짐).
+    /// </summary>
+    /// <param name="warmupCount">워밍업 횟수(0 이상).</param>
+    /// <param name="iterationCount">측정 횟수(1 이상).</param>
+    /// <param name="action">잴 작업.</param>
+    /// <param name="cancellationToken">취소 토큰.</param>
+    /// <returns>워밍업 · 측정 시간.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">횟수가 범위 밖인 경우.</exception>
+    public static Task<MeasurementResult> MeasureAsync(
+        int warmupCount,
+        int iterationCount,
+        Func<CancellationToken, Task> action,
+        CancellationToken cancellationToken) =>
+        MeasureAsync(warmupCount, iterationCount, static _ => Task.CompletedTask, action, cancellationToken);
+
     private static async Task<TimeSpan> RunOnceAsync(Func<CancellationToken, Task> prepare, Func<CancellationToken, Task> action, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

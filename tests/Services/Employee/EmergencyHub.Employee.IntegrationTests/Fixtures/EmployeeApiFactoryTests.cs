@@ -2,6 +2,7 @@ using System.Net;
 using EmergencyHub.BuildingBlocks.Infrastructure.Persistence;
 using EmergencyHub.Employee.Infrastructure.Persistence;
 using EmergencyHub.Employee.IntegrationTests.FaultInjection;
+using EmergencyHub.Employee.IntegrationTests.Http;
 using EmergencyHub.Employee.IntegrationTests.TestData;
 using EmergencyHub.ServiceDefaults;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +48,26 @@ public sealed class EmployeeApiFactoryTests(EmployeeDatabaseFixture database) : 
         var logEvent = factory.Logs.Events.Should().ContainSingle(e => e.MessageTemplate.Text == FactorySmokeLogs.Template).Which;
         logEvent.Properties["Value"].ToString().Should().Be("7");
         logEvent.Properties["ServiceName"].ToString().Should().Be("\"employee\"");
+    }
+
+    // S07-T03 도구(developer): 호스트는 Api 실제 appsettings.json의 Microsoft.AspNetCore Warning 재정의를 그대로 쓴다(완료 조건 ④의 전제).
+    // 호스팅 'Request starting' · 'Request finished'(Information)는 경로 원문(이름 값)을 담으므로 수집되면 안 된다.
+    [Theory]
+    [InlineData("Development")]
+    [InlineData("Production")]
+    public async Task Logs_ApiSettingsOverride_AspNetCoreInformationLogsNotCollected(string environment)
+    {
+        await using var factory = new EmployeeApiFactory(Database, new EmployeeApiFactoryOptions { Environment = environment });
+        using var client = factory.CreateClient();
+        factory.Logs.Clear();
+
+        using var response = await client.GetAsync(new Uri("/api/employee/" + Uri.EscapeDataString(EmployeeBulkSeeder.MissingName), UriKind.Relative), CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        factory.Services.GetRequiredService<IConfiguration>()["Serilog:MinimumLevel:Override:Microsoft.AspNetCore"].Should().Be("Warning");
+        factory.Logs.RequestCompletions.Should().ContainSingle("수집 자체는 동작한다(빈 수집으로 통과하지 않음)");
+        factory.Logs.Events.Where(logEvent => logEvent.SourceContext().StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal))
+            .Should().AllSatisfy(logEvent => logEvent.Level.Should().BeOneOf(Serilog.Events.LogEventLevel.Warning, Serilog.Events.LogEventLevel.Error, Serilog.Events.LogEventLevel.Fatal));
     }
 
     [Fact]

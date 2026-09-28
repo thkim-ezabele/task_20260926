@@ -70,6 +70,27 @@ internal static class LogEventText
         return [.. events.Where(logEvent => logEvent.Level >= LogEventLevel.Error && !(logEvent.EventId() is { } id && expectedEventIds.Contains(id)))];
     }
 
+    /// <summary>
+    /// Error 이상(Error · Fatal) 이벤트 중 이벤트 ID와 범주가 모두 <paramref name="expected"/> · <paramref name="more"/>의 하나와 같은 것을 뺀 나머지를 돌려줍니다(BL-139).
+    /// </summary>
+    /// <remarks>
+    /// 이벤트 ID만 받는 오버로드는 다른 범주의 같은 ID(예: <c>RequestSizeLimitFilter</c> ID 1)까지 제외합니다. 새 테스트는 이 오버로드를 씁니다
+    /// (예: <c>UnexpectedErrors(ExpectedLogEvent.GlobalException)</c>).
+    /// </remarks>
+    /// <param name="events">수집한 이벤트.</param>
+    /// <param name="expected">테스트가 일부러 낸 로그(단언한 뒤 제외).</param>
+    /// <param name="more">더 제외할 로그.</param>
+    /// <returns>판정받을 이벤트.</returns>
+    public static IReadOnlyList<LogEvent> UnexpectedErrors(this IEnumerable<LogEvent> events, ExpectedLogEvent expected, params ExpectedLogEvent[] more)
+    {
+        ArgumentNullException.ThrowIfNull(events);
+        ArgumentNullException.ThrowIfNull(expected);
+        ArgumentNullException.ThrowIfNull(more);
+
+        ExpectedLogEvent[] excluded = [expected, .. more];
+        return [.. events.Where(logEvent => logEvent.Level >= LogEventLevel.Error && !excluded.Any(item => item.Matches(logEvent)))];
+    }
+
     private static void CollectRaw(LogEventPropertyValue value, List<string> values)
     {
         switch (value)
