@@ -11,7 +11,7 @@ namespace EmergencyHub.Employee.IntegrationTests.Http;
 // S06-T06 완료 조건 ①(PRD-002 FR-05 입력 경로 표 · FR-06 · FR-10 통합): 실제 Api 파이프라인(바인더 · Validator · Handler · UnitOfWork) + 컨테이너 DB.
 // Api.UnitTests RegisterEmployeesHttpTests는 ISender 대역이라 Validator · Handler · DB를 지나지 않는다. 여기서는 입력 경로 표의 행마다 최종 상태 코드 · 정수 code와
 // "실패 때 DB 0건"을 DB에서 확인한다. 1 MiB 초과 Kestrel 경로는 RegisterEmployeesKestrelLimitTests, 경합은 RegisterEmployeesConcurrencyTests.
-// 0행 입력(JSON []) 201 count 0은 BL-137 결정 전이라 고정하지 않는다.
+// 0행 입력(JSON [], NBSP만 있는 CSV 줄)은 Handler가 400 · 21028로 거부한다(BL-137 결정 A, S07-T05).
 [Collection(EmployeeDatabaseCollectionDefinition.Name)]
 [Trait("FR", "PRD-002/FR-05")]
 [Trait("FR", "PRD-002/FR-06")]
@@ -111,6 +111,10 @@ public sealed class RegisterEmployeesInputPathTests(EmployeeDatabaseFixture data
         { "multipart-file-field-without-filename", string.Empty, 21028 },
         { "multipart-data-field-with-filename", string.Empty, 21028 },
         { "raw-empty-body", string.Empty, 21028 },
+
+        // 행 0개(BL-137 결정 A, S07-T05): Validator 공백 집합 밖이라 Validator는 지나고, 파서가 행 0개로 읽어 Handler가 21028로 거부한다.
+        { "raw-json-zero-rows", string.Empty, 21028 },
+        { "raw-csv-nbsp-only-lines", string.Empty, 21028 },
         { "raw-csv-1001-rows", string.Empty, 21027 },
         { "multipart-file-json-1001-rows", string.Empty, 21027 },
         { "raw-json-syntax-invalid", string.Empty, 21023 },
@@ -381,6 +385,10 @@ public sealed class RegisterEmployeesInputPathTests(EmployeeDatabaseFixture data
                 return new MultipartFormDataContent { { new ByteArrayContent(csv), "data", "employees.csv" } };
             case "raw-empty-body":
                 return ImportContent.Raw([], "text/csv");
+            case "raw-json-zero-rows":
+                return ImportContent.Raw("[]"u8.ToArray(), "application/json");
+            case "raw-csv-nbsp-only-lines":
+                return ImportContent.Raw(Encoding.UTF8.GetBytes(" \n  \n"), "text/csv");
             case "raw-csv-1001-rows":
                 return ImportContent.Raw(EmployeeImportData.Csv(1001), "text/csv");
             case "multipart-file-json-1001-rows":

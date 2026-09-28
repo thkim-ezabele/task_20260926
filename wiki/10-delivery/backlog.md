@@ -5,7 +5,7 @@ status: stable
 tags: [delivery, backlog]
 aliases: [Backlog]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 백로그
@@ -163,7 +163,7 @@ updated: 2026-09-28
 | BL-134 | employee-api.md 83행 409 설명이 옛 `ux_employees_email`로 남아 있음(샘플 API 제거된 PRD-001 문서) | S05-T05 reviewer | 중 | planned:S07 | S06 API 문서 작업에서 다시 쓸 대상. S05 종료 정리: S07-T04 API 명세에서 다시 씀 |
 | BL-135 | database.md '알려진 잡음 로그' 표가 BL-117(첫 /health/ready Unhealthy Error 2건)을 '잡음 아님 · 제외하지 않음'으로 두어, RETRO-PRD-001 유지 판단(BL-117 잡음 제외) · S05 계획 인계 메모와 다름. 한쪽으로 맞춤 | S05-T05 tester | 중 | dropped | S05-T05에서는 승인된 인계 메모 기준으로 개수 기록 후 제외. S05-T05 관찰: Api 시작 약 2.6초 뒤 첫 요청, EmployeeDbContext 924 ms · ReadDbContext 108 ms, 두 번째 요청부터 200. S05 종료 정리: BL-117로 병합. 기준 원본은 database.md 155행 · S04 결과 리뷰(BL-117은 기록 유지 · 제외 아님 · 판정은 완료 조건 기준). 어긋난 쪽은 S05 계획 인계 메모(WL-04 인용 오류). S05-T05 PASS는 완료 조건 ④가 BL-117과 무관하게 충족되어 추인 |
 | BL-136 | check-docs.js에 U+FFFD(EF BF BD) 문자 검사 추가: 도구 인자에서 `\uXXXX` 이스케이프가 문자로 풀려 문서 · 테스트 데이터가 조용히 바뀌는 현상 방지(S06-T03 error-codes 217행 사례) | S06-T03 tester | 중 | open | S06 종료 정리: 스크립트 변경이라 토픽 밖 feature/* 또는 /retro PRD-002(BL-001 · BL-018과 묶음). 그때까지 S07-T04 tester 점검표에 U+FFFD grep 0 |
-| BL-137 | 내용은 있지만 행이 0개인 일괄 등록 입력(JSON `[]`, NBSP만 있는 CSV 줄 등 Validator 공백 집합 밖이지만 파서가 빈 줄로 보는 입력)이 201 `{count:0, ids:[]}`로 처리됨. 21028로 거부할지 결정(PRD · ADR 규정 없음) | S06-T04 developer | 중 | planned:S07 | S06 종료 정리: 결정 대기(S07 계획 리뷰). 추천 A = 0행이면 21028 400(Handler 파싱 직후, PRD FR-06 · error-codes 한 줄), B = 현행 201 유지 + 명세 명시. 오케스트레이션 세션이 사용자 확인 · S07 계획: 사용자 결정 A, S07-T05에서 처리 |
+| BL-137 | 내용은 있지만 행이 0개인 일괄 등록 입력(JSON `[]`, NBSP만 있는 CSV 줄 등 Validator 공백 집합 밖이지만 파서가 빈 줄로 보는 입력)이 201 `{count:0, ids:[]}`로 처리됨. 21028로 거부할지 결정(PRD · ADR 규정 없음) | S06-T04 developer | 중 | done | S06 종료 정리: 결정 대기(S07 계획 리뷰). 추천 A = 0행이면 21028 400(Handler 파싱 직후, PRD FR-06 · error-codes 한 줄), B = 현행 201 유지 + 명세 명시. 오케스트레이션 세션이 사용자 확인 · S07 계획: 사용자 결정 A, S07-T05에서 처리 · S07-T05: Handler 파싱 직후 행 0개(오류 0개)면 400 · 21028(경로 `""`), PRD FR-06 · error-codes 21028 반영 |
 | BL-138 | 일괄 등록 성공 로그 20001(Information)이 직원마다 1줄이라 1,000행이면 1,000줄. 요약 로그(건수 1줄)로 바꿀지 검토(NFR-02 측정 때 로그 비용 확인) | S06-T04 developer | 하 | open | S06 종료 정리: NFR-02 중앙값 170.2ms로 성능 영향 없음. 트리거: 로그 수집기 도입(ADR-0023) 또는 운영 로그 비용 문제 제기 |
 | BL-139 | 통합 테스트 LogEventText.UnexpectedErrors(ids)가 이벤트 ID만으로 제외: 프레임워크 범주도 ID 1을 씀(TestServer RequestSizeLimitFilter 실측). 제외 시 SourceContext도 함께 보도록 할지 검토 | S06-T06 tester | 하 | planned:S07 | S06 종료 정리: S07-T03 developer 도구 준비에 편입(제외 시 이벤트 ID + SourceContext) |
 | BL-140 | coding-conventions Validator 규칙이 "규칙마다 WithError(Error)"만 다룸: Value Object Create 결과에 따라 코드가 달라지는 경우(GetEmployeeByNameQueryValidator Custom + AddFailure + CustomState)를 허용 패턴으로 적을지, 공용 확장(예: MustBeValid(Func<T, Result>))을 둘지 | S07-T02 reviewer | 하 | new | 동작은 WithError와 같음(RequestValidation이 CustomState를 읽음) |
@@ -187,3 +187,4 @@ updated: 2026-09-28
 | 2026-09-28 | developer | S05-T01: PRD-002 범위 밖 백로그 후보 BL-121~127 추가(`new`), BL-024 open → planned:S06 |
 | 2026-09-28 | orchestrator | S05 종료 정리: BL-121~135 처리(open 7 · planned:S06 5 · planned:S07 2 · dropped 1(BL-135 → BL-117 병합)), BL-128~135 추가 기록 포함, `new` 0 |
 | 2026-09-29 | orchestrator | S06 종료 정리: BL-136~139 new 처리(open 2 · planned:S07 2), BL-129 · 130 · 132 · 133 done, BL-024 planned:S06 → S07, BL-131 open(규칙 범위 확대), BL-018 비고, `new` 0 |
+| 2026-09-29 | developer | S07-T05: BL-137 planned:S07 → done(행 0개 입력 400 · 21028) |

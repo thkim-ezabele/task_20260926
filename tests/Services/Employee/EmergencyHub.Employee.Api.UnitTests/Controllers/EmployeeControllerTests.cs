@@ -51,7 +51,7 @@ public sealed class EmployeeControllerTests
     [Fact]
     public async Task RegisterAsync_Payload_SendsCommandWithSameFormatSourcesContentAndToken()
     {
-        _sender.SendAsync(Arg.Any<RegisterEmployeesCommand>(), Arg.Any<CancellationToken>()).Returns(Result.Success(new RegisterEmployeesResponse(0, [])));
+        _sender.SendAsync(Arg.Any<RegisterEmployeesCommand>(), Arg.Any<CancellationToken>()).Returns(Result.Success(new RegisterEmployeesResponse(1, [FirstId])));
         using var cancellation = new CancellationTokenSource();
         var payload = new EmployeeImportPayload(EmployeeImportFormat.Json, EmployeeImportSources.File | EmployeeImportSources.Data, Encoding.UTF8.GetBytes("[{}]"));
 
@@ -147,15 +147,19 @@ public sealed class EmployeeControllerTests
     }
 
     [Fact]
-    public async Task RegisterAsync_ZeroRowsSucceeded_Returns201WithEmptyIds()
+    public async Task RegisterAsync_ZeroRowsInput_SendsContentAsIsAndReturnsProblemResultWithHandlers21028()
     {
-        _sender.SendAsync(Arg.Any<RegisterEmployeesCommand>(), Arg.Any<CancellationToken>()).Returns(Result.Success(new RegisterEmployeesResponse(0, [])));
+        // 행 0개(JSON "[]")는 Handler가 21028로 거부한다(BL-137 결정 A, S07-T05). Controller는 내용을 거르지 않고 Result만 옮긴다.
+        var empty = ValidationError.Create([FieldError.Create(string.Empty, EmployeeErrors.ImportInputEmpty)]);
+        _sender.SendAsync(Arg.Any<RegisterEmployeesCommand>(), Arg.Any<CancellationToken>()).Returns(Result.Failure<RegisterEmployeesResponse>(empty));
+        var payload = new EmployeeImportPayload(EmployeeImportFormat.Json, EmployeeImportSources.Body, Encoding.UTF8.GetBytes("[]"));
 
-        var result = await CreateController().RegisterAsync(Payload(), CancellationToken.None);
+        var result = await CreateController().RegisterAsync(payload, CancellationToken.None);
 
-        var created = result.Result.Should().BeOfType<ObjectResult>().Subject;
-        created.StatusCode.Should().Be(StatusCodes.Status201Created);
-        created.Value.Should().BeOfType<RegisterEmployeesResponse>().Which.Ids.Should().BeEmpty();
+        result.Result.Should().BeOfType<ErrorProblemResult>().Which.Error.Should().BeSameAs(empty);
+        await _sender.Received(1).SendAsync(
+            Arg.Is<RegisterEmployeesCommand>(command => command.Format == payload.Format && command.Sources == payload.Sources && command.Content.Equals(payload.Content)),
+            Arg.Any<CancellationToken>());
     }
 
     // ---- 목록 조회(S07-T01, PRD-002 FR-07): 성공 ----

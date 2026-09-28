@@ -15,7 +15,8 @@ namespace EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployees
 /// </summary>
 /// <remarks>
 /// <list type="number">
-/// <item>파싱: <see cref="RegisterEmployeesCommand.Format"/>에 맞는 파서. 요청 전체 오류(21022 · 21023 · 21027)는 경로 ""의 <see cref="FieldError"/> 하나로 옮긴 <see cref="ValidationError"/>입니다.</item>
+/// <item>파싱: <see cref="RegisterEmployeesCommand.Format"/>에 맞는 파서. 요청 전체 오류(21022 · 21023 · 21027)는 경로 ""의 <see cref="FieldError"/> 하나로 옮긴 <see cref="ValidationError"/>입니다.
+/// 읽은 행과 행 오류가 모두 0개(예: JSON <c>[]</c>, NBSP만 있는 CSV 줄)이면 빈 입력 21028(경로 "")로 멈춥니다(BL-137, S07-T05).</item>
 /// <item>행 검증: 파서 행 오류(경로 <c>Rows[n]</c> 또는 <c>Rows[n].필드</c>)와 행마다 Value Object <c>Create</c> 결과(필드 순서 Name → Email → Tel → Joined,
 /// 필드마다 첫 오류)를 행 번호 순으로 한 목록에 모읍니다.</item>
 /// <item>요청 안 이메일 중복: <see cref="Email.NormalizedEmail"/> 서수 비교, 같은 값의 행을 모두 <c>Rows[n].Email</c> · 21018로 표시합니다.</item>
@@ -28,7 +29,7 @@ namespace EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployees
 /// (21030 · 23002) 하나를 붙입니다. <see cref="ValidationError"/>를 Handler가 만드는 것은 이 Handler에만 허용한 ADR-0018 범위 예외입니다(ADR-0026 7절).
 /// </para>
 /// <para>
-/// 행이 0개(예: JSON <c>[]</c>)이면 조회 · 추가 없이 0건 성공입니다. 저장 · 커밋은 트랜잭션 데코레이터 → <c>IUnitOfWork</c>가 하고(ADR-0014),
+/// 저장 · 커밋은 트랜잭션 데코레이터 → <c>IUnitOfWork</c>가 하고(ADR-0014),
 /// 동시 경합은 <c>ux_employees_normalized_email</c> 23505 → 23001(행 번호 없음)로 막습니다(ADR-0026 9절). 로그에는 직원 ID만 남깁니다(NFR-04).
 /// </para>
 /// </remarks>
@@ -53,11 +54,6 @@ internal sealed class RegisterEmployeesCommandHandler(
         }
 
         var rows = validated.Value;
-        if (rows.Count == 0)
-        {
-            return new RegisterEmployeesResponse(0, []);
-        }
-
         var existing = await repository.ListExistingNormalizedEmailsAsync(
             [.. rows.Select(row => row.Email.NormalizedEmail)], cancellationToken);
         var conflictRows = FindStoredEmailRows(rows, existing);
@@ -89,6 +85,12 @@ internal sealed class RegisterEmployeesCommandHandler(
         {
             // 파서의 요청 전체 오류(21022 · 21023 · 21027)는 경로 "" 하나로 옮긴다.
             return ValidationError.Create([FieldError.Create(string.Empty, parsed.Error)]);
+        }
+
+        if (parsed.Value.Rows.Count == 0 && parsed.Value.Errors.Count == 0)
+        {
+            // 행 0개(JSON [], NBSP만 있는 CSV 줄 등)는 Validator 공백 집합 밖이라 파싱 뒤에야 안다. 빈 입력 21028(경로 "", BL-137 결정 A).
+            return ValidationError.Create([FieldError.Create(string.Empty, EmployeeErrors.ImportInputEmpty)]);
         }
 
         var rowErrors = new List<(int RowNumber, FieldError Error)>();

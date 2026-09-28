@@ -84,7 +84,7 @@ public static class EmployeeErrors
     /// <summary>21027 · 행 수가 1,000을 넘음(요청 전체 오류). 판정 원본은 Application CSV · JSON 파서.</summary>
     public static readonly Error ImportTooManyRows = Error.Validation(21027, "한 번에 1,000행까지 등록할 수 있습니다.");
 
-    /// <summary>21028 · 빈 입력(입력 출처 없음, 길이 0, BOM이나 공백만 있음, 요청 전체 오류 경로 ""). 판정 원본은 일괄 등록 Validator.</summary>
+    /// <summary>21028 · 빈 입력(입력 출처 없음, 길이 0, BOM이나 공백만 있음, 요청 전체 오류 경로 ""). 판정 원본은 일괄 등록 Validator, 행 0개는 Handler(S07-T05).</summary>
     public static readonly Error ImportInputEmpty = Error.Validation(21028, "등록할 입력이 비어 있습니다.");
 
     /// <summary>21029 · 입력 출처가 둘 이상(multipart <c>file</c>과 <c>data</c> 동시 전송 등, 요청 전체 오류 경로 ""). 판정 원본은 일괄 등록 Validator.</summary>

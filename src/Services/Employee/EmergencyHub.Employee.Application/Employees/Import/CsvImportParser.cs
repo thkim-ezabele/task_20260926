@@ -19,7 +19,7 @@ namespace EmergencyHub.Employee.Application.Employees.Import;
 /// 21021이 나면 그 물리 줄 끝까지 건너뛰고 다음 줄부터 다시 읽는다.</item>
 /// <item>요청 전체 오류: 잘못된 UTF-8 21022(<see cref="ImportTextDecoder"/>), 행 수(빈 줄 제외, 행 오류 행 포함)가 <see cref="ImportLimits.MaxRows"/>를 넘으면 21027로 멈춘다.</item>
 /// </list>
-/// 오류에는 고정 문구만 담고 입력 값을 넣지 않는다(NFR-04). 빈 입력 판정(21028)은 Validator 몫이다.
+/// 오류에는 고정 문구만 담고 입력 값을 넣지 않는다(NFR-04). 빈 입력 판정(21028)은 Validator와 Handler(행 0개) 몫이다.
 /// </remarks>
 internal static class CsvImportParser
 {

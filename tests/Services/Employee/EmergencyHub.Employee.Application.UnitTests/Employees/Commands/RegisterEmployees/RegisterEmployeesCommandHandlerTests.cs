@@ -13,7 +13,7 @@ namespace EmergencyHub.Employee.Application.UnitTests.Employees.Commands.Registe
 
 // S06-T04 일괄 등록 Handler(PRD-002 FR-06, ADR-0026 6 · 7 · 9절): ① 파싱 → ② 행 검증(파서 행 오류 + Value Object Create 결과) →
 // ③ 요청 안 이메일 중복 → ④ DB 사전 조회 → ⑤ Aggregate 생성 · AddRange. 앞 단계가 실패하면 멈추고 뒤 단계 대역(Repository · IIdGenerator)을 부르지 않는다.
-// ①~③ 실패는 ValidationError(1001), ④ 실패는 ConflictError(23001 + Rows[n].Email). 목록은 각각 최대 100개 + 잘림 항목(21030 · 23002, 경로 "").
+// ① 뒤 행 0개(오류도 0개)는 21028(경로 "", S07-T05). ①~③ 실패는 ValidationError(1001), ④ 실패는 ConflictError(23001 + Rows[n].Email). 목록은 각각 최대 100개 + 잘림 항목(21030 · 23002, 경로 "").
 // Handler는 저장하지 않으므로 SaveChanges · CommitAsync를 검증하지 않는다(ADR-0014).
 [Trait("FR", "PRD-002/FR-06")]
 [Trait("FR", "PRD-002/FR-10")]
@@ -410,18 +410,55 @@ public sealed class RegisterEmployeesCommandHandlerTests
         conflict.Details[^1].Should().Be(ConflictDetail.Create(string.Empty, EmployeeErrors.RowConflictsTruncated));
     }
 
-    // ---- 엣지: 행 0개 · 형식 ----
+    // ---- 실패: 행 0개(BL-137 결정 A, S07-T05) ----
+    // Validator 공백 집합(BOM 뒤 0x20 · 0x09 · 0x0D · 0x0A) 밖이라 Validator를 지나지만 파서가 행 0개로 읽는 입력은
+    // Handler가 파싱 직후 21028(경로 "")로 거부하고 DB 조회 · AddRange를 하지 않는다.
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("[\n]")]
+    [InlineData(" [ ]\r\n")]
+    public async Task Handle_JsonWithZeroRows_ReturnsImportInputEmptyAndCallsNothingElse(string json)
+    {
+        var result = await Handle(Json(json));
+
+        result.Error.Should().Be(Validation((string.Empty, EmployeeErrors.ImportInputEmpty)));
+        ShouldNotReachDatabaseOrIdGenerator();
+    }
+
+    [Theory]
+    [InlineData(" ")]
+    [InlineData(" \n\n  ")]
+    [InlineData("　\r\n \t")]
+    public async Task Handle_CsvWithOnlyBlankLinesOutsideValidatorWhitespace_ReturnsImportInputEmptyAndCallsNothingElse(string csv)
+    {
+        var result = await Handle(Csv(csv));
+
+        result.Error.Should().Be(Validation((string.Empty, EmployeeErrors.ImportInputEmpty)));
+        ShouldNotReachDatabaseOrIdGenerator();
+    }
+
+    // ---- 엣지: 행 0개 경계 · 형식 ----
 
     [Fact]
-    public async Task Handle_NoRows_ReturnsZeroCountWithoutTouchingRepository()
+    public async Task Handle_ZeroReadRowsButParserRowError_ReportsRowErrorNotImportInputEmpty()
     {
-        // 빈 입력(21028)은 Validator가 먼저 막는다. 내용이 있지만 행이 0개인 입력(JSON "[]")은 등록할 것이 없으므로 조회 · 추가를 하지 않는다.
-        var result = await Handle(Json("[]"));
+        // 읽은 행은 0개지만 행 오류가 있으면 빈 입력이 아니다. 21028이 아니라 행 오류를 보고한다.
+        var result = await Handle(Json("[null]"));
+
+        result.Error.Should().Be(Validation(("Rows[1]", EmployeeErrors.JsonItemNotObject)));
+        ShouldNotReachDatabaseOrIdGenerator();
+    }
+
+    [Fact]
+    public async Task Handle_OneRowAfterNbspBlankLines_RegistersThatRow()
+    {
+        // 행이 1개 이상이면 지금 동작 그대로다. 빈 줄은 줄 번호에만 센다.
+        var result = await Handle(Csv(" ", Row("a@example.com"), " "));
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Count.Should().Be(0);
-        result.Value.Ids.Should().BeEmpty();
-        ShouldNotReachDatabaseOrIdGenerator();
+        result.Value.Should().BeEquivalentTo(new RegisterEmployeesResponse(1, [IdOf(1)]));
+        _repository.Received(1).AddRange(Arg.Any<IEnumerable<EmployeeAggregate>>());
     }
 
     [Fact]

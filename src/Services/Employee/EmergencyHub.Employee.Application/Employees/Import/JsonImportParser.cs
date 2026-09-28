@@ -48,7 +48,7 @@ internal static class JsonImportParser
         var start = FirstNonWhitespaceIndex(text);
         if (start < 0)
         {
-            // 빈 입력 판정(21028)은 Validator 몫이다. CSV 파서와 같이 빈 결과를 돌려준다.
+            // 빈 입력 판정(21028)은 Validator와 Handler(행 0개) 몫이다. CSV 파서와 같이 빈 결과를 돌려준다.
             return new ImportParseResult([], []);
         }
 
