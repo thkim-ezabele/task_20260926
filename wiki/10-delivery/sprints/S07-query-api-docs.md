@@ -11,7 +11,7 @@ worklogs: []
 aliases: [S07]
 tags: [delivery, sprint]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # S07: 조회 API, 조회 성능, 문서 마무리
@@ -76,6 +76,12 @@ S05 인계 (S05 결과 리뷰 2026-09-28, 원문은 [S05 진행 기록](S05-reba
 - **S07-T03**: S05 증빙 테스트 대응표 HTTP 행 '이전 대기: S07-T03' 닫기. EXPLAIN 도우미(IntegrationTests QueryPlans)는 S05-T06 것을 재사용. 알려진 잡음 기준은 database.md 알려진 잡음 로그가 원본.
 - **S07-T04**: BL-128(roadmap PRD-001 · PRD-002 행) · BL-134(employee-api.md 83행), TD-028 명세 문구('헤더 행을 넣으면 날짜 형식 오류로 거부').
 
+S06 인계 (S06 결과 리뷰 2026-09-29, 원문은 [S06 진행 기록](S06-bulk-register-api.md#진행-기록)):
+
+- **계획 리뷰**: BL-137(내용은 있지만 행이 0개인 일괄 등록 입력) 결정 대기. 추천 A = 21028 400(Handler 파싱 직후 한 곳, PRD FR-06 · error-codes 한 줄, S07-T04 앞에 작은 코드 작업 추가), B = 현행 201 `{count:0, ids:[]}` 유지 + 명세 명시. 오케스트레이션 세션이 사용자에게 확인해 입력으로 넘긴다.
+- **S07-T03**: S06-T06 도구 재사용(EmployeeApiFactoryOptions UseKestrel · IdGenerator · AfterEmailLookup, HttpProblem · LogEventText, Http/ImportContent, PerformanceMeasurement 워밍업 1회 + 5회 중앙값 · SensitiveDataLogging 끔). BL-139: UnexpectedErrors 제외는 이벤트 ID + SourceContext로(TestServer RequestSizeLimitFilter도 ID 1). 로그 판정 기준은 S06 인계 메모 T06 항목과 같음. S05 증빙 대응표 GET 행 '이전 대기: S07-T03'. `DOCKER_API_VERSION=1.43`.
+- **S07-T04**: API 명세 · error-codes에 S06 실측 동작 — (1) Content-Type 없음은 415가 아니라 raw로 보고 내용 판별(빈 본문 21028) (2) 폼 · multipart는 원래 바이트 기준 엄격 UTF-8(21022) (3) 413은 한도 바이트 수 기준, 잘못된 multipart는 400 · 1001 (4) Kestrel 1 MiB 초과 때 클라이언트는 413 또는 연결 종료로 보일 수 있음(판정은 서버 로그) (5) 400 · 409 목록 최대 100개 + 잘림 21030 · 23002, 행 경로 rows[n].field · 요청 전체 "" (6) CSV 닫는 따옴표 뒤 문자 = 21021 (7) 0행 입력 동작(BL-137 결정 결과). local-setup에 Api 단독 실행 시 `ConnectionStrings__Write` · `Read` 필요. tester 명령 점검표에 U+FFFD(EF BF BD) grep 0(BL-136 해결 전 임시). BL-024 대시보드 수동 확인(자동 부분은 S06-T06 완료).
+
 ## 결과 리뷰
 
 > 스프린트 종료 시 orchestrator의 결과 리뷰(계획 대비 실제, 완료 조건 · FR 충족, 반려 분석)를 요약합니다.
@@ -113,3 +119,4 @@ S05 인계 (S05 결과 리뷰 2026-09-28, 원문은 [S05 진행 기록](S05-reba
 | 2026-09-28 | developer | S05-T01: 스프린트 번호 확정, T01 dba 참조 `S05-T05` → `S05-T06`(S05 작업 재구성) |
 | 2026-09-28 | developer | S05-T02: 계획 메모에 S07-T02 라우트 템플릿 세 곳(ADR-0025) 항목 추가 |
 | 2026-09-28 | orchestrator | S05 결과 리뷰: 계획 메모에 "S05 인계" 소절 추가 |
+| 2026-09-29 | orchestrator | S06 결과 리뷰: 계획 메모에 "S06 인계" 소절 추가 |

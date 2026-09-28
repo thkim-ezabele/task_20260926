@@ -2,16 +2,16 @@
 title: "S06: 일괄 등록 POST /api/employee"
 type: sprint
 sprint: "S06"
-status: active
+status: done
 prd: [PRD-002]
 started: 2026-09-28
-finished:
+finished: 2026-09-29
 adrs: []
 worklogs: []
 aliases: [S06]
 tags: [delivery, sprint]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # S06: 일괄 등록 POST /api/employee
@@ -33,7 +33,7 @@ updated: 2026-09-28
 | S06-T03 | JSON 파서 (배열, 단일 객체, 대괄호 없는 나열) | FR-04, FR-10, NFR-04 | ① 배열 · 단일 객체 · 대괄호 없는 나열이 같은 행 목록을 만들고 알 수 없는 속성은 무시 ② 항목 오류: 문자열 아님(`joined` 숫자, 21025), 속성 누락, 객체 아님(21024), 대소문자만 다른 중복 속성(21026) ③ 끝 쉼표 · 주석 · `[..],[..]` · 최대 깊이 64 초과는 21023(경로 "") ④ 값 · 속성 이름의 짝 없는 서로게이트 이스케이프(`\ud800` · `\udc00`)는 500 없이 21022(경로 ""), `\u0000`은 값 보존(단위 테스트로 실측) ⑤ 오류에 `JsonException` · `InvalidOperationException` 원문과 입력 값 없음 ⑥ 서로게이트 · 제어 문자 테스트 데이터는 `DisableDiscoveryEnumeration = true`와 입력 보존 단언(BL-131) | S05-T02 | done | c36a793, 92cd63e, d2d3aad, c0ffc93 |
 | S06-T04 | RegisterEmployeesCommand, Validator, Handler | FR-06, FR-01, FR-10, NFR-04 | ① Validator는 인계 메모의 판정 순서대로 겉모양만(빈 입력 21028, Sources 정의 안 된 비트 1002, 두 비트 이상 21029, Format 1002), 순서 경계마다 테스트, 21028 · 21029는 PropertyName ""이고 error-codes "요청 전체" 목록에 추가 ② Handler: 파싱 → VO 행 검증 → 요청 안 중복 → DB 사전 조회 → Aggregate 생성 · AddRange, 앞 단계 실패 시 다음 단계 Substitute 미호출 단언 ③ 요청 안 중복은 관련 행 모두 표시(3행 이상 포함), DB 사전 조회 결과는 NormalizedEmail → 행 번호 사전으로 짝짓고(순서 가정 없음) 입력 순서로 409 `rows[n].email` ④ 400 목록(파싱 · 행 검증 · 요청 안 중복 합산)과 409 목록 각각 최대 100개 + 잘림 항목(21030 · 23002, 경로 ""), 성공은 count와 입력 순서 ids ⑤ Email.Create가 Cc 제어 문자(탭 · DEL 포함) · 짝 없는 서로게이트를 21004로 거부(BL-129, Name과 공용 Domain internal 도우미, error-codes 21004 설명 갱신) ⑥ 아키텍처 "대상 대기" Validator 규칙 2개 해제(PendingTargetRules ↔ testing-strategy 표 1:1, 건너뜀 대기 1 + 격리 1) ⑦ enum 1002 증빙은 Validator 단위 테스트로 대체해 대응표 반영, coding-conventions에 "VO · Command를 로그 템플릿 인자로 넘기지 않는다"(BL-130), BL-132 예시를 새 Handler 이름으로 | T01, T02, T03 | done | fda5dfe, b413003 |
 | S06-T05 | Employee.Api 바인더, Controller, 크기 제한, Swagger | FR-05, FR-09, NFR-01 | ① 전용 `IModelBinder`가 `EmployeeImportPayload` 생성, 판별 순서 Content-Type → 확장자 → 내용(바인더 단위 테스트) ② 액션 하나에 `[Consumes]` 4종, `POST /api/employee` 201, `Location` 없음, 지원하지 않는 형식 415 · 1005 ③ 1 MiB 제한(`RequestSizeLimit` · `MultipartBodyLengthLimit` · `ValueLengthLimit`), 입력 경로별(multipart `file` · multipart `data` · form-urlencoded · raw) 한도 초과 예외 도달 위치(바인더 / 값 공급자 · ModelState / 전역 처리기) 실측, 한도 초과만 413 · 1004, 잘못된 multipart(boundary 없음 등)는 400 · 1001, 판정 기준을 api-guidelines에 기록 ④ 폼 필드의 잘못된 UTF-8 바이트 치환 여부를 실측해 진행 기록에 남김(치환되어 21022 판정과 어긋나면 BLOCKED) ⑤ Swagger OperationFilter로 `file` · `data` · raw 시험 가능 ⑥ Controller는 `ISender`만, 아키텍처 테스트 통과, "대상 대기" Controller 규칙 1개 해제(목록 · 표 1:1, 건너뜀 대기 0 + 격리 1) | T04 | done | 1c03719, e08d840 |
-| S06-T06 | POST 통합 · 인수 · 개인정보 테스트와 등록 성능 측정 | FR-05, FR-06, FR-10, NFR-01, NFR-02, NFR-04 | ① 입력 경로 표의 모든 행이 기대 상태 코드 · `code`로 응답, 실패(400, 409, 413, 1,000행 초과, NUL email 400 · 21004) 때 DB 0건 ② 동시 경합 두 시나리오: (a) 다른 요청의 같은 이메일 — 테스트 호스트 전용 hook으로 사전 조회 뒤 커밋 전 충돌 행 삽입, 409 · 23001 · 행 번호 없음 · 먼저 커밋된 쪽만 남음 (b) 같은 ID 재전송 — 고정 IIdGenerator로 409 · 3003 · 로그 202(TD-010) ③ 테스트 안 임의 포트 실제 Kestrel 호스트(fixture DB 공유)가 `MaxRequestBodySize` 초과를 413 · 1004로 응답, TestServer 테스트는 RequestFormLimits 경로만 확인함을 테스트 이름 · 진행 기록에 명시 ④ 원문 예시 fixture(CSV · JSON) 인수 시나리오 ⑤ 개인정보: 400 / 409 / 500 본문과 캡처한 로그에 이름 · 이메일 · 전화번호 값 없음, **BL-024**: `ActivityListener`로 모은 Npgsql span 태그(`db.connection_string` · `db.statement` 등)에 DB 비밀번호와 입력 값 없음 ⑥ 1,000행 CSV 측정 테스트가 4초 단언, 로컬 측정(워밍업 1회 뒤 N회 중앙값, `EnableSensitiveDataLogging` 끔) 2초 이내 여부와 EF 배치 크기(명령 분할 수)를 진행 기록에, 로컬 2초 초과면 BLOCKED ⑦ 증빙 대응표 HTTP "이전 대기: S06-T06" 행 닫기(1002 행은 T04 Validator 단위 + 21028 경로 HTTP 400 · 1001 형식), BL-133(`HttpProblem` · `LogEventText`) 재사용 또는 삭제 | T05 | done | 19ba941, (verify) |
+| S06-T06 | POST 통합 · 인수 · 개인정보 테스트와 등록 성능 측정 | FR-05, FR-06, FR-10, NFR-01, NFR-02, NFR-04 | ① 입력 경로 표의 모든 행이 기대 상태 코드 · `code`로 응답, 실패(400, 409, 413, 1,000행 초과, NUL email 400 · 21004) 때 DB 0건 ② 동시 경합 두 시나리오: (a) 다른 요청의 같은 이메일 — 테스트 호스트 전용 hook으로 사전 조회 뒤 커밋 전 충돌 행 삽입, 409 · 23001 · 행 번호 없음 · 먼저 커밋된 쪽만 남음 (b) 같은 ID 재전송 — 고정 IIdGenerator로 409 · 3003 · 로그 202(TD-010) ③ 테스트 안 임의 포트 실제 Kestrel 호스트(fixture DB 공유)가 `MaxRequestBodySize` 초과를 413 · 1004로 응답, TestServer 테스트는 RequestFormLimits 경로만 확인함을 테스트 이름 · 진행 기록에 명시 ④ 원문 예시 fixture(CSV · JSON) 인수 시나리오 ⑤ 개인정보: 400 / 409 / 500 본문과 캡처한 로그에 이름 · 이메일 · 전화번호 값 없음, **BL-024**: `ActivityListener`로 모은 Npgsql span 태그(`db.connection_string` · `db.statement` 등)에 DB 비밀번호와 입력 값 없음 ⑥ 1,000행 CSV 측정 테스트가 4초 단언, 로컬 측정(워밍업 1회 뒤 N회 중앙값, `EnableSensitiveDataLogging` 끔) 2초 이내 여부와 EF 배치 크기(명령 분할 수)를 진행 기록에, 로컬 2초 초과면 BLOCKED ⑦ 증빙 대응표 HTTP "이전 대기: S06-T06" 행 닫기(1002 행은 T04 Validator 단위 + 21028 경로 HTTP 400 · 1001 형식), BL-133(`HttpProblem` · `LogEventText`) 재사용 또는 삭제 | T05 | done | 19ba941, ac654b7 |
 
 상태: `todo` · `doing` · `done` · `blocked`(반려 3회) · `moved:BL-NNN`(백로그로 이관)
 
@@ -50,10 +50,10 @@ updated: 2026-09-28
 
 ## 완료 기준 (DoD)
 
-- [ ] 모든 작업이 `done`이거나 백로그로 이관되었다
-- [ ] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (경고 0, 커버리지 보고 — NFR-06)
-- [ ] 관련 위키 문서(API, 이벤트, DB)를 갱신했다
-- [ ] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
+- [x] 모든 작업이 `done`이거나 백로그로 이관되었다
+- [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (경고 0, 커버리지 보고 — NFR-06): 로컬 build -warnaserror 경고 0, test 통과 2,277 · 건너뜀 1 · 실패 0, 커버리지(대상 6개) 라인 99.3% · 분기 96.7%(596/616)
+- [x] 관련 위키 문서(API, 이벤트, DB)를 갱신했다 (api-guidelines · error-codes · coding-conventions · testing-strategy 등. API 명세는 S07-T04, 이벤트 · DB 스키마 변경 없음)
+- [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
 - [ ] 토픽 브랜치를 push했다 (CI 확인 · 태그 `sprint/S06`은 PRD 종료 뒤 일괄)
 - [ ] CI로만 판정할 조건 (PRD 종료 뒤 일괄): NFR-02 CI 러너에서 1,000행 측정 테스트의 4초 단언 통과, FR-10 · NFR-06 토픽 PR CI 전체 테스트 통과 · 경고 0 · 커버리지 보고 산출물
 
@@ -110,6 +110,7 @@ updated: 2026-09-28
 | 2026-09-29 | S06-T06 | tester | PASS | build 경고 0, format 0, test 통과 2,277 · 건너뜀 1 · 실패 0(Integration 254), check-docs 결함 4. 본 테스트 +87, 대응표 HTTP 12행 이전 완료, BL-133 재사용 해소. BL-139 new |
 | 2026-09-29 | S06-T06 | 기록 | 실측 ⑥ | 1,000행 CSV 중앙값 170.2ms(워밍업 1 + 5회, 2초 이내, 테스트는 4초 단언), 요청당 명령 2개, INSERT 배치 1개(문 1,000 · 매개변수 9,000), 분할 없음 |
 | 2026-09-29 | S06-T06 | 기록 | 실측 ③ | TestServer 413 테스트는 바인더(RequestFormLimits · RequestSizeLimit 메타데이터) 경로만. Kestrel 413은 네 경로 · chunked 모두 서버 413 · 1004 · DB 0건, 정확히 1 MiB 201 |
+| 2026-09-29 | - | 결과 리뷰 | 승인(대리) | orchestrator 결과 리뷰 → 대리 승인. DoD 직접 실행: build 경고 0, test 통과 2,277 · 건너뜀 1 · 실패 0, 커버리지 라인 99.3% · 분기 96.7%. new 5건 정리, BL-137 결정 대기 |
 
 ## 계획 리뷰
 
@@ -166,13 +167,23 @@ S05 인계 (S05 결과 리뷰 2026-09-28, 원문은 [S05 진행 기록](S05-reba
 
 > 스프린트 종료 시 orchestrator의 결과 리뷰(계획 대비 실제, 완료 조건 · FR 충족, 반려 분석)를 요약합니다.
 
--
+- **계획 대비 실제**: 작업 6/6 done, 이관 · 추가 · 분할 · BLOCKED 0(T06 분리 조건 미발생). 커밋 2ee99af..ac654b7 16개. 테스트 전체 1,741(T01 첫 판정) → 통과 2,277 · 건너뜀 1(격리 규칙, 대상 대기 0) · 실패 0. 커버리지 라인 99.4% → 99.3%, 분기 96.7%.
+- **FR 충족**: FR-03 · FR-04 · FR-05 · FR-06 · FR-09 · NFR-01 충족. FR-01(BL-129 email 규칙) · FR-10 · NFR-02(로컬 중앙값 170.2ms, CI 4초 단언은 PRD 종료 뒤) · NFR-04(BL-024 자동 부분, 대시보드는 S07-T04)는 S06 몫 충족. FR-06의 0행 입력 동작(BL-137)은 결정 대기(S07 계획 리뷰).
+- **반려 분석**: 작업 기준 2회(T01 1 · T03 1), REJECT 판정 3건 — 컨벤션 2(같은 규칙: 제품 코드 null-forgiving, TD-029), 누락(문서 사실) 1(error-codes 21022 예시가 U+FFFD로 깨짐). 설계 · 버그(코드) 0. 반려 밖에서도 같은 계열(보이지 않는 문자 · 이스케이프 손상)이 2번 더 나옴(T02 U+FEFF 제안, T04 U+200D 복구) → /retro PRD-002 개선 대상(BL-131 · BL-136).
+- **ADR 후보(파일 없음, /retro PRD-002)**: ① ADR-0026 1절 부분 대체 · 구체화 — 폼 · multipart 원래 바이트 전달(폼 값 공급자 미사용), Content-Type 없음 → 내용 판별, 413은 한도 바이트 수 기준 · 해석 오류는 400 · 1001(PRD FR-05 입력 경로 표 413 행 괄호 설명도 정정 대상) ② (선택) ADR-0028 415 경로 분담(라우팅 415 = 상태 코드 페이지, [FromBody] Content-Type 없음 = ClientErrorFactory).
+- **reviewer 제안 처리**: T02 U+FEFF 이스케이프 → BL-131 규칙에 묶음, T02 "닫는 따옴표 뒤 문자 = 21021" → S07-T04 명세 · error-codes에 적고 FR-03 보완은 /retro에서 판단, T04 테스트 빈 줄 · T05 ImportTransport 0 = Unknown → dropped(규칙 위반 아님), T06 reviewer 메모 4건 → tester가 반영(entry_check 확인).
+- **CI로만 판정할 조건(PRD 종료 뒤 일괄)**: NFR-02 CI 러너 1,000행 4초 단언, 토픽 PR CI 전체 테스트 · 경고 0 · 커버리지 보고 산출물, 실제 Kestrel 임의 포트 호스트 · Testcontainers 경합 테스트의 러너 안정성.
+- **기타**: check-docs 결함 6 = raw 로그 frontmatter(날짜 변경으로 파일 1개 증가, BL-018 유형), 그 밖의 결함 0. 대리 승인 4행(/retro ④ 추인 대상).
 
 ## 생긴 백로그 / 기술부채
 
 | ID | 제목 | 발생 작업 | 정리 결과 |
 |---|---|---|---|
-| | | | open / planned:SNN / dropped |
+| TD-029 | 제품 코드의 null-forgiving `!`(기존 위반), 점검 수단 | S06-T01 reviewer | open(/retro PRD-002에서 규칙 · 점검 수단 결정) |
+| BL-136 | check-docs.js에 U+FFFD 검사 추가 | S06-T03 tester | open(토픽 밖 스크립트 작업, 그때까지 S07-T04 점검표 grep) |
+| BL-137 | 행이 0개인 일괄 등록 입력의 처리(201 count 0 vs 21028) | S06-T04 developer | planned:S07(결정 대기, S07 계획 리뷰) |
+| BL-138 | 일괄 등록 성공 로그가 직원마다 1줄 | S06-T04 developer | open(로그 수집기 도입 트리거) |
+| BL-139 | UnexpectedErrors 제외가 이벤트 ID만 봄 | S06-T06 tester | planned:S07(S07-T03 도구) |
 
 ## 대리 승인
 
@@ -183,20 +194,11 @@ S05 인계 (S05 결과 리뷰 2026-09-28, 원문은 [S05 진행 기록](S05-reba
 | 2026-09-28 | ① 계획 리뷰 | T01~T06 완료 조건 정정안 전체, D1(BL-129 PRD FR-01 email 규칙 변경)~D6 추천안, T06 반려 2회 시 분리안 BLOCKED 보고 조건 | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 계획 리뷰 행 | 대기 |
 | 2026-09-28 | 결정 (S06-T01) | 완료 조건 ② Content-Type 없음 해석: [FromBody] · [Consumes] 불일치 두 경로로 충족, 전용 바인더 경로는 T05 판정 | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 S06-T01 결정 행 | 대기 |
 | 2026-09-28 | 결정 (S06-T05) | 구현이 ADR-0026 1절 · ADR-0028 문장과 다른 2곳(폼 원래 바이트 전달, 바이트 수 기준 413) 유지 + ADR 후보로 /retro 처리, Content-Type 없음 → 내용 판별 | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 S06-T05 결정 행 | 대기 |
+| 2026-09-29 | ③ 결과 리뷰 | 결과 리뷰 · 백로그 / 기술부채 정리안 전체, ADR 후보 2건(/retro 대상), S07 인계, reviewer 제안 처리. BL-137은 결정 대기(오케스트레이션 세션이 사용자 확인) | 오케스트레이션 `emergency-hub-d2` | 2026-09-29 결과 리뷰 행 | 대기 |
 
 ## 회고
 
-### 잘된 점
-
--
-
-### 문제
-
--
-
-### 다음에 바꿀 것
-
--
+토픽 회고(`/retro PRD-002`)에서 다룸.
 
 ---
 
@@ -209,3 +211,4 @@ S05 인계 (S05 결과 리뷰 2026-09-28, 원문은 [S05 진행 기록](S05-reba
 | 2026-09-28 | developer | S05-T01: 스프린트 번호 확정, T01 의존 `S05-T05` → `S05-T06`(S05 작업 재구성), 계획 메모에 '대상 대기' 해제 항목 추가 |
 | 2026-09-28 | orchestrator | S05 결과 리뷰: 계획 메모에 "S05 인계" 소절 추가 |
 | 2026-09-28 | orchestrator | S06 계획 확정: 완료 조건 T01~T06 수정, T04 · T06 dba 생략, DoD CI · 태그 일괄, 사전 점검 · 인계 메모 · 대리 승인 절 추가, `active` |
+| 2026-09-29 | orchestrator | S06 종료: 결과 리뷰, 생긴 백로그 / 기술부채, DoD, 회고 절(토픽 회고로), 대리 승인 4행, `done` |
