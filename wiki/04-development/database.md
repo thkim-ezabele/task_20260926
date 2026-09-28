@@ -90,6 +90,26 @@ updated: 2026-09-28
 
 **psql 확인 항목**(S03-T05 증빙 (d) · BL-014). 컨테이너 안에서 `sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -X -h 127.0.0.1 -U postgres -d emergency_hub_employee ...'`처럼 컨테이너 환경 변수를 써서 비밀번호가 호스트 명령 · 로그에 나오지 않게 한다(앱 롤은 `$EMPLOYEE_APP_PASSWORD`, 컨테이너는 `docker ps --filter volume=emergency-hub-postgres-data`로 찾는다).
 
+psql 명령 틀: 아래 표의 쿼리를 접속별 SQL 파일(예: 슈퍼유저 1~4, 앱 롤 5~10, 읽기 전용 11)로 저장하고 표준 입력으로 넘긴다. 쿼리를 `-c "..."`로 명령줄에 넣지 않는다(PowerShell 5.1은 인자 안의 큰따옴표를 넘기지 못해 `syntax error at end of input`이 난다. 2026-09-28 임시 `postgres:17` 실측). SQL 파일은 저장소 밖(스크래치)에 두고 커밋하지 않는다.
+
+```bash
+# 컨테이너 이름 (두 셸 공통)
+docker ps --filter volume=emergency-hub-postgres-data --format '{{.Names}}'
+
+# Git Bash
+docker exec -i <컨테이너> sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d emergency_hub_employee' < checks-superuser.sql
+docker exec -i <컨테이너> sh -c 'PGPASSWORD="$EMPLOYEE_APP_PASSWORD" psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U employee_app -d emergency_hub_employee' < checks-app.sql
+docker exec -i <컨테이너> sh -c 'PGPASSWORD="$EMPLOYEE_APP_PASSWORD" PGOPTIONS="-c default_transaction_read_only=on" psql -X -h 127.0.0.1 -U employee_app -d emergency_hub_employee' < checks-read.sql
+```
+
+```powershell
+# PowerShell: 표준 입력만 파이프로 바꾼다
+Get-Content checks-superuser.sql | docker exec -i <컨테이너> sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres -d emergency_hub_employee'
+```
+
+- 11번(`checks-read.sql`)은 `25006`을 일부러 내므로 `ON_ERROR_STOP`을 주지 않는다. 이 탐침은 서버 로그에 `ERROR` · `STATEMENT` 한 쌍을 남긴다([알려진 잡음 로그](#알려진-잡음-로그-첫-실행--재시작)).
+- SqlState까지 보려면 `-v VERBOSITY=verbose`를 더한다(오류 줄이 `ERROR:  42P04: ...`처럼 나온다).
+
 | # | 접속 | 쿼리 | 기대값 |
 |---|---|---|---|
 | 1 | postgres | `SELECT datname, pg_get_userbyid(datdba) FROM pg_database WHERE datname = 'emergency_hub_employee';` | `employee_app` |
@@ -106,6 +126,7 @@ updated: 2026-09-28
 
 - 11번은 Read 연결 식과 같은 `Options`로 연 psql 세션이다. Api 읽기 DbContext 자체의 `read_only`는 `/health/ready` 200(읽기 연결 `CanConnect` 통과)과 통합 테스트 S2(S03-T06)로 확인한다.
 - 재시작 확인: 두 번째 실행부터 `postgres` 리소스 로그(서버 로그)에 생성 스크립트 때문에 `ERROR:  database "emergency_hub_employee" already exists`와 `STATEMENT:  CREATE DATABASE emergency_hub_employee OWNER employee_app`가 **실행마다 한 쌍** 남는다(`42P04`, 임시 postgres:17 실측). Aspire는 이 오류를 무시하고 진행한다(ADR-0011). PostgreSQL에는 `CREATE DATABASE IF NOT EXISTS`가 없고 트랜잭션 · `DO` 블록 안에서 실행할 수 없어 스크립트로 없앨 수 없으며, 서버 로그 수준을 낮추면 다른 오류도 가려지므로 바꾸지 않는다. 판정(S03-T05 확정): 이 한 쌍과 첫 실행의 `3D000`(아래 "로컬 관찰", 개수는 기록)을 뺀 `ERROR` · `FATAL` · `already exists`가 0건이고, 한 쌍의 개수가 (실행 횟수 − 1)과 같아야 한다. 확인 절차에서 일부러 낸 오류(11번 `25006` 탐침 등)는 개수를 기록하고 제외한다. `employee_app`의 `already exists`(`42710`)는 초기화 스크립트가 다시 실행됐다는 뜻이므로 1건이라도 있으면 실패다.
+  - "(실행 횟수 − 1)" 풀이(BL-115): `postgres` 컨테이너는 AppHost 세션 수명이라(`WithLifetime` 없음) 실행마다 새로 만들어지고 `docker logs`에는 **그 실행의 서버 로그만** 있다. 그래서 실행 하나의 로그로 보면 빈 볼륨의 첫 실행은 한 쌍 0개, 그 뒤 실행은 실행마다 정확히 1개다. 여러 실행의 로그를 모아 세면 합계가 (실행 횟수 − 1)이 된다(첫 실행을 포함해 모은 경우). 실측: S03-T05 증빙 1~3회차 0 · 1 · 1(합계 2 = 3 − 1), S04-T04 1~3회차 0 · 1 · 1.
 
 **로컬 실행 요약**(S03-T05 구현, 셸별 명령 · 사전 준비 · 문제 해결 등 상세 절차는 [로컬 개발 환경 구성](../01-getting-started/local-setup.md)이 원본이고, 이 절은 DB 관점 요약이다):
 
@@ -118,6 +139,21 @@ updated: 2026-09-28
 - AppHost user-secrets에 남는 키: `Parameters:postgres-password` · `Parameters:employee-app-password`(매개변수 persist), `AppHost:OtlpApiKey`(첫 실행 때 Aspire가 대시보드 OTLP 키로 저장, BL-100), `Aspire:VersionCheck:*`(Aspire 9.5.2 버전 확인이 실행마다 기록, BL-097). DB와 묶인 것은 `Parameters:*` 두 키뿐이지만, 초기화는 키를 골라 지우지 않고 전부 지운다.
 - 초기화(초기 상태로 되돌리기): AppHost를 멈춘 뒤 **볼륨 삭제와 user-secrets clear를 반드시 함께** 한다. ① `docker volume rm emergency-hub-postgres-data`(이 이름 있는 볼륨만, 익명 볼륨 · 다른 프로젝트 볼륨 금지) ② `dotnet user-secrets clear --project src/Aspire/EmergencyHub.AppHost`(위 키 전부가 지워짐) ③ 다시 실행하면 새 비밀번호 쌍이 생성되어 빈 볼륨에 초기화된다. 한쪽만 하면 위 "비밀번호와 볼륨"의 인증 실패(`28P01`)가 난다(user-secrets만 지운 경우). 같은 머신의 다른 clone도 같은 `UserSecretsId` · 볼륨 이름을 쓰므로 함께 초기화된다. 셸별 명령은 [로컬 개발 환경 구성의 초기화](../01-getting-started/local-setup.md#초기화-볼륨--user-secrets)가 원본이다.
 - 로컬 관찰(2026-09-28 스모크, S03-T05 판정 확정): `employee-db` 헬스 검사가 생성 스크립트보다 먼저 접속해 첫 실행 서버 로그에 `FATAL:  database "emergency_hub_employee" does not exist`(`3D000`)가 남을 수 있다. 이것은 42P04 한 쌍과 같은 Aspire 자체 검사 잡음으로, 개수를 기록하고 오류 0 판정에서 제외한다(BL-096). `pg_stat_activity`에는 Aspire 헬스 검사의 `postgres` 연결(`application_name` 비어 있음, `postgres` · `emergency_hub_employee` DB)이 보인다. 앱 연결이 아니므로 확인 10번은 `application_name LIKE 'employee-%'` 행으로 판정한다(S03-T05 메인 세션 판단 · tester 판정: `employee-api-read` 1 · `employee-api-write` 1, 헬스 주기마다 늘지 않음).
+
+### 알려진 잡음 로그 (첫 실행 · 재시작)
+
+로컬 실행 · 재현 증빙에서 판정할 때 제외하는 로그의 원본입니다. 이 표에 없는 `ERROR` · `FATAL` · `Error` · `Critical`은 잡음으로 제외하지 않고 기록한 뒤 판정받습니다(원인이 확인되지 않은 편차도 같음, [에이전트 워크플로우](../10-delivery/agents.md)). 문제 해결 관점의 설명은 [트러블슈팅 · DB 연결 문제](../01-getting-started/troubleshooting.md#db-연결-문제)에 있습니다.
+
+| # | 로그 (SqlState) | 나오는 곳 | 나오는 조건 | 판정 | 근거 |
+|---|---|---|---|---|---|
+| N1 | `ERROR:  database "emergency_hub_employee" already exists` + `STATEMENT:  CREATE DATABASE emergency_hub_employee OWNER employee_app`(`42P04`) | `postgres` 서버 로그 | 두 번째 실행부터 실행마다 한 쌍(Aspire가 생성 스크립트를 매번 실행하고 오류를 무시) | 개수 기록 후 제외. 실행 하나의 로그 기준 첫 실행 0 · 그 뒤 1(위 "(실행 횟수 − 1)" 풀이) | S03-T05 · S04-T04 증빙, BL-096 · BL-115 |
+| N2 | `FATAL:  database "emergency_hub_employee" does not exist`(`3D000`) | `postgres` 서버 로그 | 빈 볼륨 첫 실행에서 `employee-db` 헬스 검사가 생성 스크립트보다 먼저 접속할 때(0 또는 1건, 두 증빙 모두 1건) | 개수 기록 후 제외. 두 번째 실행부터 나오면 제외하지 않음 | S03-T05 · S04-T04 증빙, BL-096 |
+| N3 | `ERROR:  cannot execute CREATE TABLE in a read-only transaction` + `STATEMENT:  CREATE TABLE read_only_probe (id int);`(`25006`) | `postgres` 서버 로그 | psql 확인 11번 탐침을 실행했을 때만 | 확인 절차에서 일부러 낸 오류라 개수 기록 후 제외 | S03-T05 · S04-T04 증빙 |
+| N4 | `NOTICE:  relation "__EFMigrationsHistory" already exists, skipping` | psql 표준 오류(서버 로그 아님, 오류 아님) | idempotent SQL을 이력 테이블이 이미 있는 DB에서 실행할 때마다 | 판정 대상 아님 | [테스트 전략 · DB 검증 쿼리](testing-strategy.md#db-검증-쿼리) Q12 |
+| N5 | AppHost 콘솔 `fail: Aspire.Hosting.Dashboard.Microsoft.AspNetCore.Server.Kestrel[0]` `HTTP/2 over TLS was not negotiated on an HTTP/2-only endpoint.` | AppHost 콘솔 | https 프로필에서 대시보드 OTLP 엔드포인트에 HTTP/1.1 요청을 보냈을 때(확인 절차의 요청) | 확인 절차에서 낸 것만 제외. 확인 요청 없이 나오면 제외하지 않음 | S03-T05 증빙 `apphost-console.txt` |
+
+- 잡음이 아닌 것(제외하지 않음): 빈 볼륨 첫 실행에서 `employee-api`의 첫 `/health/ready`가 Unhealthy로 남는 `Error` 2건(EventId 103, `DefaultHealthCheckService`, 같은 시각 서버 로그 오류 없음). 원인이 확인되지 않아 기록만 하고 판정받는다(S04-T04 1회차 실측, BL-117).
+- 로그가 아닌 관찰: `pg_stat_activity`의 Aspire 헬스 검사 `postgres` 연결(`application_name` 빈 값)은 위 "로컬 관찰"대로 확인 10번 판정에서 뺀다.
 
 ## 테이블 / 컬럼 네이밍 규칙 (snake_case)
 
@@ -143,6 +179,17 @@ updated: 2026-09-28
 - **식별자 길이는 63바이트 이하**로 한다. PostgreSQL은 더 긴 이름을 경고 없이 잘라 저장하므로, 잘린 제약 이름은 `23505` 매핑(`ConstraintName`)과 일치하지 않는다. 길면 `<columns>` / `<rule>`을 줄여 짓는다.
 - `EFCore.NamingConventions`는 유니크 인덱스도 `ix_`로 만든다. 유니크 인덱스는 BuildingBlocks 도우미로 **`HasDatabaseName`을 명시해 `ux_`로 덮어쓴다**([EF Core 공통 모델 규칙](#ef-core-공통-모델-규칙-buildingblocksinfrastructure)).
 - `ux_` 이름은 서비스 Infrastructure의 **이름 상수 한 곳**에 두고, 매핑(`HasDatabaseName`)과 `23505` 매핑 레지스트리가 같은 상수를 참조한다(문자열 중복 금지).
+
+**적용 범위 실측**(2026-09-28, `dotnet ef migrations script --idempotent` 재생성 출력, 마이그레이션 `20260927134235_InitialCreate` 하나). 규칙 표 중 실제 스키마에 나타난 것과 아직 대상이 없는 것을 나눠 둡니다. 대상이 없는 행은 첫 사례가 생기는 작업에서 [생성 SQL 점검표](#생성-sql-점검표-ag)로 처음 실측합니다.
+
+| 구분 | 이름 | 비고 |
+|---|---|---|
+| 적용됨 | 테이블 `employees`, 컬럼 `id` · `display_name` · `email` · `employee_status` · `created_at` · `updated_at`, `pk_employees`, `ux_employees_email`, `ck_employees_employee_status` | 모두 따옴표 없는 소문자 snake_case, 스키마 한정자 없음. 최장 식별자 `ck_employees_employee_status` 28바이트(63바이트 한도 안) |
+| 대상 없음 | 외래 키 컬럼 · `fk_`, `ix_`, 불리언 `is_` / `has_`, 날짜 `_on`, 비트 플래그 컬럼 | 규칙만 있고 생성 SQL에 사례가 없다(비트 플래그는 BL-088) |
+| 예외(테이블 이름) | `"__EFMigrationsHistory"` | 따옴표가 필요한 유일한 테이블 이름. 컬럼 `migration_id` · `product_version`과 PK `pk___ef_migrations_history`는 snake_case([마이그레이션 규칙](#마이그레이션-규칙)) |
+| 예외(EF 생성 조회 조건) | `"migration_id"` | idempotent 스크립트의 마이그레이션별 조건(`IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = ...)`)에서만 EF가 따옴표로 감싼다. 소문자라 따옴표 없는 이름과 같은 컬럼이다. 출력 전체의 따옴표 식별자는 `"__EFMigrationsHistory"` 5곳 · `"migration_id"` 3곳뿐이다 |
+| 규칙 대상 밖 | 시스템 컬럼 `xmin` | 생성 SQL에 컬럼 생성이 없다([트랜잭션 & 동시성 제어](#트랜잭션--동시성-제어)) |
+| 규칙 대상 밖 | 테스트 전용 `test_fault_*` · `test_probe_*` | 통합 테스트 fixture 안에서만 만들고 지운다(마이그레이션 · 운영 스키마에 없음, [테스트 전략 · 장애 주입](testing-strategy.md#장애-주입)) |
 
 ## 데이터 타입 규칙
 
@@ -305,7 +352,7 @@ var smsEnabled = await db.Employees
 - 서비스마다 EF Core 마이그레이션을 따로 둔다(Infrastructure 프로젝트의 `Persistence/Migrations/`).
 - 마이그레이션 이름은 PascalCase로 변경 의도를 적는다: `AddEmployeeNotificationChannels`
 - **이미 적용(push)된 마이그레이션은 고치지 않는다.** 수정은 새 마이그레이션으로 한다. 운영 전 리셋(아래)은 전체를 `InitialCreate` 하나로 다시 만드는 예외이며, 리셋 기간에도 개별 마이그레이션의 부분 수정은 금지한다. push 전 토픽 브랜치 안에만 있는 공유되지 않은 마이그레이션을 다시 만드는 것은 이 규칙의 대상이 아니다.
-- 생성한 SQL을 확인한다: `dotnet ef migrations script --idempotent`. dba는 작업마다 SQL을 검토한다. 허용 / 금지 `dotnet ef` 명령과 셸별 실행 예는 [로컬 개발 환경 구성의 DB 마이그레이션](../01-getting-started/local-setup.md#db-마이그레이션)이 원본이다.
+- 생성한 SQL을 확인한다: `dotnet ef migrations script --idempotent`. dba는 작업마다 SQL을 아래 [생성 SQL 점검표](#생성-sql-점검표-ag) a~g로 검토한다. 허용 / 금지 `dotnet ef` 명령과 셸별 실행 예는 [로컬 개발 환경 구성의 DB 마이그레이션](../01-getting-started/local-setup.md#db-마이그레이션)이 원본이다.
 - 파괴적 변경(컬럼 삭제 / 이름 변경 / 타입 변경)은 **확장 → 이전 → 축소** 2단계 이상으로 나눈다.
 - 운영 환경에서는 애플리케이션 시작 시 자동 적용하지 않는다(마이그레이션 번들 / 스크립트로 적용).
 - **로컬 적용**: MigrationService 하나가 Write 연결로 실행 전략 안에서 `MigrateAsync`만 하고 종료한다(실패 시 0이 아닌 종료 코드, Api는 `WaitForCompletion`으로 완료를 기다림). **Api는 시작할 때 마이그레이션하지 않는다.** DB 생성은 AppHost가 하고 `EnsureCreated`는 금지한다. EF Core 8 `MigrateAsync`에는 잠금이 없으므로 적용 주체는 하나다(TD-011, [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md)).
@@ -316,6 +363,23 @@ var smsEnabled = await db.Employees
 - **sealed partial 선언**: 마이그레이션 · 모델 스냅샷 생성 클래스는 `sealed`가 아니어서 [코딩 컨벤션](coding-conventions.md)의 "클래스는 기본 sealed"와 아키텍처 규칙 `ClassesAreSealed`를 어긴다. **생성 파일은 고치지 않고**, 같은 폴더에 직접 작성한 partial 선언 파일을 둔다: 마이그레이션마다 `<마이그레이션 ID>.Sealed.cs`(`public sealed partial class <이름>;`), 서비스마다 `<DbContext>ModelSnapshot.Sealed.cs`(`internal sealed partial class <DbContext>ModelSnapshot;`). `migrations add`로 **새 마이그레이션을 만들 때마다** 선언 파일을 함께 추가한다. ADR-0012 리셋 절차(`InitialCreate` 재생성)에서도 같은 조치를 하고, 마이그레이션 ID(타임스탬프)가 바뀌므로 선언 파일 이름도 새 ID로 맞춘다(`Migrations/` 폴더를 지웠다면 스냅샷 선언 파일도 다시 만든다). `.editorconfig`의 `[**/Persistence/Migrations/*.Sealed.cs]` 섹션이 이 파일들을 생성 코드에서 빼므로(`generated_code = false`, CS1591 warning) 분석기 · 스타일 규칙이 그대로 적용된다(S03-T02).
 - **`__EFMigrationsHistory`**: snake_case 규칙의 예외는 **테이블 이름 하나뿐**이다. 테이블 이름은 EF 기본 이름을 유지하므로 SQL에서 따옴표가 필요하다(`"__EFMigrationsHistory"`). 컬럼과 기본 키 제약은 snake_case로 생성된다: `migration_id character varying(150)` · `product_version character varying(32)` · `pk___ef_migrations_history`(따옴표 불필요). 원인은 `EFCore.NamingConventions` 8.0.3의 `UseSnakeCaseNamingConvention()`이 이력 테이블 컬럼 · PK에도 적용되기 때문이다(S03-T02 `InitialCreate` idempotent SQL 실측). [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md)의 "컬럼 `MigrationId` · `ProductVersion`은 따옴표 필요" 기재(와 ADR-0022의 같은 기재)와 다르며, **이 문서가 실제 동작 기준**이다. ADR-0012 이력 컬럼 조항의 대체는 ADR 후보(S03 결과 리뷰 목록)로만 남아 있고 아직 ADR이 없다. 스키마를 지정하지 않으므로 `public."__EFMigrationsHistory"`에 생긴다([Database per Service 원칙](#database-per-service-원칙)의 스키마 규칙). 통합 테스트 Respawn 초기화 대상에서 제외한다([ADR-0022](../03-architecture/adr/0022-respawn-and-coverage-tooling.md)). 제외와 존재 확인은 **테이블 이름 대소문자 그대로** 동작한다(S03-T06 실측): Respawn `new Table("public", "__EFMigrationsHistory")`만 제외되고 소문자 · 따옴표 포함 이름은 제외되지 않으며, `to_regclass`는 따옴표를 붙인 `'public."__EFMigrationsHistory"'`로만 찾는다.
 - **운영 전 리셋 정책**: 운영 배포(Phase 4) 전까지(그보다 먼저 로컬 밖 지속 공유 DB가 생기면 그때까지) 마이그레이션 전체 리셋을 허용한다. 절차 ①~⑤와 기록 방법(리셋만 담은 커밋, 스프린트 기록, 이 문서 변경 이력 한 줄)은 [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md)를 따른다.
+
+### 생성 SQL 점검표 (a~g)
+
+마이그레이션을 추가 · 재생성하는 작업에서 dba가 `dotnet ef migrations script --idempotent` 출력(명령은 [로컬 개발 환경 구성의 DB 마이그레이션](../01-getting-started/local-setup.md#db-마이그레이션))을 점검하는 표의 **원본**입니다. 항목 이름과 순서를 바꾸지 않고, 진행 기록에는 항목마다 결과를 적습니다(해당 사례가 없으면 "대상 없음"과 근거). 실측 열은 2026-09-28 `20260927134235_InitialCreate` 재생성 출력입니다.
+
+| 항목 | 점검 내용 | InitialCreate 실측 |
+|---|---|---|
+| a 명명 규칙 | 테이블 · 컬럼 · 제약 · 인덱스 이름이 [네이밍 규칙](#테이블--컬럼-네이밍-규칙-snake_case)(소문자 snake_case, 63바이트 이하)을 따르고, 스키마 한정자가 없으며, 따옴표 식별자가 f의 예외뿐이다 | 통과. 최장 28바이트, 스키마 한정자 없음, 따옴표 식별자는 `"__EFMigrationsHistory"` 5 · `"migration_id"` 3 |
+| b 타입 | 컬럼 타입이 [데이터 타입 규칙](#데이터-타입-규칙)과 같다(키 `uuid`, 코드 `smallint`, 비트 플래그 `integer` / `bigint`, 문자열 `text` / `character varying(n)`, 시각 `timestamp with time zone`). `char(n)` · `timestamp without time zone` · `money` · `float`가 없다 | 통과. `uuid` · `character varying(100)` · `character varying(254)` · `smallint` · `timestamp with time zone` 2개 |
+| c NOT NULL · 기본값 | 컬럼은 NOT NULL이 기본이고 NULL 허용은 설계에 근거가 있다. `DEFAULT`가 없다(ID는 `ValueGeneratedNever`, 감사 컬럼은 인터셉터). `xmin` 컬럼 생성이 없다 | 통과. 6개 모두 NOT NULL, `DEFAULT` 0건, `xmin` 없음 |
+| d 제약(`pk_` · `ux_` · `ck_` · `fk_`) | 제약 이름이 접두사 규칙을 따른다. `ck_` 식이 enum 정의 값(0 제외 오름차순) 또는 마스크 조건(`col >= 0 AND (col & ~mask) = 0`)과 같다. `ux_`는 매핑 이름 상수와 같다. `fk_`는 `fk_<table>_<ref_table>_<column>`이다. `DEFERRABLE`이 없다 | 통과. `pk_employees PRIMARY KEY (id)`, `ck_employees_employee_status CHECK (employee_status IN (1, 2))`, `ux_employees_email`. `fk_` 대상 없음 |
+| e 인덱스 | 인덱스 목록이 ERD 표와 같다. 유니크 인덱스가 `ix_`로 남지 않았고(`ux_`로 덮어씀) 의도하지 않은 `ix_`가 없다. `CREATE INDEX CONCURRENTLY`가 없다 | 통과. `CREATE UNIQUE INDEX ux_employees_email ON employees (email)` 1개, `ix_` 없음 |
+| f 이력 테이블 예외 | `CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory"`의 테이블 이름만 예외이고 컬럼 · PK는 snake_case다. 이력 `INSERT`의 `product_version`이 EF 도구 버전과 같다 | 통과. `migration_id character varying(150)` · `product_version character varying(32)` · `pk___ef_migrations_history`, `INSERT` 값 `8.0.31` |
+| g idempotent 재실행 | 마이그레이션의 모든 문이 `IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = ...)` 블록 안에 있고 전체가 `START TRANSACTION` ~ `COMMIT`이다. 이미 적용된 DB에서 두 번 실행해도 오류 0 · 이력 1행이다 | 통과. 블록 3개(`CREATE TABLE` · `CREATE UNIQUE INDEX` · 이력 `INSERT`). 재실행은 통합 테스트 `MigrationReapplyTests`(3개, [테스트 전략](testing-strategy.md#db-검증-쿼리) Q12) |
+
+- **생성 형식 점검(아키텍처 규칙)**: 생성 SQL과 함께 생성 C# 형식이 아키텍처 규칙에 맞는지 본다. 새 마이그레이션마다 `<마이그레이션 ID>.Sealed.cs`, 서비스마다 `<DbContext>ModelSnapshot.Sealed.cs`가 있고(위 "sealed partial 선언"), `ClassesAreSealed_ProductAssemblies_Holds`가 통과한다. 트랜잭션을 끄는 마이그레이션(`suppressTransaction: true`)이 없다(MigrationService 동작 사양). 2026-09-28 현재 `Persistence/Migrations/`에 `20260927134235_InitialCreate.Sealed.cs` · `EmployeeDbContextModelSnapshot.Sealed.cs`가 있다.
+- 점검 결과가 이 문서의 ERD · 코드 정의 표와 다르면 같은 작업에서 문서를 고친다.
 
 ## 트랜잭션 & 동시성 제어
 
@@ -476,3 +540,5 @@ InitialCreate 대조(S04-T02 dba, 마이그레이션 `20260927134235_InitialCrea
 | 2026-09-28 | dba | S04-T02 재작업(tester 반려): InitialCreate 대조의 따옴표 식별자 문장을 idempotent SQL 실측에 맞춤(DDL · 이력 `INSERT`는 `"__EFMigrationsHistory"`만, 조회 조건 3곳의 `"migration_id"`는 EF 생성) (S04-T02) |
 | 2026-09-28 | dba | local-setup 앵커 링크: 초기화 셸별 명령 → `#초기화-볼륨--user-secrets`, 마이그레이션 규칙에 허용 / 금지 `dotnet ef` 명령 원본 링크 `#db-마이그레이션` 추가. configuration 링크 앵커는 제목 확정 뒤(developer) (S04-T03) |
 | 2026-09-28 | developer | 연결 문자열 주입 문장의 configuration 링크에 `#시크릿-관리-user-secrets--github-secrets` 앵커 추가 (S04-T03) |
+| 2026-09-28 | - | RETRO-PRD-001 개선안 #6 반영: psql 명령 틀(SQL 파일을 표준 입력으로, 두 셸), 42P04 "(실행 횟수 − 1)" 풀이(BL-115), 알려진 잡음 로그 표 N1~N5와 잡음 아닌 BL-117, 명명 규칙 적용 범위 실측 표 |
+| 2026-09-28 | - | RETRO-PRD-001 개선안 #13 반영: 생성 SQL 점검표 a~g 원본(InitialCreate 실측 열), 생성 형식 아키텍처 규칙 점검 |
