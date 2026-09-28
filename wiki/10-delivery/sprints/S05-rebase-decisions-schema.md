@@ -102,12 +102,14 @@ updated: 2026-09-28
 - 실패 허용 목록: 단위는 `EmployeeMigrationsTests.ModelSnapshot_HasNoDifferencesFromCurrentModel` · `IdempotentScript_CreatesEmployeesAndHistoryWithoutSchemaXminOrDefault` 2건, 통합은 대응표 "수정(T05 뒤 green)" 행만. developer 단계에서 trx 이름으로 확정해 진행 기록에 남기고, **목록 밖 실패가 나오면 BLOCKED**.
 - reviewer grep: 패턴 `api/v1/employees|RegisterEmployee|GetEmployeeById|DisplayName|display_name|ux_employees_email`, 범위 `src/` · `tests/Services` · `tests/Aspire`. 제외: `Persistence/Migrations`(T05까지), `wiki`, `tests/BuildingBlocks`(리터럴 표본), HealthEndpointsTests InlineData, EF의 `DisplayName()` 호출.
 - EmployeeBuilder(Domain · Integration)는 새 필드로, 기본 이메일은 순번으로 고유하게.
+- (T01 dba) 23505 매핑 교체 대상은 `EmployeeDbNames.EmailUniqueIndex`(EmployeeDbNames.cs:20)와 EmployeeInfrastructureServiceCollectionExtensions.cs:47의 `errors.Map` 한 곳. 옛 이름 `ux_employees_email`이 EmployeeEmail.cs:9, EmployeeErrors.cs:10, EmployeeRepository.cs:9, RegisterEmployeeCommandHandler.cs:16(샘플, 삭제 대상) 주석에 남아 있다. BuildingBlocks UniqueIndexName.cs:22 · UniqueConstraintErrorsBuilder.cs:10의 주석 예시는 동작 영향이 없으므로 두어도 된다(grep 제외 범위).
 
 **S05-T05**
 
 - Sealed 2개: 새 `<ID>_InitialCreate.Sealed.cs`는 새로 쓰고 `EmployeeDbContextModelSnapshot.Sealed.cs`는 유지. ClassesAreSealed · MigrationAndSnapshotTypes_AreAllSealed 통과.
 - tester 점검: `\d employees`로 컬럼 · 타입 · NOT NULL · 기본값 없음 · ck 1 · 인덱스 3 + PK 이름 대조, 볼륨 삭제 전후 `docker volume ls`(익명 볼륨 2개 유지), R 이후 T04 허용 목록 전부 통과 대조. MigrationReapplyTests · RespawnHistoryTableTests는 수정 없이 새 ID로 통과.
 - local-setup · 진행 기록: 볼륨을 다른 worktree와 공유하면 42P07 가능. psql 점검 8번 유효 확인.
+- (T01 dba) 리셋 전 기준: Migrations 폴더 파일 5개, ProductVersion 8.0.31(Designer · Snapshot). 커밋 D에서 database.md 122 · 183 · 187 · 371행의 InitialCreate ID와 컬럼 목록을 새 실측값으로 갱신.
 - 알려진 잡음 · 제외 기준: PRD-001에서 확정한 첫 실행 잡음(3D000, BL-117 첫 `/health/ready` Unhealthy)은 개수를 기록하고 판정에서 뺀다. 그 밖의 새 오류는 제외하지 않고 기록한 뒤 판정받는다.
 
 **S05-T06**
@@ -132,6 +134,7 @@ updated: 2026-09-28
 | 날짜 | 작업 | 단계 | 판정 | 내용 (반려 시 되돌린 단계와 사유) |
 |---|---|---|---|---|
 | 2026-09-28 | - | 계획 리뷰 | 승인(대리) | 작업 5 → 6(옛 T03을 T03 VO · T04 Aggregate · 매핑 · 샘플 제거로 분할, 옛 T04 · T05는 T05 · T06). 막히는 질문 6개 추천안 채택, 보완 조건 3개(대상 대기 해제 ID와 S06 계획 메모, T04 실패 허용 목록 확정 · 목록 밖 실패 BLOCKED, S06 · S07 참조 수정은 T01 커밋) |
+| 2026-09-28 | S05-T01 | dba | PASS | 현황 확인: 마이그레이션 `20260927134235_InitialCreate` 1건(product_version 8.0.31), 23505 매핑 `ux_employees_email` → 23001 1건(EmployeeInfrastructureServiceCollectionExtensions.cs:47), Migrations 폴더 5개(생성 3 + Sealed 2). database.md 변경 없음. handoff → T04(옛 이름 주석 5곳) · T05(리셋 전 기준) |
 
 ## 계획 리뷰
 
