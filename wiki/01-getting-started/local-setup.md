@@ -238,7 +238,7 @@ HTTP/1.1 200 OK
 
 - 같은 파일을 한 번 더 등록하면 `409` · 23001(`rows[1].email` ~ `rows[3].email`)이고 아무것도 저장되지 않습니다. 처음 상태로 되돌리려면 [초기화](#초기화-볼륨--user-secrets)의 "볼륨만 지우는 경우"를 씁니다.
 - 이름 경로는 UTF-8 퍼센트 인코딩으로 보냅니다(`%EA%B9%80%EC%9D%B4%EB%A6%84` = `김이름`). URL에 `&`가 있으면 따옴표로 감쌉니다.
-- **Git Bash의 `curl`과 한글 인자**: Git for Windows에 든 `curl`(8.6.0 mingw)은 명령줄 인자의 한글을 CP949로 바꿔 보내 `-F 'data=김이름,...'` · `--data-binary '김이름,...'` 같은 인라인 입력이 `400` · 21022(올바른 UTF-8 아님)가 됩니다(2026-09-29 실측). 인라인 한글 입력은 Windows 내장 `/c/Windows/System32/curl.exe`(8.21.0 실측, UTF-8)로 보내거나 UTF-8 파일로 보냅니다. PowerShell의 `curl.exe`는 `C:WindowsSystem32curl.exe`입니다(PATH 순서가 기본값일 때).
+- **Git Bash의 `curl`과 한글 인자**: Git for Windows에 든 `curl`(8.6.0 mingw)은 명령줄 인자의 한글을 CP949로 바꿔 보내 `-F 'data=김이름,...'` · `--data-binary '김이름,...'` 같은 인라인 입력이 `400` · 21022(올바른 UTF-8 아님)가 됩니다(2026-09-29 실측). 인라인 한글 입력은 Windows 내장 `/c/Windows/System32/curl.exe`(8.21.0 실측, UTF-8)로 보내거나 UTF-8 파일로 보냅니다. PowerShell의 `curl.exe`는 `C:\Windows\System32\curl.exe`입니다(PATH 순서가 기본값일 때).
 
 ### Api 단독 실행 (AppHost 없이)
 

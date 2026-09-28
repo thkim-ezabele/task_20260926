@@ -21,7 +21,7 @@ updated: 2026-09-29
 - curl: Git Bash에서 실행. 1회차는 Git for Windows 내장 `curl` 8.6.0(mingw), 2회차(본문 결과)는 Windows 내장 `C:\Windows\System32\curl.exe` 8.21.0([발견 1](#발견)). 2회차 전 `employees`를 `TRUNCATE`(앱 롤 `employee_app`, psql)로 0행으로 비움.
 - 캡처: Edge 헤드리스(`msedge.exe --headless=new --remote-debugging-port=9333`)를 CDP로 제어해 `/traces`, `/traces/detail/<traceId>`를 열고 span 행을 눌러 상세 패널을 `Page.captureScreenshot`(폭 3000px)으로 찍고 `document.body.innerText`를 저장(S03-T05와 같이 `--screenshot` 단독은 쓰지 않음).
 - 종료: `taskkill //F //IM EmergencyHub.AppHost.exe` 뒤 `docker ps -a --filter volume=emergency-hub-postgres-data` 출력 없음(컨테이너 정리됨), Edge 헤드리스 프로세스 종료.
-- 마스킹: 대상 없음. 비밀번호 · 토큰이 원문 · 캡처에 나오지 않습니다(`http-curl.txt` · `apphost-console.txt`에서 `grep -i 'password|login?t=|token|secret'` 0건, span 텍스트 `Password` 0건).
+- 마스킹: 대상 없음. 비밀번호 · 토큰이 원문 · 캡처에 나오지 않습니다(`http-curl.txt` · `apphost-console.txt`에서 `grep -i 'password|login?t=|token|secret'` 0건(`apphost-console.txt` 1행 머리말의 grep 설명 문장 1줄 제외), span 텍스트 `Password` 0건).
 
 ## curl 예시 실행 결과
 
