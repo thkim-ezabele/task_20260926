@@ -160,6 +160,7 @@ updated: 2026-09-28
 | BL-131 | testing-strategy 규칙 후보: xUnit v3 MemberData / InlineData는 발견 단계 직렬화에서 짝 없는 서로게이트 문자열을 바꿀 수 있으므로 `DisableDiscoveryEnumeration = true`와 입력 보존 단언을 둔다 | S05-T03 developer | | new | S05-T03 실측(21009 사례 4건 실패 후 수정) |
 | BL-132 | logging-observability.md(87 · 93 · 152행) · tdd-guide.md(51 · 71행) 예시가 PRD-001 샘플 이름(RegisterEmployeeCommandHandler 등)을 씀 | S05-T04 developer | | new | 형식 설명이라 S05에서는 두었음. S06-T04 Handler 예시 교체 때 함께 |
 | BL-133 | IntegrationTests `Http/HttpProblem.cs` · `LogEventText.cs`가 HTTP 테스트 삭제로 호출처 0 | S05-T04 developer | | new | S06-T06 HTTP 테스트에서 다시 쓰거나 삭제 |
+| BL-134 | employee-api.md 83행 409 설명이 옛 `ux_employees_email`로 남아 있음(샘플 API 제거된 PRD-001 문서) | S05-T05 reviewer | | new | S06 API 문서 작업에서 다시 쓸 대상 |
 
 ---
 
