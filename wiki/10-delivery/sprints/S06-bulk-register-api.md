@@ -81,6 +81,8 @@ updated: 2026-09-28
 | 2026-09-28 | S06-T03 | dba | 해당 없음 | 파이프라인 표 dba 열 "해당 없음"(호출 생략) |
 | 2026-09-28 | S06-T03 | developer | PASS | JsonImportParser, ImportField · ImportRowError.Field, 21023~21026 사용, 21022 서로게이트(GetString InvalidOperationException 좁은 catch), 입력 깊이 64, 테스트 +104 |
 | 2026-09-28 | S06-T03 | 기록 | handoff | T04: Field None → Rows[n], 필드 있으면 Rows[n].Name 등, 속성 누락은 null → VO 필수 코드, 요청 전체(21022 · 21023 · 21027) 경로 "" |
+| 2026-09-28 | S06-T03 | reviewer | REJECT → developer | [컨벤션] JsonImportParser.cs:126 `Error!` null-forgiving. [버그(문서)] error-codes.md:217 21022 예시 `\ud800` · `\udc00`이 U+FFFD 2개로 깨짐 |
+| 2026-09-28 | S06-T03 | tester | REJECT → developer | error-codes.md:217 U+FFFD(사실 문장 오류). test 통과 1,902 · 건너뜀 4 · 실패 0. 보강 +3, 이스케이프 속성 이름 테스트 입력 복구. BL-136 new |
 
 ## 계획 리뷰
 

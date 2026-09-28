@@ -40,6 +40,14 @@ public sealed class JsonImportParserTests
         { """a\nb""", "a\nb" },
     };
 
+    // 짝이 맞는 서로게이트 이스케이프(U+1F600). BL-131: 기대 값에 서로게이트가 있어 발견 단계 열거를 끈다.
+    public static TheoryData<string, string> EscapedSurrogatePairs => new()
+    {
+        { """{"name":"a\ud83d\ude00"}""", "a\U0001F600" },
+        { """{"name":"a\uD83D\uDE00"}""", "a\U0001F600" },
+        { """{"x\ud83d\ude00":"b","name":"a\ud83d\ude00"}""", "a\U0001F600" },
+    };
+
     // 문자열 안에 이스케이프 없이 넣은 제어 문자는 JSON 문법 오류다(RFC 8259). BL-131: 입력에 제어 문자가 있어 발견 단계 열거를 끈다.
     public static TheoryData<char> RawControlCharacters => new() { '\0', '\u0001', '\n', '\u001F' };
 
@@ -285,7 +293,7 @@ public sealed class JsonImportParserTests
     [Fact]
     public void Parse_EscapedPropertyName_IsMatched()
     {
-        var parsed = ParseSuccess("""{"name":"김이름"}""");
+        var parsed = ParseSuccess("""{"n\u0061me":"김이름"}""");
 
         parsed.Rows.Single().Name.Should().Be("김이름");
     }
@@ -331,6 +339,40 @@ public sealed class JsonImportParserTests
 
         parsed.Errors.Should().BeEmpty();
         parsed.Rows.Single().Name.Should().Be("a");
+    }
+
+    [Theory]
+    [MemberData(nameof(EscapedSurrogatePairs), DisableDiscoveryEnumeration = true)]
+    public void Parse_EscapedSurrogatePair_IsPreserved(string text, string expected)
+    {
+        // tester 보강(S06-T03 ④ 엣지): 짝이 맞는 이스케이프(대소문자 16진수)는 21022가 아니고 값이 보존된다.
+        text.All(character => character < 0x80).Should().BeTrue("테스트 데이터가 직렬화로 바뀌지 않아야 한다");
+        expected.Should().HaveLength(3);
+        char.IsSurrogatePair(expected[1], expected[2]).Should().BeTrue("기대 값이 짝이 맞는 서로게이트를 담아야 한다");
+
+        var parsed = ParseSuccess(text);
+
+        parsed.Errors.Should().BeEmpty();
+        parsed.Rows.Single().Name.Should().Be(expected);
+    }
+
+    [Fact]
+    public void Parse_UppercaseHexUnpairedSurrogateEscape_IsImportInvalidUtf8()
+    {
+        // tester 보강(S06-T03 ④ 엣지): 16진수 대문자 표기도 같은 판정이다.
+        var result = Parse("""{"name":"\uD800"}""");
+
+        result.Error.Should().BeSameAs(EmployeeErrors.ImportInvalidUtf8);
+    }
+
+    [Fact]
+    public void Parse_UnpairedSurrogateInDuplicatePropertyValue_IsDuplicateItemError()
+    {
+        // tester 보강(현재 동작 고정): 중복으로 판정된 두 번째 값은 읽지 않으므로 21022가 아니라 항목 오류 21026이다.
+        var parsed = ParseSuccess("""{"name":"a","NAME":"\ud800"}""");
+
+        parsed.Rows.Should().BeEmpty();
+        parsed.Errors.Should().Equal(new ImportRowError(1, EmployeeErrors.JsonDuplicateProperty, ImportField.Name));
     }
 
     [Fact]

@@ -162,6 +162,7 @@ updated: 2026-09-28
 | BL-133 | IntegrationTests `Http/HttpProblem.cs` · `LogEventText.cs`가 HTTP 테스트 삭제로 호출처 0 | S05-T04 developer | 하 | planned:S06 | S06-T06 HTTP 테스트에서 다시 쓰거나 삭제. S05 종료 정리: S06-T06에서 재사용 또는 삭제 |
 | BL-134 | employee-api.md 83행 409 설명이 옛 `ux_employees_email`로 남아 있음(샘플 API 제거된 PRD-001 문서) | S05-T05 reviewer | 중 | planned:S07 | S06 API 문서 작업에서 다시 쓸 대상. S05 종료 정리: S07-T04 API 명세에서 다시 씀 |
 | BL-135 | database.md '알려진 잡음 로그' 표가 BL-117(첫 /health/ready Unhealthy Error 2건)을 '잡음 아님 · 제외하지 않음'으로 두어, RETRO-PRD-001 유지 판단(BL-117 잡음 제외) · S05 계획 인계 메모와 다름. 한쪽으로 맞춤 | S05-T05 tester | 중 | dropped | S05-T05에서는 승인된 인계 메모 기준으로 개수 기록 후 제외. S05-T05 관찰: Api 시작 약 2.6초 뒤 첫 요청, EmployeeDbContext 924 ms · ReadDbContext 108 ms, 두 번째 요청부터 200. S05 종료 정리: BL-117로 병합. 기준 원본은 database.md 155행 · S04 결과 리뷰(BL-117은 기록 유지 · 제외 아님 · 판정은 완료 조건 기준). 어긋난 쪽은 S05 계획 인계 메모(WL-04 인용 오류). S05-T05 PASS는 완료 조건 ④가 BL-117과 무관하게 충족되어 추인 |
+| BL-136 | check-docs.js에 U+FFFD(EF BF BD) 문자 검사 추가: 도구 인자에서 `\uXXXX` 이스케이프가 문자로 풀려 문서 · 테스트 데이터가 조용히 바뀌는 현상 방지(S06-T03 error-codes 217행 사례) | S06-T03 tester | 중 | new | |
 
 ---
 
