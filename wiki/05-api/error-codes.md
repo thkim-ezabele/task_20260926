@@ -4,13 +4,13 @@ type: doc
 status: draft
 tags: [api]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 에러 코드
 
 > API 에러 응답과 `Result` 실패에 쓰는 **정수 에러 코드** 체계와 목록입니다. 로그 이벤트 ID 범위도 여기서 함께 정합니다.
-> 결정 근거: [ADR-0008 코드값 정수화](../03-architecture/adr/0008-integer-codes-and-bitmask.md) · 응답 형식: [API 설계 가이드 · 에러 응답](../04-development/api-guidelines.md#에러-응답-포맷-problemdetails)
+> 결정 근거: [ADR-0008 코드값 정수화](../03-architecture/adr/0008-integer-codes-and-bitmask.md), [ADR-0028 오류 계약 확장](../03-architecture/adr/0028-building-blocks-error-contract-extension.md) · 응답 형식: [API 설계 가이드 · 에러 응답](../04-development/api-guidelines.md#에러-응답-포맷-problemdetails)
 >
 > [위키 홈](../README.md)
 
@@ -42,6 +42,8 @@ updated: 2026-09-27
 | T | 오류 유형 (`ErrorType` = 값) | HTTP 상태 | 예 |
 |---|---|---|---|
 | 1 | 검증 실패 (`Validation` = 10) | 400 | 필수 값 누락, 형식 오류, 정의되지 않은 코드값 |
+| 1 | 요청 본문 크기 초과 (`PayloadTooLarge` = 11) | 413 | 본문 1 MiB 초과 (S06-T01에서 추가, ADR-0028) |
+| 1 | 지원하지 않는 형식 (`UnsupportedMediaType` = 12) | 415 | 지원하지 않는 Content-Type (S06-T01에서 추가, ADR-0028) |
 | 2 | 대상 없음 (`NotFound` = 20) | 404 | 없는 직원 ID |
 | 3 | 충돌 (`Conflict` = 30) | 409 | 중복 이메일, 동시성 충돌, 이미 처리된 요청 |
 | 4 | 업무 규칙 위반 (`BusinessRule` = 40) | 422 | 허용되지 않은 상태 전이, 종료된 긴급 상황 변경 |
@@ -52,14 +54,14 @@ updated: 2026-09-27
 | 9 | 외부 연동 (`External` = 92) | 502 | SMS 사업자 오류 |
 | 9 | 일시적 장애 (`Unavailable` = 93) | 503 | 재시도 가능한 일시 장애 |
 
-`ErrorType`은 BuildingBlocks.Domain의 `short` enum이고 값은 2자리입니다. **`T = (short)ErrorType / 10`** 이며, 유형 자리 5와 9는 HTTP 상태가 둘 이상이라 1의 자리로 구분합니다. `0`(`None`)은 코드값 규칙에 따른 예약 값이라 `Error`에 쓰지 않습니다. 배포된 값은 바꾸거나 재사용하지 않습니다.
+`ErrorType`은 BuildingBlocks.Domain의 `short` enum이고 값은 2자리입니다. **`T = (short)ErrorType / 10`** 이며, 유형 자리 1 · 5 · 9는 HTTP 상태가 둘 이상이라 1의 자리로 구분합니다(T = 1은 `400` · `413` · `415`, [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)). `PayloadTooLarge` · `UnsupportedMediaType`는 S06-T01에서 코드에 추가하며, 그 전까지 코드의 `ErrorType`은 9종입니다. 예비 유형 자리(T = 6 ~ 8)는 쓰지 않습니다. `0`(`None`)은 코드값 규칙에 따른 예약 값이라 `Error`에 쓰지 않습니다. 배포된 값은 바꾸거나 재사용하지 않습니다.
 
 규칙
 
-- 에러 코드는 `Error` 타입의 `int Code`로 정의하고, 서비스별 `<Aggregate>Errors` 정적 클래스에 모은다([코딩 컨벤션 · 예외 처리](../04-development/coding-conventions.md#예외-처리-규칙)). `Error`는 유형별 팩토리(`Error.Validation` · `NotFound` · `Conflict` · `BusinessRule` · `Unauthorized` · `Forbidden` · `Internal` · `External` · `Unavailable`)로만 만든다.
+- 에러 코드는 `Error` 타입의 `int Code`로 정의하고, 서비스별 `<Aggregate>Errors` 정적 클래스에 모은다([코딩 컨벤션 · 예외 처리](../04-development/coding-conventions.md#예외-처리-규칙)). `Error`는 유형별 팩토리(`Error.Validation` · `NotFound` · `Conflict` · `BusinessRule` · `Unauthorized` · `Forbidden` · `Internal` · `External` · `Unavailable`, S06-T01부터 `PayloadTooLarge` · `UnsupportedMediaType` 추가)로만 만든다.
 - **코드의 유형 자리(T)와 `ErrorType`이 일치해야 한다(`T = 값 / 10`).** `Error`는 생성 시점에 다음을 검사하고 어기면 예외를 던진다: 범위 1001 ~ 99999(`ArgumentOutOfRangeException`), 일련번호(NNN) 000 금지, 예비 서비스 자리(S = 6 ~ 8) 금지, T ↔ `ErrorType` 불일치(각 `ArgumentException`), 빈 메시지. 규칙 위반은 프로그래밍 오류이므로 `Result`가 아니라 예외다.
 - **HTTP 상태는 T가 아니라 `ErrorType`으로 정한다**(위 표). 변환은 API 계층의 공통 변환기가 한다([ADR-0016](../03-architecture/adr/0016-use-controllers-for-api.md)).
-- 검증 실패는 `ValidationError`(`Error` 파생)로 표현한다. 대표 코드는 `1001`이고 필드별 상세(속성 경로, 정수 코드, 메시지)를 담으며, 필드별 코드도 검증 실패 유형(T = 1)이어야 한다([ADR-0018](../03-architecture/adr/0018-use-fluentvalidation.md)).
+- 검증 실패는 `ValidationError`(`Error` 파생)로 표현한다. 대표 코드는 `1001`이고 필드별 상세(속성 경로, 정수 코드, 메시지)를 담으며, 필드별 코드도 검증 실패 유형(`Validation`)이어야 한다([ADR-0018](../03-architecture/adr/0018-use-fluentvalidation.md)). DB에 이미 있는 값의 행별 충돌은 상세 Conflict 오류(대표 코드와 상세 코드 모두 `Conflict` 유형, `409` `errors`)로 표현한다(S06-T01, [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)).
 - 배포된 코드는 의미를 바꾸거나 재사용하지 않는다. 폐기하면 표에 `폐기`로 남긴다.
 - 메시지(`detail`)는 사람이 읽는 설명이고 바뀔 수 있다. **클라이언트는 메시지가 아니라 코드로 분기**한다.
 - 코드를 추가하는 작업은 이 문서의 표를 함께 갱신한다. reviewer는 코드와 표가 일치하는지 확인한다.
@@ -162,22 +164,24 @@ Employee.Application `EmployeeLogs`(S03-T01)와 Employee.MigrationService `Migra
 
 BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 
-| 코드 | `ErrorType` | HTTP | 이름 | 의미 |
-|---|---|---|---|---|
-| 1001 | `Validation` | 400 | `Common.ValidationFailed` | 요청 검증 실패 (상세는 `errors`에 필드별로, `ValidationError`) |
-| 1002 | `Validation` | 400 | `Common.InvalidCode` | 정의되지 않은 코드값 / 비트 플래그 |
-| 1003 | `Validation` | 400 | `Common.InvalidPaging` | 페이징 · 정렬 매개변수 오류 |
-| 2001 | `NotFound` | 404 | `Common.NotFound` | 리소스 없음 (서비스별 코드가 없을 때) |
-| 3001 | `Conflict` | 409 | `Common.ConcurrencyConflict` | 동시 수정 충돌 (낙관적 잠금) |
-| 3002 | `Conflict` | 409 | `Common.DuplicateRequest` | 같은 `Idempotency-Key`로 이미 처리됨 |
-| 3003 | `Conflict` | 409 | `Common.UniqueConstraintViolated` | 매핑 없는 유니크 제약 위반 (PostgreSQL `23505`, 서비스 매핑이 있으면 서비스 코드) |
-| 5001 | `Unauthorized` | 401 | `Common.Unauthenticated` | 인증 필요 |
-| 5002 | `Forbidden` | 403 | `Common.Forbidden` | 권한 없음 |
-| 9001 | `Internal` | 500 | `Common.Unexpected` | 예상하지 못한 오류 (전역 예외 처리기) |
-| 9002 | `External` | 502 | `Common.ExternalServiceFailed` | 외부 시스템 오류 |
-| 9003 | `Unavailable` | 503 | `Common.TemporarilyUnavailable` | 일시적 장애 (재시도 가능) |
+| 코드 | `ErrorType` | HTTP | 이름 | 의미 | 상태 |
+|---|---|---|---|---|---|
+| 1001 | `Validation` | 400 | `Common.ValidationFailed` | 요청 검증 실패 (상세는 `errors`에 필드별로, `ValidationError`) | 사용 |
+| 1002 | `Validation` | 400 | `Common.InvalidCode` | 정의되지 않은 코드값 / 비트 플래그 | 사용 |
+| 1003 | `Validation` | 400 | `Common.InvalidPaging` | 페이징 · 정렬 매개변수 오류 | 사용 |
+| 1004 | `PayloadTooLarge` | 413 | `Common.PayloadTooLarge` | 요청 본문이 허용 크기를 넘음 (Kestrel `BadHttpRequestException` 413, 폼 한도 초과) | 예약: S06-T01 (바인더의 폼 한도 초과는 S06-T05) |
+| 1005 | `UnsupportedMediaType` | 415 | `Common.UnsupportedMediaType` | 지원하지 않는 요청 Content-Type (`[Consumes]` 불일치) | 예약: S06-T01 |
+| 2001 | `NotFound` | 404 | `Common.NotFound` | 리소스 없음 (서비스별 코드가 없을 때) | 사용 |
+| 3001 | `Conflict` | 409 | `Common.ConcurrencyConflict` | 동시 수정 충돌 (낙관적 잠금) | 사용 |
+| 3002 | `Conflict` | 409 | `Common.DuplicateRequest` | 같은 `Idempotency-Key`로 이미 처리됨 | 사용 |
+| 3003 | `Conflict` | 409 | `Common.UniqueConstraintViolated` | 매핑 없는 유니크 제약 위반 (PostgreSQL `23505`, 서비스 매핑이 있으면 서비스 코드) | 사용 |
+| 5001 | `Unauthorized` | 401 | `Common.Unauthenticated` | 인증 필요 | 사용 |
+| 5002 | `Forbidden` | 403 | `Common.Forbidden` | 권한 없음 | 사용 |
+| 9001 | `Internal` | 500 | `Common.Unexpected` | 예상하지 못한 오류 (전역 예외 처리기) | 사용 |
+| 9002 | `External` | 502 | `Common.ExternalServiceFailed` | 외부 시스템 오류 | 사용 |
+| 9003 | `Unavailable` | 503 | `Common.TemporarilyUnavailable` | 일시적 장애 (재시도 가능) | 사용 |
 
-이름 `Common.X`는 BuildingBlocks.Domain `CommonErrors.X` 필드입니다. 단위 테스트(`CommonErrorsTests`)가 이 표의 코드 · 유형과 필드 목록을 전수 대조합니다.
+이름 `Common.X`는 BuildingBlocks.Domain `CommonErrors.X` 필드입니다. 단위 테스트(`CommonErrorsTests`)가 이 표의 `사용` 행의 코드 · 유형과 필드 목록을 전수 대조합니다. `예약` 행은 적힌 작업에서 코드에 추가하고 `사용`으로 바꿉니다(코드 · 표 대조에서 예약 행은 따로 셉니다). 1004 · 1005의 근거는 [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)입니다.
 
 ## 서비스별 에러 코드
 
@@ -185,21 +189,47 @@ BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 
 ### Employee 에러 코드
 
-Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01, S03 계획 리뷰 코드 선배정). 단위 테스트(`EmployeeErrorsTests`)가 이 표의 코드 · 유형과 필드 목록을 전수 대조합니다.
+Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S05-T02 재배정). 단위 테스트(`EmployeeErrorsTests`)가 이 표의 `사용` 행의 코드 · 유형과 필드 목록을 전수 대조합니다. `예약` 행은 적힌 작업에서 상수를 추가하고 `사용`으로 바꾸며, `폐기` 행은 적힌 작업에서 상수를 지웁니다. 번호는 폐기해도 재사용하지 않습니다(코드 · 표 대조에서 예약 · 폐기 행은 따로 셉니다). 새 코드의 근거는 [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md) · [ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)입니다.
 
-| 코드 | `ErrorType` | HTTP | 이름 | 의미 |
-|---|---|---|---|---|
-| 21001 | `Validation` | 400 | `Employee.DisplayNameRequired` | `displayName` 필수 (누락 · 빈 값 · 공백만) |
-| 21002 | `Validation` | 400 | `Employee.DisplayNameTooLong` | `displayName` 길이 초과 (앞뒤 공백 제거 뒤 100자 초과) |
-| 21003 | `Validation` | 400 | `Employee.EmailRequired` | `email` 필수 (누락 · 빈 값 · 공백만) |
-| 21004 | `Validation` | 400 | `Employee.EmailInvalid` | `email` 형식 오류 (`@`가 정확히 하나이고 앞뒤가 비어 있지 않아야 함) |
-| 21005 | `Validation` | 400 | `Employee.EmailTooLong` | `email` 길이 초과 (앞뒤 공백 제거 뒤 254자 초과) |
-| 21006 | `Validation` | 400 | `Employee.EmployeeStatusRequired` | `employeeStatus` 필수 (누락). 정의되지 않은 값(0 · 99 등)은 공통 1002 |
-| 22001 | `NotFound` | 404 | `Employee.NotFound` | 직원 없음 |
-| 23001 | `Conflict` | 409 | `Employee.DuplicateEmail` | 이메일 중복 (Trim + 소문자(Invariant) 정규화한 값 기준). Handler 사전 검사와 유니크 인덱스 `ux_employees_email` 위반(23505) 매핑이 같은 인스턴스를 씀 |
+| 코드 | `ErrorType` | HTTP | 이름 | 의미 | 상태 |
+|---|---|---|---|---|---|
+| 21001 | `Validation` | 400 | `Employee.DisplayNameRequired` | PRD-001 샘플 `displayName` 필수 | 폐기 (PRD-002, 상수 삭제 S05-T04) |
+| 21002 | `Validation` | 400 | `Employee.DisplayNameTooLong` | PRD-001 샘플 `displayName` 길이 초과 | 폐기 (PRD-002, 상수 삭제 S05-T04) |
+| 21003 | `Validation` | 400 | `Employee.EmailRequired` | `email` 필수 (누락 · 빈 값 · 공백만). 판정 원본은 Email Value Object `Create`(S05-T03부터) | 사용 |
+| 21004 | `Validation` | 400 | `Employee.EmailInvalid` | `email` 형식 오류. 앞뒤 공백 제거 뒤 `@`가 정확히 하나, 공백 없음, domain에 `.` 포함, 첫 · 끝 `.`과 연속 `.` 거부(예: `a@.com` · `a@com.` · `a@b..c`). 판정 원본은 Email Value Object(S05-T03부터) | 사용 |
+| 21005 | `Validation` | 400 | `Employee.EmailTooLong` | `email` 길이 초과 (앞뒤 공백 제거 뒤 254자 초과). 판정 원본은 Email Value Object(S05-T03부터) | 사용 |
+| 21006 | `Validation` | 400 | `Employee.EmployeeStatusRequired` | PRD-001 샘플 `employeeStatus` 필수 (상태는 API에 노출하지 않음, 등록 시 Active 고정) | 폐기 (PRD-002, 상수 삭제 S05-T04) |
+| 21007 | `Validation` | 400 | `Employee.NameRequired` | `name` 필수 (누락 · 빈 값 · 공백만). `GET /api/employee/{name}`의 공백 제거 뒤 빈 이름(400)에도 쓴다(S07-T02) | 예약: S05-T03 |
+| 21008 | `Validation` | 400 | `Employee.NameTooLong` | `name` 길이 초과 (앞뒤 공백 제거 + NFC 뒤 UTF-16 100자 초과) | 예약: S05-T03 |
+| 21009 | `Validation` | 400 | `Employee.NameInvalidCharacter` | `name`에 허용하지 않는 문자가 있음: 제어 문자(Cc, `char.IsControl`, 탭 포함) 또는 짝 없는 서로게이트 | 예약: S05-T03 |
+| 21010 | `Validation` | 400 | `Employee.PhoneNumberRequired` | `tel` 필수 (누락 · 빈 값 · 공백만) | 예약: S05-T03 |
+| 21011 | `Validation` | 400 | `Employee.PhoneNumberInvalidCharacter` | `tel`에 ASCII 숫자와 `-` 밖의 문자가 있음 (`+` · 공백 포함) | 예약: S05-T03 |
+| 21012 | `Validation` | 400 | `Employee.PhoneNumberDigitCountOutOfRange` | `tel` 숫자 자리 수가 8 ~ 15 밖 | 예약: S05-T03 |
+| 21013 | `Validation` | 400 | `Employee.PhoneNumberTooLong` | `tel` 전체 길이 20자 초과 | 예약: S05-T03 |
+| 21014 | `Validation` | 400 | `Employee.PhoneNumberInvalidHyphen` | `tel` 맨 앞 · 맨 뒤 · 연속 하이픈 | 예약: S05-T03 |
+| 21015 | `Validation` | 400 | `Employee.JoinedOnRequired` | `joined` 필수 (누락 · 빈 값 · 공백만) | 예약: S05-T03 |
+| 21016 | `Validation` | 400 | `Employee.JoinedOnInvalidFormat` | `joined`가 `yyyy-MM-dd` 정확 형식 · 있는 날짜가 아님 (`2000-2-3` · `2000-02-30`) | 예약: S05-T03 |
+| 21017 | `Validation` | 400 | `Employee.JoinedOnTooEarly` | `joined`가 1900-01-01 이전 (`1899-12-31`) | 예약: S05-T03 |
+| 21018 | `Validation` | 400 | `Employee.DuplicateEmailInRequest` | 같은 요청 안 이메일 중복 (`NormalizedEmail` 서수 비교, 두 행 모두 표시) | 예약: S06-T04 |
+| 21019 | `Validation` | 400 | `Employee.CsvColumnCountMismatch` | CSV 행의 열 개수가 4가 아님 | 예약: S06-T02 |
+| 21020 | `Validation` | 400 | `Employee.CsvUnclosedQuote` | CSV 닫히지 않은 따옴표 | 예약: S06-T02 |
+| 21021 | `Validation` | 400 | `Employee.CsvUnexpectedQuote` | CSV 따옴표 없는 필드 안의 `"` | 예약: S06-T02 |
+| 21022 | `Validation` | 400 | `Employee.ImportInvalidUtf8` | 입력이 올바른 UTF-8이 아님 (CP949 등, 경로 `""`) | 예약: S06-T02 |
+| 21023 | `Validation` | 400 | `Employee.JsonSyntaxInvalid` | JSON 문법 오류 (끝 쉼표 · 주석 · `[..],[..]`, 경로 `""`) | 예약: S06-T03 |
+| 21024 | `Validation` | 400 | `Employee.JsonItemNotObject` | JSON 항목이 객체가 아님 (`null` · 숫자, 경로 `rows[n]`) | 예약: S06-T03 |
+| 21025 | `Validation` | 400 | `Employee.JsonValueNotString` | JSON 항목의 필드 값이 문자열이 아님 (`"joined": 20000101` 등) | 예약: S06-T03 |
+| 21026 | `Validation` | 400 | `Employee.JsonDuplicateProperty` | JSON 항목에 대소문자만 다른 중복 속성 | 예약: S06-T03 |
+| 21027 | `Validation` | 400 | `Employee.ImportTooManyRows` | 행 수가 1,000을 넘음 (경로 `""`) | 예약: S06-T02 · S06-T03 |
+| 21028 | `Validation` | 400 | `Employee.ImportInputEmpty` | 빈 입력 (입력 없음, 길이 0, BOM이나 공백만 있음, form-urlencoded `data` 키 없음) | 예약: S06-T04 |
+| 21029 | `Validation` | 400 | `Employee.ImportMultipleSources` | multipart `file`과 `data`를 함께 보냄 | 예약: S06-T04 |
+| 21030 | `Validation` | 400 | `Employee.RowErrorsTruncated` | 행 오류가 100개를 넘어 잘림 (101번째 항목, 경로 `""`) | 예약: S06-T04 |
+| 22001 | `NotFound` | 404 | `Employee.NotFound` | 직원 없음 (이름 조회에 일치하는 직원 없음, S07-T02) | 사용 |
+| 23001 | `Conflict` | 409 | `Employee.DuplicateEmail` | 이메일 중복 (`normalized_email` = Email Value Object의 `ToLowerInvariant` 값 기준). DB 중복 사전 조회(`409` + 충돌 행 번호, 상세 Conflict 오류)와 유니크 인덱스 `ux_employees_normalized_email` 위반(`23505`, 행 번호 없음) 매핑이 같은 인스턴스를 씀. 매핑 이름 교체는 S05-T04, 그 전까지는 `ux_employees_email` | 사용 |
+| 23002 | `Conflict` | 409 | `Employee.RowConflictsTruncated` | 행 충돌이 100개를 넘어 잘림 (101번째 항목, 경로 `""`) | 예약: S06-T04 |
 
-- 21001 ~ 21006은 요청 검증(`RegisterEmployeeCommandValidator`)의 필드별 코드로 `ValidationError`(1001)의 `errors`에 담깁니다. 길이는 앞뒤 공백을 지운 뒤 `string.Length`(UTF-16 코드 단위)로 잽니다(이모지는 한 글자가 2).
-- 한 필드 안에서는 첫 실패만 보고합니다(이름: 필수 → 길이, 이메일: 필수 → 길이 → 형식, 상태: 필수 → 정의값).
+- 필드 코드(21003 ~ 21005, 21007 ~ 21017)는 Employee Value Object `Create(string?)`가 돌려주는 `Result`의 오류이고, 일괄 등록 Handler가 행 경로(`rows[n].email` 등, 1부터)로 `ValidationError`(1001)의 `errors`에 옮깁니다([ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md) 7 · 8절). 길이는 `string.Length`(UTF-16 코드 단위)로 잽니다(이모지는 한 글자가 2).
+- 파싱 · 입력 코드(21019 ~ 21030)도 같은 `errors`에 담깁니다. 요청 전체 오류(21022 · 21023 · 21027 · 21030)의 경로는 `""`, 행 전체 오류(21019 ~ 21021, 21024)는 `rows[n]`입니다.
+- 한 필드 안에서는 첫 실패만 보고합니다. S05-T02 이전 샘플의 판정 순서(`RegisterEmployeeCommandValidator`, 이름: 필수 → 길이, 이메일: 필수 → 길이 → 형식)는 S05-T04에서 샘플과 함께 없어지고, 새 순서는 Value Object가 정합니다(S05-T03).
 
 ---
 
@@ -215,3 +245,4 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01, S03 계획 리뷰 �
 | 2026-09-27 | developer | API 로그 이벤트 1 · 301~304(예외 메시지 미기록, 프레임워크 예외 미들웨어 로그 끄기), 공통 하위 범위 표 비고 갱신. 새 에러 코드 할당 없음(BL-052) (S02-T06) |
 | 2026-09-27 | developer | Employee 에러 코드 표(21001 ~ 21006, 22001, 23001)와 Employee 로그 이벤트 20001 `EmployeeRegistered` (S03-T01) |
 | 2026-09-27 | developer | Employee 로그 하위 범위(20001 ~ 20899 Application, 20901 ~ 20999 MigrationService)와 MigrationService 로그 이벤트 20901 `MigrationsApplied` · 20902 `MigrationsFailed` (S03-T03) |
+| 2026-09-28 | developer | ADR-0026 · 0027 · 0028 반영: `ErrorType` `PayloadTooLarge` = 11 · `UnsupportedMediaType` = 12(T = 1, 413 · 415), 공통 1004 · 1005 예약(S06-T01), 공통 · Employee 표에 상태 열(사용 · 예약 · 폐기), Employee 21001 · 21002 · 21006 폐기, 21003 ~ 21005 · 22001 · 23001 설명 갱신(23001은 `ux_employees_normalized_email`), 새 코드 21007 ~ 21030 · 23002 예약(행마다 구현 작업 ID) (S05-T02) |

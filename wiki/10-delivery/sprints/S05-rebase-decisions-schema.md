@@ -6,7 +6,7 @@ status: active
 prd: [PRD-002]
 started: 2026-09-28
 finished:
-adrs: []
+adrs: [ADR-0025, ADR-0026, ADR-0027, ADR-0028]
 worklogs: []
 aliases: [S05]
 tags: [delivery, sprint]
@@ -86,6 +86,7 @@ updated: 2026-09-28
 
 **S05-T03**
 
+- (T02 developer) EmployeeErrors 새 상수 이름 · 코드 · 유형의 원본은 error-codes Employee 표(21007 NameRequired ~ 21017 JoinedOnTooEarly, 예약: S05-T03). 21009는 제어 문자와 짝 없는 서로게이트를 함께 담는다. EmployeeErrorsTests는 '사용' 행과 1:1로 맞추고 예약 · 폐기 행은 따로 센다. 추가한 상수의 행 상태는 '사용'으로 바꾼다.
 - name: Trim 뒤 NFC, 길이는 NFC 뒤 UTF-16 1~100. 제어 문자는 `char.IsControl`(Cc, 탭 포함)만 거부, Cf(ZWJ 등)는 허용. 짝 없는 서로게이트는 Normalize 전에 검사해 Result 오류로(예외 아님).
 - email: Trim 뒤 254자 이하, `@` 정확히 하나, 공백 없음, domain에 `.` 포함, 첫 · 끝 `.`과 연속 `.` 거부(`a@.com` · `a@com.` · `a@b..c` 거부). 대소문자만 다른 두 입력은 NormalizedEmail이 같다.
 - tel: `char.IsAsciiDigit`와 `-`만, 숫자 8~15자리, 전체 20자 이하, 맨 앞 · 맨 뒤 · 연속 하이픈 거부, 입력 그대로 보존.
@@ -108,6 +109,7 @@ updated: 2026-09-28
 - EmployeeBuilder(Domain · Integration)는 새 필드로, 기본 이메일은 순번으로 고유하게.
 - (T02 dba) `normalized_email`은 DB가 강제하지 않으므로(ck · 식 인덱스 없음) 테스트 시드와 원시 SQL INSERT도 `ToLowerInvariant` 값을 넣는다. EmployeeBuilder(Integration)는 Email VO를 거쳐 값을 만든다.
 - (T01 developer) 대응표 "처리" 열이 원본이다. EmployeePersistenceRoundTripTests.GetByIdAsync_* 2건은 IEmployeeReadRepository.GetById 제거와 부딪히므로 수정 방식을 T04에서 정한다. PersistenceLogExposureTests는 샘플 의존 메서드가 0개라 2건 모두 "수정".
+- (T02 developer) 폐기 상수 21001 · 21002 · 21006을 지우면 error-codes 해당 행 상태의 '상수 삭제 S05-T04'를 완료로 표시한다. 23001 설명의 '그 전까지는 ux_employees_email' 문구는 매핑 교체 뒤 지운다. clean-architecture 트리(EmployeeEmail.cs, Commands/Queries 샘플)와 coding-conventions 기능 폴더 구조 · 예시 안내를 샘플 제거 뒤 실제 구성으로 갱신한다(예시 코드 교체는 S06-T04). 대상 대기 목록의 원본 표는 testing-strategy '대상 대기 목록'.
 - (T01 dba) 23505 매핑 교체 대상은 `EmployeeDbNames.EmailUniqueIndex`(EmployeeDbNames.cs:20)와 EmployeeInfrastructureServiceCollectionExtensions.cs:47의 `errors.Map` 한 곳. 옛 이름 `ux_employees_email`이 EmployeeEmail.cs:9, EmployeeErrors.cs:10, EmployeeRepository.cs:9, RegisterEmployeeCommandHandler.cs:16(샘플, 삭제 대상) 주석에 남아 있다. BuildingBlocks UniqueIndexName.cs:22 · UniqueConstraintErrorsBuilder.cs:10의 주석 예시는 동작 영향이 없으므로 두어도 된다(grep 제외 범위).
 
 **S05-T05**
@@ -115,12 +117,14 @@ updated: 2026-09-28
 - Sealed 2개: 새 `<ID>_InitialCreate.Sealed.cs`는 새로 쓰고 `EmployeeDbContextModelSnapshot.Sealed.cs`는 유지. ClassesAreSealed · MigrationAndSnapshotTypes_AreAllSealed 통과.
 - tester 점검: `\d employees`로 컬럼 · 타입 · NOT NULL · 기본값 없음 · ck 1 · 인덱스 3 + PK 이름 대조, 볼륨 삭제 전후 `docker volume ls`(익명 볼륨 2개 유지), R 이후 T04 허용 목록 전부 통과 대조. MigrationReapplyTests · RespawnHistoryTableTests는 수정 없이 새 ID로 통과.
 - local-setup · 진행 기록: 볼륨을 다른 worktree와 공유하면 42P07 가능. psql 점검 8번 유효 확인.
+- (T02 developer) database.md 명명 규칙 예시(176행 `ux_employees_email`), 적용 범위 실측 표(187행), ERD · InitialCreate 대조 표, 인덱스 표의 '인덱스는 2개'와 첫 열 `ux_employees_email`, 이름 상수 문단을 새 스키마 실측값으로 갱신하고, 인덱스 표 비고의 'S05-T04 · T05부터' 문구를 현재형으로 바꾼다.
 - (T01 dba) 리셋 전 기준: Migrations 폴더 파일 5개, ProductVersion 8.0.31(Designer · Snapshot). 커밋 D에서 database.md 122 · 183 · 187 · 371행의 InitialCreate ID와 컬럼 목록을 새 실측값으로 갱신.
 - 알려진 잡음 · 제외 기준: PRD-001에서 확정한 첫 실행 잡음(3D000, BL-117 첫 `/health/ready` Unhealthy)은 개수를 기록하고 판정에서 뺀다. 그 밖의 새 오류는 제외하지 않고 기록한 뒤 판정받는다.
 
 **S05-T06**
 
 - EXPLAIN: 10,000건 + ANALYZE(또는 `enable_seqscan=off`). 대상은 목록(`ix_employees_joined_on_id`), 이름(`ix_employees_name_joined_on_id`, Sort 없음), `list.Contains`가 만든 `= ANY`(ux). COUNT(*) 전체 스캔은 정상. 생성 SQL 원문을 함께 기록.
+- (T02 developer) ADR-0026 11절의 TD-010 pk · ux 검사 순서는 실측 뒤 진행 기록과 TD-010 행에 남긴다(ADR 본문은 고치지 않음).
 - (T02 dba) S05-T02의 1,000행 · 전 행 일치 Seq Scan은 EXPLAIN 판정 근거가 아니다. TD-010 pk · ux 검사 순서 실측은 T06 몫.
 - UUID v7 정렬: 같은 밀리초 안 1,000건 생성 → `ORDER BY id`가 생성 순서와 같은지.
 - TD-010 실측: pk · ux 동시 위반 1회로 어느 제약이 먼저 검사되는지(3003 / 23001)만 보고 진행 기록과 TD-010 행에 남긴다. 재현 테스트는 만들지 않고 S06 동시 경합 테스트에 인계.
@@ -258,6 +262,9 @@ updated: 2026-09-28
 | 2026-09-28 | S05-T01 | reviewer | PASS | D1 check-docs 94개 · 결함 4(기준선), D2 ADR 변경 0, D3 대응표 95행 · 226개를 기준선 TSV와 스크립트 대조해 행별 불일치 0, D4 ①~⑦ 대응 칸 있음, D5 roadmap PRD-001 행은 BL-128로. 번호 충돌 없음(BL-121 · TD-028 · ADR 0025 · 21007). handoff → T02(PRD 78 · 153행 '가번호' 문장), 범위 밖 미등록 4개는 오케스트레이션이 수용(T04 결정 메시지) |
 | 2026-09-28 | S05-T01 | tester | PASS | 명령 점검: 병합 확인 v0.1.0 · origin/develop 조상 0(7160967, v0.1.0은 1f671da 경유), check-docs 94개 · 결함 4(기준선), ADR 변경 0, 코드 Common 12 · Employee 8, 대응표 95행 · 226개 기준선 TSV와 따로 대조해 불일치 0, build 경고 0 · 오류 0, test 1,538(통과 1,537 · 건너뜀 1 · 실패 0, 13개 프로젝트). 파일 변경 없음. handoff → T04(표시 이름이 같은 Theory 사례 11종, 대조는 개수로) |
 | 2026-09-28 | S05-T02 | dba | PASS | ADR ② · ③ DB 조항 문안 작성(파일 변경 없음). 실측(임시 postgres:17 17.11, tmpfs, 볼륨 전후 4개 동일): `employee_app`(DB 소유자, NOSUPERUSER)로 `CREATE EXTENSION citext` 성공 → 권한은 citext 미사용 근거에서 제외. U+0130이 .NET `ToLowerInvariant`는 그대로 · PG libc `lower()`는 `i` · ICU는 `i`+U+0307, CHECK(`normalized_email = lower(email)`)는 23514, `lower()` 식 유니크는 `İ@x.com`/`i@x.com` 23505, 일반 유니크는 2행 저장, ICU nondeterministic는 LIKE 불가 · `ﬀ`=`ff`. 1,000행 `INSERT ... RETURNING xmin` 한 트랜잭션(distinct xmin 1), `= ANY` 배열 1,000개 1건 파라미터, 499행 뒤 23505 → ROLLBACK 0행 |
+| 2026-09-28 | S05-T02 | developer 1차 | PASS | ADR 0025~0028 초안(파일 없음, 스크래치). 확인 항목: 0025 이름 값의 instance · 요청 로그 노출(A 템플릿화 / B 이 엔드포인트만 / C 백로그), 0026 (1) VO Create → Result 적용 범위 (2) Command 모양 바이트 + Sources (3) 행 오류 잘림 코드 (4) BOM · 공백만 입력, 0028 413 · 415 값(A 11 · 12 / 1004 · 1005, B 61 · 62 / 6001 · 6002). dba 문안의 사전 조회 '같은 트랜잭션'을 ADR-0014 기준 '트랜잭션 밖'으로 정정 |
+| 2026-09-28 | S05-T02 | ADR 확인 | 승인(대리) | 전부 추천안: 0025 A(요청 로그 RequestPath · ProblemDetails instance(ErrorProblemDetails.cs:55) · 추적 url.path 세 곳 라우트 템플릿화, S07-T02 범위와 같음), 0026 (1) Employee VO 4개 한정 (2) `(Format, [Flags] Sources, ReadOnlyMemory<byte> Content)`, PRD FR-06 변경 이력에 기록 (3) 21030 · 23002 (4) 빈 입력 코드, 0027 원안, 0028 A(1004 · 1005), design.md T02에서 반영. ADR 4건은 `/retro` ④ 추인 대상으로 따로 표시 |
+| 2026-09-28 | S05-T02 | developer 2차 | PASS | ADR 0025~0028 `accepted` 파일, adr/README 4행, api-guidelines 예외 절 · 공통 변환 규칙(413 · 415 · 409 `errors` · instance), error-codes(공통 1004 · 1005 예약 S06-T01, Employee 33행 = 사용 5 · 폐기 3(21001 · 21002 · 21006) · 예약 25(21007~21030 · 23002, 행마다 작업 ID), 번호 중복 0), coding-conventions 실패 처리 경계 · 이메일 문구, database.md VO 값 변환기 · 트랜잭션 예외 링크 · CHECK 문구(U+0130 실측), clean-architecture 155행, testing-strategy 대상 대기 목록, PRD-002 '가번호' 문장 · FR-05 · FR-06 Command 모양 · 변경 이력(S05-T02 대리 승인), 09-memory/design 4행, S07 문서 S07-T02 항목(ADR-0025 A 세 곳). check-docs 98개 · 결함 4. 코드 변경 0. 스킬 전달 누락(1차 코드 표 미전달)으로 21023~21027 순서가 승인안과 달라 커밋 전에 승인안(JSON 21023~21026, 1,000행 초과 21027)으로 정정. FR-05 문구는 FR-06과 어긋나 함께 맞춤. RequestPath 위치는 BuildingBlocks가 아니라 Employee.Api Program.cs:85 · ServiceDefaults로 정정 기재 |
 
 ## 계획 리뷰
 
@@ -324,6 +331,7 @@ updated: 2026-09-28
 |---|---|---|---|---|---|
 | 2026-09-28 | ① 계획 리뷰 | 작업 5 → 6 분할, 막히는 질문 1~6 추천안, 세부 기본값 · 위험 기록, 보완 조건 3개 | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 계획 리뷰 행 | 대기 |
 | 2026-09-28 | 결정(S05-T04 실패 허용 범위) | 스키마 불일치 원인 실패는 developer 단계에서 대응표에 추가해 허용(원인 한 줄), 그 밖은 BLOCKED | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 S05-T04 결정 행 | 대기 |
+| 2026-09-28 | ADR 확인(S05-T02) | **ADR 0025~0028 결정 내용(`/retro` ④ 추인 대상 ADR)**: 0025 A, 0026 (1)~(4) 추천안, 0027 원안, 0028 A, design.md 즉시 반영 | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 S05-T02 ADR 확인 행 | 대기 |
 
 ## 결과 리뷰
 

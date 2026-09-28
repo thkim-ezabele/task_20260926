@@ -285,7 +285,7 @@ var smsEnabled = await db.Employees
 - 등록: BuildingBlocks.Infrastructure의 공용 확장 메서드가 쓰기 · 읽기 DbContext를 `AddDbContext` + `UseNpgsql(연결, o => o.EnableRetryOnFailure())` + `UseSnakeCaseNamingConvention()`으로 등록한다. 두 DbContext는 같은 실행 전략을 쓰고, Api · MigrationService · 통합 테스트가 같은 등록 코드를 쓴다. 추적은 Npgsql.OpenTelemetry `AddNpgsql()`, 헬스체크는 `AddDbContextCheck<TDbContext>()`로 붙인다([ADR-0011](../03-architecture/adr/0011-use-aspire-local-orchestration.md)).
 - 매핑은 Infrastructure의 `Persistence/Configurations/`에 **엔티티마다 `IEntityTypeConfiguration<T>` 하나**로 둔다. Domain에 데이터 어노테이션을 쓰지 않는다.
 - 강타입 ID는 값 변환기로 `uuid`에 매핑한다. 엔티티마다 `HasConversion`을 쓰지 않고 공통 규칙이 등록한다([EF Core 공통 모델 규칙](#ef-core-공통-모델-규칙-buildingblocksinfrastructure)).
-- Value Object는 Owned Type 또는 Complex Type(EF Core 8)으로 매핑한다.
+- **단일 값 Value Object는 값 변환기로 스칼라 컬럼 하나에 매핑한다.** 엔티티 설정(`IEntityTypeConfiguration<T>`) 안에서 속성마다 `HasConversion`을 쓰고, 공통 규약(`ConfigureConventions`)으로 넓히지 않는다. Employee의 `Name` → `name`, `Email`(입력 표기) → `email`, `PhoneNumber` → `phone_number`, `JoinedOn` → `joined_on`이 대상이다(S05-T04). Email의 정규화 값은 Aggregate의 `NormalizedEmail` 문자열 속성(→ `normalized_email`)으로 따로 두고, 유니크 인덱스와 `= ANY` 조회는 이 속성에 건다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)). 값이 여러 개인 Value Object는 Owned Type 또는 Complex Type(EF Core 8)으로 매핑한다. Employee에서 Owned · Complex Type을 쓰지 않는 근거(복합 인덱스 `(name, joined_on, id)`, 번역 안정성)와 값 변환기 속성의 Where · OrderBy · 프로젝션 번역은 S05-T04에서 실측해 기록한다.
 - Lazy Loading은 쓰지 않는다. 필요한 연관은 `Include`로 명시한다.
 - 데이터 접근은 **Repository**로만 한다. Repository에는 람다식 LINQ 쿼리만 두고 분기 · 로직을 넣지 않는다([코딩 컨벤션 · Repository 규칙](coding-conventions.md#repository-규칙-ef-core)).
 - **Query(CQRS)는 Read Repository가 읽기 DbContext에서 `Select` 프로젝션**으로 응답 `record`를 바로 만든다. 엔티티 전체를 불러와 변환하지 않는다.
@@ -384,6 +384,7 @@ var smsEnabled = await db.Employees
 ## 트랜잭션 & 동시성 제어
 
 - **Command 하나 = 트랜잭션 하나 = Aggregate 하나.** 여러 Aggregate를 바꿔야 하면 도메인 이벤트로 나눈다.
+  - 예외: `RegisterEmployeesCommand`는 새 Employee Aggregate를 최대 1,000개까지 한 트랜잭션에 저장한다("한 행이라도 실패하면 0건", INSERT만이라 `xmin` 충돌 경로 없음). 적용 범위는 이 Command 하나이고, 다른 Command가 여러 Aggregate를 저장하려면 새 ADR이 필요하다. 재시도 때는 배치 전체를 다시 보낸다(TD-010 위험 수용). 원본은 [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md) 9 ~ 11절이다.
 - 격리 수준은 **Read Committed를 명시한다**(UnitOfWork가 `BeginTransactionAsync(IsolationLevel.ReadCommitted)`, 서버 기본값에 기대지 않음, ADR-0014). 더 높은 수준이 필요하면 이유를 작업 문서에 남긴다.
 - 동시성은 **낙관적 잠금**으로 제어한다. PostgreSQL 시스템 컬럼 `xmin`을 동시성 토큰으로 매핑한다.
   - **EF shadow property**로 매핑하고 Domain에는 속성을 두지 않는다(S02 사용자 결정). 공통 규칙(`CommonModelConventions.AddConcurrencyToken`)이 owned가 아니고 기반 형식이 없는 엔티티 형식마다 shadow property `ShadowPropertyNames.Version`(`uint`)을 추가하고 `IsConcurrencyToken = true`, `ValueGenerated = OnAddOrUpdate`, 컬럼 이름 `xmin`, 컬럼 타입 `xid`를 설정한다. 앞의 두 설정은 `IsRowVersion()`이 하는 구성과 같다(BL-087). 규칙 수준이 아니라 명시(Explicit) 구성이라 공급자 · 명명 규칙이 덮어쓰지 않는다.
@@ -509,8 +510,9 @@ InitialCreate 대조(S04-T02 dba, 마이그레이션 `20260927134235_InitialCrea
 
 | 테이블 | 인덱스 · 제약 | 비고 |
 |---|---|---|
-| `employees` | `pk_employees`(id), `ux_employees_email`(email), `ck_employees_employee_status` | 인덱스는 2개. `CHECK (email = lower(email))`는 두지 않는다(DB collation과 .NET Invariant 소문자 변환 결과가 다를 수 있음, S03 계획 리뷰). 외래 키 없음 |
+| `employees` | `pk_employees`(id), `ux_employees_email`(email), `ck_employees_employee_status` | 인덱스는 2개. 외래 키 없음. S05-T04 · T05부터 유니크 인덱스는 `ux_employees_normalized_email`(normalized_email)이고, `CHECK (normalized_email = lower(email))`는 두지 않는다. 실측(S05-T02): U+0130(`İ`)이 .NET `ToLowerInvariant`에서는 그대로, PostgreSQL libc `lower()`에서는 `i`라 Domain이 정상 처리한 값이 23514로 거부된다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)) |
 
+- 길이 규칙은 Domain(UTF-16 코드 단위)이 `varchar(n)`(코드 포인트)보다 엄격하므로, Domain을 거친 값은 PostgreSQL SqlState `22001`(string_data_right_truncation)을 일으키지 않는다. `joined_on` 하한(1900-01-01)과 이름 · 전화번호 형식은 DB 체크 제약이 없는 Domain 규칙이다(PRD-002 FR-01, S05-T03).
 - 이름 상수(테이블 `employees`, `ux_employees_email`)는 `EmergencyHub.Employee.Infrastructure`의 한 곳에 두고, 매핑(`ToTable` · `HasUniqueIndex`)과 23505 매핑 등록(`ux_employees_email` → 23001 `EmployeeErrors.DuplicateEmail`)이 같은 상수를 쓴다.
 
 ---
@@ -542,3 +544,4 @@ InitialCreate 대조(S04-T02 dba, 마이그레이션 `20260927134235_InitialCrea
 | 2026-09-28 | developer | 연결 문자열 주입 문장의 configuration 링크에 `#시크릿-관리-user-secrets--github-secrets` 앵커 추가 (S04-T03) |
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #6 반영: psql 명령 틀(SQL 파일을 표준 입력으로, 두 셸), 42P04 "(실행 횟수 − 1)" 풀이(BL-115), 알려진 잡음 로그 표 N1~N5와 잡음 아닌 BL-117, 명명 규칙 적용 범위 실측 표 |
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #13 반영: 생성 SQL 점검표 a~g 원본(InitialCreate 실측 열), 생성 형식 아키텍처 규칙 점검 |
+| 2026-09-28 | developer | ADR-0026 · 0027 반영(S05-T02 dba 문안): 단일 값 Value Object는 엔티티 설정 안 값 변환기(Employee 4개, `NormalizedEmail`은 문자열 속성), 트랜잭션 규칙에 `RegisterEmployeesCommand` 다중 Aggregate 예외(상한 1,000) 링크, `employees` 인덱스 표의 CHECK 문구를 `ux_employees_normalized_email` 기준 · U+0130 실측 근거로, 길이(UTF-16이 varchar보다 엄격, SqlState 22001 없음) · `joined_on` 하한 · 이름 · 전화 형식은 Domain 규칙 한 줄. ERD · InitialCreate 대조 표는 S05-T05에서 갱신 (S05-T02) |

@@ -152,7 +152,7 @@ EmergencyHub.Employee.Domain/
 └── Employees/                   # Aggregate 단위 폴더
     ├── Employee.cs              # Aggregate Root
     ├── EmployeeId.cs            # 강타입 ID (record struct)
-    ├── EmployeeEmail.cs         # Value Object
+    ├── EmployeeEmail.cs         # 이메일 정규화 · 형식 판정 static 도우미(값 객체 아님, PRD-001 샘플)
     ├── EmployeeStatus.cs        # 코드 enum (short)
     ├── EmployeeErrors.cs
     ├── IEmployeeRepository.cs   # Write Repository 인터페이스 (IRepository 상속)
@@ -194,6 +194,7 @@ EmergencyHub.Employee.MigrationService/
 └── appsettings.json
 ```
 
+- PRD-002에서 Domain `Employees/`에 Value Object 4개(`Name` · `Email` · `PhoneNumber` · `JoinedOn`, S05-T03)가 들어오고 이메일 판정은 Email Value Object로 옮긴다([ADR-0026](adr/0026-employee-bulk-import-input-processing.md) 8절, [ADR-0027](adr/0027-case-insensitive-unique-email-with-normalized-column.md)). 샘플의 `Commands/RegisterEmployee/` · `Queries/GetEmployeeById/`와 Api Request / Response는 S05-T04에서 없어진다. 이 트리는 코드가 바뀌는 작업에서 실제 구성으로 갱신한다.
 - 루트 네임스페이스: `EmergencyHub.<Service>.<Layer>`
 - 폴더는 기술 종류(Entities, Services)가 아니라 **Aggregate / 기능 단위**로 나눈다.
 - 필요해지면 추가하는 폴더: 여러 Aggregate가 쓰는 Value Object(Domain `ValueObjects/`), 포트 인터페이스(Application `Abstractions/`, `IService` 상속). Outbox는 도입 보류([ADR-0023](adr/0023-deferred-adoptions.md))라 Infrastructure에 `Outbox/`를 두지 않는다.
@@ -252,3 +253,4 @@ EmergencyHub.Employee.MigrationService/
 | 2026-09-27 | developer | ADR 0014 · 0016 · 0023 반영: Api `Endpoints/` → `Controllers/`, API 스타일 확정, Command 흐름의 커밋 주체 · Outbox 보류 (S01-T04). 저장소 구조 전체 갱신은 S04-T02 |
 | 2026-09-27 | developer | 저장소 구조에 `src/Aspire/EmergencyHub.ServiceDefaults`, `<Service>.MigrationService`와 테스트 프로젝트 추가 (S03-T03) |
 | 2026-09-28 | developer | 저장소 구조를 실제 경로로 갱신(AppHost · BuildingBlocks.Api · `tests/BuildingBlocks/*` · 루트 설정 파일 추가, Gateway · `deploy/` 제거), 레이어 표에 MigrationService 행, 의존성 규칙 표(Api · MigrationService 행, 아키텍처 테스트 규칙 이름 열), 서비스별 구성을 Employee 실제 구성으로, BuildingBlocks 표에 Api · `RequestValidator<T>`, Outbox 보류 반영, 공통 빌드 설정 표(IsTestProject 이름 규칙 · NuGetAudit · IVT · 이미지 태그, `Directory.Build.targets` PrivateAssets) (S04-T02, BL-048 · 066 · 087) |
+| 2026-09-28 | developer | 서비스별 구성 트리의 `EmployeeEmail.cs` 주석을 실제(static 정규화 · 판정 도우미, 값 객체 아님)로 정정, PRD-002 Value Object 4개 · 샘플 제거 예정 메모(ADR-0026 · 0027) (S05-T02) |

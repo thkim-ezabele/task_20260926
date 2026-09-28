@@ -38,6 +38,10 @@ updated: 2026-09-28
 | [0022](../03-architecture/adr/0022-respawn-and-coverage-tooling.md) | Respawn · 커버리지 | Respawn 7.0.0(public, `__EFMigrationsHistory` 따옴표 없이 제외, 쓰기 연결, 테스트 시작 전 Reset), fixture는 `employee_app` 재현 · `postgres:17`, coverlet.collector + ReportGenerator(도구 매니페스트), 80%는 보고만(BuildingBlocks · Employee Domain / Application) |
 | [0023](../03-architecture/adr/0023-deferred-adoptions.md) | 도입 보류 | 브로커 · Outbox / Inbox · Gateway · 로그 수집기 보류(재검토 트리거 표), ADR-0004 유지, 로컬 관측은 Aspire 대시보드 |
 | [0024](../03-architecture/adr/0024-building-blocks-api-for-common-http-handling.md) | BuildingBlocks.Api 신설 | 공통 API 처리(ProblemDetails, 1001, 전역 예외, Controller · Swashbuckle 설정)는 `BuildingBlocks.Api`(Application · Domain만 참조, Infrastructure · EF · Npgsql 금지), Infrastructure 예외는 Application 분류 포트 + Infrastructure 구현(9003), 의존성 규칙 표는 아키텍처 테스트 원본 |
+| [0025](../03-architecture/adr/0025-api-rule-exceptions-for-assignment-endpoints.md) | 과제 API 규칙 예외 | `/api/employee` 3개만: 버전 없는 단수 경로, `page` / `pageSize`, `{name}` 경로, 일괄 201 `{count, ids}`(`Location` 없음), `[Consumes]` 4종, 413 · 415. `RequestPath` · `instance` · `url.path`는 라우트 템플릿(S07-T02) |
+| [0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md) | 일괄 가져오기 입력 처리 | Api 전용 바인더 → Command `(Format, [Flags] Sources, ReadOnlyMemory<byte> Content)`, 파서 Application(CSV 직접 구현, 대괄호 없는 JSON), Handler가 파싱 → VO 행 검증 → 요청 안 중복 → DB 사전 조회(ADR-0018 범위 예외, 이 Handler만), Employee VO 4개 `Create` → Result가 필드 규칙 원본, 다중 Aggregate 한 트랜잭션(상한 1,000), 행 오류 100개 + 잘림 21030 · 23002, TD-010 위험 수용 |
+| [0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md) | 이메일 대소문자 무시 유일 | `email`(입력 표기) + `normalized_email`(Domain `ToLowerInvariant`, NFC 없음) + 일반 유니크 `ux_employees_normalized_email` → 23001. citext · `lower()` 식 · CHECK · ICU collation 미사용(U+0130 실측) |
+| [0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md) | 오류 계약 확장 | 상세 Conflict 오류 + 409 `errors`(400과 같은 모양), `ErrorType` `PayloadTooLarge` = 11 · `UnsupportedMediaType` = 12(T = 1), 공통 1004 · 1005, `BadHttpRequestException` 413 → 413(S06-T01) |
 
 형상관리는 GitHub로 확정했습니다(ADR 없음).
 

@@ -68,6 +68,7 @@ updated: 2026-09-28
 
 - POST(S06)를 먼저 끝냈으므로, POST로 넣은 데이터로 curl 조회를 시연할 수 있다.
 - T03에서 PRD-001 증빙 대응표의 "이전 대기"를 모두 닫는다.
+- S07-T02: ADR-0025 A — RequestPath · instance(ErrorProblemDetails.cs:55) · url.path 세 곳 라우트 템플릿화, 기존 instance 계약 테스트 수정 포함([ADR-0025](../../03-architecture/adr/0025-api-rule-exceptions-for-assignment-endpoints.md#이름-경로-매개변수와-개인정보), S05-T02 대리 확인).
 
 ## 결과 리뷰
 
@@ -104,3 +105,4 @@ updated: 2026-09-28
 | 2026-09-27 | - | 스프린트 계획 (`/prd` PRD-002 분할, 가번호) |
 | 2026-09-28 | - | BL-024 편입: T04에 대시보드 추적 수동 확인 추가 |
 | 2026-09-28 | developer | S05-T01: 스프린트 번호 확정, T01 dba 참조 `S05-T05` → `S05-T06`(S05 작업 재구성) |
+| 2026-09-28 | developer | S05-T02: 계획 메모에 S07-T02 라우트 템플릿 세 곳(ADR-0025) 항목 추가 |
