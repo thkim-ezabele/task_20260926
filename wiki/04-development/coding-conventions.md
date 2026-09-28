@@ -80,7 +80,7 @@ CQRS 타입 이름
 실제 코드(`src/Services/Employee/EmergencyHub.Employee.Infrastructure/Persistence/Migrations/`의 두 파일에서 namespace · XML 문서 주석을 빼고, 파일 이름을 `//` 주석으로 앞에 붙인 것. 남은 선언 줄은 소스와 같다):
 
 ```csharp
-// 20260927134235_InitialCreate.Sealed.cs
+// 20260928090646_InitialCreate.Sealed.cs
 public sealed partial class InitialCreate;
 
 // EmployeeDbContextModelSnapshot.Sealed.cs
@@ -462,3 +462,4 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 | 2026-09-28 | developer | ADR-0026 · 0027 반영: 실패 처리 경계에 Employee 필드 규칙 판정 원본(Value Object `Create` → `Result`, 적용 범위 Employee Value Object 4개), CQRS 표 트랜잭션 · 검증 행의 `RegisterEmployeesCommand` 예외, 이메일 `string` 문구를 PRD-001 샘플 설명으로 한정하고 Email Value Object · `ux_employees_normalized_email` 추가, Register 예시가 샘플(S05-T04에서 제거, S06-T04에서 교체)임을 표시 (S05-T02) |
 | 2026-09-28 | developer | Value Object 규칙에 `Create`로만 만드는 Value Object는 private 생성자 + get-only 속성(위치 기반 record 아님) 추가 (S05-T03) |
 | 2026-09-28 | developer | PRD-001 샘플 제거 반영: 기능 폴더 구조를 규칙 + 현재 구성으로, Handler 예시를 `v0.1.0` 샘플 표시(교체는 S06-T04), `Employee.Register` VO 시그니처 · `NormalizedEmail`, Repository 실제 코드 · 값 변환기 VO 비교 규칙(실측), Controller 0개, 경고 억제 승인 목록 17건(Employee.Application CA1812 3건 삭제) (S05-T04) |
+| 2026-09-28 | dba | sealed partial 선언 실제 코드 예시의 파일 이름 주석을 리셋 뒤 `20260928090646_InitialCreate.Sealed.cs`로 교체(선언 줄 그대로) (S05-T05) |
