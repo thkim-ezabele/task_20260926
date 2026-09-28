@@ -12,7 +12,7 @@ retro:
 aliases: [PRD-002]
 tags: [delivery, prd]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # PRD-002: 직원 연락처 조회 · 일괄 등록 (CSV / JSON)
@@ -94,7 +94,7 @@ updated: 2026-09-27
 | FR-07 | **`GET /api/employee?page={page}&pageSize={pageSize}`** 전체 목록 페이징. `page` 1부터(기본 1, 상한 100,000), `pageSize` 기본 20 · 1~100. 숫자가 아니면 1001(바인딩), 범위 밖이면 **1003**(`Common.InvalidPaging`). 정렬은 `joined_on` → `id`(등록 순) 고정. 응답 `{ "items": [...], "totalCount": N, "page": p, "pageSize": s }`, 항목은 `id` · `name` · `email` · `tel` · `joined`. Read Repository의 목록 · 개수 메서드를 나눠 Handler가 합친다(`COUNT(*) OVER()` 미사용) | 상 | 25건에서 `page=2&pageSize=10`이 11~20번째를, 마지막 페이지를 넘는 `page`는 빈 `items` · 200 · 올바른 `totalCount`를 반환한다. `page=0`, `pageSize=101`은 1003, `page=abc`는 1001이다 |
 | FR-08 | **`GET /api/employee/{name}`** 이름이 정확히 일치(앞뒤 공백 제거 + NFC, 대소문자 구분)하는 직원의 상세 연락정보(`id` · `name` · `email` · `tel` · `joined`)를 반환한다. **동명이인이면 입사일이 빠른 1명**(같으면 등록 순). 없으면 404(Employee 대상 없음 코드), 공백 제거 뒤 빈 이름이면 400. `/`가 들어간 이름(`%2F`)은 보장하지 않는다(백로그) | 상 | 한글 이름(URL 인코딩) 200, NFD로 보낸 이름도 조회됨, 없는 이름 404, 동명이인 3명 중 입사일이 가장 빠른 1명 반환을 통합 테스트로 확인한다 |
 | FR-09 | **결정 기록(ADR).** 구현 작업보다 먼저, 사용자 확인 후 `accepted`로 커밋한다. ① 과제 API 명세에 따른 규칙 예외: 버전 없는 단수 경로 `/api/employee`, `page` / `pageSize`, `name` 경로 매개변수, 일괄 201의 `Location` 생략, 적용 범위(이 3개 엔드포인트만), 413 / 415 처리 ② 직원 일괄 가져오기 입력 처리: 전용 바인더, 형식 판별 순서, 파서 레이어(Application), CSV 직접 구현, 대괄호 없는 JSON, 행 번호 규칙, ADR-0018 범위 예외, 다중 Aggregate 단일 트랜잭션 예외 ③ 이메일 대소문자 무시 유일(정규화 컬럼 + 일반 유니크 인덱스, citext · `lower()` 식 인덱스 · ICU collation을 쓰지 않는 이유) ④ BuildingBlocks 오류 계약 확장: 상세 Conflict 오류와 409 `errors`, `ErrorType`(PayloadTooLarge, UnsupportedMediaType)과 공통 코드. 번호는 PRD-001 병합 뒤 할당 | 상 | ADR이 사용자 확인 후 `accepted`로 커밋되고 구현보다 먼저 커밋된다. api-guidelines에 예외 절과 링크, error-codes에 새 공통 · Employee 코드가 추가된다 |
-| FR-10 | **테스트.** 단위(CSV · JSON 파서, Value Object, Validator, Handler — NSubstitute), 통합(Testcontainers + `WebApplicationFactory`: 입력 경로 표 전체, 전부 거부 시 0건 저장, 413 / 415, 페이징 경계, 동명이인, 한글 URL, 동시 요청 23505), 원문 예시를 fixture 파일로 둔 인수 시나리오, **개인정보 테스트**(400 / 409 / 500 응답 본문과 캡처한 로그에 입력한 이름 · 이메일 · 전화번호 값이 없음 — 로깅 데코레이터, FluentValidation `{PropertyValue}`, 파서 예외, 23505 detail 경로). 성공 / 실패 / 엣지 필수 | 상 | `dotnet test`와 CI가 통과하고, FR-01~08 인수 조건마다 테스트가 1개 이상 연결된다 |
+| FR-10 | **테스트.** 단위(CSV · JSON 파서, Value Object, Validator, Handler — NSubstitute), 통합(Testcontainers + `WebApplicationFactory`: 입력 경로 표 전체, 전부 거부 시 0건 저장, 413 / 415, 페이징 경계, 동명이인, 한글 URL, 동시 요청 23505), 원문 예시를 fixture 파일로 둔 인수 시나리오, **개인정보 테스트**(400 / 409 / 500 응답 본문과 캡처한 로그에 입력한 이름 · 이메일 · 전화번호 값이 없음 — 로깅 데코레이터, FluentValidation `{PropertyValue}`, 파서 예외, 23505 detail 경로) + Npgsql 추적 span 태그에 비밀번호 · 입력 값 없음(BL-024). 성공 / 실패 / 엣지 필수 | 상 | `dotnet test`와 CI가 통과하고, FR-01~08 인수 조건마다 테스트가 1개 이상 연결된다 |
 | FR-11 | **문서.** API 명세(3개 엔드포인트, 행 오류 경로 규칙, 형식별 curl 예시 `-F file=@` · `-F data=` · `--data-binary` + Content-Type), 에러 코드 표(공통 413 / 415, Employee 파싱 · 필드 · 중복 코드), database(`employees` ERD · 인덱스 · 코드 표 · 일괄 트랜잭션 예외 링크 · 리셋 이력), local-setup 등록 · 조회 예시 | 중 | 해당 문서가 `draft` 이상이고, curl 예시를 Aspire로 띄운 상태에서 실행한 기록(worklog)이 있다 |
 
 #### 입력 경로 표 (FR-05 인수 조건)
@@ -118,7 +118,7 @@ updated: 2026-09-27
 | NFR-01 | 입력 크기 제한 | 요청 본문 **전체 기준** 1 MiB(`RequestSizeLimit`, `RequestFormLimits.MultipartBodyLengthLimit` · `ValueLengthLimit`), 최대 1,000행. TestServer와 Kestrel의 `MaxRequestBodySize` 차이를 통합 테스트로 확인한다 |
 | NFR-02 | 등록 성능 | 1,000행 CSV 등록 2초 이내. 통합 테스트(Testcontainers)에서 Stopwatch로 측정해 스프린트 진행 기록에 남기고, CI는 느슨한 임계값(2배)으로 확인한다. EF 배치 크기를 측정 · 기록한다 |
 | NFR-03 | 조회 성능 | 10,000건(테스트 fixture 시더, 마이그레이션 시드 아님)에서 목록 조회 · 이름 조회 200ms 이내. 측정 방식은 NFR-02와 같다 |
-| NFR-04 | 개인정보 | 로그 · 에러 `detail`에 이름 · 이메일 · 전화번호 **값**을 남기지 않는다(행 번호 · 필드 · 정수 코드로만 식별). SQL 파라미터 값 미기록(ADR-0020), 테스트 · 측정에서 `EnableSensitiveDataLogging` 끔. FR-10 개인정보 테스트로 검증한다 |
+| NFR-04 | 개인정보 | 로그 · 에러 `detail`에 이름 · 이메일 · 전화번호 **값**을 남기지 않는다(행 번호 · 필드 · 정수 코드로만 식별). SQL 파라미터 값 미기록(ADR-0020), 테스트 · 측정에서 `EnableSensitiveDataLogging` 끔. FR-10 개인정보 테스트로 검증한다. **BL-024 편입**(2026-09-28 사용자 결정): Npgsql 추적 span 태그(`db.connection_string` · `db.statement` 등)에 DB 비밀번호와 SQL 파라미터 값이 없음을 자동 테스트(`ActivityListener`)와 Aspire 대시보드 수동 확인 1회로 실측한다 |
 | NFR-05 | 정수 코드 | 새 에러 코드 · 필드 오류 코드 · enum은 정수(ADR-0008). 번호는 PRD-001 병합 후 에러 코드 표 기준으로 할당 |
 | NFR-06 | PRD-001 품질 기준 유지 | 경고 0, 아키텍처 테스트 통과, Employee Domain / Application 커버리지 80% 보고. 새 패키지 없음(추가하면 라이선스 기록) |
 
@@ -185,6 +185,7 @@ updated: 2026-09-27
 | Q14 | 행 단위 오류 계약 (B3) | 요청 안 중복 400(두 행 표시), DB 중복 409 + 행 번호(BuildingBlocks 상세 Conflict 추가), 경합 23505 409는 행 번호 없음, 처리 순서 파싱 → 행 검증 → 요청 안 중복 → DB 중복 | FR-06, FR-09 ④ |
 | Q15 | POST 입력 구조 · 413 / 415 (B4) | Employee.Api 전용 바인더, 파서는 Application, 필드 규칙은 Domain Value Object(ADR-0018 범위 예외), 413 / 415는 `ErrorType`과 공통 정수 코드 추가 | FR-05, FR-06, FR-09 ② · ④ |
 | Q16 | 세부 기본값(이메일 두 컬럼, 컬럼명 `joined_on` · `phone_number`, tel `+` 불허 · 20자 · 중복 허용, name trim · NFC · 제어 문자 거부, CSV 직접 구현 · 물리 줄 번호 · 전 필드 trim · 엄격 UTF-8, JSON 끝 쉼표 · 주석 거부, `data` 없는 form 400 · `text/plain` 415, 행 오류 최대 100개, NFR 증빙 방식) | 확정: 리뷰 통합 추천안. | FR-01 · 03 · 04 · 05 · 06, NFR-02 · 03 |
+| Q17 | BL-024(추적 · 로그의 비밀번호 · 파라미터 값 미노출 실측)를 편입하는가 | 편입. 자동 테스트는 S06-T06, 대시보드 수동 확인은 S07-T04. .NET 10 전환(BL-002)은 진행하지 않음 | NFR-04, FR-10 |
 
 ---
 
@@ -196,3 +197,4 @@ updated: 2026-09-27
 | 2026-09-27 | - | 병렬 리뷰(orchestrator / dba / developer) 통합 반영, 차단 질문 4건(B1~B4) 답변 반영, 선행 조건 · 입력 경로 표 추가, FR 11개로 재구성 |
 | 2026-09-27 | - | 스프린트 분할(S05~S07 가번호, 작업 15개) 승인, 세부 기본값(Q9~Q11, Q16) 확정, `stable` |
 | 2026-09-27 | - | Draft PR #8 연결 |
+| 2026-09-28 | - | develop(v0.1.0) 병합, BL-024 편입(NFR-04 · FR-10, Q17), .NET 10 전환 미진행 기록 |

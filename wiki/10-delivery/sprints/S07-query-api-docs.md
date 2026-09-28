@@ -11,7 +11,7 @@ worklogs: []
 aliases: [S07]
 tags: [delivery, sprint]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # S07: 조회 API, 조회 성능, 문서 마무리
@@ -31,7 +31,7 @@ updated: 2026-09-27
 | S07-T01 | 목록 조회 Query와 `GET /api/employee` | FR-07, FR-10 | `page` 기본 1 · 상한 100,000, `pageSize` 기본 20 · 1~100. 숫자 아님 1001, 범위 밖 1003. 목록 · 개수를 따로 조회해 Handler가 합침. 응답 `{ items, totalCount, page, pageSize }`. 단위 테스트(Validator, Handler) 통과 | S06-T06 | todo | |
 | S07-T02 | 이름 조회 Query와 `GET /api/employee/{name}` | FR-08, FR-10 | trim + NFC 뒤 정확 일치(대소문자 구분), 동명이인이면 `joined_on`, `id` 순 첫 1명. 없으면 404(Employee 대상 없음), 공백 제거 뒤 빈 이름 400. 단위 테스트 통과, 로그에 이름 값 없음 | S06-T06 | todo | |
 | S07-T03 | 조회 통합 테스트와 10,000건 조회 성능 측정 | FR-07, FR-08, FR-10, NFR-03, NFR-04 | ① 페이징 경계: 25건에서 `page=2&pageSize=10` → 11~20번째, 마지막 페이지 초과 → 빈 `items` · 200, `page=0` · `pageSize=101` → 1003, `page=abc` → 1001 ② 한글 URL 200, NFD 조회, 없는 이름 404, 동명이인 3명 중 가장 빠른 1명 ③ 10,000건 fixture 시더(마이그레이션 시드 아님)로 두 조회 측정값을 진행 기록에 남김(200ms 이내, CI 임계값 2배) ④ 404 본문과 로그에 이름 값 없음 ⑤ 대응표 나머지(1001 HTTP)를 닫아 "이전 대기" 0건 | T01, T02 | todo | |
-| S07-T04 | 문서 마무리와 Aspire curl 실행 기록 (문서 작업) | FR-11 | API 명세(3개 엔드포인트, 행 오류 경로 규칙, `curl -F file=@` · `-F data=` · `--data-binary` + Content-Type 예시), error-codes · database(일괄 트랜잭션 예외 링크, 리셋 이력) · local-setup 등록 · 조회 예시가 draft 이상. Aspire로 띄운 상태에서 curl 예시를 모두 실행해 진행 기록에 명령 · 출력을 남기고, worklog 반영은 사용자에게 안내(`/worklog`) | T03 | todo | |
+| S07-T04 | 문서 마무리와 Aspire curl 실행 기록 (문서 작업) | FR-11 | API 명세(3개 엔드포인트, 행 오류 경로 규칙, `curl -F file=@` · `-F data=` · `--data-binary` + Content-Type 예시), error-codes · database(일괄 트랜잭션 예외 링크, 리셋 이력) · local-setup 등록 · 조회 예시가 draft 이상. Aspire로 띄운 상태에서 curl 예시를 모두 실행하고, **BL-024** 대시보드 추적 화면에서 `db.connection_string`에 비밀번호가 없고 span 태그에 등록 값이 없음을 확인해(마스킹 캡처를 `evidence/S07-T04/`에) 진행 기록에 명령 · 출력을 남기고, worklog 반영은 사용자에게 안내(`/worklog`) | T03 | todo | |
 
 상태: `todo` · `doing` · `done` · `blocked`(반려 3회) · `moved:BL-NNN`(백로그로 이관)
 
@@ -102,3 +102,4 @@ updated: 2026-09-27
 | 날짜 | 작성자 | 내용 |
 |---|---|---|
 | 2026-09-27 | - | 스프린트 계획 (`/prd` PRD-002 분할, 가번호) |
+| 2026-09-28 | - | BL-024 편입: T04에 대시보드 추적 수동 확인 추가 |

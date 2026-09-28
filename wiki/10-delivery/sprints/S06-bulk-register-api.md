@@ -11,7 +11,7 @@ worklogs: []
 aliases: [S06]
 tags: [delivery, sprint]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # S06: 일괄 등록 POST /api/employee
@@ -33,7 +33,7 @@ updated: 2026-09-27
 | S06-T03 | JSON 파서 (배열, 단일 객체, 대괄호 없는 나열) | FR-04, FR-10, NFR-04 | 세 형태가 같은 행 목록을 만든다. 항목 오류: 문자열 아님(`joined` 숫자), 속성 누락, 객체 아님, 대소문자만 다른 중복 속성. 알 수 없는 속성 무시. 끝 쉼표 · 주석 · `[..],[..]`는 전용 문법 코드, 경로 빈 문자열. `JsonException` 원문이 오류에 없음 | S05-T02 | todo | |
 | S06-T04 | RegisterEmployeesCommand, Validator, Handler | FR-06, FR-01, FR-10, NFR-04 | ① Validator는 겉모양만(Format 1002, 빈 입력, `file` · `data` 동시) ② Handler: 파싱 → Value Object 행 검증 → 요청 안 이메일 중복(두 행 표시) → DB 중복 사전 조회(409 + 행 번호) → 여러 건 추가, 앞 단계 실패 시 멈춤 ③ 행 오류 최대 100개 + 잘림 표시, 경로 `rows[n].field`(1부터) ④ 성공 결과는 count와 입력 순서 ids ⑤ 단위 테스트(NSubstitute) 단계별 성공 / 실패 / 엣지, enum 1002 증빙 이전(Validator 수준)을 대응표에 반영 | T01, T02, T03 | todo | |
 | S06-T05 | Employee.Api 바인더, Controller, 크기 제한, Swagger | FR-05, FR-09, NFR-01 | ① 전용 `IModelBinder`가 `EmployeeImportPayload` 생성, 판별 순서 Content-Type → 확장자 → 내용 ② 액션 하나에 `[Consumes]` 4종, `POST /api/employee` 201, `Location` 없음 ③ 1 MiB 제한(`RequestSizeLimit`, `MultipartBodyLengthLimit`, `ValueLengthLimit`), `BadHttpRequestException` · `InvalidDataException` → 413, 지원하지 않는 형식 → 415 ④ Swagger OperationFilter로 `file` · `data` · raw 시험 가능 ⑤ Controller는 `ISender`만, 아키텍처 테스트 통과 | T04 | todo | |
-| S06-T06 | POST 통합 · 인수 · 개인정보 테스트와 등록 성능 측정 | FR-05, FR-06, FR-10, NFR-01, NFR-02, NFR-04 | ① 입력 경로 표의 모든 행이 기대 상태 코드 · `code`로 응답 ② 실패 시 DB 0건(400, 409, 413, 1,000행 초과) ③ 동시 요청 23505 → 409(행 번호 없음) ④ TestServer · Kestrel `MaxRequestBodySize` 차이 확인 ⑤ 원문 예시 fixture(CSV · JSON) 인수 시나리오 ⑥ 개인정보: 400 / 409 / 500 본문과 캡처한 로그에 이름 · 이메일 · 전화번호 값 없음 ⑦ 1,000행 CSV 등록 시간 · EF 배치 크기를 진행 기록에 남김(2초 이내, CI 임계값 4초) ⑧ HTTP 수준 증빙 이전(23505 → 409, 500 형식)을 대응표에 반영 | T05 | todo | |
+| S06-T06 | POST 통합 · 인수 · 개인정보 테스트와 등록 성능 측정 | FR-05, FR-06, FR-10, NFR-01, NFR-02, NFR-04 | ① 입력 경로 표의 모든 행이 기대 상태 코드 · `code`로 응답 ② 실패 시 DB 0건(400, 409, 413, 1,000행 초과) ③ 동시 요청 23505 → 409(행 번호 없음) ④ TestServer · Kestrel `MaxRequestBodySize` 차이 확인 ⑤ 원문 예시 fixture(CSV · JSON) 인수 시나리오 ⑥ 개인정보: 400 / 409 / 500 본문과 캡처한 로그에 이름 · 이메일 · 전화번호 값 없음, **BL-024**: `ActivityListener`로 모은 Npgsql span 태그(`db.connection_string` · `db.statement` 등)에 DB 비밀번호와 등록한 입력 값 없음 ⑦ 1,000행 CSV 등록 시간 · EF 배치 크기를 진행 기록에 남김(2초 이내, CI 임계값 4초) ⑧ HTTP 수준 증빙 이전(23505 → 409, 500 형식)을 대응표에 반영 | T05 | todo | |
 
 상태: `todo` · `doing` · `done` · `blocked`(반려 3회) · `moved:BL-NNN`(백로그로 이관)
 
@@ -108,3 +108,4 @@ updated: 2026-09-27
 | 날짜 | 작성자 | 내용 |
 |---|---|---|
 | 2026-09-27 | - | 스프린트 계획 (`/prd` PRD-002 분할, 가번호) |
+| 2026-09-28 | - | BL-024 편입: T06 완료 조건 ⑥에 추적 태그 실측 추가 |
