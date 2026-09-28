@@ -2,10 +2,10 @@
 title: "S07: 조회 API, 조회 성능, 문서 마무리"
 type: sprint
 sprint: "S07"
-status: active
+status: done
 prd: [PRD-002]
 started: 2026-09-29
-finished:
+finished: 2026-09-29
 adrs: []
 worklogs: []
 aliases: [S07]
@@ -48,12 +48,12 @@ updated: 2026-09-29
 
 ## 완료 기준 (DoD)
 
-- [ ] 모든 작업이 `done`이거나 백로그로 이관되었다
-- [ ] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (경고 0, 커버리지 보고 — NFR-06)
-- [ ] 관련 위키 문서(API, 이벤트, DB)를 갱신했다
-- [ ] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
-- [ ] CI로만 판정할 조건: 토픽 PR CI에서 S07-T03 조회 측정이 CI 임계값(200ms × 2) 안이고 CI가 통과했다(NFR-03)
-- [ ] 토픽 브랜치를 push하고 `sprint/S07` 태그를 붙였다
+- [x] 모든 작업이 `done`이거나 백로그로 이관되었다
+- [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (경고 0, 커버리지 보고 — NFR-06): 로컬 build -warnaserror 오류 0 · 경고 0, test 통과 2,544 · 건너뜀 1 · 실패 0, 커버리지(대상 6개) 라인 99.3% · 분기 96.8%(616/636)
+- [x] 관련 위키 문서(API, 이벤트, DB)를 갱신했다 (employee-api · api-reference · error-codes · database · local-setup · roadmap · api-guidelines · logging-observability · testing-strategy · coding-conventions. 이벤트 변경 없음)
+- [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
+- [ ] CI로만 판정할 조건 (PRD 종료 뒤 일괄): 토픽 PR CI에서 S07-T03 조회 측정이 CI 임계값(200ms × 2) 안이고 CI가 통과했다(NFR-03), FR-10 · NFR-06 CI 전체 통과 · 경고 0 · 커버리지 보고 산출물
+- [ ] 토픽 브랜치를 push하고 `sprint/S07` 태그를 붙였다 (CI 통과 뒤)
 
 ## 진행 기록
 
@@ -86,6 +86,7 @@ updated: 2026-09-29
 | 2026-09-29 | S07-T04 | developer | PASS | 재작업: local-setup.md:241 경로 역슬래시 복원(od -c 확인), evidence README 마스킹 문장 정정. check-docs 6(BL-018), U+FFFD 0 |
 | 2026-09-29 | S07-T04 | reviewer | PASS | 재검증: 241행 경로 복원 · 마스킹 문장 정정 확인, C:Windows 잔존 0, 범위 밖 변경 없음 |
 | 2026-09-29 | S07-T04 | tester | PASS | 재검증: od -c 역슬래시 3개, 마스킹 grep 재실측 일치, check-docs 6(BL-018), U+FFFD 0 |
+| 2026-09-29 | - | 결과 리뷰 | 승인(대리) | orchestrator 결과 리뷰 → 대리 승인. DoD 직접 실행: build 오류 0, test 2,544 통과 · 1 건너뜀 · 실패 0, 커버리지 라인 99.3% · 분기 96.8%. new 5건 open, BL-139 done |
 
 
 ### S07-T04 Aspire curl 실행 기록 (2026-09-29, developer)
@@ -157,13 +158,22 @@ developer 1명이 리뷰하고 orchestrator가 통합했다. 작업은 S07-T05(B
 
 > 스프린트 종료 시 orchestrator의 결과 리뷰(계획 대비 실제, 완료 조건 · FR 충족, 반려 분석)를 요약합니다.
 
--
+- **계획 대비**: 계획 5 / 완료 5(T05는 계획 리뷰에서 넣은 BL-137 작업), 이관 0, BLOCKED 0. 커밋 `5155577..edebbd7` 13개. 반려 1회(S07-T04 문서 사실: local-setup 경로 역슬래시 · 증빙 마스킹 문장, reviewer · tester 같은 회차). 코드 작업 4개는 반려 0. T02 분할 조건(반려 2회) 미발동.
+- **충족**: FR-06(0행 400 · 21028) · FR-07 · FR-08 · FR-11 · NFR-04(세 곳 + 호스팅 로그 범위 라우트 템플릿, BL-024 대시보드 span). 로컬만 충족: FR-10 · NFR-03(중앙값 목록 4.8~6.4ms · 깊은 쪽 8.9~15.7ms · 이름 3.7~4.4ms, Index Scan). CI 판정은 PRD 종료 뒤 S06 NFR-02와 함께.
+- **DoD 직접 실행**: build -warnaserror 오류 0, test 2,544 통과 · 1 건너뜀 · 실패 0, 커버리지 라인 99.3% · 분기 96.8%. 증빙 대응표 전수 대조: S05 대응표 새 테스트 칸 '이전 대기' 20행을 새 테스트 이름으로 채움(형태 테스트 3행 '대체 없음'), 이름 바뀐 새 테스트 2건 정정, 새 테스트 이름 전부 tests/ 존재 확인.
+- **백로그 / 기술부채**: planned:S07 항목 BL-024 · 128 · 134 · 137 · 139 모두 처리(BL-139 상태 done으로 정정). 새 항목 BL-140~143 · TD-030은 open, /retro PRD-002 대상. TD-028 open 유지.
+- **ADR 후보(파일 없음, /retro PRD-002)**: BL-141 ADR-0025 보완(호스팅 로그 범위 RequestPath, 405 · 일치 없음 404 fallback), TD-030 도우미 중복 허용, 0행 Handler 판정 근거(기준 문서 한 줄 후보).
+- **대리 승인**: 2행(① 계획 리뷰, ③ 결과 리뷰).
 
 ## 생긴 백로그 / 기술부채
 
 | ID | 제목 | 발생 작업 | 정리 결과 |
 |---|---|---|---|
-| | | | open / planned:SNN / dropped |
+| BL-140 | Value Object 결과로 코드가 갈리는 Validator 패턴을 coding-conventions에 넣을지 | S07-T02 reviewer | open(하, /retro PRD-002) |
+| BL-141 | ADR-0025 보완 후보: 호스팅 로그 범위 RequestPath, 이름 경로 405 · 일치 없음 404 fallback의 NFR-04 범위 | S07-T02 developer · tester | open(중, ADR 후보, /retro PRD-002) |
+| BL-142 | troubleshooting에 Git Bash 내장 curl의 CP949 한글 전송(21022) 한 줄 | S07-T04 developer | open(하, /retro 개선 브랜치) |
+| BL-143 | PRD-002 범위 밖 CSV 헤더 문구가 실측보다 좁음 | S07-T04 developer | open(하, /retro PRD-002) |
+| TD-030 | 라우트 템플릿 도우미 RouteTemplatePath를 BuildingBlocks.Api와 ServiceDefaults에 중복 | S07-T02 developer | open(하, 트리거: 두 번째 서비스) |
 
 ## 대리 승인
 
@@ -172,20 +182,11 @@ developer 1명이 리뷰하고 orchestrator가 통합했다. 작업은 S07-T05(B
 | 날짜 | 승인 지점 | 승인 내용 | 승인한 세션 | 근거 (진행 기록) | 추인 |
 |---|---|---|---|---|---|
 | 2026-09-29 | ① 계획 리뷰 | T05 추가 · T02 · T03 완료 조건 수정 · CI 임계값 DoD 이동, Q1(400 · 21008/21009) · Q2(도우미 중복 + TD, 트리거 두 번째 서비스) · Q3(PathBase 붙임), T02 반려 2회 시 분할안 BLOCKED 보고 조건 | 오케스트레이션 `emergency-hub-d2` | 2026-09-29 계획 리뷰 행 | 대기 |
+| 2026-09-29 | ③ 결과 리뷰 | 결과 리뷰 · 백로그 / 기술부채 정리안(BL-140~143 · TD-030 open, BL-139 done), ADR 후보 3건(/retro), CI 일괄 판정 목록. TD-030 코드 TODO 주석 불필요로 정정 | 오케스트레이션 `emergency-hub-d2` | 2026-09-29 결과 리뷰 행 | 대기 |
 
 ## 회고
 
-### 잘된 점
-
--
-
-### 문제
-
--
-
-### 다음에 바꿀 것
-
--
+토픽 회고(`/retro PRD-002`)에서 다룸.
 
 ---
 
@@ -200,3 +201,4 @@ developer 1명이 리뷰하고 orchestrator가 통합했다. 작업은 S07-T05(B
 | 2026-09-28 | orchestrator | S05 결과 리뷰: 계획 메모에 "S05 인계" 소절 추가 |
 | 2026-09-29 | orchestrator | S06 결과 리뷰: 계획 메모에 "S06 인계" 소절 추가 |
 | 2026-09-29 | orchestrator | S07 계획 확정: T05(BL-137) 추가, T02 · T03 완료 조건 수정, T04 의존, DoD CI 조건, 사전 점검 · 인계 메모 · 대리 승인 절 추가, `active` |
+| 2026-09-29 | orchestrator | S07 종료: 결과 리뷰, 생긴 백로그 / 기술부채, DoD, 회고 절(토픽 회고로), 대리 승인 2행, S05 대응표 전수 대조 반영, `done` |
