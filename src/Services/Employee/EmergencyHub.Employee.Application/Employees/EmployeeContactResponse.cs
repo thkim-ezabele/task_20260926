@@ -4,7 +4,7 @@ namespace EmergencyHub.Employee.Application.Employees;
 /// 직원 연락정보 조회 결과입니다. Read Repository가 읽기 DbContext에서 바로 프로젝션합니다(ADR-0007).
 /// </summary>
 /// <remarks>
-/// 목록(PRD-002 FR-07 항목)과 이름 단건(FR-08)이 같은 필드를 쓰므로 두 Query가 함께 씁니다. API 응답 이름(<c>tel</c> · <c>joined</c>)은 S07 Query 응답에서 정합니다.
+/// 목록(PRD-002 FR-07 항목)과 이름 단건(FR-08)이 같은 필드를 쓰므로 두 Query가 함께 씁니다. API 응답 이름(<c>tel</c> · <c>joined</c>)은 <see cref="EmployeeResponse"/>가 옮깁니다(S07-T01).
 /// </remarks>
 /// <param name="Id">직원 ID.</param>
 /// <param name="Name">이름(Trim + NFC 저장 값).</param>

@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [development]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 코딩 컨벤션
@@ -162,8 +162,8 @@ Application 레이어는 **Command(상태 변경)와 Query(조회)를 분리**�
 
 기능 폴더 구조 (Application)
 
-- 규칙: 기능마다 `Employees/Commands/<기능>/`에 Command · Handler · Validator를, `Employees/Queries/<기능>/`에 Query · Handler · 응답 `record`를 한 폴더로 둔다. 기능 폴더 밖에는 여러 기능이 함께 쓰는 로그 정의 · Read Repository 인터페이스 · Read Repository가 돌려주는 프로젝션 `record`(여러 Query가 함께 쓰는 것)만 둔다. Query 하나만 쓰는 프로젝션은 그 기능 폴더 안에 둔다.
-- 현재 구성(S06-T04): 기능 폴더는 일괄 등록 `Commands/RegisterEmployees/` 하나다. Read Repository와 그 프로젝션 `record`는 S05-T06에서, 파서(`Import/`, `internal`)는 S06-T02 · T03에서 생겼고, 목록 · 이름 조회 Query는 S07에서 생긴다. Command 입력 코드(`EmployeeImportFormat` · `EmployeeImportSources`)는 Command와 같은 기능 폴더에 둔다.
+- 규칙: 기능마다 `Employees/Commands/<기능>/`에 Command · Handler · Validator를, `Employees/Queries/<기능>/`에 Query · Handler · 응답 `record`를 한 폴더로 둔다. 기능 폴더 밖에는 여러 기능이 함께 쓰는 로그 정의 · Read Repository 인터페이스 · Read Repository가 돌려주는 프로젝션 `record`와 응답 `record`(여러 Query가 함께 쓰는 것)만 둔다. Query 하나만 쓰는 프로젝션 · 응답은 그 기능 폴더 안에 둔다.
+- 현재 구성(S07-T01): 기능 폴더는 일괄 등록 `Commands/RegisterEmployees/`와 목록 조회 `Queries/ListEmployees/`다. Read Repository와 그 프로젝션 `record`는 S05-T06에서, 파서(`Import/`, `internal`)는 S06-T02 · T03에서, 조회 응답 항목 `EmployeeResponse`(목록 · 이름 조회 공용, JSON `tel` · `joined`)는 S07-T01에서 생겼고, 이름 조회 Query는 S07-T02에서 생긴다. Command 입력 코드(`EmployeeImportFormat` · `EmployeeImportSources`)는 Command와 같은 기능 폴더에 둔다.
 
 ```
 EmergencyHub.Employee.Application/
@@ -171,8 +171,11 @@ EmergencyHub.Employee.Application/
 └── Employees/
     ├── Commands/
     │   └── RegisterEmployees/       # Command · Response · Validator · Handler · 입력 코드 enum 2개
+    ├── Queries/
+    │   └── ListEmployees/           # Query(페이징 상수 · 기본값) · Response · Validator · Handler
     ├── Import/                      # CSV · JSON 파서, 해독, 행 · 오류 record(internal)
     ├── EmployeeContactResponse.cs   # Read Repository 프로젝션 record(목록 · 이름 조회 공용)
+    ├── EmployeeResponse.cs          # 조회 응답 항목 record(id · name · email · tel · joined, 목록 · 이름 조회 공용)
     ├── EmployeeLogs.cs              # 로그 이벤트 20001(일괄 등록 Handler가 직원마다 씀)
     └── IEmployeeReadRepository.cs   # 목록 · 개수 · 이름 단건
 ```
@@ -459,9 +462,9 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 - 새 억제는 developer가 억제를 추가한 같은 작업에서 아래 승인 목록에 행을 추가하고(승인 기록 칸은 해당 작업 reviewer), reviewer가 진행 기록에 승인을 남긴다. 목록에 행이 없거나 reviewer 승인 기록이 없는 억제는 반려 사유다.
   - **억제와 승인 목록 행은 함께 제출한다.** 승인 목록 행 없이 억제만 제출하면 reviewer는 PASS할 수 없다. 승인을 다음 작업으로 미루지 않는다(PRD-001에서 Employee CA1812 3건이 S03-T01에 들어오고 S04-T05에서 사후 승인됨).
   - **앞선 작업의 같은 유형을 grep한다.** 새 억제의 규칙 ID로 저장소 전체를 찾아, 같은 ID의 억제가 모두 승인 목록에 있는지 대조한다. 목록에 없는 것이 나오면 developer는 제출 내용에 적고, reviewer는 그 억제를 들여온 작업을 밝혀 승인 여부를 판정받는다.
-  - 규칙 ID 검색(Git Bash, 속성이 여러 줄이라 ID 문자열로 찾음): `git ls-files src tests | grep '\.cs$' | xargs grep -n '"<ID>:'`. 예: `"CA1812:`은 2026-09-28 현재 15줄이고 승인 목록 CA1812 행의 파일 수 합계(2 + 5 + 1 + 2 + 2 + 3)와 같다(S05-T04에서 Employee.Application 샘플 3개 파일과 함께 3줄이 없어지고, S06-T04에서 일괄 등록 Handler · Validator 2줄이 생김).
+  - 규칙 ID 검색(Git Bash, 속성이 여러 줄이라 ID 문자열로 찾음): `git ls-files src tests | grep '\.cs$' | xargs grep -n '"<ID>:'`. 예: `"CA1812:`은 2026-09-29 현재 17줄이고 승인 목록 CA1812 행의 파일 수 합계(2 + 5 + 1 + 2 + 2 + 2 + 3)와 같다(S05-T04에서 Employee.Application 샘플 3개 파일과 함께 3줄이 없어지고, S06-T04에서 일괄 등록 Handler · Validator 2줄, S07-T01에서 목록 조회 Handler · Validator 2줄이 생김).
 
-승인 목록 (2026-09-28 현재 코드 전수, 19건 = 제품 13 + 테스트 6. S05-T04에서 Employee.Application CA1812 3건은 억제한 파일과 함께 삭제, S06-T04에서 Employee.Application CA1812 2건 추가)
+승인 목록 (2026-09-29 현재 코드 전수, 21건 = 제품 15 + 테스트 6. S05-T04에서 Employee.Application CA1812 3건은 억제한 파일과 함께 삭제, S06-T04 · S07-T01에서 Employee.Application CA1812 2건씩 추가)
 
 | ID | 위치 (파일) | 사유 요약 | 승인 기록 |
 |---|---|---|---|
@@ -470,6 +473,7 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 | CA1812 | BuildingBlocks.Application `Pipeline/`의 `LoggingCommandHandlerDecorator.cs`, `LoggingQueryHandlerDecorator.cs`, `ValidationCommandHandlerDecorator.cs`, `ValidationQueryHandlerDecorator.cs`, `TransactionCommandHandlerDecorator.cs` | Scrutor `TryDecorate`로 DI가 생성 | S02-T02 reviewer |
 | CA1812 | BuildingBlocks.Infrastructure `Persistence/Conventions/StronglyTypedIdValueConverter.cs` | EF Core가 형식으로 받아 생성 | S02-T04 reviewer |
 | CA1812 | Employee.Application `Employees/Commands/RegisterEmployees/RegisterEmployeesCommandHandler.cs`, `RegisterEmployeesCommandValidator.cs` | `AddConventionalServices`가 Scrutor(`ICommandHandler<,>`) · FluentValidation 어셈블리 검색으로 등록해 DI가 생성 | S06-T04 reviewer |
+| CA1812 | Employee.Application `Employees/Queries/ListEmployees/ListEmployeesQueryHandler.cs`, `ListEmployeesQueryValidator.cs` | `AddConventionalServices`가 Scrutor(`IQueryHandler<,>`) · FluentValidation 어셈블리 검색으로 등록해 DI가 생성 | S07-T01 reviewer |
 | CA1032, CA1064 | BuildingBlocks.Api `Exceptions/RedactedException.cs` | 던지지 않는 로그 전용 내부 사본(메시지 제거가 목적) | S02-T06 reviewer |
 | CA1812 | 테스트 BuildingBlocks.Infrastructure.UnitTests `Samples/InternalSampleService.cs`, `Samples/CreateSampleCommandValidator.cs` | 어셈블리 검색 등록을 검증하는 샘플, DI가 생성 | S02-T03 reviewer |
 | EF1001 | 테스트 BuildingBlocks.Infrastructure.UnitTests `Samples/Persistence/SamplePostgresExceptions.cs` | `DbUpdateConcurrencyException` 모양 재현에 EF 내부 엔트리 필요(테스트 전용) | S02-T07 reviewer |
@@ -519,3 +523,4 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 | 2026-09-28 | orchestrator | S05 결과 리뷰: 기능 폴더 밖 프로젝션 `record` 규칙 추인(대리 승인), 조건 "Query 하나만 쓰는 프로젝션은 기능 폴더 안" 추가 (S05) |
 | 2026-09-28 | developer | `Error` 파생에 `ConflictError`, `ErrorType` 목록에 본문 크기 초과 · 지원하지 않는 Content-Type 추가(ADR-0028) (S06-T01) |
 | 2026-09-28 | developer | CQRS Handler 예시를 일괄 등록 `RegisterEmployeesCommandHandler` 실제 코드로(BL-132), 기능 폴더 현재 구성 · 트리(`Commands/RegisterEmployees/` · `Import/`), 로깅에 Value Object · Command · Query 로그 인자 금지(BL-130), 경고 억제 승인 목록 CA1812 Employee.Application 2건(19건, CA1812 15줄), 명명 예시를 `RegisterEmployeesCommand`로 (S06-T04) |
+| 2026-09-29 | developer | 기능 폴더 밖에 여러 Query가 함께 쓰는 응답 `record`(`EmployeeResponse`) 허용, 현재 구성 · 트리에 `Queries/ListEmployees/` · `EmployeeResponse.cs`, 경고 억제 승인 목록 CA1812 Employee.Application 목록 조회 2건(21건, CA1812 17줄) (S07-T01) |

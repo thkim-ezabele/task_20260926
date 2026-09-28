@@ -4,6 +4,7 @@ using EmergencyHub.BuildingBlocks.Infrastructure.Persistence;
 using EmergencyHub.BuildingBlocks.Infrastructure.Persistence.Exceptions;
 using EmergencyHub.Employee.Application.Employees;
 using EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployees;
+using EmergencyHub.Employee.Application.Employees.Queries.ListEmployees;
 using EmergencyHub.Employee.Domain.Employees;
 using EmergencyHub.Employee.Infrastructure.Persistence;
 using EmergencyHub.Employee.Infrastructure.Persistence.ReadRepositories;
@@ -57,10 +58,10 @@ public sealed class EmployeeInfrastructureServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddEmployeeInfrastructure_EmployeeApplication_RegistersOnlyRegisterEmployeesHandlerAndValidatorScoped()
+    public void AddEmployeeInfrastructure_EmployeeApplication_RegistersRegisterAndListHandlersAndValidatorsScoped()
     {
         // S06-T04: 일괄 등록 Command Handler · Validator가 규칙 기반 등록(Scrutor · FluentValidation 어셈블리 검색)으로 Scoped 등록된다.
-        // Query Handler는 S07에서 생긴다. AddConventionalServices는 한 번만 부를 수 있어 Application 어셈블리도 여기서 넘긴다.
+        // S07-T01: 목록 Query Handler · Validator도 같은 경로로 등록된다(이름 조회는 S07-T02). AddConventionalServices는 한 번만 부를 수 있어 Application 어셈블리도 여기서 넘긴다.
         var services = CreateServices().AddEmployeeInfrastructure(Configuration());
 
         // 데코레이터(Scrutor)가 원래 등록을 키 있는 서비스로 옮기므로 키 없는 등록만 센다.
@@ -68,9 +69,28 @@ public sealed class EmployeeInfrastructureServiceCollectionExtensionsTests
             .Should().ContainSingle()
             .Which.Should().Match<ServiceDescriptor>(d =>
                 d.ServiceType == typeof(ICommandHandler<RegisterEmployeesCommand, RegisterEmployeesResponse>) && d.Lifetime == ServiceLifetime.Scoped);
-        services.Should().NotContain(d => d.ServiceType.IsGenericType && d.ServiceType.GetGenericTypeDefinition() == typeof(IQueryHandler<,>));
+        services.Where(d => !d.IsKeyedService && d.ServiceType.IsGenericType && d.ServiceType.GetGenericTypeDefinition() == typeof(IQueryHandler<,>))
+            .Should().ContainSingle()
+            .Which.Should().Match<ServiceDescriptor>(d =>
+                d.ServiceType == typeof(IQueryHandler<ListEmployeesQuery, ListEmployeesResponse>) && d.Lifetime == ServiceLifetime.Scoped);
         services.Should().ContainSingle(d => d.ServiceType == typeof(IValidator<RegisterEmployeesCommand>))
             .Which.Lifetime.Should().Be(ServiceLifetime.Scoped);
+        services.Should().ContainSingle(d => d.ServiceType == typeof(IValidator<ListEmployeesQuery>))
+            .Which.Lifetime.Should().Be(ServiceLifetime.Scoped);
+    }
+
+    [Fact]
+    public void AddEmployeeInfrastructure_ListEmployeesHandler_ResolvesDecoratedInScope()
+    {
+        using var provider = CreateServices().AddEmployeeInfrastructure(Configuration()).BuildServiceProvider(StrictOptions);
+        using var scope = provider.CreateScope();
+
+        var handler = scope.ServiceProvider.GetRequiredService<IQueryHandler<ListEmployeesQuery, ListEmployeesResponse>>();
+
+        // Query는 로깅 → 검증 → Handler다(트랜잭션 없음, ADR-0015).
+        handler.GetType().Name.Should().StartWith("LoggingQueryHandlerDecorator");
+        scope.ServiceProvider.GetRequiredService<IValidator<ListEmployeesQuery>>().GetType().Name
+            .Should().Be("ListEmployeesQueryValidator");
     }
 
     [Fact]

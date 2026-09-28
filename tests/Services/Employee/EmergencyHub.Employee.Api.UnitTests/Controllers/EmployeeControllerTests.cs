@@ -7,6 +7,7 @@ using EmergencyHub.BuildingBlocks.Domain.Results;
 using EmergencyHub.Employee.Api.Controllers;
 using EmergencyHub.Employee.Api.Employees.Import;
 using EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployees;
+using EmergencyHub.Employee.Application.Employees.Queries.ListEmployees;
 using EmergencyHub.Employee.Domain.Employees;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +18,7 @@ namespace EmergencyHub.Employee.Api.UnitTests.Controllers;
 // 성공은 201 + { count, ids }이고 Location이 없다(CreatedResult가 아닌 ObjectResult). 실패는 ToProblemResult(ErrorProblemResult).
 // 액션 선언: POST api/employee, [Consumes] 4종, 크기 한도 3개(1 MiB), 폼 값 공급자 제외.
 [Trait("FR", "PRD-002/FR-05")]
+[Trait("FR", "PRD-002/FR-07")]
 [Trait("FR", "PRD-002/FR-09")]
 [Trait("NFR", "PRD-002/NFR-01")]
 public sealed class EmployeeControllerTests
@@ -151,6 +153,67 @@ public sealed class EmployeeControllerTests
         var created = result.Result.Should().BeOfType<ObjectResult>().Subject;
         created.StatusCode.Should().Be(StatusCodes.Status201Created);
         created.Value.Should().BeOfType<RegisterEmployeesResponse>().Which.Ids.Should().BeEmpty();
+    }
+
+    // ---- 목록 조회(S07-T01, PRD-002 FR-07): 성공 ----
+
+    [Fact]
+    public async Task ListAsync_QuerySucceeds_Returns200WithSameResponse()
+    {
+        var response = new ListEmployeesResponse([], 25, 4, 10);
+        _sender.QueryAsync(Arg.Any<ListEmployeesQuery>(), Arg.Any<CancellationToken>()).Returns(Result.Success(response));
+
+        var result = await CreateController().ListAsync(4, 10, CancellationToken.None);
+
+        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeSameAs(response);
+    }
+
+    [Fact]
+    public async Task ListAsync_PageAndPageSize_SendsQueryWithSameValuesAndToken()
+    {
+        _sender.QueryAsync(Arg.Any<ListEmployeesQuery>(), Arg.Any<CancellationToken>()).Returns(Result.Success(new ListEmployeesResponse([], 0, 2, 10)));
+        using var cancellation = new CancellationTokenSource();
+
+        await CreateController().ListAsync(2, 10, cancellation.Token);
+
+        await _sender.Received(1).QueryAsync(new ListEmployeesQuery(2, 10), cancellation.Token);
+    }
+
+    [Fact]
+    public void ListAction_IsGetOnEmployeeRouteWithNullableQueryParameters()
+    {
+        var action = typeof(EmployeeController).GetMethod(nameof(EmployeeController.ListAsync))!;
+
+        action.GetCustomAttribute<HttpGetAttribute>()!.Template.Should().BeNull();
+        var parameters = action.GetParameters();
+        parameters.Select(parameter => (parameter.Name, parameter.ParameterType)).Should().Equal(
+            ("page", typeof(int?)), ("pageSize", typeof(int?)), ("cancellationToken", typeof(CancellationToken)));
+        parameters.Take(2).Should().AllSatisfy(parameter => parameter.GetCustomAttribute<FromQueryAttribute>().Should().NotBeNull());
+    }
+
+    // ---- 목록 조회: 실패 ----
+
+    [Fact]
+    public async Task ListAsync_ValidationFailed_ReturnsProblemResultWithSameError()
+    {
+        var validation = ValidationError.Create([FieldError.Create("Page", CommonErrors.InvalidPaging)]);
+        _sender.QueryAsync(Arg.Any<ListEmployeesQuery>(), Arg.Any<CancellationToken>()).Returns(Result.Failure<ListEmployeesResponse>(validation));
+
+        var result = await CreateController().ListAsync(0, null, CancellationToken.None);
+
+        result.Result.Should().BeOfType<ErrorProblemResult>().Which.Error.Should().BeSameAs(validation);
+    }
+
+    // ---- 목록 조회: 엣지 ----
+
+    [Fact]
+    public async Task ListAsync_MissingValues_SendsDefaultsFromQuery()
+    {
+        _sender.QueryAsync(Arg.Any<ListEmployeesQuery>(), Arg.Any<CancellationToken>()).Returns(Result.Success(new ListEmployeesResponse([], 0, 1, 20)));
+
+        await CreateController().ListAsync(null, null, CancellationToken.None);
+
+        await _sender.Received(1).QueryAsync(new ListEmployeesQuery(ListEmployeesQuery.DefaultPage, ListEmployeesQuery.DefaultPageSize), Arg.Any<CancellationToken>());
     }
 
     private static EmployeeImportPayload Payload() =>

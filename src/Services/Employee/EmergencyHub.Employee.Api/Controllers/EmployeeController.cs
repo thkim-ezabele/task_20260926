@@ -2,6 +2,7 @@ using EmergencyHub.BuildingBlocks.Api.Errors;
 using EmergencyHub.BuildingBlocks.Application.Cqrs;
 using EmergencyHub.Employee.Api.Employees.Import;
 using EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployees;
+using EmergencyHub.Employee.Application.Employees.Queries.ListEmployees;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EmergencyHub.Employee.Api.Controllers;
@@ -9,7 +10,7 @@ namespace EmergencyHub.Employee.Api.Controllers;
 /// <summary>
 /// 과제 명세의 직원 API입니다(PRD-002, 규칙 예외는 ADR-0025). <see cref="ISender"/>만 받고 입력 → Command 변환, 결과 → 응답 변환만 합니다(ADR-0016).
 /// </summary>
-/// <remarks>경로는 버전 없는 단수형 <c>/api/employee</c>입니다(ADR-0025 예외 목록). 조회 엔드포인트 2개는 S07에서 더합니다.</remarks>
+/// <remarks>경로는 버전 없는 단수형 <c>/api/employee</c>입니다(ADR-0025 예외 목록). 목록 조회는 S07-T01, 이름 조회는 S07-T02에서 더합니다.</remarks>
 /// <param name="sender">Command / Query 디스패처.</param>
 [ApiController]
 [Route(RoutePath)]
@@ -63,5 +64,31 @@ public sealed class EmployeeController(ISender sender) : ControllerBase
         }
 
         return StatusCode(StatusCodes.Status201Created, result.Value);
+    }
+
+    /// <summary>
+    /// 직원 전체 목록 한 쪽을 돌려줍니다(PRD-002 FR-07). 정렬은 입사일 → ID(등록 순) 고정입니다.
+    /// </summary>
+    /// <remarks>
+    /// <c>page</c>(1부터, 기본 1, 1 ~ 100,000) · <c>pageSize</c>(기본 20, 1 ~ 100)는 <c>int?</c>로 받아 빠진 값의 기본값을 Query가 채웁니다(ADR-0025).
+    /// 숫자가 아니거나 <see cref="int"/> 범위 밖이면 바인딩 오류 <c>400</c> · <c>1001</c>, 범위 밖이면 <c>400</c> · 필드 코드 <c>1003</c>입니다.
+    /// 마지막 쪽을 넘으면 빈 <c>items</c>와 올바른 <c>totalCount</c>의 <c>200</c>입니다.
+    /// </remarks>
+    /// <param name="page">쪽 번호.</param>
+    /// <param name="pageSize">쪽 크기.</param>
+    /// <param name="cancellationToken">요청 취소 토큰.</param>
+    /// <returns>200 + <c>{ items, totalCount, page, pageSize }</c>, 실패면 ProblemDetails(400).</returns>
+    [HttpGet]
+    [ProducesResponseType<ListEmployeesResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, ErrorProblemDetails.ContentType)]
+    public async Task<ActionResult<ListEmployeesResponse>> ListAsync([FromQuery] int? page, [FromQuery] int? pageSize, CancellationToken cancellationToken)
+    {
+        var result = await sender.QueryAsync(ListEmployeesQuery.Create(page, pageSize), cancellationToken);
+        if (result.IsFailure)
+        {
+            return result.Error.ToProblemResult();
+        }
+
+        return Ok(result.Value);
     }
 }
