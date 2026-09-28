@@ -101,18 +101,43 @@ public sealed class ExceptionResponseAcceptanceTests
         }
     }
 
-    [Fact]
-    public async Task BadHttpRequest_ThroughPipeline_Responds400With1001()
+    [Theory]
+    [InlineData(StatusCodes.Status413PayloadTooLarge, StatusCodes.Status413PayloadTooLarge, 1004)]
+    [InlineData(StatusCodes.Status400BadRequest, StatusCodes.Status400BadRequest, 1001)]
+    [InlineData(StatusCodes.Status408RequestTimeout, StatusCodes.Status400BadRequest, 1001)]
+    public async Task BadHttpRequest_ThroughPipeline_Responds413With1004OnlyFor413(int exceptionStatus, int status, int code)
     {
-        await using var app = CreateApp(() => new BadHttpRequestException("Request body too large. hong@example.com", StatusCodes.Status413PayloadTooLarge));
+        // ADR-0028 · TD-021 부분 상환: 413만 413 · 1004, 그 밖은 기존대로 400 · 1001.
+        await using var app = CreateApp(() => new BadHttpRequestException("Request body too large. hong@example.com", exceptionStatus));
 
         var context = await InvokeAsync(app);
 
-        context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+        context.Response.StatusCode.Should().Be(status);
         var json = ReadProblem(context);
-        json.GetProperty("code").GetInt32().Should().Be(CommonErrors.ValidationFailed.Code);
+        json.GetProperty("status").GetInt32().Should().Be(status);
+        json.GetProperty("code").GetInt32().Should().Be(code);
         HttpContexts.ReadBody(context).Should().NotContain("hong@example.com");
         _logs.GetSnapshot().Should().NotContain(record => record.Level >= LogLevel.Warning);
+    }
+
+    [Fact]
+    public async Task UniqueViolationEscapingUnitOfWork_RealClassifier_Responds9001WithoutDetailValueInBodyOrLogs()
+    {
+        // ⑤ NFR-04: UnitOfWork 밖으로 나온 23505(예: COMMIT 시점, 감싸지 않은 PostgresException)는 변환하지 않아 9001이다.
+        // PostgresException.Detail(`Key (normalized_email)=(값) already exists.`)의 값 · 제약 이름이 응답 · 로그에 없다.
+        await using var app = CreateApp(PostgresFailures.UniqueViolationAtCommit);
+
+        var context = await InvokeAsync(app);
+
+        context.Response.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+        ReadProblem(context).GetProperty("code").GetInt32().Should().Be(CommonErrors.Unexpected.Code);
+        var body = HttpContexts.ReadBody(context);
+        var logs = _logs.GetSnapshot();
+        foreach (var fragment in PostgresFailures.UniqueViolationSensitiveFragments)
+        {
+            body.Should().NotContain(fragment);
+            logs.Should().NotContain(record => LogText(record).Contains(fragment, StringComparison.Ordinal), $"로그에 '{fragment}'가 남으면 안 된다");
+        }
     }
 
     // ---- 엣지 ----

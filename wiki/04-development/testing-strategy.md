@@ -317,7 +317,7 @@ NetArchTest.Rules 1.3.2로 검증합니다([ADR-0021](../03-architecture/adr/002
 | `ImplementationsAreInternalSealed` | Handler · Validator · Repository · 포트 구현은 `internal sealed` |
 | `ValidatorsDeriveFromRequestValidator` | Validator는 공통 기반 `RequestValidator<T>` 파생(아래 Validator 기반 참고) |
 | `ExplicitlyRegisteredPortsDoNotImplementMarkers` | 명시 등록 포트(`IUnitOfWork` · `IExceptionClassifier` · `IIdGenerator` · `IPreCommitHook`) 구현은 자동 등록 마커 미구현 |
-| `ErrorAndResultAreNotDerived` | `Error` / `Result` 파생 금지(`ValidationError` · `Result<T>` 제외, S06-T01부터 상세 Conflict 오류도 제외, [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)) |
+| `ErrorAndResultAreNotDerived` | `Error` / `Result` 파생 금지(`ValidationError` · `ConflictError` · `Result<T>` 제외, `ConflictError`는 [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)) |
 | `EntityDerivedTypesAreSealed` | Entity / AggregateRoot 파생은 sealed(abstract 중간 기반 금지) |
 
 **주입 규칙** (`InjectionRules` 3개, 테스트 `ConventionRuleTests`)
@@ -443,3 +443,4 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 | 2026-09-28 | dba | Q1 · Q2 기대값을 S05-T05 리셋(`20260928090646_InitialCreate`) 뒤 실측값으로 교체: Q1 컬럼 9개(`name` · `normalized_email` · `phone_number` · `joined_on` 추가, `display_name` 제거, 모두 `NO` · 기본값 NULL), Q2 인덱스 `ix_employees_joined_on_id` · `ix_employees_name_joined_on_id` · `pk_employees` · `ux_employees_normalized_email`, 제약 2개 그대로 (S05-T05) |
 | 2026-09-28 | developer | 장애 주입 P4 행을 새 스키마 실측으로(`ux_employees_normalized_email` → 23001, 대소문자만 다른 입력 포함, UnitOfWorkConflictTests green 뒤) (S05-T06) |
 | 2026-09-28 | developer | 장애 주입 도우미 표에 `EmployeeServicesOptions.ReadInterceptors`, `AddReadDbContextInterceptors`, `QueryPlans` 도우미(`CommandCaptureInterceptor` · `CapturedCommand` · `QueryPlan.ExplainAsync`) 추가 (S05-T06) |
+| 2026-09-28 | developer | `ErrorAndResultAreNotDerived` 예외 목록을 코드(`ErrorResultFamily`)와 1:1로: `ValidationError` · `ConflictError` · `Result<T>` (S06-T01) |

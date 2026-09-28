@@ -8,6 +8,8 @@ public sealed class ErrorTests
 
     [Theory]
     [InlineData(ErrorType.Validation, 21001)]
+    [InlineData(ErrorType.PayloadTooLarge, 1004)]
+    [InlineData(ErrorType.UnsupportedMediaType, 21099)]
     [InlineData(ErrorType.NotFound, 22001)]
     [InlineData(ErrorType.Conflict, 23001)]
     [InlineData(ErrorType.BusinessRule, 24001)]
@@ -77,6 +79,8 @@ public sealed class ErrorTests
     [InlineData(ErrorType.Unauthorized, 29001)]
     [InlineData(ErrorType.Internal, 25001)]
     [InlineData(ErrorType.External, 1001)]
+    [InlineData(ErrorType.PayloadTooLarge, 3001)]
+    [InlineData(ErrorType.UnsupportedMediaType, 22001)]
     public void Factory_WithTypeDigitMismatch_ThrowsArgumentException(ErrorType type, int errorCode)
     {
         var act = () => Create(type, errorCode, Message);
@@ -187,6 +191,8 @@ public sealed class ErrorTests
         type switch
         {
             ErrorType.Validation => Error.Validation(code, message),
+            ErrorType.PayloadTooLarge => Error.PayloadTooLarge(code, message),
+            ErrorType.UnsupportedMediaType => Error.UnsupportedMediaType(code, message),
             ErrorType.NotFound => Error.NotFound(code, message),
             ErrorType.Conflict => Error.Conflict(code, message),
             ErrorType.BusinessRule => Error.BusinessRule(code, message),

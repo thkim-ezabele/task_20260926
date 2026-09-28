@@ -169,23 +169,49 @@ public sealed class GlobalExceptionHandlerTests
     }
 
     [Fact]
-    public async Task TryHandleAsync_BadHttpRequest_Responds400With1001WithoutAskingClassifiers()
+    public async Task TryHandleAsync_BadHttpRequest413_Responds413With1004WithoutAskingClassifiers()
     {
+        // ADR-0028 · TD-021 부분 상환: Kestrel 본문 크기 초과(StatusCode 413)는 413 · 1004.
         var classifier = Substitute.For<IExceptionClassifier>();
         var context = HttpContexts.Create();
 
         await CreateHandler(classifier).TryHandleAsync(
             context,
-            new BadHttpRequestException("Request body too large.", StatusCodes.Status413PayloadTooLarge),
+            new BadHttpRequestException("Request body too large. hong@example.com", StatusCodes.Status413PayloadTooLarge),
             CancellationToken.None);
 
-        context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
-        HttpContexts.ReadJson(context).GetProperty("code").GetInt32().Should().Be(1001);
+        context.Response.StatusCode.Should().Be(StatusCodes.Status413PayloadTooLarge);
+        var json = HttpContexts.ReadJson(context);
+        json.GetProperty("status").GetInt32().Should().Be(413);
+        json.GetProperty("code").GetInt32().Should().Be(1004);
+        json.GetProperty("detail").GetString().Should().Be(CommonErrors.PayloadTooLarge.Message);
+        HttpContexts.ReadBody(context).Should().NotContain("hong@example.com");
         classifier.DidNotReceive().Classify(Arg.Any<Exception>());
         var record = _logger.Collector.GetSnapshot().Should().ContainSingle().Subject;
         record.Id.Id.Should().Be(302);
         record.Level.Should().Be(LogLevel.Information);
         record.Exception.Should().BeNull();
+        record.StructuredState.Should().Contain(new KeyValuePair<string, string?>("StatusCode", "413"));
+        record.StructuredState.Should().Contain(new KeyValuePair<string, string?>("ErrorCode", "1004"));
+    }
+
+    [Theory]
+    [InlineData(StatusCodes.Status400BadRequest)]
+    [InlineData(StatusCodes.Status408RequestTimeout)]
+    [InlineData(StatusCodes.Status411LengthRequired)]
+    [InlineData(StatusCodes.Status431RequestHeaderFieldsTooLarge)]
+    public async Task TryHandleAsync_BadHttpRequestOtherStatus_Responds400With1001AsBefore(int status)
+    {
+        // 413이 아닌 BadHttpRequestException은 기존대로 400 · 1001(408 등은 TD-021에 남김).
+        var context = HttpContexts.Create();
+
+        await CreateHandler().TryHandleAsync(context, new BadHttpRequestException("bad request", status), CancellationToken.None);
+
+        context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+        HttpContexts.ReadJson(context).GetProperty("code").GetInt32().Should().Be(1001);
+        var record = _logger.Collector.GetSnapshot().Should().ContainSingle().Subject;
+        record.Id.Id.Should().Be(302);
+        record.StructuredState.Should().Contain(new KeyValuePair<string, string?>("ErrorCode", "1001"));
     }
 
     [Fact]

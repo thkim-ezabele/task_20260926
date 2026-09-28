@@ -1,3 +1,4 @@
+using EmergencyHub.BuildingBlocks.Api.Errors;
 using EmergencyHub.BuildingBlocks.Api.Exceptions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
@@ -10,7 +11,7 @@ namespace EmergencyHub.BuildingBlocks.Api.DependencyInjection;
 public static class ApiWebApplicationExtensions
 {
     /// <summary>
-    /// 전역 예외 처리 미들웨어, (Development에서만) OpenAPI 문서 · Swagger UI, Controller 엔드포인트를 붙입니다.
+    /// 전역 예외 처리 미들웨어, 415 상태 코드 응답 변환, (Development에서만) OpenAPI 문서 · Swagger UI, Controller 엔드포인트를 붙입니다.
     /// </summary>
     /// <param name="app">웹 애플리케이션.</param>
     /// <returns>같은 <paramref name="app"/>(체이닝용).</returns>
@@ -34,6 +35,9 @@ public static class ApiWebApplicationExtensions
             AllowStatusCode404Response = true,
             ExceptionHandler = GlobalExceptionHandler.WriteFallbackAsync,
         });
+
+        // 라우팅이 본문 없이 끝낸 [Consumes] 불일치 415에 1005 ProblemDetails를 쓴다. 415가 아닌 상태는 건드리지 않는다(ADR-0028).
+        app.UseStatusCodePages(UnsupportedMediaTypeStatusCodeResponses.WriteAsync);
 
         if (app.Environment.IsDevelopment())
         {

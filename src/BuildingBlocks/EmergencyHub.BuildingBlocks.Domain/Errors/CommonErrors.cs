@@ -15,6 +15,12 @@ public static class CommonErrors
     /// <summary>1003 · 페이징 · 정렬 매개변수 오류.</summary>
     public static readonly Error InvalidPaging = Error.Validation(1003, "페이징 또는 정렬 매개변수가 올바르지 않습니다.");
 
+    /// <summary>1004 · 요청 본문이 허용 크기를 넘음(HTTP 413, ADR-0028).</summary>
+    public static readonly Error PayloadTooLarge = Error.PayloadTooLarge(1004, "요청 본문이 허용 크기를 넘었습니다.");
+
+    /// <summary>1005 · 지원하지 않는 요청 Content-Type(HTTP 415, ADR-0028).</summary>
+    public static readonly Error UnsupportedMediaType = Error.UnsupportedMediaType(1005, "지원하지 않는 요청 형식입니다.");
+
     /// <summary>2001 · 리소스 없음(서비스별 코드가 없을 때).</summary>
     public static readonly Error NotFound = Error.NotFound(2001, "리소스를 찾을 수 없습니다.");
 

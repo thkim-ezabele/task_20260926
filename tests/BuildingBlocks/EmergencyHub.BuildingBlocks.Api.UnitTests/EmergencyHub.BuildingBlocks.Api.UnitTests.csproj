@@ -6,6 +6,7 @@
     ASP.NET Core는 공유 프레임워크(Microsoft.AspNetCore.App)를 쓰고, DI 구현 패키지는 따로 참조하지 않는다.
     BuildingBlocks.Infrastructure 참조는 인수 테스트(Acceptance)만 쓴다: 서비스 Api 호스트와 같은 조립(AddBuildingBlocksInfrastructure →
     AddConventionalServices → AddBuildingBlocksApi)과 실제 영속성 예외 · 분류기(S02-T06 tester). 제품 BuildingBlocks.Api는 Infrastructure를 참조하지 않는다(ADR-0024).
+    Microsoft.AspNetCore.TestHost는 표본 Controller를 TestServer로 실행해 [Consumes] 불일치 415(ClientErrorResultFilter 경로)를 확인한다(S06-T01).
   -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -20,6 +21,7 @@
     <PackageReference Include="NSubstitute.Analyzers.CSharp" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.Testing" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
   </ItemGroup>
 
   <ItemGroup>

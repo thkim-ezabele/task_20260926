@@ -40,7 +40,7 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 | `DELETE` | 삭제 Command | `204` (이미 없으면 `404`) |
 
 - Command는 **생성한 ID 정도만** 반환한다. 변경 후 상태가 필요하면 클라이언트가 Query로 다시 조회한다.
-- 실패 상태 코드는 에러 유형으로 정해진다: `400` 검증, `413` 본문 크기 초과, `415` 지원하지 않는 Content-Type, `401` 인증, `403` 권한, `404` 없음, `409` 충돌, `422` 업무 규칙, `500` / `502` / `503` 서버 · 외부([에러 코드 체계](../05-api/error-codes.md#에러-코드-체계)). `413` · `415`는 S06-T01에서 추가한다([ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)).
+- 실패 상태 코드는 에러 유형으로 정해진다: `400` 검증, `413` 본문 크기 초과, `415` 지원하지 않는 Content-Type, `401` 인증, `403` 권한, `404` 없음, `409` 충돌, `422` 업무 규칙, `500` / `502` / `503` 서버 · 외부([에러 코드 체계](../05-api/error-codes.md#에러-코드-체계)). `413` · `415`의 근거는 [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)이다.
 
 ### 멱등성
 
@@ -87,7 +87,7 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 }
 ```
 
-검증 실패(`400`)는 필드별 오류를 `errors`에 담습니다. 행별 충돌(`409`, 상세 Conflict 오류)도 같은 모양의 `errors`를 씁니다(S06-T01, [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)).
+검증 실패(`400`)는 필드별 오류를 `errors`에 담습니다. 행별 충돌(`409`, 상세 Conflict 오류 `ConflictError`)도 같은 모양의 `errors`를 씁니다([ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)).
 
 ```json
 {
@@ -111,15 +111,16 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 
 | 항목 | 규칙 |
 |---|---|
-| `status` | `ErrorType`으로 정한다([에러 코드 체계](../05-api/error-codes.md#에러-코드-체계)). 예약 값 `None` · 정의되지 않은 값은 `500`. S06-T01부터 `PayloadTooLarge` → `413`, `UnsupportedMediaType` → `415`(ADR-0028) |
+| `status` | `ErrorType`으로 정한다([에러 코드 체계](../05-api/error-codes.md#에러-코드-체계)). `PayloadTooLarge` → `413`, `UnsupportedMediaType` → `415`(ADR-0028). 예약 값 `None` · 정의되지 않은 값은 `500` |
 | `type` / `title` | `https://httpstatuses.io/{status}` / 상태 코드의 표준 문구(`Conflict` 등) |
 | `detail` | `Error.Message`. 전역 예외 처리기는 오류의 고정 메시지만 쓴다(예외 메시지 · 스택 미노출) |
 | `instance` | 요청 경로(`PathBase + Path`). 쿼리 문자열은 넣지 않는다(개인정보가 들어갈 수 있음). **S07-T02부터 라우트 템플릿이 있는 엔드포인트는 라우트 템플릿**(`/api/employee/{name}`)을 쓰고, 템플릿이 없는 응답만 요청 경로를 쓴다. 요청 완료 로그 `RequestPath`와 추적 span `url.path`도 같다([ADR-0025](../03-architecture/adr/0025-api-rule-exceptions-for-assignment-endpoints.md#이름-경로-매개변수와-개인정보)) |
 | `code` | JSON 숫자 |
 | `traceId` | W3C trace-id(`Activity.Current.TraceId`, 32자리 16진수). `Activity`가 없거나 W3C 형식이 아니면 `HttpContext.TraceIdentifier` |
-| `errors` | `ValidationError`일 때와, S06-T01부터 상세 Conflict 오류(`409`, ADR-0028)일 때만. 키는 속성 경로를 `.` 조각마다 camelCase로 바꾼 값(`Items[0].Name` → `items[0].name`, 객체 수준은 `""`), 값은 `{ code, message }` 배열(생성 순서 유지) |
+| `errors` | `ValidationError`(`400`)와 `ConflictError`(`409`, ADR-0028)일 때만. 상세 없는 `409`(`3001` · `3003` · `23001` 경합)에는 없다. 키는 속성 경로를 `.` 조각마다 camelCase로 바꾼 값(`Items[0].Name` → `items[0].name`, 객체 수준은 `""`), 값은 `{ code, message }` 배열(생성 순서 유지) |
 | 바인딩 오류 | `InvalidModelStateResponseFactory` → `400` · `1001`. 필드마다 코드 `1001`, 메시지는 `1001`의 고정 문구(프레임워크 메시지에 입력 값이 들어가므로). 모델 상태 키의 JSON 경로 접두사 `$.`는 떼고 `$`는 `""` |
-| 예외 | `BadHttpRequestException` → `400` · `1001`(S06-T01부터 `StatusCode`가 `413`이면 `413` · `1004`, TD-021 부분 상환). `[Consumes]` 불일치 `415`는 S06-T01부터 `415` · `1005`(ADR-0028). 예외 분류기(`IExceptionClassifier`) 결과가 있으면 그 오류(예: 재시도 한도 초과 → `503` · `9003`), 없으면 `500` · `9001`. 변환되지 않은 DB 예외(23514 · 25006)도 `9001` |
+| 예외 | `BadHttpRequestException` → `StatusCode`가 `413`이면 `413` · `1004`, 그 밖은 `400` · `1001`(TD-021 부분 상환, ADR-0028). 예외 분류기(`IExceptionClassifier`) 결과가 있으면 그 오류(예: 재시도 한도 초과 → `503` · `9003`), 없으면 `500` · `9001`. 변환되지 않은 DB 예외(23514 · 25006)도 `9001` |
+| `415` | `[Consumes]`에 없는 Content-Type은 라우팅이 본문 없는 `415`로 끝내므로 상태 코드 페이지 처리기가, `[FromBody]` 액션의 Content-Type 없음은 클라이언트 오류 팩토리(`IClientErrorFactory` 데코레이터)가 `415` · `1005`로 바꾼다. `[FromBody]`가 없는 액션은 Content-Type이 없으면 액션까지 간다(전용 바인더가 판정, ADR-0026). 그 밖의 클라이언트 오류 결과(`NotFound()` 등)는 프레임워크 기본 그대로다(S06-T01 실측, ADR-0028) |
 
 - Controller는 실패 `Result`를 `return result.Error.ToProblemResult();`로 돌려준다(`ErrorProblemResult`, `ActionResult<T>`로 암시적 변환).
 
@@ -169,3 +170,4 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 | 2026-09-27 | developer | API 스타일(Controller, ADR-0016) · OpenAPI 도구(Swashbuckle, ADR-0019) 확정 반영 (S01-T04) |
 | 2026-09-27 | developer | 에러 응답 공통 변환 규칙 표(status · type · instance · traceId · errors 키 · 바인딩 오류 · 예외 판정), `ToProblemResult` (S02-T06) |
 | 2026-09-28 | developer | ADR-0025 · 0026 · 0028 반영: 규칙 예외 절(과제 3개 엔드포인트, ADR 링크), 실패 상태 `413` · `415`, 409 `errors`(상세 Conflict 오류), `instance` · 요청 로그 · 추적 span의 라우트 템플릿(S07-T02), `BadHttpRequestException` 413 · `[Consumes]` 415 변환(S06-T01), 400 예시 코드 21001(폐기) → 21004, 409 예시 `instance`를 `/api/employee`로 (S05-T02) |
+| 2026-09-28 | developer | S06-T01 구현 반영: 공통 변환 규칙의 "S06-T01부터" 문구를 현재형으로, `errors`(`ConflictError`, 상세 없는 409 제외), `415` 행(라우팅 415 → 상태 코드 페이지, `[FromBody]` Content-Type 없음 → 클라이언트 오류 팩토리, 실측) (S06-T01) |

@@ -42,8 +42,8 @@ updated: 2026-09-28
 | T | 오류 유형 (`ErrorType` = 값) | HTTP 상태 | 예 |
 |---|---|---|---|
 | 1 | 검증 실패 (`Validation` = 10) | 400 | 필수 값 누락, 형식 오류, 정의되지 않은 코드값 |
-| 1 | 요청 본문 크기 초과 (`PayloadTooLarge` = 11) | 413 | 본문 1 MiB 초과 (S06-T01에서 추가, ADR-0028) |
-| 1 | 지원하지 않는 형식 (`UnsupportedMediaType` = 12) | 415 | 지원하지 않는 Content-Type (S06-T01에서 추가, ADR-0028) |
+| 1 | 요청 본문 크기 초과 (`PayloadTooLarge` = 11) | 413 | 본문 1 MiB 초과 (ADR-0028) |
+| 1 | 지원하지 않는 형식 (`UnsupportedMediaType` = 12) | 415 | 지원하지 않는 Content-Type (ADR-0028) |
 | 2 | 대상 없음 (`NotFound` = 20) | 404 | 없는 직원 ID |
 | 3 | 충돌 (`Conflict` = 30) | 409 | 중복 이메일, 동시성 충돌, 이미 처리된 요청 |
 | 4 | 업무 규칙 위반 (`BusinessRule` = 40) | 422 | 허용되지 않은 상태 전이, 종료된 긴급 상황 변경 |
@@ -54,7 +54,7 @@ updated: 2026-09-28
 | 9 | 외부 연동 (`External` = 92) | 502 | SMS 사업자 오류 |
 | 9 | 일시적 장애 (`Unavailable` = 93) | 503 | 재시도 가능한 일시 장애 |
 
-`ErrorType`은 BuildingBlocks.Domain의 `short` enum이고 값은 2자리입니다. **`T = (short)ErrorType / 10`** 이며, 유형 자리 1 · 5 · 9는 HTTP 상태가 둘 이상이라 1의 자리로 구분합니다(T = 1은 `400` · `413` · `415`, [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)). `PayloadTooLarge` · `UnsupportedMediaType`는 S06-T01에서 코드에 추가하며, 그 전까지 코드의 `ErrorType`은 9종입니다. 예비 유형 자리(T = 6 ~ 8)는 쓰지 않습니다. `0`(`None`)은 코드값 규칙에 따른 예약 값이라 `Error`에 쓰지 않습니다. 배포된 값은 바꾸거나 재사용하지 않습니다.
+`ErrorType`은 BuildingBlocks.Domain의 `short` enum이고 값은 2자리입니다. **`T = (short)ErrorType / 10`** 이며, 유형 자리 1 · 5 · 9는 HTTP 상태가 둘 이상이라 1의 자리로 구분합니다(T = 1은 `400` · `413` · `415`, [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)). 코드의 `ErrorType`은 `None`을 빼고 11종입니다(`PayloadTooLarge` · `UnsupportedMediaType`는 S06-T01에서 추가). 예비 유형 자리(T = 6 ~ 8)는 쓰지 않습니다. `0`(`None`)은 코드값 규칙에 따른 예약 값이라 `Error`에 쓰지 않습니다. 배포된 값은 바꾸거나 재사용하지 않습니다.
 
 규칙
 
@@ -169,8 +169,8 @@ BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 | 1001 | `Validation` | 400 | `Common.ValidationFailed` | 요청 검증 실패 (상세는 `errors`에 필드별로, `ValidationError`) | 사용 |
 | 1002 | `Validation` | 400 | `Common.InvalidCode` | 정의되지 않은 코드값 / 비트 플래그 | 사용 |
 | 1003 | `Validation` | 400 | `Common.InvalidPaging` | 페이징 · 정렬 매개변수 오류 | 사용 |
-| 1004 | `PayloadTooLarge` | 413 | `Common.PayloadTooLarge` | 요청 본문이 허용 크기를 넘음 (Kestrel `BadHttpRequestException` 413, 폼 한도 초과) | 예약: S06-T01 (바인더의 폼 한도 초과는 S06-T05) |
-| 1005 | `UnsupportedMediaType` | 415 | `Common.UnsupportedMediaType` | 지원하지 않는 요청 Content-Type (`[Consumes]` 불일치) | 예약: S06-T01 |
+| 1004 | `PayloadTooLarge` | 413 | `Common.PayloadTooLarge` | 요청 본문이 허용 크기를 넘음 (전역 예외 처리의 `BadHttpRequestException` 413, 폼 한도 초과) | 사용 (바인더의 폼 한도 초과는 S06-T05) |
+| 1005 | `UnsupportedMediaType` | 415 | `Common.UnsupportedMediaType` | 지원하지 않는 요청 Content-Type (`[Consumes]` 불일치, `[FromBody]` 액션의 Content-Type 없음) | 사용 |
 | 2001 | `NotFound` | 404 | `Common.NotFound` | 리소스 없음 (서비스별 코드가 없을 때) | 사용 |
 | 3001 | `Conflict` | 409 | `Common.ConcurrencyConflict` | 동시 수정 충돌 (낙관적 잠금) | 사용 |
 | 3002 | `Conflict` | 409 | `Common.DuplicateRequest` | 같은 `Idempotency-Key`로 이미 처리됨 | 사용 |
@@ -248,3 +248,4 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 | 2026-09-28 | developer | ADR-0026 · 0027 · 0028 반영: `ErrorType` `PayloadTooLarge` = 11 · `UnsupportedMediaType` = 12(T = 1, 413 · 415), 공통 1004 · 1005 예약(S06-T01), 공통 · Employee 표에 상태 열(사용 · 예약 · 폐기), Employee 21001 · 21002 · 21006 폐기, 21003 ~ 21005 · 22001 · 23001 설명 갱신(23001은 `ux_employees_normalized_email`), 새 코드 21007 ~ 21030 · 23002 예약(행마다 구현 작업 ID) (S05-T02) |
 | 2026-09-28 | developer | Employee 21007 ~ 21017 상태를 예약 → 사용(Value Object `Name` · `PhoneNumber` · `JoinedOn`, 설명에 판정 원본 추가), 21003 ~ 21005 설명의 `(S05-T03부터)` 삭제, 필드별 판정 순서를 "첫 실패만 보고" 항목에 추가 (S05-T03) |
 | 2026-09-28 | developer | 폐기 상수 21001 · 21002 · 21006 삭제 완료 표시, 23001 설명의 옛 인덱스 이름 문구 삭제(매핑 `ux_employees_normalized_email` 교체 완료), 판정 순서 항목의 샘플 Validator 이름 삭제 (S05-T04) |
+| 2026-09-28 | developer | 공통 1004 · 1005 상태를 예약 → 사용(`CommonErrors.PayloadTooLarge` · `UnsupportedMediaType`), `ErrorType` 표의 "S06-T01에서 추가" 문구 정리, 1004 · 1005 설명을 구현 경로로 (S06-T01) |

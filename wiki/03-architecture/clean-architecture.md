@@ -207,7 +207,7 @@ EmergencyHub.Employee.MigrationService/
 
 | 프로젝트 | 담는 것 |
 |---|---|
-| `BuildingBlocks.Domain` | `Entity<TId>`, `AggregateRoot<TId>`(도메인 이벤트 수집), `IDomainEvent`, `IStronglyTypedId<TSelf>`, `Result` / `Result<T>`, `Error`(정수 코드) · `ValidationError` · `CommonErrors` · `ErrorType`, 마커 `IRepository` |
+| `BuildingBlocks.Domain` | `Entity<TId>`, `AggregateRoot<TId>`(도메인 이벤트 수집), `IDomainEvent`, `IStronglyTypedId<TSelf>`, `Result` / `Result<T>`, `Error`(정수 코드) · `ValidationError` · `ConflictError` · `ConflictDetail` · `CommonErrors` · `ErrorType`, 마커 `IRepository` |
 | `BuildingBlocks.Application` | `ICommand` / `IQuery` / Handler 인터페이스, `ISender`, 파이프라인 데코레이터(로깅 → 검증 → 트랜잭션), `IUnitOfWork`, `IIdGenerator`, `IExceptionClassifier`, Validator 공통 기반 **`RequestValidator<T>`**(FluentValidation `AbstractValidator<T>` 파생, `RuleLevelCascadeMode = Stop`) · `WithError` 확장, 마커 `IReadRepository` / `IService`, `AddBuildingBlocksApplication`(`ISender` · `TimeProvider`) |
 | `BuildingBlocks.Infrastructure` | EF Core 공통 설정(snake_case, 감사 컬럼, 강타입 ID 변환, enum 체크 제약), `WriteDbContextBase` / `ReadDbContextBase`, `RepositoryBase` / `ReadRepositoryBase`, `UnitOfWork<TContext>`(실행 전략 · 트랜잭션, [ADR-0014](adr/0014-command-transaction-boundary-and-unit-of-work.md)), 영속성 예외 분류(23505 → `Result`), `IPreCommitHook`, UUID v7 `IIdGenerator` 구현, **`AddConventionalServices`(어셈블리 검색 자동 등록)**, `AddBuildingBlocksInfrastructure`. Outbox / Inbox · 메시징 연결은 도입 보류([ADR-0023](adr/0023-deferred-adoptions.md), 확장 지점은 커밋 전 `IPreCommitHook`) |
 | `BuildingBlocks.Api` | `Result` / `Error` → `ProblemDetails` 변환, 바인딩 오류 1001 응답, 전역 `IExceptionHandler`(9001), Controller · JSON(정수 enum) 기본 설정, Swashbuckle 필터, `AddBuildingBlocksApi` · `UseBuildingBlocksApi`([ADR-0024](adr/0024-building-blocks-api-for-common-http-handling.md)) |
@@ -259,3 +259,4 @@ EmergencyHub.Employee.MigrationService/
 | 2026-09-28 | developer | 서비스별 구성 트리를 PRD-001 샘플 제거 뒤 실제 구성으로(EmployeeEmail.cs · Application 기능 폴더 · Api Controllers · Employees 제거, Aggregate VO 속성), 기능 폴더 규칙 원본 링크 (S05-T04) |
 | 2026-09-28 | developer | Domain 트리에 Value Object 4개(`Name` · `Email` · `PhoneNumber` · `JoinedOn`)와 Aggregate 폴더에 둔 이유 추가 (S05-T03) |
 | 2026-09-28 | developer | Application 트리에 `EmployeeContactResponse.cs`(Read Repository 프로젝션 record)와 `IEmployeeReadRepository` 멤버(목록 · 개수 · 이름 단건) 반영 (S05-T06) |
+| 2026-09-28 | developer | BuildingBlocks.Domain 행에 `ConflictError` · `ConflictDetail`(ADR-0028) 추가 (S06-T01) |

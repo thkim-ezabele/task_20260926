@@ -5,7 +5,7 @@ namespace EmergencyHub.BuildingBlocks.Domain.Errors;
 /// HTTP 상태는 이 유형으로 정합니다(원본: wiki/05-api/error-codes.md).
 /// </summary>
 /// <remarks>
-/// 유형 자리 5(인증 / 권한)와 9(내부 / 외부 연동)는 HTTP 상태가 둘 이상이라 1의 자리로 구분합니다.
+/// 유형 자리 1(검증 / 본문 크기 / Content-Type), 5(인증 / 권한), 9(내부 / 외부 연동)는 HTTP 상태가 둘 이상이라 1의 자리로 구분합니다.
 /// 배포된 값은 바꾸거나 재사용하지 않습니다.
 /// </remarks>
 public enum ErrorType : short
@@ -15,6 +15,12 @@ public enum ErrorType : short
 
     /// <summary>검증 실패(T = 1, HTTP 400).</summary>
     Validation = 10,
+
+    /// <summary>요청 본문 크기 초과(T = 1, HTTP 413, ADR-0028).</summary>
+    PayloadTooLarge = 11,
+
+    /// <summary>지원하지 않는 요청 Content-Type(T = 1, HTTP 415, ADR-0028).</summary>
+    UnsupportedMediaType = 12,
 
     /// <summary>대상 없음(T = 2, HTTP 404).</summary>
     NotFound = 20,

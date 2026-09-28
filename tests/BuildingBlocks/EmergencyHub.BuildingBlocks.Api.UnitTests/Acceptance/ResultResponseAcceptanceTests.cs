@@ -31,6 +31,8 @@ public sealed class ResultResponseAcceptanceTests
     private static readonly Error[] OneErrorPerType =
     [
         CommonErrors.ValidationFailed,
+        CommonErrors.PayloadTooLarge,
+        CommonErrors.UnsupportedMediaType,
         CommonErrors.NotFound,
         CommonErrors.ConcurrencyConflict,
         SampleErrors.InvalidTransition,
@@ -44,6 +46,8 @@ public sealed class ResultResponseAcceptanceTests
     public static TheoryData<Error, int, string> ErrorTypeResponses() => new()
     {
         { CommonErrors.ValidationFailed, 400, "Bad Request" },
+        { CommonErrors.PayloadTooLarge, 413, "Payload Too Large" },
+        { CommonErrors.UnsupportedMediaType, 415, "Unsupported Media Type" },
         { CommonErrors.NotFound, 404, "Not Found" },
         { CommonErrors.ConcurrencyConflict, 409, "Conflict" },
         { SampleErrors.InvalidTransition, 422, "Unprocessable Entity" },

@@ -58,7 +58,7 @@ CQRS 타입 이름
 | 규칙 | 설명 |
 |---|---|
 | Nullable 참조 형식 | 전 프로젝트 `enable`. `!`(null-forgiving)는 테스트 외에는 쓰지 않는다. |
-| 클래스는 기본 `sealed` | 상속을 의도한 타입만 `sealed`를 뺀다(`abstract` 기반 클래스 등). 아키텍처 테스트가 검사하는 예외 목록과 검사 범위의 원본은 [테스트 전략 · 아키텍처 테스트](testing-strategy.md#아키텍처-테스트)(`ClassesAreSealed` 범위)다. `Error`(non-sealed `record`, `ValidationError`가 파생)는 값을 받는 생성자가 `private protected`라 어셈블리 밖에서는 유형별 팩토리로만 새 값을 만든다. 다만 non-sealed `record`의 컴파일러 생성 복사 생성자는 `protected`여야 하므로(더 좁히면 CS8878) **어셈블리 밖에서도 복사 생성자로 파생할 수 있다**. 이때도 이미 검증된 인스턴스에서 복사하고 `init` 접근자가 없어 코드 · 메시지 · 유형 불변식은 유지된다(`Error.cs` remarks와 같은 내용, TD-016). |
+| 클래스는 기본 `sealed` | 상속을 의도한 타입만 `sealed`를 뺀다(`abstract` 기반 클래스 등). 아키텍처 테스트가 검사하는 예외 목록과 검사 범위의 원본은 [테스트 전략 · 아키텍처 테스트](testing-strategy.md#아키텍처-테스트)(`ClassesAreSealed` 범위)다. `Error`(non-sealed `record`, `ValidationError` · `ConflictError`가 파생)는 값을 받는 생성자가 `private protected`라 어셈블리 밖에서는 유형별 팩토리로만 새 값을 만든다. 다만 non-sealed `record`의 컴파일러 생성 복사 생성자는 `protected`여야 하므로(더 좁히면 CS8878) **어셈블리 밖에서도 복사 생성자로 파생할 수 있다**. 이때도 이미 검증된 인스턴스에서 복사하고 `init` 접근자가 없어 코드 · 메시지 · 유형 불변식은 유지된다(`Error.cs` remarks와 같은 내용, TD-016). |
 | `record` | **데이터를 담는 모델 클래스는 모두 `record`로 만든다**: DTO, API Request / Response, Command, Query, 조회 모델(Read Model), 도메인 / 통합 이벤트, Value Object. 위치 기반 생성자(positional record)를 기본으로 하고 불변으로 둔다. 모델에 `class`를 쓰면 반려 사유다. |
 | `record struct` | 강타입 ID에 쓴다: `public readonly record struct EmployeeId(Guid Value);` |
 | primary constructor | DI를 받는 서비스와 Handler에 쓴다. Entity / Aggregate에는 쓰지 않는다(불변식 검증이 필요하므로 팩토리 메서드 사용). |
@@ -394,7 +394,7 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 
 - **예상 가능한 실패는 예외가 아니라 `Result`로 반환한다.** 비즈니스 규칙 위반, 검증 실패, 대상 없음, 충돌이 여기에 해당한다.
 - 예외는 예상하지 못한 오류(인프라 장애, 프로그래밍 오류)에만 쓴다. Validator를 거친 뒤의 Aggregate 불변식 위반은 프로그래밍 오류라 예외다([DDD 구현 규칙](#ddd-구현-규칙-aggregate--value-object)의 실패 처리 경계).
-- `Error`는 **정수 코드**와 메시지, 유형(`ErrorType`: 검증 / 없음 / 충돌 / 규칙 위반 / 인증 / 권한 / 내부 / 외부 연동 / 일시 장애)을 가진다. 유형별 팩토리(`Error.NotFound(22001, "...")`)로만 만들고, 코드 규칙(범위, T ↔ `ErrorType`)을 어기면 생성 시 예외가 난다. 코드 범위는 서비스별로 나누며 [에러 코드](../05-api/error-codes.md)에서 관리한다.
+- `Error`는 **정수 코드**와 메시지, 유형(`ErrorType`: 검증 / 본문 크기 초과 / 지원하지 않는 Content-Type / 없음 / 충돌 / 규칙 위반 / 인증 / 권한 / 내부 / 외부 연동 / 일시 장애)을 가진다. 유형별 팩토리(`Error.NotFound(22001, "...")`)로만 만들고, 코드 규칙(범위, T ↔ `ErrorType`)을 어기면 생성 시 예외가 난다. 코드 범위는 서비스별로 나누며 [에러 코드](../05-api/error-codes.md)에서 관리한다.
 - `Result` / `Result<T>`: 성공은 `Result.Success()` / `Result.Success(value)`, 실패는 `Result.Failure(error)`. `Error` → `Result` / `Result<T>`, 값 → `Result<T>` 암시적 변환이 있어 `return EmployeeErrors.NotFound;`, `return result.Error;`, `return result.Value.Id;`로 쓴다. 성공 값은 `null`일 수 없다(대상이 없으면 NotFound 실패). 실패 결과의 `Value`, 성공 결과의 `Error`를 읽으면 `InvalidOperationException`이므로 `IsFailure`를 먼저 확인한다. `Error.None` 같은 빈 오류 값은 두지 않는다.
 - API는 `Result`를 RFC 9457 `ProblemDetails`로 변환한다. 전역 예외 처리(`IExceptionHandler`)는 예상하지 못한 예외만 500으로 변환하고 로그를 남긴다.
 - `catch (Exception)`으로 삼키지 않는다. 잡았으면 처리하거나 로그와 함께 다시 던진다.
@@ -495,3 +495,4 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 | 2026-09-28 | dba | sealed partial 선언 실제 코드 예시의 파일 이름 주석을 리셋 뒤 `20260928090646_InitialCreate.Sealed.cs`로 교체(선언 줄 그대로) (S05-T05) |
 | 2026-09-28 | developer | Repository 실제 코드를 S05-T06 구현으로(`ListExistingNormalizedEmailsAsync` · `AddRange`, Read Repository 목록 · 개수 · 이름 단건, `ExistsByNormalizedEmailAsync` 제거), 목록 쿼리 형태(`ThenBy(Id)` · `Contains` → `= ANY` · 개수 분리, 실측), 기능 폴더 밖에 둘 수 있는 것에 Read Repository 프로젝션 `record` 추가 (S05-T06) |
 | 2026-09-28 | orchestrator | S05 결과 리뷰: 기능 폴더 밖 프로젝션 `record` 규칙 추인(대리 승인), 조건 "Query 하나만 쓰는 프로젝션은 기능 폴더 안" 추가 (S05) |
+| 2026-09-28 | developer | `Error` 파생에 `ConflictError`, `ErrorType` 목록에 본문 크기 초과 · 지원하지 않는 Content-Type 추가(ADR-0028) (S06-T01) |
