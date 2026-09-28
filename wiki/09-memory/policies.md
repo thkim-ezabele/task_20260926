@@ -28,7 +28,8 @@ updated: 2026-09-29
 - RETRO-PRD-001 반영(PR #13): 문서 작업은 점검표 D1~D5 · 반려 분류(코드 컨벤션 / 누락 / 설계 / 버그, 문서 형식 / 사실 / 누락 / 범위 밖), 인계 메모에 알려진 잡음 · 제외 기준, CI로만 판정할 조건은 스프린트 종료 판정, 대리 승인은 스프린트 문서 목록 → `/retro` ④ 일괄 추인, dba 생성 SQL 점검표 a~g(원본 database.md), 환경 점검에 Docker API · dev-certs. 원본: [에이전트 워크플로우](../10-delivery/agents.md)
 - 병행 토픽 예외(PRD-002 선례): 같은 폴더에서 다른 세션이 작업 중이면 git worktree로 분리, 토픽 브랜치에는 새 파일만, 공유 문서 · 번호는 첫 작업(재기준화)에서.
 - 회고는 PRD 종료 뒤 `/retro PRD-NNN`에서만 한다(2026-09-28 사용자 지시, S05부터). 스프린트 종료 때는 스프린트 회고 · 스킬 / 에이전트 개선 · apply_before_next 반영을 하지 않고, 회고 절에는 "토픽 회고에서 다룸" 한 줄만 둔다(S05는 "/retro 입력용 메모").
-- 스프린트 속도 튜닝(2026-09-28 사용자 결정, S06부터): 계획 리뷰 developer 1명 + orchestrator, 작업은 dba(DB 작업만) → developer → 검증(reviewer 코드 리뷰만 ∥ tester 실행 검증 작업당 1회), 진행 기록 한 행 200자 · 대조표 문서 미기록, 대응표 전수 대조는 종료 때 1회, CI 확인 · sprint 태그는 PRD 마지막 스프린트 push 뒤 일괄. 원본: [에이전트 워크플로우](../10-delivery/agents.md)
+- 스프린트 속도 튜닝(2026-09-28 사용자 결정, S06부터): 계획 리뷰 developer 1명 + orchestrator, 작업은 dba(DB 작업만) → developer → 검증(reviewer 코드 리뷰만 ∥ tester 실행 검증 작업당 1회), 진행 기록 한 행 200자 · 대조표 문서 미기록, 대응표 전수 대조는 종료 때 1회, CI 확인 · sprint 태그는 PRD 마지막 스프린트 push 뒤 일괄. 원본: [에이전트 워크플로우](../10-delivery/agents.md) RETRO-PRD-002에서 유지 결정(대리).
+- 오케스트레이션 세션은 스프린트 승인 지점 · 결정 · `/retro` 개선안 처리를 **모두 직접 판단**한다(2026-09-29 사용자 지시, 사용자에게 묻지 않음). 추인은 `/retro` 회고 문서 "사용자 결정 필요"에 모은다. ADR 파일 작성은 여전히 사용자 확인 뒤.
 - S03부터 오케스트레이션 세션이 스프린트 세션에 SendMessage로 지시하고 승인 지점(계획 리뷰 · 결정 · BLOCKED · 결과 리뷰)을 처리한다. 스킬 개선은 토픽 `/retro`에서 한꺼번에(진행 중 변경 금지, 사용자 지시 예외: 2026-09-28 속도 튜닝).
 - 흐름 제어와 커밋은 스킬(메인 세션), 판단은 orchestrator. 서브에이전트는 다른 서브에이전트를 부를 수 없다. 에이전트 모델은 메인 세션 상속.
 - 구현: `.claude/agents/`(orchestrator, dba, developer, reviewer, tester), `.claude/skills/`(prd, sprint, retro). 에이전트는 프롬프트 첫 줄 `mode:`로 작업 구분.
