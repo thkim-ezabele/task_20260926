@@ -70,12 +70,32 @@ CQRS 타입 이름
 | 컬렉션 노출 | 외부에는 `IReadOnlyCollection<T>` / `IReadOnlyList<T>`로 노출한다. |
 | 시간 | `DateTime.UtcNow` 직접 호출 금지. `TimeProvider`를 주입받는다(테스트 가능성). |
 
+**생성 코드의 sealed (`*.Sealed.cs`)**: EF Core 도구가 만드는 마이그레이션 · 모델 스냅샷 클래스는 `sealed`가 아니지만 `ClassesAreSealed`의 대상이다(가시성과 관계없음, [테스트 전략 · ClassesAreSealed 범위](testing-strategy.md#아키텍처-테스트)). 생성 파일은 고치지 않고, 같은 폴더에 직접 작성한 partial 선언 파일로 `sealed`를 붙인다(절차 원본: [데이터베이스 · 마이그레이션 규칙](database.md#마이그레이션-규칙)).
+
+- 파일 이름: 마이그레이션마다 `<마이그레이션 ID>.Sealed.cs`, 서비스마다 `<DbContext>ModelSnapshot.Sealed.cs`. 선언의 가시성은 생성 파일과 같게 둔다(마이그레이션 `public`, 스냅샷 `internal`).
+- 새 마이그레이션 · ADR-0012 리셋으로 ID가 바뀌면 같은 작업에서 선언 파일을 추가하거나 이름을 맞춘다. 누락은 `ClassesAreSealed_ProductAssemblies_Holds` 실패로 드러난다.
+- 이 파일은 `.editorconfig`의 `[**/Persistence/Migrations/*.Sealed.cs]` 섹션이 생성 코드에서 빼므로(`generated_code = false`, CS1591 warning) XML 문서 주석을 단다.
+- 생성 형식을 규칙 예외로 두는 기준은 정하지 않았다(BL-090). 정하기 전까지 예외 목록에 넣지 않고 이 선언 파일로 지킨다.
+
+실제 코드(`src/Services/Employee/EmergencyHub.Employee.Infrastructure/Persistence/Migrations/`의 두 파일에서 namespace · XML 문서 주석을 빼고, 파일 이름을 `//` 주석으로 앞에 붙인 것. 남은 선언 줄은 소스와 같다):
+
+```csharp
+// 20260927134235_InitialCreate.Sealed.cs
+public sealed partial class InitialCreate;
+
+// EmployeeDbContextModelSnapshot.Sealed.cs
+internal sealed partial class EmployeeDbContextModelSnapshot;
+```
+
 ## 코드값 (enum) 규칙
 
 DB의 코드값 규칙([데이터베이스 · 코드값](database.md#코드값-규칙))과 한 쌍입니다.
 
 - 코드는 `enum`으로 정의하고 **모든 멤버에 값을 명시**한다. 한 번 배포된 값은 바꾸거나 재사용하지 않는다.
 - 기반 형식을 명시한다. 일반 코드는 `short`, 비트 플래그는 `int`(31개까지) 또는 `long`(63개까지).
+  - **테스트 코드(`tests/**`)의 enum에도 적용한다.** 테스트 샘플 · 대역 enum도 기반 형식을 적고, 기본값과 같은 `: int`도 생략하지 않는다. 일부러 규칙 밖 형식을 쓰는 샘플(예: `Samples/Persistence/IntBackedStatus.cs`의 `public enum IntBackedStatus : int`, 도우미의 형식 검사를 확인하는 용도)도 그 형식을 명시한다. 아키텍처 규칙 `CodeEnumsUseConventionalUnderlyingTypes`는 제품 어셈블리만 보고, `: int` 생략은 메타데이터로 구별되지 않아 reviewer가 판정한다(S02-T04 반려, BL-119).
+  - 예외는 이 규칙의 위반을 재현하는 아키텍처 테스트 표본 하나다: `tests/EmergencyHub.ArchitectureTests/Samples/EnumTypes/ImplicitIntStatus.cs`(XML 주석 "위반 예: 기반 형식을 빠뜨린 일반 코드"). 새 위반 표본을 만들 때도 XML 주석에 "위반 예"를 적는다.
+  - 점검(Git Bash): `git ls-files src tests | grep '\.cs$' | xargs grep -nE "^\s*(public |internal |private )?enum [A-Za-z0-9_]+\s*$"`. 2026-09-28 현재 출력은 위 표본 1줄뿐이다.
 - `0`은 `None` / `Unknown` 용도로 예약한다. 유효한 업무 값으로 쓰지 않는다.
   - 예외: 외부 규약이 `0`의 의미를 정해 둔 **`internal` enum**은 그 규약을 따른다. 예: 프로세스 종료 코드 `MigrationExitCode`(`Succeeded = 0`, 운영체제 · AppHost `WaitForCompletion`이 0을 성공으로 봄). 기반 형식 명시 · 모든 멤버 값 명시 규칙은 그대로 적용한다(BL-091).
 - API 요청 / 응답과 이벤트에서도 코드는 **정수로 직렬화**한다. `JsonStringEnumConverter`는 쓰지 않는다.
@@ -338,6 +358,15 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 - open generic 정의는 Handler로 등록하지 않는다(데코레이터 제외). 파이프라인 순서의 원본은 `PipelineDecorators`(BuildingBlocks.Application, 안쪽 → 바깥) 하나다.
 - Scrutor 7의 `Decorate`는 감싼 안쪽 단계를 같은 서비스 형식의 **keyed 등록**으로 남긴다. 등록을 세는 테스트는 키 없는 등록(가장 바깥) 하나와 전체 단계 수(Command 4, Query 3)를 나눠 확인한다.
 
+### Controller 의존성 (서비스 로케이터 금지)
+
+Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03-architecture/adr/0016-use-controllers-for-api.md)). 다른 의존성을 생성자 밖에서 꺼내는 **서비스 로케이터도 금지**한다.
+
+- 금지: Controller 본문 · 액션의 `HttpContext.RequestServices`, `IServiceProvider` 주입, `GetService<T>()` · `GetRequiredService<T>()`, 액션 매개변수 `[FromServices]`.
+- 이유: 아키텍처 규칙 `ControllersDoNotUseInfrastructureOrRepositories`는 생성자 · 액션 매개변수 같은 시그니처만 보므로, 메서드 본문에서 Repository를 꺼내는 코드는 잡지 못한다(TD-025). 그래서 reviewer가 판정하고, 규칙 기계화는 BL-119에서 판단한다.
+- 점검(Git Bash): `git ls-files src/Services | grep 'Controllers/.*\.cs$' | xargs grep -nE "IServiceProvider|RequestServices|GetRequiredService|GetService|FromServices"`. 2026-09-28 현재 출력 없음(`EmployeesController(ISender sender)`만 있음).
+- Controller가 아닌 곳의 `GetService` · `GetRequiredService`(DI 등록 코드, Mediator 디스패처, MigrationService Worker의 스코프, BuildingBlocks.Api 바인딩 오류 응답 `InvalidModelStateResponses`의 로거 조회)는 이 규칙의 대상이 아니다.
+
 ## 비동기 프로그래밍 규칙
 
 - I/O는 끝까지 비동기로 처리한다. `.Result`, `.Wait()`, `GetAwaiter().GetResult()` 금지.
@@ -393,6 +422,9 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 - 다음은 쓰지 않는다: 전역 `NoWarn` · `WarningsNotAsErrors`(프로젝트 · `Directory.Build.props`), `#pragma warning disable`, `.editorconfig`의 `dotnet_diagnostic.<ID>.severity` 낮추기.
   - 기존 설정만 예외다: `.editorconfig`의 `tests/**.cs` CA1707 · CA1822 · `Async` 접미사 규칙 끄기와 `**/Persistence/Migrations/*.cs`의 `generated_code = true` · CS1591 none([코드 스타일](#코드-스타일-editorconfig)), EF Core 도구가 생성한 마이그레이션 · 스냅샷 `Designer`의 `#pragma warning disable 612, 618`(생성 코드라 직접 고치지 않음).
 - 새 억제는 developer가 억제를 추가한 같은 작업에서 아래 승인 목록에 행을 추가하고(승인 기록 칸은 해당 작업 reviewer), reviewer가 진행 기록에 승인을 남긴다. 목록에 행이 없거나 reviewer 승인 기록이 없는 억제는 반려 사유다.
+  - **억제와 승인 목록 행은 함께 제출한다.** 승인 목록 행 없이 억제만 제출하면 reviewer는 PASS할 수 없다. 승인을 다음 작업으로 미루지 않는다(PRD-001에서 Employee CA1812 3건이 S03-T01에 들어오고 S04-T05에서 사후 승인됨).
+  - **앞선 작업의 같은 유형을 grep한다.** 새 억제의 규칙 ID로 저장소 전체를 찾아, 같은 ID의 억제가 모두 승인 목록에 있는지 대조한다. 목록에 없는 것이 나오면 developer는 제출 내용에 적고, reviewer는 그 억제를 들여온 작업을 밝혀 승인 여부를 판정받는다.
+  - 규칙 ID 검색(Git Bash, 속성이 여러 줄이라 ID 문자열로 찾음): `git ls-files src tests | grep '\.cs$' | xargs grep -n '"<ID>:'`. 예: `"CA1812:`은 2026-09-28 현재 16줄이고 승인 목록 CA1812 행의 파일 수 합계(2 + 5 + 1 + 3 + 2 + 3)와 같다.
 
 승인 목록 (2026-09-28 현재 코드 전수, 20건 = 제품 14 + 테스트 6)
 
@@ -440,3 +472,5 @@ BuildingBlocks 공통 등록 진입점 (S02-T03)
 | 2026-09-27 | developer | `.editorconfig` 생성 코드 행에 직접 작성하는 sealed partial 선언(`*.Sealed.cs`)을 분석 대상으로 되돌리는 섹션 추가 (S03-T02 재작업) |
 | 2026-09-28 | developer | S03 결정 · 실제 코드에 맞춤: DDD 실패 처리 경계(불변식 위반 예외 · 입력 검증 실패 Result, BL-089), Email 값 객체 예시 제거(정규화한 `string`), CQRS Handler · Repository 예시를 실제 코드로(`IIdGenerator.NewId()`, SaveChanges 미호출, BL-039), 경고 억제 규칙 · 승인 목록 20건(BL-055), 한 파일 한 형식 테스트 코드 적용(BL-069), 외부 규약 0 의미 internal enum 예외(BL-091), `AddHostedService` 명시 등록 허용(BL-092), `Error` 파생 문구 CS8878 정정(TD-016 문서분), sealed · Validator 기반 설명은 testing-strategy 링크로 (S04-T05) |
 | 2026-09-28 | developer | S04-T05 재작업(reviewer 반려 1회): CQRS · Repository 예시 도입 문장을 실제로 뺀 범위(두 파일 합침, using · namespace · XML 문서 주석 · `[SuppressMessage]`)에 맞추고 소스에 없는 설명 주석 2줄을 코드 블록 밖 목록으로 이동, 경고 억제 승인 절차의 주체 · 순서 명시, Employee CA1812 3건 승인 기록을 S04-T05 reviewer 사후 승인으로 (S04-T05) |
+| 2026-09-28 | - | RETRO-PRD-001 개선안 #14 반영: 새 경고 억제는 승인 목록 행과 함께 제출(행 없으면 reviewer PASS 불가), 앞선 작업의 같은 규칙 ID grep 대조와 검색 명령 |
+| 2026-09-28 | - | RETRO-PRD-001 개선안 #15 반영: 테스트 enum 기반 형식 명시(`: int` 포함, 위반 표본 예외, 점검 명령), 생성 코드 `*.Sealed.cs` 규칙(BL-090, 실제 선언), Controller 서비스 로케이터 금지(TD-025, 점검 명령) |
