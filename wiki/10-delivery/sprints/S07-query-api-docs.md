@@ -87,6 +87,8 @@ updated: 2026-09-29
 | 2026-09-29 | S07-T04 | reviewer | PASS | 재검증: 241행 경로 복원 · 마스킹 문장 정정 확인, C:Windows 잔존 0, 범위 밖 변경 없음 |
 | 2026-09-29 | S07-T04 | tester | PASS | 재검증: od -c 역슬래시 3개, 마스킹 grep 재실측 일치, check-docs 6(BL-018), U+FFFD 0 |
 | 2026-09-29 | - | 결과 리뷰 | 승인(대리) | orchestrator 결과 리뷰 → 대리 승인. DoD 직접 실행: build 오류 0, test 2,544 통과 · 1 건너뜀 · 실패 0, 커버리지 라인 99.3% · 분기 96.8%. new 5건 open, BL-139 done |
+| 2026-09-29 | - | 종료 | push | 종료 커밋 `8ad58cf`(태그 대상), push `08613a9..8ad58cf` |
+| 2026-09-29 | - | DoD | CI 통과 | PR #8 CI [36490909577](https://github.com/thkim-ezabele/task_20260926/actions/runs/36490909577) success(22:11:43Z → 22:16:42Z, 4m59s, ubuntu-24.04, SDK 8.0.425, HEAD `8ad58cf`). 13개 프로젝트 통과 2,544 · 실패 0 · 건너뜀 1(기존 ArchitectureTests 1), IntegrationTests 321/321, 산출물 coverage-report · test-results. NFR-03 CI 중앙값 3.7 · 7.6 · 1.9ms. 태그 sprint/S06 → f5e0877, sprint/S07 → 8ad58cf |
 
 
 ### S07-T04 Aspire curl 실행 기록 (2026-09-29, developer)
@@ -102,8 +104,6 @@ updated: 2026-09-29
 | BL-024: `traceparent` 지정 T1 POST · T2 GET `{name}` · T3 POST 409 → 대시보드 `/traces/detail/4b1d00240000000000000000000000{01,02,03}`(Edge 헤드리스 CDP) | Npgsql span 6개 `db.connection_string`에 Password 없음, `db.statement`는 `@p0` · `@__name_0` · `@__normalizedEmails_0` 자리표시자만(등록 값 grep 0건), T2 `url.path` `/api/employee/{name}` |
 | 로그 판정 | postgres `FATAL` 3D000 1건(N2, 제외), AppHost `fail:` 0, api 파일 로그 Error · Warning 0(BL-117 0건) |
 | `taskkill //F //IM EmergencyHub.AppHost.exe` → `docker ps -a --filter volume=emergency-hub-postgres-data` | 출력 없음(컨테이너 정리) |
-| 2026-09-29 | - | 종료 | push | 종료 커밋 `8ad58cf`(태그 대상), push `08613a9..8ad58cf` |
-| 2026-09-29 | - | DoD | CI 통과 | PR #8 CI [36490909577](https://github.com/thkim-ezabele/task_20260926/actions/runs/36490909577) success(22:11:43Z → 22:16:42Z, 4m59s, ubuntu-24.04, SDK 8.0.425, HEAD `8ad58cf`). 13개 프로젝트 통과 2,544 · 실패 0 · 건너뜀 1(기존 ArchitectureTests 1), IntegrationTests 321/321, 산출물 coverage-report · test-results. NFR-03 CI 중앙값 3.7 · 7.6 · 1.9ms. 태그 sprint/S06 → f5e0877, sprint/S07 → 8ad58cf |
 
 ## 계획 리뷰
 
