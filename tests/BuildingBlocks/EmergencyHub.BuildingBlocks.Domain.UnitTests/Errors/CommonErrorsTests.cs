@@ -11,6 +11,8 @@ public sealed class CommonErrorsTests
         (nameof(CommonErrors.ValidationFailed), 1001, ErrorType.Validation),
         (nameof(CommonErrors.InvalidCode), 1002, ErrorType.Validation),
         (nameof(CommonErrors.InvalidPaging), 1003, ErrorType.Validation),
+        (nameof(CommonErrors.PayloadTooLarge), 1004, ErrorType.PayloadTooLarge),
+        (nameof(CommonErrors.UnsupportedMediaType), 1005, ErrorType.UnsupportedMediaType),
         (nameof(CommonErrors.NotFound), 2001, ErrorType.NotFound),
         (nameof(CommonErrors.ConcurrencyConflict), 3001, ErrorType.Conflict),
         (nameof(CommonErrors.DuplicateRequest), 3002, ErrorType.Conflict),

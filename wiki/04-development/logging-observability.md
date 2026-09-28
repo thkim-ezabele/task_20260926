@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [development]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 로깅 & 관측성
@@ -84,13 +84,13 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 ```
 
 ```
-[14:03:12.418 INF] employee EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandHandler (4bf92f3577b34da6a3ce929d0e0e4736) Employee 0192a1b3-... registered
+[14:03:12.418 INF] employee EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployees.RegisterEmployeesCommandHandler (4bf92f3577b34da6a3ce929d0e0e4736) Employee 0192a1b3-... registered
 ```
 
 ### 파일 출력 (JSON)
 
 ```json
-{"@t":"2026-09-27T05:03:12.4181234Z","@mt":"Employee {EmployeeId} registered","@m":"Employee 0192a1b3-... registered","@i":"a1b2c3d4","@l":"Information","@tr":"4bf92f3577b34da6a3ce929d0e0e4736","@sp":"00f067aa0ba902b7","EventId":{"Id":20001,"Name":"EmployeeRegistered"},"EmployeeId":"0192a1b3-...","SourceContext":"EmergencyHub.Employee.Application...RegisterEmployeeCommandHandler","ServiceName":"employee","Environment":"Development","MachineName":"dev-01"}
+{"@t":"2026-09-27T05:03:12.4181234Z","@mt":"Employee {EmployeeId} registered","@m":"Employee 0192a1b3-... registered","@i":"a1b2c3d4","@l":"Information","@tr":"4bf92f3577b34da6a3ce929d0e0e4736","@sp":"00f067aa0ba902b7","EventId":{"Id":20001,"Name":"EmployeeRegistered"},"EmployeeId":"0192a1b3-...","SourceContext":"EmergencyHub.Employee.Application...RegisterEmployeesCommandHandler","ServiceName":"employee","Environment":"Development","MachineName":"dev-01"}
 ```
 
 - 시각(`@t`)은 **UTC ISO 8601**
@@ -107,7 +107,8 @@ outputTemplate: [{Timestamp:HH:mm:ss.fff} {Level:u3}] {ServiceName} {SourceConte
 | `@tr` / `@sp` (`TraceId` / `SpanId`) | W3C Trace Context | `Activity.Current` (OpenTelemetry) |
 | `SourceContext` | 로그를 남긴 클래스 | `ILogger<T>` |
 | `EventId` | 로그 이벤트 번호 · 이름 | `[LoggerMessage]` |
-| `RequestPath`, `StatusCode`, `Elapsed` | 요청 로그 | `UseSerilogRequestLogging()` |
+| `RequestPath`, `StatusCode`, `Elapsed` | 요청 로그. `RequestPath`는 라우트 템플릿이 있으면 템플릿(`/api/employee/{name}`, `PathBase` 없음), 없으면 요청 경로(쿼리 문자열 없음, ADR-0025) | `UseSerilogRequestLogging()` + ServiceDefaults `RequestLoggingOptions.GetMessageTemplateProperties` |
+| `RequestId`, `RequestPath`, `ConnectionId` | 요청 안에서 남긴 모든 로그(ASP.NET Core 호스팅 로그 범위). `RequestPath`는 원래 퍼센트 인코딩한 요청 경로라 경로 매개변수 값(이름)이 남으므로, 라우트 템플릿이 있으면 템플릿으로 덮는다(S07-T02 실측) | 호스팅 로그 범위 + ServiceDefaults 보강기 `RouteTemplateRequestPathEnricher` |
 | `UserId` | 인증된 사용자 ID (ID만) | 미들웨어 `LogContext` |
 
 ## 로그 레벨 기준
@@ -149,12 +150,13 @@ internal static partial class EmployeeLogs
     public static partial void EmployeeRegistered(this ILogger logger, Guid employeeId);
 }
 
-// 사용 (RegisterEmployeeCommandHandler)
+// 사용 (RegisterEmployeesCommandHandler, 등록한 직원마다 한 줄)
 logger.EmployeeRegistered(employee.Id.Value);
 
 // 금지
 logger.LogInformation($"Employee {employee.Id} registered");          // 문자열 보간
-logger.LogInformation("Employee {Email} registered", employee.Email); // 개인정보
+logger.LogInformation("Employee {Email} registered", employee.Email); // 개인정보 (Value Object record는 ToString이 값을 출력, BL-130)
+logger.LogInformation("Import {Command} failed", command);           // Command · Value Object를 인자로 넘김 (BL-130)
 ```
 
 ## 개인정보 · 보안
@@ -230,3 +232,5 @@ ServiceDefaults의 `MapDefaultEndpoints`가 매핑합니다(S03-T03, BL-030). �
 | 2026-09-28 | developer | 요청 로그 로거를 DI Serilog 로거로 채우는 위치(ServiceDefaults `RequestLoggingOptions`, 정적 `Log` 무음 결함 수정) (S03-T07) |
 | 2026-09-28 | developer | Aspire 연동 절(Serilog → OTLP 로그 한 경로, 트레이스 · 메트릭 exporter, 프로필별 OTLP 주소, https 프로필 dev-certs 신뢰 필요 BL-099), 20001 예시를 실제 템플릿(`Employee {EmployeeId} registered`)으로(BL-089), 수준 기준에 9003 = `Warning`(301)과 최종 실패 `Error` 차이(BL-105), `EnableSensitiveDataLogging` opt-in 미구현 · 꺼짐(BL-094 기록), DB 정지 때 `/health/ready` 약 15.0초 뒤 503 실측(BL-108 기록) (S04-T05) |
 | 2026-09-28 | developer | Aspire 연동 절의 local-setup 링크에 `#개발-인증서-https-프로필` 앵커 추가 (S04-T03) |
+| 2026-09-28 | developer | 출력 예시 · 사용 예시의 Handler 이름을 `RegisterEmployeesCommandHandler`로(BL-132), 금지 예시에 Command · Value Object 로그 인자(BL-130) (S06-T04) |
+| 2026-09-29 | developer | 공통 필드 `RequestPath`를 라우트 템플릿으로(요청 완료 로그 · 호스팅 로그 범위, 템플릿 없으면 요청 경로), 호스팅 범위 `RequestId` · `ConnectionId` 행 (S07-T02) |

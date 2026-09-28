@@ -7,6 +7,8 @@ public sealed class ErrorTypeTests
     [Theory]
     [InlineData(ErrorType.None, 0)]
     [InlineData(ErrorType.Validation, 10)]
+    [InlineData(ErrorType.PayloadTooLarge, 11)]
+    [InlineData(ErrorType.UnsupportedMediaType, 12)]
     [InlineData(ErrorType.NotFound, 20)]
     [InlineData(ErrorType.Conflict, 30)]
     [InlineData(ErrorType.BusinessRule, 40)]
@@ -27,7 +29,7 @@ public sealed class ErrorTypeTests
     {
         var values = Enum.GetValues<ErrorType>();
 
-        values.Should().HaveCount(10);
+        values.Should().HaveCount(12);
     }
 
     [Fact]

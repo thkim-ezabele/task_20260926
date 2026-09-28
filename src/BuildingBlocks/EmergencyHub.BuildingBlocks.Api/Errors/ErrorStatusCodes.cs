@@ -7,7 +7,7 @@ namespace EmergencyHub.BuildingBlocks.Api.Errors;
 /// 오류 유형(<see cref="ErrorType"/>) → HTTP 상태 코드 대응입니다(원본: wiki/05-api/error-codes.md "에러 코드 체계" 유형 표).
 /// </summary>
 /// <remarks>
-/// HTTP 상태는 코드의 유형 자리(T)가 아니라 <see cref="ErrorType"/>으로 정합니다. T = 5 · 9는 상태가 둘 이상이기 때문입니다.
+/// HTTP 상태는 코드의 유형 자리(T)가 아니라 <see cref="ErrorType"/>으로 정합니다. T = 1 · 5 · 9는 상태가 둘 이상이기 때문입니다(T = 1은 400 · 413 · 415, ADR-0028).
 /// </remarks>
 public static class ErrorStatusCodes
 {
@@ -17,6 +17,8 @@ public static class ErrorStatusCodes
     public static int ToStatusCode(this ErrorType type) => type switch
     {
         ErrorType.Validation => StatusCodes.Status400BadRequest,
+        ErrorType.PayloadTooLarge => StatusCodes.Status413PayloadTooLarge,
+        ErrorType.UnsupportedMediaType => StatusCodes.Status415UnsupportedMediaType,
         ErrorType.NotFound => StatusCodes.Status404NotFound,
         ErrorType.Conflict => StatusCodes.Status409Conflict,
         ErrorType.BusinessRule => StatusCodes.Status422UnprocessableEntity,

@@ -1,9 +1,11 @@
 using System.Text.Json.Serialization;
+using EmergencyHub.BuildingBlocks.Api.Errors;
 using EmergencyHub.BuildingBlocks.Api.Exceptions;
 using EmergencyHub.BuildingBlocks.Api.OpenApi;
 using EmergencyHub.BuildingBlocks.Api.Validation;
 using EmergencyHub.BuildingBlocks.Application.DependencyInjection;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -56,6 +58,7 @@ public static class ApiServiceCollectionExtensions
     /// <item><description>Controller(ADR-0016): <c>SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true</c>(필수 값은 Validator),
     /// <c>InvalidModelStateResponseFactory</c> → 1001 <c>ProblemDetails</c>, System.Text.Json 웹 기본값(camelCase, 정수 enum,
     /// <c>JsonStringEnumConverter</c> 없음, <c>null</c> 속성 생략 안 함).</description></item>
+    /// <item><description>클라이언트 오류 결과 변환(<c>IClientErrorFactory</c>)을 감싸 <c>415</c>만 <c>1005</c> <c>ProblemDetails</c>로(ADR-0028). 그 밖은 프레임워크 기본 그대로.</description></item>
     /// <item><description>전역 예외 처리기(<c>IExceptionHandler</c>, Singleton) + 프레임워크 예외 미들웨어 자체 로그 끄기(Microsoft.Extensions.Logging 필터).
     /// Serilog를 쓰는 호스트는 같은 범주를 Serilog <c>MinimumLevel.Override</c>로도 꺼야 합니다(ServiceDefaults).</description></item>
     /// <item><description>Swashbuckle(ADR-0019): 문서 <c>v1</c>, 정수 enum 설명 필터, <c>ProblemDetails</c> 확장 필드 스키마 필터. 노출은 <c>UseBuildingBlocksApi</c>가 Development에서만 합니다.</description></item>
@@ -78,6 +81,7 @@ public static class ApiServiceCollectionExtensions
         services.AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
             .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = InvalidModelStateResponses.Create)
             .AddJsonOptions(options => options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never);
+        DecorateClientErrorFactory(services);
 
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IExceptionHandler, GlobalExceptionHandler>());
         services.AddLogging(logging => logging.AddFilter(ExceptionHandlerMiddlewareCategory, LogLevel.None));
@@ -92,4 +96,28 @@ public static class ApiServiceCollectionExtensions
 
         return services;
     }
+
+    /// <summary>
+    /// <c>AddControllers</c>가 등록한 프레임워크 기본 <see cref="IClientErrorFactory"/>를 <see cref="UnsupportedMediaTypeClientErrorFactory"/>로 감쌉니다.
+    /// 등록은 하나로 유지하고, 기본 팩토리는 등록 방식(형식 · 팩토리 · 인스턴스) 그대로 안쪽에 만듭니다.
+    /// </summary>
+    private static void DecorateClientErrorFactory(IServiceCollection services)
+    {
+        var descriptor = services.Last(candidate => candidate.ServiceType == typeof(IClientErrorFactory));
+        services.Remove(descriptor);
+        services.AddSingleton<IClientErrorFactory>(provider => new UnsupportedMediaTypeClientErrorFactory(CreateInner(provider, descriptor)));
+    }
+
+    /// <summary>
+    /// 기본 팩토리 등록을 등록 방식 그대로 만듭니다. 인스턴스 · 팩토리 · 형식이 모두 없으면 <see cref="InvalidOperationException"/>을 던집니다.
+    /// </summary>
+    internal static IClientErrorFactory CreateInner(IServiceProvider provider, ServiceDescriptor descriptor) =>
+        descriptor switch
+        {
+            { ImplementationInstance: { } instance } => (IClientErrorFactory)instance,
+            { ImplementationFactory: { } factory } => (IClientErrorFactory)factory(provider),
+            { ImplementationType: { } type } => (IClientErrorFactory)ActivatorUtilities.CreateInstance(provider, type),
+            _ => throw new InvalidOperationException(
+                "IClientErrorFactory 기본 등록에 인스턴스 · 팩토리 · 구현 형식이 모두 없어 감쌀 수 없습니다."),
+        };
 }

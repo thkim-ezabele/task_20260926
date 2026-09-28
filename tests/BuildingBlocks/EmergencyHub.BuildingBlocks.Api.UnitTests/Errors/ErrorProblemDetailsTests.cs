@@ -1,14 +1,16 @@
 using System.Diagnostics;
 using System.Text.Json;
 using EmergencyHub.BuildingBlocks.Api.Errors;
+using EmergencyHub.BuildingBlocks.Api.UnitTests.Routing;
 using EmergencyHub.BuildingBlocks.Domain.Errors;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EmergencyHub.BuildingBlocks.Api.UnitTests.Errors;
 
 // Result 실패(Error) → RFC 9457 ProblemDetails. 원본: api-guidelines "에러 응답 포맷", ADR-0016 · 0024.
-// code는 JSON 숫자, traceId는 Activity.Current.TraceId(32 hex), 없으면 HttpContext.TraceIdentifier.
+// instance는 라우트 템플릿이 있으면 PathBase + 템플릿, 없으면 요청 경로(ADR-0025, S07-T02). code는 JSON 숫자, traceId는 Activity.Current.TraceId(32 hex), 없으면 HttpContext.TraceIdentifier.
 // Activity.Current는 AsyncLocal이라 테스트 메서드마다 독립이다.
 public sealed class ErrorProblemDetailsTests
 {
@@ -22,27 +24,111 @@ public sealed class ErrorProblemDetailsTests
     [Fact]
     public void Create_ServiceError_FillsStandardFieldsAndIntegerCode()
     {
-        var problem = ErrorProblemDetails.Create(SampleErrors.DuplicateEmail, HttpContexts.Create());
+        // S07-T02 새 계약: 엔드포인트가 있으면 instance는 요청 경로(/api/v1/employees/hong@example.com)가 아니라 라우트 템플릿이다.
+        var context = HttpContexts.Create("/api/v1/employees/hong@example.com");
+        context.SetEndpoint(RouteTemplatePathTests.RouteEndpointOf("api/v1/employees/{email}"));
+
+        var problem = ErrorProblemDetails.Create(SampleErrors.DuplicateEmail, context);
 
         problem.Status.Should().Be(StatusCodes.Status409Conflict);
         problem.Type.Should().Be("https://httpstatuses.io/409");
         problem.Title.Should().Be("Conflict");
         problem.Detail.Should().Be(SampleErrors.DuplicateEmail.Message);
-        problem.Instance.Should().Be("/api/v1/employees");
+        problem.Instance.Should().Be("/api/v1/employees/{email}");
         problem.Extensions[ErrorProblemDetails.CodeExtension].Should().Be(23001);
     }
 
     [Theory]
     [MemberData(nameof(ConflictErrors))]
-    public void Create_ConflictErrors_Serialize409WithIntegerCode(Error error)
+    public void Create_ConflictErrors_Serialize409WithIntegerCodeAndNoErrors(Error error)
     {
         // 3001(xmin 충돌) · 3003(매핑 없는 23505) · 서비스 23xxx(매핑된 23505)는 모두 Conflict → 409(S02-T07 인계).
+        // ADR-0028 하위 호환: 상세 없는 409에는 errors가 없고 표준 필드 · code · traceId만 있다.
         var json = Serialize(ErrorProblemDetails.Create(error, HttpContexts.Create()));
 
         json.GetProperty("status").GetInt32().Should().Be(StatusCodes.Status409Conflict);
         json.GetProperty("code").ValueKind.Should().Be(JsonValueKind.Number);
         json.GetProperty("code").GetInt32().Should().Be(error.Code);
+        json.GetProperty("detail").GetString().Should().Be(error.Message);
+        json.EnumerateObject().Select(property => property.Name).Should().BeEquivalentTo("type", "title", "status", "detail", "instance", "code", "traceId");
     }
+
+    [Fact]
+    public void Create_ConflictError_Serializes409WithRepresentativeCodeAndRowKeyedErrorsInOrder()
+    {
+        // ADR-0028: 상세 Conflict 오류는 409 errors에 ValidationError와 같은 모양(키 camelCase 경로, 값 { code, message } 배열).
+        var error = ConflictError.Create(
+            SampleErrors.DuplicateEmail,
+            [
+                ConflictDetail.Create("Rows[7].Email", SampleErrors.DuplicateEmail),
+                ConflictDetail.Create("Rows[3].Email", SampleErrors.DuplicateEmail),
+                ConflictDetail.Create("Rows[7].Email", CommonErrors.UniqueConstraintViolated),
+            ]);
+
+        var context = HttpContexts.Create("/api/employee");
+        context.SetEndpoint(RouteTemplatePathTests.RouteEndpointOf("api/employee"));
+        var json = Serialize(ErrorProblemDetails.Create(error, context));
+
+        json.GetProperty("status").GetInt32().Should().Be(409);
+        json.GetProperty("type").GetString().Should().Be("https://httpstatuses.io/409");
+        json.GetProperty("title").GetString().Should().Be("Conflict");
+        json.GetProperty("detail").GetString().Should().Be(SampleErrors.DuplicateEmail.Message);
+        json.GetProperty("instance").GetString().Should().Be("/api/employee", "템플릿 api/employee에 / 보정");
+        json.GetProperty("code").GetInt32().Should().Be(23001);
+        var errors = json.GetProperty("errors");
+        errors.EnumerateObject().Select(property => property.Name).Should().Equal("rows[7].email", "rows[3].email");
+        errors.GetProperty("rows[7].email").EnumerateArray().Select(item => item.GetProperty("code").GetInt32()).Should().Equal(23001, 3003);
+        errors.GetProperty("rows[3].email")[0].GetProperty("code").ValueKind.Should().Be(JsonValueKind.Number);
+        errors.GetProperty("rows[3].email")[0].GetProperty("message").GetString().Should().Be(SampleErrors.DuplicateEmail.Message);
+        errors.GetProperty("rows[3].email")[0].EnumerateObject().Select(property => property.Name).Should().Equal("code", "message");
+    }
+
+    [Fact]
+    public void Create_ConflictErrorAndValidationErrorWithSamePaths_HaveSameErrorsShape()
+    {
+        // 클라이언트가 400 · 409 errors를 같은 코드로 처리할 수 있어야 한다(ADR-0028 결과).
+        var validation = ValidationError.Create([FieldError.Create("Rows[3].Email", SampleErrors.InvalidEmail)]);
+        var conflict = ConflictError.Create(SampleErrors.DuplicateEmail, [ConflictDetail.Create("Rows[3].Email", SampleErrors.DuplicateEmail)]);
+
+        var validationErrors = Serialize(ErrorProblemDetails.Create(validation, HttpContexts.Create())).GetProperty("errors");
+        var conflictErrors = Serialize(ErrorProblemDetails.Create(conflict, HttpContexts.Create())).GetProperty("errors");
+
+        conflictErrors.EnumerateObject().Select(property => property.Name).Should().Equal(validationErrors.EnumerateObject().Select(property => property.Name));
+        conflictErrors.GetProperty("rows[3].email")[0].EnumerateObject().Select(property => property.Name)
+            .Should().Equal(validationErrors.GetProperty("rows[3].email")[0].EnumerateObject().Select(property => property.Name));
+    }
+
+    [Fact]
+    public void Create_MappedUniqueViolationErrors_DetailIsFixedMessageWithoutInputValue()
+    {
+        // ⑤ NFR-04: 23505 → 23001 / 3003 변환 결과의 detail은 오류의 고정 문구다. PostgresException.Detail(값 포함)은 들어가지 않는다.
+        foreach (var error in new[] { SampleErrors.DuplicateEmail, CommonErrors.UniqueConstraintViolated })
+        {
+            var body = JsonSerializer.Serialize(ErrorProblemDetails.Create(error, HttpContexts.Create()), WebJson);
+
+            body.Should().NotContain(UnconvertedDbFailures.SecretValue).And.NotContain("already exists").And.NotContain("ux_");
+            Serialize(ErrorProblemDetails.Create(error, HttpContexts.Create())).GetProperty("detail").GetString().Should().Be(error.Message);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(RequestTransportErrors))]
+    public void Create_PayloadTooLargeAndUnsupportedMediaType_Serialize413And415WithCommonCode(Error error, int status, string title)
+    {
+        var json = Serialize(ErrorProblemDetails.Create(error, HttpContexts.Create()));
+
+        json.GetProperty("status").GetInt32().Should().Be(status);
+        json.GetProperty("type").GetString().Should().Be($"https://httpstatuses.io/{status}");
+        json.GetProperty("title").GetString().Should().Be(title);
+        json.GetProperty("code").GetInt32().Should().Be(error.Code);
+        json.TryGetProperty("errors", out _).Should().BeFalse();
+    }
+
+    public static TheoryData<Error, int, string> RequestTransportErrors() => new()
+    {
+        { CommonErrors.PayloadTooLarge, StatusCodes.Status413PayloadTooLarge, "Payload Too Large" },
+        { CommonErrors.UnsupportedMediaType, StatusCodes.Status415UnsupportedMediaType, "Unsupported Media Type" },
+    };
 
     [Fact]
     public void Create_Serialized_HasCamelCaseStandardFieldsCodeNumberAndTraceIdString()
@@ -146,6 +232,19 @@ public sealed class ErrorProblemDetailsTests
         json.GetProperty("errors").EnumerateObject().Should().ContainSingle().Which.Name.Should().Be(expectedKey);
     }
 
+    [Theory]
+    [InlineData("Rows[3].Email", "rows[3].email")]
+    [InlineData("Rows[1000].Email", "rows[1000].email")]
+    [InlineData("", "")]
+    public void Create_ConflictErrorPropertyPath_ConvertsEachSegmentToCamelCase(string propertyName, string expectedKey)
+    {
+        var error = ConflictError.Create(SampleErrors.DuplicateEmail, [ConflictDetail.Create(propertyName, SampleErrors.DuplicateEmail)]);
+
+        var json = Serialize(ErrorProblemDetails.Create(error, HttpContexts.Create()));
+
+        json.GetProperty("errors").EnumerateObject().Should().ContainSingle().Which.Name.Should().Be(expectedKey);
+    }
+
     [Fact]
     public void Create_HierarchicalActivity_FallsBackToTraceIdentifier()
     {
@@ -160,14 +259,75 @@ public sealed class ErrorProblemDetailsTests
     [Fact]
     public void Create_QueryString_IsNotIncludedInInstance()
     {
-        // 쿼리 문자열에는 검색어 같은 개인정보가 들어갈 수 있다. instance는 경로만 담는다.
-        var context = HttpContexts.Create("/api/v1/employees");
+        // 쿼리 문자열에는 검색어 같은 개인정보가 들어갈 수 있다. instance는 PathBase + 라우트 템플릿만 담는다(S07-T02 새 계약).
+        var context = HttpContexts.Create("/api/v1/employees/hong");
+        context.SetEndpoint(RouteTemplatePathTests.RouteEndpointOf("api/v1/employees/{name}"));
         context.Request.PathBase = "/employee";
         context.Request.QueryString = new QueryString("?email=hong@example.com");
 
         var problem = ErrorProblemDetails.Create(CommonErrors.NotFound, context);
 
-        problem.Instance.Should().Be("/employee/api/v1/employees");
+        problem.Instance.Should().Be("/employee/api/v1/employees/{name}");
+    }
+
+    // ---- 라우트 템플릿(S07-T02, ADR-0025): 템플릿 있음 · 없음 · 500 경로 ----
+
+    [Fact]
+    public void Create_RouteEndpoint_InstanceIsTemplateWithoutRouteValue()
+    {
+        var context = HttpContexts.Create("/api/employee/홍길동");
+        context.SetEndpoint(RouteTemplatePathTests.RouteEndpointOf("api/employee/{name}"));
+
+        var problem = ErrorProblemDetails.Create(EmployeeLikeNotFound, context);
+
+        problem.Instance.Should().Be("/api/employee/{name}");
+        Serialize(problem).GetProperty("instance").GetString().Should().Be("/api/employee/{name}");
+        problem.Detail.Should().NotContain("홍길동");
+    }
+
+    [Fact]
+    public void Create_NoEndpoint_InstanceKeepsPathBaseAndRequestPath()
+    {
+        // 템플릿 없음(라우팅 전 오류 · 일치하는 엔드포인트 없음): 지금처럼 요청 경로.
+        var context = HttpContexts.Create("/api/v1/employees");
+        context.Request.PathBase = "/employee";
+
+        ErrorProblemDetails.Create(CommonErrors.NotFound, context).Instance.Should().Be("/employee/api/v1/employees");
+    }
+
+    [Fact]
+    public void Create_NonRouteEndpoint_InstanceKeepsRequestPath()
+    {
+        // [Consumes] 불일치 415 엔드포인트는 RouteEndpoint가 아니다(ADR-0025 fallback).
+        var context = HttpContexts.Create("/api/employee");
+        context.SetEndpoint(new Endpoint(_ => Task.CompletedTask, EndpointMetadataCollection.Empty, "415 HTTP Unsupported Media Type"));
+
+        ErrorProblemDetails.Create(CommonErrors.UnsupportedMediaType, context).Instance.Should().Be("/api/employee");
+    }
+
+    [Fact]
+    public void Create_ExceptionHandlerPath_InstanceIsPathBasePlusTemplateFromFeature()
+    {
+        // 500 경로: 엔드포인트가 지워지고 IExceptionHandlerFeature.Endpoint에만 남는다.
+        var context = HttpContexts.Create("/api/employee/홍길동");
+        context.Request.PathBase = "/employee";
+        context.Features.Set<IExceptionHandlerFeature>(new ExceptionHandlerFeature
+        {
+            Error = new InvalidOperationException("boom"),
+            Endpoint = RouteTemplatePathTests.RouteEndpointOf("api/employee/{name}"),
+            Path = "/api/employee/홍길동",
+        });
+
+        ErrorProblemDetails.Create(CommonErrors.Unexpected, context).Instance.Should().Be("/employee/api/employee/{name}");
+    }
+
+    [Fact]
+    public void Create_TemplateCase_IsKept()
+    {
+        var context = HttpContexts.Create("/API/Employee/hong");
+        context.SetEndpoint(RouteTemplatePathTests.RouteEndpointOf("Api/Employee/{Name}"));
+
+        ErrorProblemDetails.Create(CommonErrors.NotFound, context).Instance.Should().Be("/Api/Employee/{Name}");
     }
 
     [Fact]
@@ -179,6 +339,8 @@ public sealed class ErrorProblemDetailsTests
 
         json.GetProperty("detail").GetString().Should().Be(error.Message);
     }
+
+    private static Error EmployeeLikeNotFound => Error.NotFound(22001, "직원을 찾을 수 없습니다.");
 
     private static JsonElement Serialize(ProblemDetails problem)
     {

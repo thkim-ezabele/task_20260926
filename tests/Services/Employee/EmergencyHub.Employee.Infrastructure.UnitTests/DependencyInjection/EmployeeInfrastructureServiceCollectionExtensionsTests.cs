@@ -3,11 +3,15 @@ using EmergencyHub.BuildingBlocks.Application.Persistence;
 using EmergencyHub.BuildingBlocks.Infrastructure.Persistence;
 using EmergencyHub.BuildingBlocks.Infrastructure.Persistence.Exceptions;
 using EmergencyHub.Employee.Application.Employees;
+using EmergencyHub.Employee.Application.Employees.Commands.RegisterEmployees;
+using EmergencyHub.Employee.Application.Employees.Queries.GetEmployeeByName;
+using EmergencyHub.Employee.Application.Employees.Queries.ListEmployees;
 using EmergencyHub.Employee.Domain.Employees;
 using EmergencyHub.Employee.Infrastructure.Persistence;
 using EmergencyHub.Employee.Infrastructure.Persistence.ReadRepositories;
 using EmergencyHub.Employee.Infrastructure.Persistence.Repositories;
 using EmergencyHub.Employee.Infrastructure.UnitTests.TestDoubles;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -18,7 +22,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EmergencyHub.Employee.Infrastructure.UnitTests.DependencyInjection;
 
 // S03-T02: AddEmployeeInfrastructure = 공통 인프라 → 규칙 기반 등록(Application · Infrastructure 어셈블리) → 쓰기 · 읽기 DbContext(재시도 인자)
-// → UnitOfWork(ux_employees_email → 23001). MigrationService용 AddEmployeeWriteDbContext는 쓰기만, 같은 재시도 인자 경로(dba 구현 사양 5).
+// → UnitOfWork(ux_employees_normalized_email → 23001, S05-T04). MigrationService용 AddEmployeeWriteDbContext는 쓰기만, 같은 재시도 인자 경로(dba 구현 사양 5).
 // 연결은 열지 않는다(더미 연결 문자열).
 [Trait("FR", "PRD-001/FR-06")]
 [Trait("FR", "PRD-001/FR-08")]
@@ -55,28 +59,80 @@ public sealed class EmployeeInfrastructureServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddEmployeeInfrastructure_Called_RegistersApplicationHandlers()
+    public void AddEmployeeInfrastructure_EmployeeApplication_RegistersRegisterListAndNameHandlersAndValidatorsScoped()
     {
-        // AddConventionalServices는 한 번만 부를 수 있어 Application 어셈블리도 여기서 함께 넘긴다(Api는 다시 부르지 않음).
+        // S06-T04: 일괄 등록 Command Handler · Validator가 규칙 기반 등록(Scrutor · FluentValidation 어셈블리 검색)으로 Scoped 등록된다.
+        // S07-T01 · T02: 목록 · 이름 조회 Query Handler · Validator도 같은 경로로 등록된다. AddConventionalServices는 한 번만 부를 수 있어 Application 어셈블리도 여기서 넘긴다.
         var services = CreateServices().AddEmployeeInfrastructure(Configuration());
 
-        services.Should().Contain(d => d.ServiceType.IsGenericType
-            && d.ServiceType.GetGenericTypeDefinition() == typeof(ICommandHandler<,>)
-            && d.ServiceKey == null);
-        services.Should().Contain(d => d.ServiceType.IsGenericType
-            && d.ServiceType.GetGenericTypeDefinition() == typeof(IQueryHandler<,>)
-            && d.ServiceKey == null);
+        // 데코레이터(Scrutor)가 원래 등록을 키 있는 서비스로 옮기므로 키 없는 등록만 센다.
+        services.Where(d => !d.IsKeyedService && d.ServiceType.IsGenericType && d.ServiceType.GetGenericTypeDefinition() == typeof(ICommandHandler<,>))
+            .Should().ContainSingle()
+            .Which.Should().Match<ServiceDescriptor>(d =>
+                d.ServiceType == typeof(ICommandHandler<RegisterEmployeesCommand, RegisterEmployeesResponse>) && d.Lifetime == ServiceLifetime.Scoped);
+        services.Where(d => !d.IsKeyedService && d.ServiceType.IsGenericType && d.ServiceType.GetGenericTypeDefinition() == typeof(IQueryHandler<,>))
+            .Should().HaveCount(2)
+            .And.Contain(d => d.ServiceType == typeof(IQueryHandler<ListEmployeesQuery, ListEmployeesResponse>) && d.Lifetime == ServiceLifetime.Scoped)
+            .And.Contain(d => d.ServiceType == typeof(IQueryHandler<GetEmployeeByNameQuery, EmployeeResponse>) && d.Lifetime == ServiceLifetime.Scoped);
+        services.Should().ContainSingle(d => d.ServiceType == typeof(IValidator<RegisterEmployeesCommand>))
+            .Which.Lifetime.Should().Be(ServiceLifetime.Scoped);
+        services.Should().ContainSingle(d => d.ServiceType == typeof(IValidator<ListEmployeesQuery>))
+            .Which.Lifetime.Should().Be(ServiceLifetime.Scoped);
+        services.Should().ContainSingle(d => d.ServiceType == typeof(IValidator<GetEmployeeByNameQuery>))
+            .Which.Lifetime.Should().Be(ServiceLifetime.Scoped);
     }
 
     [Fact]
-    public void AddEmployeeInfrastructure_UniqueConstraintRegistry_MapsEmailIndexToDuplicateEmailInstance()
+    public void AddEmployeeInfrastructure_GetEmployeeByNameHandler_ResolvesDecoratedInScope()
+    {
+        using var provider = CreateServices().AddEmployeeInfrastructure(Configuration()).BuildServiceProvider(StrictOptions);
+        using var scope = provider.CreateScope();
+
+        var handler = scope.ServiceProvider.GetRequiredService<IQueryHandler<GetEmployeeByNameQuery, EmployeeResponse>>();
+
+        handler.GetType().Name.Should().StartWith("LoggingQueryHandlerDecorator");
+        scope.ServiceProvider.GetRequiredService<IValidator<GetEmployeeByNameQuery>>().GetType().Name
+            .Should().Be("GetEmployeeByNameQueryValidator");
+    }
+
+    [Fact]
+    public void AddEmployeeInfrastructure_ListEmployeesHandler_ResolvesDecoratedInScope()
+    {
+        using var provider = CreateServices().AddEmployeeInfrastructure(Configuration()).BuildServiceProvider(StrictOptions);
+        using var scope = provider.CreateScope();
+
+        var handler = scope.ServiceProvider.GetRequiredService<IQueryHandler<ListEmployeesQuery, ListEmployeesResponse>>();
+
+        // Query는 로깅 → 검증 → Handler다(트랜잭션 없음, ADR-0015).
+        handler.GetType().Name.Should().StartWith("LoggingQueryHandlerDecorator");
+        scope.ServiceProvider.GetRequiredService<IValidator<ListEmployeesQuery>>().GetType().Name
+            .Should().Be("ListEmployeesQueryValidator");
+    }
+
+    [Fact]
+    public void AddEmployeeInfrastructure_RegisterEmployeesHandler_ResolvesDecoratedInScope()
+    {
+        using var provider = CreateServices().AddEmployeeInfrastructure(Configuration()).BuildServiceProvider(StrictOptions);
+        using var scope = provider.CreateScope();
+
+        var handler = scope.ServiceProvider.GetRequiredService<ICommandHandler<RegisterEmployeesCommand, RegisterEmployeesResponse>>();
+
+        // 가장 바깥은 로깅 데코레이터다(로깅 → 검증 → 트랜잭션 → Handler, ADR-0015).
+        handler.GetType().Name.Should().StartWith("LoggingCommandHandlerDecorator");
+        scope.ServiceProvider.GetRequiredService<IValidator<RegisterEmployeesCommand>>().GetType().Name
+            .Should().Be("RegisterEmployeesCommandValidator");
+    }
+
+    [Fact]
+    public void AddEmployeeInfrastructure_UniqueConstraintRegistry_MapsOnlyNormalizedEmailIndexToDuplicateEmailInstance()
     {
         using var provider = CreateServices().AddEmployeeInfrastructure(Configuration()).BuildServiceProvider(StrictOptions);
 
         var registry = provider.GetRequiredService<UniqueConstraintErrorRegistry>();
 
-        registry.IndexNames.Should().Equal(EmployeeDbNames.EmailUniqueIndex);
-        registry.Find("ux_employees_email").Should().BeSameAs(EmployeeErrors.DuplicateEmail);
+        registry.IndexNames.Should().Equal(EmployeeDbNames.NormalizedEmailUniqueIndex);
+        registry.IndexNames.Select(name => name.Value).Should().Equal("ux_employees_normalized_email");
+        registry.Find("ux_employees_normalized_email").Should().BeSameAs(EmployeeErrors.DuplicateEmail);
         EmployeeErrors.DuplicateEmail.Code.Should().Be(23001);
     }
 
@@ -97,11 +153,12 @@ public sealed class EmployeeInfrastructureServiceCollectionExtensionsTests
 
     [Theory]
     [InlineData("pk_employees")]
-    [InlineData("UX_EMPLOYEES_EMAIL")]
-    [InlineData("ux_employees_email ")]
+    [InlineData("UX_EMPLOYEES_NORMALIZED_EMAIL")]
+    [InlineData("ux_employees_normalized_email ")]
+    [InlineData("ix_employees_name_joined_on_id")]
     public void AddEmployeeInfrastructure_UniqueConstraintRegistry_OtherOrNonExactNames_AreNotMapped(string constraintName)
     {
-        // 실패 · 엣지: 매핑 없는 제약(pk_ 등)과 대소문자 · 공백이 다른 이름은 매핑되지 않는다(→ 3003, Ordinal 비교).
+        // 실패 · 엣지: 매핑 없는 제약(pk_ · ix_)과 대소문자 · 공백이 다른 이름은 매핑되지 않는다(→ 3003, Ordinal 비교).
         using var provider = CreateServices().AddEmployeeInfrastructure(Configuration()).BuildServiceProvider(StrictOptions);
 
         provider.GetRequiredService<UniqueConstraintErrorRegistry>().Find(constraintName).Should().BeNull();

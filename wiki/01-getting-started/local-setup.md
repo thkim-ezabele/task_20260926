@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [getting-started]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 로컬 개발 환경 구성
@@ -183,11 +183,9 @@ docker ps -a --filter volume=emergency-hub-postgres-data --format '{{.Names}}'
 
 ## 동작 확인 (Swagger / Health Check)
 
-`employee-api`가 Healthy가 된 뒤 실행합니다. Api 주소는 `http://localhost:5180`이고, 엔드포인트 계약은 [직원 API](../05-api/employee-api.md)에 있습니다. 아래 결과는 2026-09-28 `http` 프로필 실행에서 확인했습니다.
+`employee-api`가 Healthy가 된 뒤 실행합니다. Api 주소는 `http://localhost:5180`입니다. HTTP 엔드포인트는 헬스 경로, [직원 API](../05-api/employee-api.md) 3개(`POST /api/employee`, `GET /api/employee`, `GET /api/employee/{name}`), Swagger 문서입니다. 아래 헬스 체크 결과는 2026-09-28, 등록 → 조회는 2026-09-29 `http` 프로필 실행에서 확인했습니다.
 
-- PowerShell 5.1에서 `curl`은 `Invoke-WebRequest`의 별칭이라 아래 PowerShell 예는 `Invoke-RestMethod`를 씁니다.
-- 본문은 ASCII 값으로 둡니다. Git Bash에서 `-d`로 한글을 넘기면 명령줄 인코딩에서 깨져 `400` · `1001`이 납니다(S03-T05 실측). 한글은 UTF-8 파일을 `--data-binary @<파일>.json`으로 보냅니다.
-- 같은 이메일로 다시 등록하면 `409` · `23001`(이메일 중복)입니다. 다시 실행할 때는 `email` 값을 바꿉니다.
+- PowerShell 5.1에서 `curl`은 `Invoke-WebRequest`의 별칭이라 아래 PowerShell 예는 `Invoke-RestMethod` 또는 `curl.exe`(확장자까지 씀)를 씁니다.
 
 ### 헬스 체크
 
@@ -207,44 +205,48 @@ curl -s -i http://localhost:5180/health/ready
 
 ### 등록 → 조회
 
+빈 DB에서 원문 예시 CSV(3행)를 파일로 등록하고 목록 · 이름으로 조회합니다. 파일 입력과 ASCII 인자만 써서 두 셸에서 명령 문자열이 같습니다(PowerShell은 `curl.exe`, 2026-09-29 두 셸 실측, 원문은 [S07-T04 증빙](../10-delivery/evidence/S07-T04/http-curl.txt)). 저장소 루트에서 실행합니다. 입력 형식별 예시 · 오류 응답은 [직원 API](../05-api/employee-api.md#curl-예시)에 있습니다.
+
 PowerShell:
 
 ```powershell
-$body = '{"displayName":"Hong Gildong","email":"Hong.Gildong@Example.com","employeeStatus":1}'
-$created = Invoke-RestMethod -Method Post -Uri http://localhost:5180/api/v1/employees -ContentType 'application/json' -Body $body
-$created | ConvertTo-Json
-Invoke-RestMethod "http://localhost:5180/api/v1/employees/$($created.id)" | ConvertTo-Json
+curl.exe -s -i -X POST http://localhost:5180/api/employee -F "file=@tests/Services/Employee/EmergencyHub.Employee.IntegrationTests/TestData/Examples/original-example.csv"
+curl.exe -s -i "http://localhost:5180/api/employee?page=1&pageSize=2"
+curl.exe -s -i http://localhost:5180/api/employee/%EA%B9%80%EC%9D%B4%EB%A6%84
 ```
 
-Git Bash(두 번째 명령의 `<id>`에 첫 응답의 `id`를 넣습니다):
+Git Bash:
 
 ```bash
-curl -s -i -X POST http://localhost:5180/api/v1/employees -H 'Content-Type: application/json' -d '{"displayName":"Hong Gildong","email":"Hong.Gildong@Example.com","employeeStatus":1}'
-curl -s -i http://localhost:5180/api/v1/employees/<id>
+curl -s -i -X POST http://localhost:5180/api/employee -F "file=@tests/Services/Employee/EmergencyHub.Employee.IntegrationTests/TestData/Examples/original-example.csv"
+curl -s -i "http://localhost:5180/api/employee?page=1&pageSize=2"
+curl -s -i http://localhost:5180/api/employee/%EA%B9%80%EC%9D%B4%EB%A6%84
 ```
 
-기대 결과(Git Bash 출력 발췌, `id` · 시각은 실행마다 다름):
+기대 결과(ID는 실행마다 다름):
 
-```http
+```text
 HTTP/1.1 201 Created
-Content-Type: application/json; charset=utf-8
-Location: http://localhost:5180/api/v1/employees/01a0e476-6e69-7265-b4ce-88b1310f916f
+{"count":3,"ids":["01a0e9fd-afb0-74b5-8376-017ac91d94af","01a0e9fd-afb0-74b6-a528-f909b341849b","01a0e9fd-afb0-74b7-a537-b3d0112a952c"]}
 
-{"id":"01a0e476-6e69-7265-b4ce-88b1310f916f"}
-```
-
-```http
 HTTP/1.1 200 OK
-Content-Type: application/json; charset=utf-8
+{"items":[{"id":"01a0e9fd-afb0-74b5-8376-017ac91d94af","name":"김이름","email":"kim@gmail.com","tel":"010-0000-0000","joined":"2000-01-01"},{"id":"01a0e9fd-afb0-74b6-a528-f909b341849b","name":"이이름","email":"lee@gmail.com","tel":"010-1111-1111","joined":"2001-02-03"}],"totalCount":3,"page":1,"pageSize":2}
 
-{"id":"01a0e476-6e69-7265-b4ce-88b1310f916f","displayName":"Hong Gildong","email":"hong.gildong@example.com","employeeStatus":1,"createdAt":"2026-09-27T20:02:42.293017+00:00","updatedAt":"2026-09-27T20:02:42.293017+00:00"}
+HTTP/1.1 200 OK
+{"id":"01a0e9fd-afb0-74b5-8376-017ac91d94af","name":"김이름","email":"kim@gmail.com","tel":"010-0000-0000","joined":"2000-01-01"}
 ```
 
-- `email`은 소문자로 정규화되어 저장됩니다(위 명령은 `Hong.Gildong@Example.com`으로 등록하고, 조회 응답은 `hong.gildong@example.com`). `employeeStatus`는 정수(`1` = Active), 시각은 UTC입니다. PowerShell은 같은 값을 `ConvertTo-Json` 형식으로 출력합니다.
+- 같은 파일을 한 번 더 등록하면 `409` · 23001(`rows[1].email` ~ `rows[3].email`)이고 아무것도 저장되지 않습니다. 처음 상태로 되돌리려면 [초기화](#초기화-볼륨--user-secrets)의 "볼륨만 지우는 경우"를 씁니다.
+- 이름 경로는 UTF-8 퍼센트 인코딩으로 보냅니다(`%EA%B9%80%EC%9D%B4%EB%A6%84` = `김이름`). URL에 `&`가 있으면 따옴표로 감쌉니다.
+- **Git Bash의 `curl`과 한글 인자**: Git for Windows에 든 `curl`(8.6.0 mingw)은 명령줄 인자의 한글을 CP949로 바꿔 보내 `-F 'data=김이름,...'` · `--data-binary '김이름,...'` 같은 인라인 입력이 `400` · 21022(올바른 UTF-8 아님)가 됩니다(2026-09-29 실측). 인라인 한글 입력은 Windows 내장 `/c/Windows/System32/curl.exe`(8.21.0 실측, UTF-8)로 보내거나 UTF-8 파일로 보냅니다. PowerShell의 `curl.exe`는 `C:\Windows\System32\curl.exe`입니다(PATH 순서가 기본값일 때).
+
+### Api 단독 실행 (AppHost 없이)
+
+- `EmergencyHub.Employee.Api`를 AppHost 없이 `dotnet run --project src/Services/Employee/EmergencyHub.Employee.Api`로 띄우려면 연결 문자열 `ConnectionStrings__Write` · `ConnectionStrings__Read` 두 개가 필요합니다(AppHost가 주입하는 값, 필수 설정 키는 [설정](../06-deployment/configuration.md)). 비밀번호가 든 값을 셸 환경 변수로 두지 않는 규칙([금지 명령](#금지-명령))은 같으므로, 로컬 확인은 AppHost 실행을 기본으로 합니다.
 
 ### Swagger
 
-- Swagger UI: `http://localhost:5180/swagger`(→ `/swagger/index.html`), OpenAPI 문서: `http://localhost:5180/swagger/v1/swagger.json`. Api 환경이 Development일 때만 노출됩니다([ADR-0019](../03-architecture/adr/0019-use-swashbuckle-openapi.md)). 로컬 Api는 Development입니다([환경 구성](../06-deployment/environments.md)).
+- Swagger UI: `http://localhost:5180/swagger`(→ `/swagger/index.html`), OpenAPI 문서: `http://localhost:5180/swagger/v1/swagger.json`. Api 환경이 Development일 때만 노출됩니다([ADR-0019](../03-architecture/adr/0019-use-swashbuckle-openapi.md)). 로컬 Api는 Development입니다([환경 구성](../06-deployment/environments.md)). 문서의 `paths`는 `/api/employee`(`post` · `get`, `post` 요청 본문은 `multipart/form-data` · `application/x-www-form-urlencoded` · `text/csv` · `application/json`)와 `/api/employee/{name}`(`get`) 두 개입니다(2026-09-29 `swagger.json` 실측).
 
 ## DB 마이그레이션
 
@@ -261,7 +263,7 @@ Content-Type: application/json; charset=utf-8
 | # | 명령 | 용도 | DB 연결 |
 |---|---|---|---|
 | 1 | `dotnet tool restore` | 매니페스트의 `dotnet-ef` 8.0.31 · `reportgenerator` 복원. clone 뒤 한 번, 매니페스트가 바뀌면 다시 | 없음 |
-| 2 | `dotnet ef migrations add <마이그레이션이름> --project src/Services/Employee/EmergencyHub.Employee.Infrastructure --context EmployeeDbContext` | 새 마이그레이션 생성(`Persistence/Migrations/`). 만든 뒤 같은 폴더에 `<마이그레이션 ID>.Sealed.cs`(`public sealed partial class <마이그레이션이름>;`)를 **직접 추가**한다([sealed partial 선언](../04-development/database.md#마이그레이션-규칙)) | 없음 |
+| 2 | `dotnet ef migrations add <마이그레이션이름> --project src/Services/Employee/EmergencyHub.Employee.Infrastructure --context EmployeeDbContext` | 새 마이그레이션 생성(`Persistence/Migrations/`). 만든 뒤 같은 폴더에 `<마이그레이션 ID>.Sealed.cs`(`public sealed partial class <마이그레이션이름>;`)를 **직접 추가**한다([sealed partial 선언](../04-development/database.md#마이그레이션-규칙)). 모델 스냅샷이 없을 때(운영 전 리셋으로 `Persistence/Migrations/`를 비웠을 때)는 끝에 `--output-dir Persistence/Migrations`를 **붙인다**. 없으면 기본 폴더 `Migrations/`에 네임스페이스 `EmergencyHub.Employee.Infrastructure.Migrations`로 생긴다(S05-T05 실측) | 없음 |
 | 3 | `dotnet ef migrations script --idempotent --project src/Services/Employee/EmergencyHub.Employee.Infrastructure --context EmployeeDbContext` | 전체 마이그레이션의 멱등 SQL 출력. 명명(snake_case) · 타입 · 체크 제약 검토에 쓴다. 파일로 받으려면 `--output <경로>.sql`(저장소 밖 경로 권장, 커밋하지 않음) | 없음 |
 | 4 | `dotnet ef migrations has-pending-model-changes --project src/Services/Employee/EmergencyHub.Employee.Infrastructure --context EmployeeDbContext` | 모델과 마지막 마이그레이션의 차이 확인. 차이가 없으면 `No changes have been made to the model since the last migration.`와 종료 코드 0 | 없음 |
 | 5 | `dotnet ef migrations remove --project src/Services/Employee/EmergencyHub.Employee.Infrastructure --context EmployeeDbContext` | **push 전**, 내 로컬에만 있는 마지막 마이그레이션을 되돌릴 때만. 생성 파일만 지워지므로 직접 만든 `<마이그레이션 ID>.Sealed.cs`는 손으로 지운다. push 뒤에는 금지(아래 표) | 적용 여부 확인을 위해 연결을 시도할 수 있음 |
@@ -295,6 +297,15 @@ dotnet ef migrations has-pending-model-changes --project src/Services/Employee/E
 | 생성된 마이그레이션 파일(`<ID>_<이름>.cs` · `.Designer.cs` · `ModelSnapshot.cs`) 직접 수정 | 생성 코드는 고치지 않는다. sealed 처리는 partial 선언 파일로 한다 | `*.Sealed.cs` partial 선언 |
 | 개별 마이그레이션 부분 수정 · 임의 재생성 | 운영 전 리셋(`InitialCreate` 재생성)만 예외이고 절차가 정해져 있다 | [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md) 리셋 절차 ①~⑤ |
 | 트랜잭션을 끄는 마이그레이션(`suppressTransaction: true`, `CREATE INDEX CONCURRENTLY` 등) | MigrationService 재시도가 `MigrateAsync` 전체를 다시 실행하므로 마이그레이션마다 트랜잭션이어야 안전하다 | 트랜잭션 안에서 실행되는 DDL로 설계 |
+
+### 운영 전 리셋 뒤 (볼륨 삭제 필요)
+
+운영 전 리셋([ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md), `InitialCreate` 재생성)으로 마이그레이션 ID가 바뀐 커밋을 받았으면, AppHost를 다시 실행하기 **전에 볼륨 `emergency-hub-postgres-data`를 지웁니다**. 2026-09-28 S05-T05 리셋으로 ID가 `20260927134235_InitialCreate` → `20260928090646_InitialCreate`로 바뀌었습니다.
+
+- 이유: 기존 볼륨의 `"__EFMigrationsHistory"`에는 옛 ID만 있어서, MigrationService가 새 `InitialCreate`를 미적용으로 보고 `CREATE TABLE employees`를 다시 실행합니다. 테이블이 이미 있으므로 `42P07`(duplicate_table)로 실패하고 종료 코드가 0이 아니며, Api가 시작되지 않습니다(이력 테이블 동작에서 나온 예상, 실패 재현은 하지 않음).
+- 방법: 아래 [초기화 (볼륨 · user-secrets)](#초기화-볼륨--user-secrets)의 "볼륨만 지우는 경우"(①, ②)로 충분합니다. 전체 초기화(①~④)를 해도 됩니다.
+- **다른 worktree · clone과 볼륨을 공유합니다.** 같은 머신의 다른 worktree · clone도 같은 볼륨 이름을 쓰므로, 리셋 전 커밋의 worktree에서 AppHost를 실행하면 반대로 옛 `InitialCreate`가 새 스키마 볼륨 위에서 `42P07`로 실패할 수 있습니다. 리셋 전후 브랜치를 오갈 때마다 볼륨을 지웁니다.
+- 확인: 다시 실행한 뒤 [데이터베이스 로컬 DB 구성](../04-development/database.md#로컬-db-구성-apphost)의 psql 점검 8번이 1행 `20260928090646_InitialCreate` · `8.0.31`이어야 합니다.
 
 ## 초기화 (볼륨 · user-secrets)
 
@@ -377,3 +388,6 @@ dotnet user-secrets list --project src/Aspire/EmergencyHub.AppHost | sed -E 's/ 
 | 2026-09-28 | dba | DB 마이그레이션 절(도구 매니페스트, `--context` 필수, 허용 명령 5개 · 금지 명령 표, 셸별 실행 예)과 초기화 (볼륨 · user-secrets) 절(이름 있는 볼륨만 삭제 + user-secrets clear 함께, 키 4종, 셸별 명령, 볼륨만 지우는 경우, 버전 확인 끄기) 작성. 나머지 절은 developer 단계에서 작성 (S04-T03) |
 | 2026-09-28 | developer | `draft`로 작성: 셸 표기 규칙, 사전 준비(SDK 8.0.400 이상 · `global.json`, Docker Engine API 1.44 / `DOCKER_API_VERSION=1.43`(BL-102), 도구 매니페스트, 개발 인증서 확인 · 신뢰 명령과 `http` 프로필 대안(BL-099)), 저장소 클론(짧은 경로 · MAX_PATH, BL-049), docker compose 제목을 "로컬 구성 (Aspire AppHost)"으로 바꿈, 로컬 설정(사전 설정 없음, 키 이름만 확인), 서비스 빌드 및 실행(명령 1개, 프로필 2개, 대시보드 확인, 중지 · 프로세스 종료 명령), 동작 확인(헬스, 등록 → 조회 두 셸 실측, Swagger). DB 마이그레이션 · 초기화 절은 dba 작성분 유지하고 절 순서만 뒤로 (S04-T03) |
 | 2026-09-28 | developer | 반려 1회째 재작업: 등록 → 조회 두 셸 명령의 `email`을 대소문자 섞인 `Hong.Gildong@Example.com`으로 바꾸고 기대 결과 조회 응답을 소문자 정규화 값 `hong.gildong@example.com`으로 맞춤(입력 → 출력 일치), 연속 빈 줄 2곳 정리 (S04-T03) |
+| 2026-09-28 | developer | 동작 확인에서 PRD-001 샘플 등록 · 조회 명령 · 기대 결과를 지우고 헬스 · Swagger(경로 0개)만 남김(샘플 API 제거) (S05-T04) |
+| 2026-09-28 | dba | 운영 전 리셋 뒤 볼륨 삭제 안내 절 추가(ID `20260928090646_InitialCreate`, 옛 볼륨의 `42P07` 예상, 다른 worktree · clone 볼륨 공유 주의, psql 점검 8번 확인), 허용 명령 2번에 스냅샷이 없을 때 `--output-dir Persistence/Migrations` 필수(S05-T05 실측) (S05-T05) |
+| 2026-09-29 | developer | 동작 확인에 PRD-002 등록 → 조회(원문 예시 CSV 파일, 두 셸 `curl` · `curl.exe` 실측, 기대 결과, 409 재등록, Git Bash curl 한글 인자 CP949 주의), Api 단독 실행에 `ConnectionStrings__Write` · `Read` 필요, Swagger `paths` 두 개로 갱신 (S07-T04) |

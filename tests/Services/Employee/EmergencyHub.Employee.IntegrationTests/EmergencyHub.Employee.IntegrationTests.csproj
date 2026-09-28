@@ -33,6 +33,11 @@
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
   </ItemGroup>
 
+  <!-- 과제 원문 예시 fixture 파일(S06-T06 인수 시나리오, TestData/ExampleFiles.cs). 바이트 그대로 출력 폴더로 복사한다. -->
+  <ItemGroup>
+    <None Update="TestData\Examples\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <!--
     Api 참조: WebApplicationFactory<EmergencyHub.Employee.Api.Program>로 실제 파이프라인(Controller · 검증 · 예외 처리 · 요청 로그)을 띄운다(S03-T07).
     Microsoft.AspNetCore.Mvc.Testing이 Api의 .deps.json을 출력 폴더로 복사한다.

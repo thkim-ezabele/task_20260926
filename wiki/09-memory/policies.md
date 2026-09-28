@@ -3,7 +3,7 @@ title: "정책 / 규칙"
 type: memory
 tags: [memory]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 정책 / 규칙
@@ -25,7 +25,11 @@ updated: 2026-09-28
 - `/sprint` 시작 시 환경 점검(Docker, SDK, gh). 종료 시 push → 토픽 PR CI 통과 확인 → DoD 기록 → 태그 `sprint/SNN`(CI 통과 전 태그 금지).
 - 판정 · 기록만 남는 단계 커밋은 `docs(sprint): SNN-TNN <단계> 판정`. 문서 변경 시 `node scripts/check-docs.js`(링크 · 앵커 · frontmatter · 표 구조).
 - S02 회고 규칙: 파이프라인 표 dba 열이 "해당 없음"이면 dba 호출 생략, reviewer PASS는 tester 커밋에 병합(작업당 커밋 약 3개). 완료 조건은 5~7문장(세부 단언은 handoff). 테스트 범위: 도메인 로직은 TDD 전체, 기반 · 셋팅은 완료 조건 항목당 성공 / 실패 / 엣지 최소 1개, tester는 빈 곳만 보강. 완료 조건 항목은 작업자가 혼자 스프린트 밖으로 내보내지 않음(BLOCKED로 판단받음). 원본: [에이전트 워크플로우](../10-delivery/agents.md#테스트-범위)
-- S03부터 오케스트레이션 세션이 스프린트 세션에 SendMessage로 지시하고 승인 지점(계획 리뷰 · 결정 · BLOCKED · 결과 리뷰)을 처리한다. 스킬 개선은 토픽 `/retro`에서 한꺼번에(진행 중 변경 금지).
+- RETRO-PRD-001 반영(PR #13): 문서 작업은 점검표 D1~D5 · 반려 분류(코드 컨벤션 / 누락 / 설계 / 버그, 문서 형식 / 사실 / 누락 / 범위 밖), 인계 메모에 알려진 잡음 · 제외 기준, CI로만 판정할 조건은 스프린트 종료 판정, 대리 승인은 스프린트 문서 목록 → `/retro` ④ 일괄 추인, dba 생성 SQL 점검표 a~g(원본 database.md), 환경 점검에 Docker API · dev-certs. 원본: [에이전트 워크플로우](../10-delivery/agents.md)
+- 병행 토픽 예외(PRD-002 선례): 같은 폴더에서 다른 세션이 작업 중이면 git worktree로 분리, 토픽 브랜치에는 새 파일만, 공유 문서 · 번호는 첫 작업(재기준화)에서.
+- 회고는 PRD 종료 뒤 `/retro PRD-NNN`에서만 한다(2026-09-28 사용자 지시, S05부터). 스프린트 종료 때는 스프린트 회고 · 스킬 / 에이전트 개선 · apply_before_next 반영을 하지 않고, 회고 절에는 "토픽 회고에서 다룸" 한 줄만 둔다(S05는 "/retro 입력용 메모").
+- 스프린트 속도 튜닝(2026-09-28 사용자 결정, S06부터): 계획 리뷰 developer 1명 + orchestrator, 작업은 dba(DB 작업만) → developer → 검증(reviewer 코드 리뷰만 ∥ tester 실행 검증 작업당 1회), 진행 기록 한 행 200자 · 대조표 문서 미기록, 대응표 전수 대조는 종료 때 1회, CI 확인 · sprint 태그는 PRD 마지막 스프린트 push 뒤 일괄. 원본: [에이전트 워크플로우](../10-delivery/agents.md)
+- S03부터 오케스트레이션 세션이 스프린트 세션에 SendMessage로 지시하고 승인 지점(계획 리뷰 · 결정 · BLOCKED · 결과 리뷰)을 처리한다. 스킬 개선은 토픽 `/retro`에서 한꺼번에(진행 중 변경 금지, 사용자 지시 예외: 2026-09-28 속도 튜닝).
 - 흐름 제어와 커밋은 스킬(메인 세션), 판단은 orchestrator. 서브에이전트는 다른 서브에이전트를 부를 수 없다. 에이전트 모델은 메인 세션 상속.
 - 구현: `.claude/agents/`(orchestrator, dba, developer, reviewer, tester), `.claude/skills/`(prd, sprint, retro). 에이전트는 프롬프트 첫 줄 `mode:`로 작업 구분.
 - 작업 관리는 GitHub Issues가 아니라 위키에서 한다.
@@ -33,7 +37,7 @@ updated: 2026-09-28
 ## 기록
 
 - **ADR**: 아키텍처, 기술 선택처럼 "왜"가 중요한 결정. 한 번 쓰면 고치지 않고, 바뀌면 새 ADR로 대체한다. ADR 파일은 사용자에게 확인한 뒤에 만든다.
-- **Worklog**: 세션마다 "무엇을 요청하고 무엇을 했나". 사용자가 세션 종료 전에 직접 `/worklog`를 실행해서 작성한다. **Claude가 알아서 작성하지 않는다.**
+- **Worklog**: 세션마다 "무엇을 요청하고 무엇을 했나". 사용자가 세션 종료 전에 직접 `/worklog`를 실행해서 작성한다. **Claude가 알아서 작성하지 않는다.** (2026-09-28 사용자 지시로 `sprint` · `worklog` · `retro`의 `disable-model-invocation`을 제거해 오케스트레이션 세션이 대신 실행함. 유지 여부는 사용자 결정 대기, [RETRO-PRD-001](../10-delivery/retros/RETRO-PRD-001.md#사용자-결정-필요))
 - **프롬프트 원문**: `UserPromptSubmit` hook이 `08-worklog/raw/`에 자동으로 기록한다.
 - **장기기억**: 이 폴더. `/worklog` 실행 시 함께 갱신한다.
 
@@ -59,5 +63,5 @@ updated: 2026-09-28
 - `python`은 Windows 스토어 스텁이라 실행되지 않는다. 스크립트는 **Node.js**로 작성한다.
 - .NET SDK(8.0.425 사용, `global.json` 8.0.400 + latestFeature), Docker, GitHub CLI(`gh`, 로그인됨)가 설치되어 있다.
 - Windows 깊은 경로에서 clone하면 MAX_PATH로 빌드가 실패할 수 있다(짧은 경로 사용).
-- 이 PC Docker Desktop 4.26(Engine API 1.43)에서는 통합 테스트(Testcontainers 4.15.0)에 `DOCKER_API_VERSION=1.43`이 필요하다(CI 무관, BL-102). 개발 인증서 미신뢰면 AppHost https 프로필 대시보드에 로그 · 추적이 안 보이므로 `--launch-profile http`를 쓴다(BL-099).
+- 이 PC Docker Desktop 4.26(Engine API 1.43)에서는 통합 테스트(Testcontainers 4.15.0)에 `DOCKER_API_VERSION=1.43`이 필요하다(CI 무관, BL-102). 개발 인증서 미신뢰면 AppHost https 프로필 대시보드에 로그 · 추적이 안 보이므로 `--launch-profile http`를 쓴다(BL-099). Git Bash 내장 curl 8.6.0은 명령줄 한글을 CP949로 보내므로 인라인 한글 요청은 `C:\Windows\System32\curl.exe`로 보낸다(BL-142).
 - 실행 증빙은 `wiki/10-delivery/evidence/<작업 ID>/`에 README(요약) · 마스킹한 원문 로그 · 캡처로 둔다(S03). 로컬 AppHost 볼륨은 `emergency-hub-postgres-data`만 지울 수 있다(다른 프로젝트 볼륨 금지).

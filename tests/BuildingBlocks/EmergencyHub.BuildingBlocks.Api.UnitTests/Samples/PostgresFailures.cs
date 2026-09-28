@@ -29,6 +29,24 @@ internal static class PostgresFailures
             "Maximum number of retries (6) exceeded while executing database operations with 'NpgsqlRetryingExecutionStrategy'.",
             new NpgsqlException($"Exception while reading from stream ({UnconvertedDbFailures.Sql})")));
 
+    /// <summary>감싸지 않은 유니크 위반(23505, COMMIT 시점처럼 UnitOfWork가 변환하지 않는 경로)을 던진 뒤 돌려줍니다. Detail에 입력 값이 들어 있습니다.</summary>
+    public static Exception UniqueViolationAtCommit() => Capture(() =>
+        throw new PostgresException(
+            $"duplicate key value violates unique constraint \"{UniqueConstraintName}\"",
+            severity: "ERROR",
+            invariantSeverity: "ERROR",
+            sqlState: PostgresErrorCodes.UniqueViolation,
+            detail: $"Key (normalized_email)=({UnconvertedDbFailures.SecretValue}) already exists.",
+            schemaName: "public",
+            tableName: "employees",
+            constraintName: UniqueConstraintName));
+
+    /// <summary>23505 경로에서 응답 · 로그에 나오면 안 되는 문자열입니다(입력 값, Detail 문구, 제약 이름).</summary>
+    public static IReadOnlyList<string> UniqueViolationSensitiveFragments { get; } =
+        [UnconvertedDbFailures.SecretValue, "already exists", UniqueConstraintName, "normalized_email"];
+
+    private const string UniqueConstraintName = "ux_employees_normalized_email";
+
     private static PostgresException Postgres(string sqlState, string messageText) =>
         new(
             messageText,

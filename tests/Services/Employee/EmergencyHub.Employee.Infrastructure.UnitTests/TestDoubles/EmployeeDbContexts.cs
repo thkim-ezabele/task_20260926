@@ -28,5 +28,10 @@ internal static class EmployeeDbContexts
             .Options);
 
     public static EmployeeAggregate NewEmployee(string email = "hong@example.com") =>
-        EmployeeAggregate.Register(new EmployeeId(Guid.NewGuid()), "홍길동", email, EmployeeStatus.Active);
+        EmployeeAggregate.Register(
+            new EmployeeId(Guid.NewGuid()),
+            Name.Create("홍길동").Value,
+            Email.Create(email).Value,
+            PhoneNumber.Create("010-1234-5678").Value,
+            JoinedOn.Create("2020-03-02").Value);
 }

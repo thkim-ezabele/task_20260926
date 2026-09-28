@@ -3,7 +3,7 @@ title: "세션 이력"
 type: memory
 tags: [memory]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 세션 이력
@@ -12,24 +12,17 @@ updated: 2026-09-28
 
 ## 현재 상태
 
-- **진행 중 토픽: [PRD-001 기반 구축](../10-delivery/prd/PRD-001-foundation.md)**. 브랜치 `feature/prd-001-foundation`, [Draft PR #7](https://github.com/thkim-ezabele/task_20260926/pull/7). **S01~S04 모두 done**(태그 `sprint/S01`~`sprint/S04`, S04 PR CI 통과 4분 7초). 다음은 `/retro PRD-001`.
-- S04 결과: FR 11 · NFR 7 모두 충족, 증빙은 [S04 증빙 절](../10-delivery/sprints/S04-tests-docs-evidence.md#증빙)(FR / NFR 증빙 표, 새 clone 재현, CI 실패 표시 확인 run 36350200891). 기준 문서 갱신과 `todo` 문서 5개(local-setup · configuration · environments · ci-cd · troubleshooting) `draft`.
-- ADR 0001~0024 승인. ADR 후보는 S01 6 · S02 4 · S03 3 · S04 4건(목록은 [S04 결과 리뷰](../10-delivery/sprints/S04-tests-docs-evidence.md#adr-후보-파일은-만들지-않음-retro에서-판단))을 `/retro`에서 판단.
-- 코드: BuildingBlocks 4계층 + Employee 샘플 5계층 + Aspire AppHost · ServiceDefaults. 테스트 1,537 통과 + 1 건너뜀. 커버리지 대상 6개(BB 4 + Employee Domain / Application) 합계 라인 99.4% · 분기 94.6%. MigrationService는 AppHost가 Development로 주입.
-- 백로그 / 기술부채: S04 종료 때 정리(`new` 0). 새 open: BL-111(스모크, 중) · 112~115 · 117(첫 실행 헬스 검사 Error 2건 원인, 중) · 118. 상 우선순위 open: BL-002(.NET 10 전환), BL-024.
-- 오케스트레이션 세션(emergency-hub-a2)이 승인 지점 처리. S02~S04 회고 개선안은 `/retro`에서 스킬 · 에이전트에 반영(진행 중 변경 금지).
-- 로컬: 이 PC 개발 인증서 미신뢰(`--check --trust` 7), 로컬 Docker Engine API 1.43(통합 테스트는 `DOCKER_API_VERSION=1.43`). S04-T04가 볼륨 `emergency-hub-postgres-data` · user-secrets를 초기화했고 원래 트리는 그때 만든 새 비밀번호 쌍 · 새 볼륨을 쓴다(복구 불필요, 5키 일치).
-- git: 토픽 브랜치 원격은 12c5cb6까지. 이 세션 worklog 커밋만 push 대상.
+- **진행 중 토픽: [PRD-002](../10-delivery/prd/PRD-002-employee-contacts.md)** (브랜치 `feature/prd-002-employee-contacts`, [Draft PR #8](https://github.com/thkim-ezabele/task_20260926/pull/8), 릴리스 `v0.2.0` 예정). **스프린트 S05 · S06 · S07 모두 done**, 태그 `sprint/S05` · `sprint/S06`(`f5e0877`) · `sprint/S07`(`8ad58cf`). 다음은 `/retro PRD-002`.
+- S07 결과: `GET /api/employee`(페이징, 1003 필드 코드) · `GET /api/employee/{name}`(Trim + NFC, 동명이인 입사일 순), 라우트 템플릿 네 곳, 행 0개 입력 400 · 21028, API 명세 재작성 · Aspire curl 28개 · BL-024 대시보드 캡처. 테스트 통과 2,544 · 건너뜀 1, 커버리지 라인 99.3% · 분기 96.8%. PR #8 CI [36490909577](https://github.com/thkim-ezabele/task_20260926/actions/runs/36490909577) success(4m59s), NFR-02 CI 281.4ms · NFR-03 CI 최대 7.6ms.
+- 대리 승인(오케스트레이션 `emergency-hub-d2`): S05 4 · S06 4 · S07 2행 + ADR 0025~0028은 `/retro PRD-002` ④ 추인 대상. ADR 후보: S06 2건, S07 3건(BL-141 ADR-0025 보완, TD-030 도우미 중복, 0행 Handler 판정 근거).
+- 백로그 / 기술부채: `new` 0. /retro 대상 open: BL-140 · 141 · 142 · 143 · 131 · 136 · 138, TD-029 · 030 · 028.
+- 로컬: Docker API 1.43(`DOCKER_API_VERSION=1.43`), 개발 인증서 미신뢰(`--launch-profile http`). check-docs 결함 6 = raw 로그 frontmatter(BL-018).
 
 ## 다음 할 일
 
-- [ ] PRD-001 `/retro`: ADR 후보(S01~S04) 판단, S02~S04 회고 개선안 스킬 · 에이전트 반영, BL-113 결정, 토픽 PR 병합 · `v0.1.0`
-- [ ] (선택) 사용자 확인: 개발 인증서 신뢰 후 https 프로필 OTLP 수신 재확인, 대시보드 스크린샷 3장(S04 결과 리뷰 사용자 확인 사항)
-- [ ] 출처 미상 익명 Docker 볼륨 2개(2024-01-02, `fff0aa…`) 확인 후 삭제 여부 결정
-- [ ] BL-018(raw-log frontmatter) 토픽 밖 작업으로 해결해 check-docs 결함 0 기준선 확보
-- [ ] .NET 10 · Aspire 13 전환(BL-002 · TD-002) 토픽 여부 결정(.NET 8 지원 종료 2026-11-10)
+- [ ] `/retro PRD-002`: 대리 승인 추인, ADR 후보 5건, 개선안(문서 작업 반려 추세, 도구 인자 역슬래시 · `\uXXXX` 문제, BL-128 원인), 토픽 PR #8 병합 · `release/0.2.0` · `v0.2.0`
+- [ ] RETRO-PRD-001 사용자 결정 남은 항목(대리 승인 추인, ADR 후보 (a)~(j), `disable-model-invocation` 유지 여부, BL-113 · 065 · 117, 이메일, 익명 볼륨)
 - [ ] 프로젝트 범위(In / Out of Scope)와 이해관계자 정의
-- [ ] 커밋 작성자 이메일 확인 (전역 설정 `taehoon365@gmail.com`, S03 시작 전 사용자 결정으로 유지)
 
 ## 이력
 
@@ -43,3 +36,8 @@ updated: 2026-09-28
 | [WL-2026-09-27-06](../08-worklog/2026-09/2026-09-27-06-sprint-s02.md) | 2026-09-27 | `/sprint S02`: BuildingBlocks Application · Infrastructure · Api와 아키텍처 테스트(테스트 202 → 1033), ADR-0024, 반려 3 · BLOCKED 0, 운영 변경(dba 생략 · reviewer 커밋 병합), BL · TD 정리, 태그 `sprint/S02`, 회고 반영 스킬 개선 |
 | [WL-2026-09-28-01](../08-worklog/2026-09/2026-09-28-01-sprint-s03.md) | 2026-09-28 | `/sprint S03`(오케스트레이션 세션 지시): Aspire AppHost · ServiceDefaults · Employee 샘플 5계층 · 통합 테스트(테스트 1,033 → 1,533), 작업 5 → 7 재구성, 반려 1 · BLOCKED 0, 결정 A(이력 컬럼), BL-023 · 073 확정, 요청 로그 결함 수정, 실행 증빙, BL · TD 정리, 태그 `sprint/S03` |
 | [WL-2026-09-28-02](../08-worklog/2026-09/2026-09-28-02-sprint-s04.md) | 2026-09-28 | `/sprint S04`(오케스트레이션 세션 지시): 작업 4 → 6, 커버리지 대상 6개 · MigrationService Development, 기준 문서 갱신 · todo 문서 5개 draft, 새 clone 재현(http 프로필) · CI 실패 표시 확인 · FR / NFR 증빙 표, 반려 6 · BLOCKED 0, BL · TD 정리, 태그 `sprint/S04` |
+| [WL-2026-09-28-03](../08-worklog/2026-09/2026-09-28-03-prd-001-orchestration-retro-release.md) | 2026-09-28 | 오케스트레이션 세션: S03 · S04를 다른 세션에 진행시키며 승인 대리, 스킬 호출 설정 제거, `/retro PRD-001`(개선안 19 · ADR 후보 10), PR #7 병합 · `v0.1.0` 릴리스 · 역병합 |
+| [WL-2026-09-28-04](../08-worklog/2026-09/2026-09-28-04-prd-002-topic-and-retro-improvements.md) | 2026-09-27~28 | `/prd` PRD-002(직원 연락처 조회 · CSV / JSON 일괄 등록, FR 11 / NFR 6) 병행 토픽으로 생성(worktree, Draft PR #8), PRD-001 뒤 develop 병합, BL-024 편입 · .NET 10 미진행, 회고 개선안 17건 반영(PR #13) |
+| [WL-2026-09-28-05](../08-worklog/2026-09/2026-09-28-05-sprint-s05.md) | 2026-09-28 | `/sprint S05`(오케스트레이션 세션 지시 · 대리 승인): 작업 5 → 6, ADR 0025~0028, Employee VO 4개 · Aggregate 재설계 · 샘플 API 제거 · InitialCreate 리셋 · Repository, 테스트 1,537 → 1,634, 반려 1, BL · TD 정리, 태그 `sprint/S05` |
+| [WL-2026-09-29-01](../08-worklog/2026-09/2026-09-29-01-sprint-s06.md) | 2026-09-28~29 | `/sprint S06`(오케스트레이션 세션 지시, 속도 튜닝 첫 적용): 일괄 등록 POST(BuildingBlocks 오류 계약, CSV · JSON 파서, Command · Handler, 바인더 · Controller, 통합 · 개인정보 · 성능 테스트), PRD FR-01 email 규칙 변경(BL-129), 반려 2, 대리 승인 4, push `f5e0877` |
+| [WL-2026-09-29-02](../08-worklog/2026-09/2026-09-29-02-sprint-s07.md) | 2026-09-29 | `/sprint S07`(오케스트레이션 세션 지시): 조회 API 2개 · 라우트 템플릿 네 곳 · 10,000건 조회 성능 · 행 0개 21028(BL-137) · API 명세 · Aspire curl · BL-024 대시보드, 작업 5개, 반려 1, PRD-002 일괄 CI 통과 · 태그 `sprint/S06` · `S07` |

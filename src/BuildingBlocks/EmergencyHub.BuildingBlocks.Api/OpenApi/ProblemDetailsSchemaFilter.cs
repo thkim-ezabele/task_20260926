@@ -9,7 +9,7 @@ namespace EmergencyHub.BuildingBlocks.Api.OpenApi;
 /// <see cref="ProblemDetails"/> 스키마에 확장 필드 <c>code</c>(정수) · <c>traceId</c> · <c>errors</c>를 드러냅니다(ADR-0019 "실패 응답").
 /// </summary>
 /// <remarks>
-/// <c>code</c> · <c>traceId</c>는 항상 들어가므로 필수로 표시하고, <c>errors</c>는 검증 실패(400)에만 있어 선택입니다.
+/// <c>code</c> · <c>traceId</c>는 항상 들어가므로 필수로 표시하고, <c>errors</c>는 검증 실패(400)와 상세 충돌(409, ADR-0028)에만 있어 선택입니다.
 /// <c>errors</c>는 필드 키 → <see cref="ProblemFieldError"/> 배열의 맵입니다.
 /// </remarks>
 internal sealed class ProblemDetailsSchemaFilter : ISchemaFilter
@@ -40,7 +40,7 @@ internal sealed class ProblemDetailsSchemaFilter : ISchemaFilter
         concrete.Properties[ErrorProblemDetails.ErrorsExtension] = new OpenApiSchema
         {
             Type = JsonSchemaType.Object,
-            Description = "검증 실패(400)의 필드별 오류. 키는 camelCase 필드 경로입니다.",
+            Description = "검증 실패(400)의 필드별 오류, 상세 충돌(409)의 항목별 충돌. 키는 camelCase 필드 경로입니다.",
             AdditionalProperties = new OpenApiSchema
             {
                 Type = JsonSchemaType.Array,

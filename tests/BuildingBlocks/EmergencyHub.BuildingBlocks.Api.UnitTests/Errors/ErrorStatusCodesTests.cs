@@ -10,6 +10,8 @@ public sealed class ErrorStatusCodesTests
     public static TheoryData<ErrorType, int> DocumentedStatuses() => new()
     {
         { ErrorType.Validation, StatusCodes.Status400BadRequest },
+        { ErrorType.PayloadTooLarge, StatusCodes.Status413PayloadTooLarge },
+        { ErrorType.UnsupportedMediaType, StatusCodes.Status415UnsupportedMediaType },
         { ErrorType.NotFound, StatusCodes.Status404NotFound },
         { ErrorType.Conflict, StatusCodes.Status409Conflict },
         { ErrorType.BusinessRule, StatusCodes.Status422UnprocessableEntity },
@@ -48,7 +50,8 @@ public sealed class ErrorStatusCodesTests
     }
 
     [Theory]
-    [InlineData((short)11)]
+    [InlineData((short)13)]
+    [InlineData((short)19)]
     [InlineData((short)50)]
     [InlineData((short)99)]
     [InlineData((short)-1)]

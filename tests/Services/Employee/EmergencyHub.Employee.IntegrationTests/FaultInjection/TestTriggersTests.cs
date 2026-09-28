@@ -9,8 +9,10 @@ namespace EmergencyHub.Employee.IntegrationTests.FaultInjection;
 [Trait("FR", "PRD-001/FR-05")]
 public sealed class TestTriggersTests(EmployeeDatabaseFixture database) : EmployeeDatabaseTest(database)
 {
+    // S05-T04: 새 스키마 컬럼(PRD-002 FR-01). normalized_email은 DB가 강제하지 않으므로 Domain과 같은 ToLowerInvariant 값을 넣는다.
     private const string InsertSql =
-        "INSERT INTO employees (id, display_name, email, employee_status, created_at, updated_at) VALUES ($1, 'Trigger Test', $2, 1, now(), now())";
+        "INSERT INTO employees (id, name, email, normalized_email, phone_number, joined_on, employee_status, created_at, updated_at) "
+        + "VALUES ($1, 'Trigger Test', $2, $3, '010-1234-5678', DATE '2020-03-02', 1, now(), now())";
 
     // ---- 성공 ----
 
@@ -75,6 +77,7 @@ public sealed class TestTriggersTests(EmployeeDatabaseFixture database) : Employ
     private async Task InsertAsync()
     {
         await using var connection = await Database.OpenWriteConnectionAsync(CancellationToken);
-        await connection.ExecuteSqlAsync(InsertSql, CancellationToken, Guid.NewGuid(), $"trigger-{Guid.NewGuid():N}@example.com");
+        var email = $"Trigger-{Guid.NewGuid():N}@Example.com";
+        await connection.ExecuteSqlAsync(InsertSql, CancellationToken, Guid.NewGuid(), email, email.ToLowerInvariant());
     }
 }

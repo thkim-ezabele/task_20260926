@@ -82,5 +82,11 @@ public sealed class FieldErrorTests
     }
 
     public static TheoryData<Error> NonValidationErrors() =>
-        new(CommonErrors.NotFound, CommonErrors.ConcurrencyConflict, CommonErrors.Forbidden, CommonErrors.Unexpected);
+        new(
+            CommonErrors.NotFound,
+            CommonErrors.ConcurrencyConflict,
+            CommonErrors.Forbidden,
+            CommonErrors.Unexpected,
+            CommonErrors.PayloadTooLarge,
+            CommonErrors.UnsupportedMediaType);
 }

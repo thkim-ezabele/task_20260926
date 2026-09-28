@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [development]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # TDD 가이드
@@ -48,7 +48,7 @@ flowchart LR
 
 ## 테스트 네이밍 규칙
 
-- 테스트 클래스: `<대상 클래스>Tests` (예: `EmployeeTests`, `RegisterEmployeeCommandHandlerTests`)
+- 테스트 클래스: `<대상 클래스>Tests` (예: `EmployeeTests`, `RegisterEmployeesCommandHandlerTests`)
 - 테스트 메서드: **`<메서드>_<조건>_<기대 결과>`**
 
 | 종류 | 예 |
@@ -64,14 +64,16 @@ flowchart LR
 
 ```csharp
 [Fact]
-public void Register_WithDuplicateEmail_ReturnsConflictError()
+public async Task Handle_EmailAlreadyStored_ReturnsConflictError()
 {
     // Arrange
-    var existing = new EmployeeBuilder().WithEmail("kim@example.com").Build();
-    var command = new RegisterEmployeeCommand("김직원", "kim@example.com", NotificationChannels.Sms);
+    _repository.ListExistingNormalizedEmailsAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
+        .Returns(["kim@example.com"]);
+    var command = new RegisterEmployeesCommand(
+        EmployeeImportFormat.Csv, EmployeeImportSources.Body, Encoding.UTF8.GetBytes("김직원,Kim@Example.com,010-1234-5678,2020-01-02"));
 
     // Act
-    var result = Employee.Register(command.Name, command.Email, command.Channels, _now, isEmailTaken: true);
+    var result = await CreateSut().Handle(command, TestContext.Current.CancellationToken);
 
     // Assert
     result.IsFailure.Should().BeTrue();
@@ -123,3 +125,4 @@ public void Register_WithDuplicateEmail_ReturnsConflictError()
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-27 | - | 기본 가이드 초안: 사이클, 레이어별 적용, 네이밍, AAA, Test Double 기준, 예시 |
 | 2026-09-27 | developer | ADR 0014 · 0015 · 0021 반영: Command Handler 흐름에서 "저장" 제거, 파이프라인 테스트 행 추가, Mock 예시 수정, 단언 라이브러리 AwesomeAssertions 명시 (S01-T04) |
+| 2026-09-28 | developer | 테스트 클래스 이름 예시와 AAA 예시를 일괄 등록 Handler(`RegisterEmployeesCommandHandlerTests`, DB 기존 이메일 23001)로 교체(BL-132) (S06-T04) |

@@ -161,6 +161,11 @@ public sealed class EmployeeDatabaseFixture : IAsyncLifetime
             services.AddWriteDbContextInterceptors([.. options.WriteInterceptors]);
         }
 
+        if (options.ReadInterceptors.Count > 0)
+        {
+            services.AddReadDbContextInterceptors([.. options.ReadInterceptors]);
+        }
+
         options.ConfigureServices?.Invoke(services);
 
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });

@@ -63,7 +63,8 @@ public sealed class EmployeeDatabaseFixtureTests(EmployeeDatabaseFixture databas
         await using var connection = await Database.OpenReadConnectionAsync(CancellationToken);
 
         var act = () => connection.ExecuteSqlAsync(
-            "INSERT INTO employees (id, display_name, email, employee_status, created_at, updated_at) VALUES ($1, 'x', 'x@example.com', 1, now(), now())",
+            "INSERT INTO employees (id, name, email, normalized_email, phone_number, joined_on, employee_status, created_at, updated_at) "
+            + "VALUES ($1, 'x', 'x@example.com', 'x@example.com', '010-1234-5678', DATE '2020-03-02', 1, now(), now())",
             CancellationToken,
             Guid.NewGuid());
 

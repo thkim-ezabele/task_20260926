@@ -9,7 +9,7 @@ namespace EmergencyHub.BuildingBlocks.Application.Validation;
 /// <typeparam name="TRequest">검증할 요청 형식.</typeparam>
 /// <remarks>
 /// <para>
-/// 서비스 Validator는 <c>internal sealed class RegisterEmployeeCommandValidator : RequestValidator&lt;RegisterEmployeeCommand&gt;</c>로 만들고,
+/// 서비스 Validator는 <c>internal sealed class XxxCommandValidator : RequestValidator&lt;XxxCommand&gt;</c>로 만들고,
 /// 규칙마다 <see cref="ValidationRuleExtensions.WithError{T, TProperty}"/>로 정수 코드를 붙입니다.
 /// </para>
 /// <para>

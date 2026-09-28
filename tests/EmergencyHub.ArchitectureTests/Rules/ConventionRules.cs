@@ -26,8 +26,8 @@ public static class ConventionRules
     // coding-conventions "C# 언어 기능" 클래스는 기본 sealed 행의 BuildingBlocks.Domain 예외(abstract 기반은 대상에서 이미 빠짐).
     private static readonly Type[] OpenByDesign = [typeof(Error), typeof(Result)];
 
-    // 파생을 허용하는 형식과 그 파생(BuildingBlocks.Domain 안에서만): ValidationError : Error, Result<T> : Result.
-    private static readonly Type[] ErrorResultFamily = [typeof(Error), typeof(ValidationError), typeof(Result), typeof(Result<>)];
+    // 파생을 허용하는 형식과 그 파생(BuildingBlocks.Domain 안에서만): ValidationError · ConflictError : Error, Result<T> : Result.
+    private static readonly Type[] ErrorResultFamily = [typeof(Error), typeof(ValidationError), typeof(ConflictError), typeof(Result), typeof(Result<>)];
 
     private static readonly string[] ModelNameSuffixes = ["Command", "Query", "Request", "Response", "Dto", "Event"];
 
@@ -158,10 +158,13 @@ public static class ConventionRules
             TypeInspection.IsConcreteClass(type) && ExplicitlyRegisteredPorts.Any(port => port.IsAssignableFrom(type)))),
         conditions => conditions.MeetCustomRule(new TypeRule(type => !RegistrationMarkers.Any(marker => marker.IsAssignableFrom(type)))));
 
-    /// <summary><see cref="Error"/> · <see cref="Result"/>는 BuildingBlocks.Domain의 정해진 파생(<see cref="ValidationError"/> · <see cref="Result{T}"/>) 밖에서 파생하지 않는다.</summary>
+    /// <summary>
+    /// <see cref="Error"/> · <see cref="Result"/>는 BuildingBlocks.Domain의 정해진 파생(<see cref="ValidationError"/> · <see cref="ConflictError"/> · <see cref="Result{T}"/>)
+    /// 밖에서 파생하지 않는다.
+    /// </summary>
     public static ArchitectureRule ErrorAndResultAreNotDerived { get; } = new(
-        "Error / Result 파생 금지(ValidationError · Result<T> 제외)",
-        "BL-029(BL-054 병합), TD-016(Error는 복사 생성자로 어셈블리 밖 파생 가능), coding-conventions \"C# 언어 기능\" sealed 예외",
+        "Error / Result 파생 금지(ValidationError · ConflictError · Result<T> 제외)",
+        "BL-029(BL-054 병합), TD-016(Error는 복사 생성자로 어셈블리 밖 파생 가능), coding-conventions \"C# 언어 기능\" sealed 예외, ADR-0028(상세 Conflict 오류)",
         RuleScope.Product(),
         scope => scope.And().MeetCustomRule(new TypeRule(type => type.IsClass && !ErrorResultFamily.Contains(type))),
         conditions => conditions.NotInherit(typeof(Error)).And().NotInherit(typeof(Result)));

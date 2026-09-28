@@ -4,7 +4,7 @@ type: index
 status: stable
 tags: [adr, architecture]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 # 아키텍처 결정 기록 (ADR)
@@ -48,3 +48,7 @@ updated: 2026-09-27
 | [0022](0022-respawn-and-coverage-tooling.md) | 통합 테스트 DB 초기화(Respawn)와 커버리지 도구(coverlet + ReportGenerator) | 승인 | 2026-09-27 |
 | [0023](0023-deferred-adoptions.md) | 도입 보류 (메시지 브로커, Outbox / Inbox, API Gateway, 로그 수집기) | 승인 | 2026-09-27 |
 | [0024](0024-building-blocks-api-for-common-http-handling.md) | 공통 API 처리 계층 BuildingBlocks.Api 신설 | 승인 | 2026-09-27 |
+| [0025](0025-api-rule-exceptions-for-assignment-endpoints.md) | 과제 API 명세에 따른 API 규칙 예외 (`/api/employee` 3개 엔드포인트) | 승인 | 2026-09-28 |
+| [0026](0026-employee-bulk-import-input-processing.md) | 직원 일괄 가져오기 입력 처리 (바인더, 파서, 행 검증, 단일 트랜잭션 예외) | 승인 | 2026-09-28 |
+| [0027](0027-case-insensitive-unique-email-with-normalized-column.md) | 이메일 대소문자 무시 유일 (정규화 컬럼 + 일반 유니크 인덱스) | 승인 | 2026-09-28 |
+| [0028](0028-building-blocks-error-contract-extension.md) | BuildingBlocks 오류 계약 확장 (상세 Conflict 오류, 413 · 415) | 승인 | 2026-09-28 |

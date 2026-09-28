@@ -85,7 +85,7 @@ public sealed class MigrationReapplyTests(EmployeeDatabaseFixture database) : Em
             (await verify.ScalarAsync<string>("SELECT tableowner::text FROM pg_tables WHERE schemaname = 'public' AND tablename = 'employees'", CancellationToken))
                 .Should().Be(EmployeeDatabaseSettings.AppRoleName);
             (await verify.ScalarAsync<long>(
-                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'employees' AND indexname = $1", CancellationToken, EmployeeDbNames.EmailUniqueIndex.Value))
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'employees' AND indexname = $1", CancellationToken, EmployeeDbNames.NormalizedEmailUniqueIndex.Value))
                 .Should().Be(1);
         }
         finally
