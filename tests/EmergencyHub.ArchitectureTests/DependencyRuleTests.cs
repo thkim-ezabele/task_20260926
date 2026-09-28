@@ -43,7 +43,7 @@ public sealed class DependencyRuleTests
         DependencyRules.BuildingBlocksApiDoesNotDependOnInfrastructureOrDatabase.CheckProduct().ShouldPassOnProduct();
 
     // ADR-0024 표 <Service>.Api 행(Controller에서 Infrastructure 타입 · Repository 사용 금지), clean-architecture(Api는 Infrastructure를 DI 등록에만)
-    // 대상은 서비스 Api의 Controller. 대상 대기(해제 S06-T05, PendingTargetRules): S05-T04에서 샘플 Controller 제거
+    // 대상은 서비스 Api의 Controller(EmployeeController). 대상 대기는 S06-T05에서 해제
     [Fact]
     public void ControllersDoNotUseInfrastructureOrRepositories_ProductAssemblies_Holds() =>
         DependencyRules.ControllersDoNotUseInfrastructureOrRepositories.CheckProduct().ShouldPassOnProduct();

@@ -19,9 +19,15 @@ public sealed record RuleCheck(
     /// 대상 대기 목록(<see cref="PendingTargetRules"/>)의 규칙은 대상이 0개면 해제 작업 ID를 적어 건너뛰고,
     /// 대상이 1개 이상이면 "목록에서 빼라"로 실패한다(안전장치, S05-T04).
     /// </remarks>
-    public void ShouldPassOnProduct()
+    public void ShouldPassOnProduct() => ShouldPassOnProduct(PendingTargetRules.All);
+
+    /// <summary>
+    /// <see cref="ShouldPassOnProduct()"/>와 같되 대기 목록을 받는다. 제품 목록이 비어도 안전장치(건너뜀 · "목록에서 빼라")를 표본 목록으로 확인한다(S06-T05).
+    /// </summary>
+    /// <param name="pendingRules">대기 목록.</param>
+    public void ShouldPassOnProduct(IReadOnlyList<PendingTargetRule> pendingRules)
     {
-        if (PendingTargetRules.Find(Rule) is { } pending)
+        if (PendingTargetRules.Find(Rule, pendingRules) is { } pending)
         {
             TargetNames.Should().BeEmpty(
                 "{0}: 대상 대기 목록의 규칙에 제품 대상이 생겼다. PendingTargetRules에서 이 규칙을 목록에서 빼라(해제 작업 {1}, 원본: testing-strategy 대상 대기 목록)",

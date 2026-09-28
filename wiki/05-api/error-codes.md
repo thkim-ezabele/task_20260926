@@ -169,7 +169,7 @@ BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 | 1001 | `Validation` | 400 | `Common.ValidationFailed` | 요청 검증 실패 (상세는 `errors`에 필드별로, `ValidationError`) | 사용 |
 | 1002 | `Validation` | 400 | `Common.InvalidCode` | 정의되지 않은 코드값 / 비트 플래그 | 사용 |
 | 1003 | `Validation` | 400 | `Common.InvalidPaging` | 페이징 · 정렬 매개변수 오류 | 사용 |
-| 1004 | `PayloadTooLarge` | 413 | `Common.PayloadTooLarge` | 요청 본문이 허용 크기를 넘음 (전역 예외 처리의 `BadHttpRequestException` 413, 폼 한도 초과) | 사용 (바인더의 폼 한도 초과는 S06-T05) |
+| 1004 | `PayloadTooLarge` | 413 | `Common.PayloadTooLarge` | 요청 본문이 허용 크기를 넘음 (전역 예외 처리의 `BadHttpRequestException` 413. 일괄 등록은 바인더가 본문 · multipart 본문 · `data` 값의 바이트 수로 판정해 같은 예외를 던짐, [API 설계 가이드 규칙 예외](../04-development/api-guidelines.md#규칙-예외-과제-api-명세-adr-0025)) | 사용 |
 | 1005 | `UnsupportedMediaType` | 415 | `Common.UnsupportedMediaType` | 지원하지 않는 요청 Content-Type (`[Consumes]` 불일치, `[FromBody]` 액션의 Content-Type 없음) | 사용 |
 | 2001 | `NotFound` | 404 | `Common.NotFound` | 리소스 없음 (서비스별 코드가 없을 때) | 사용 |
 | 3001 | `Conflict` | 409 | `Common.ConcurrencyConflict` | 동시 수정 충돌 (낙관적 잠금) | 사용 |
@@ -252,3 +252,4 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 | 2026-09-28 | developer | Employee 21019 ~ 21022 · 21027 상태를 예약 → 사용(`EmployeeErrors`, CSV 파서 · UTF-8 해독 단계), 설명에 판정 원본 · 21021 닫는 따옴표 뒤 문자 · 21022 서로게이트와 BOM · 21027 행 수 세는 규칙 추가 (S06-T02) |
 | 2026-09-28 | developer | Employee 21023 ~ 21026 상태를 예약 → 사용(`EmployeeErrors`, JSON 파서), 설명에 판정 원본 · 21023 최대 깊이와 루트 형식 · 21025 경로와 속성 누락 구분 · 21026 대상 속성 추가, 21022에 JSON 이스케이프의 짝 없는 서로게이트 추가 (S06-T03) |
 | 2026-09-28 | developer | 21018 · 21028 · 21029 · 21030 · 23002 상수 추가로 `사용`(판정 원본 · 경로), 21004 설명에 제어 문자 · 짝 없는 서로게이트(BL-129), 요청 전체 오류 목록에 21028 · 21029와 Validator 판정 순서 (S06-T04) |
+| 2026-09-28 | developer | 1004 설명에 일괄 등록 바인더의 바이트 수 판정, 상태 칸의 S06-T05 대기 문구 삭제 (S06-T05) |

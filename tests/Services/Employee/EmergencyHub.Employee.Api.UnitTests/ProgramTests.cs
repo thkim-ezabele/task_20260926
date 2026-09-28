@@ -16,7 +16,7 @@ namespace EmergencyHub.Employee.Api.UnitTests;
 
 // database.md "Api 등록 사양(S03-T04)", ADR-0011(연결 키 Write · Read), ADR-0019(Swagger Development만), logging-observability "헬스체크".
 // 호스트를 시작하지 않고(연결 · 서버 없음) 등록과 미들웨어 파이프라인만 확인한다. 실제 DB 헬스 · HTTP 라우팅은 S03-T05 · T07.
-// S05-T04부터 Controller가 없다(샘플 API 제거). HTTP 엔드포인트는 헬스 경로뿐이다.
+// S05-T04에서 샘플 API를 지웠고, S06-T05에서 /api/employee Controller가 생겼다(HTTP 전 구간은 Acceptance/RegisterEmployeesHttpTests).
 [Trait("FR", "PRD-001/FR-08")]
 [Trait("FR", "PRD-001/FR-11")]
 public sealed class ProgramTests : IDisposable
@@ -66,9 +66,9 @@ public sealed class ProgramTests : IDisposable
     }
 
     [Fact]
-    public async Task ConfigurePipeline_DevelopmentWithoutControllers_ServesOpenApiDocumentWithNoPaths()
+    public async Task ConfigurePipeline_Development_ServesOpenApiDocumentWithEmployeePathOnly()
     {
-        // S05-T04: PRD-001 샘플 Controller를 지워 Controller가 없다(S06-T05에서 /api/employee가 생김). 문서는 제공되고 경로는 0개다.
+        // S06-T05: 일괄 등록 Controller(/api/employee POST)가 생겼다. 조회 2개는 S07에서 더한다(헬스 경로는 문서에 없음).
         await using var app = BuildApp("Development", BothConnections());
         Program.ConfigurePipeline(app);
 
@@ -77,7 +77,7 @@ public sealed class ProgramTests : IDisposable
         context.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
         var document = ReadJson(context);
         document.GetProperty("info").GetProperty("title").GetString().Should().Be(Program.ApiTitle);
-        document.GetProperty("paths").EnumerateObject().Should().BeEmpty();
+        document.GetProperty("paths").EnumerateObject().Select(path => path.Name).Should().Equal("/api/employee");
     }
 
     // ---- 실패 ----

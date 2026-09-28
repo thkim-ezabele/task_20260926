@@ -187,6 +187,10 @@ EmergencyHub.Employee.Infrastructure/
 └── EmployeeInfrastructureAssembly.cs  # 어셈블리 검색용 마커
 
 EmergencyHub.Employee.Api/
+├── Controllers/                  # EmployeeController (/api/employee, ISender만, S06-T05)
+├── Employees/
+│   └── Import/                   # 일괄 등록 전용 바인더 · 입력 record · 형식 판별 · 한도 상수 · 폼 값 공급자 제외 필터 (S06-T05)
+├── OpenApi/                      # 일괄 등록 요청 본문 OperationFilter (S06-T05)
 ├── Logging/
 ├── EmployeeApiAssembly.cs
 ├── Program.cs
@@ -199,7 +203,7 @@ EmergencyHub.Employee.MigrationService/
 ```
 
 - PRD-002에서 Domain `Employees/`에 Value Object 4개(`Name` · `Email` · `PhoneNumber` · `JoinedOn`)를 두었고(S05-T03, Aggregate가 한 곳에서만 써서 `ValueObjects/`가 아니라 Aggregate 폴더), S05-T04에서 Aggregate가 이 Value Object를 속성으로 가지게 했다(이메일은 `Email` VO + `NormalizedEmail` 문자열, [ADR-0026](adr/0026-employee-bulk-import-input-processing.md) 8절, [ADR-0027](adr/0027-case-insensitive-unique-email-with-normalized-column.md)).
-- S05-T04에서 PRD-001 샘플(`EmployeeEmail.cs`, Application `Commands/RegisterEmployee/` · `Queries/GetEmployeeById/`, Api `Controllers/` · `Employees/` Request / Response)을 지웠다. S06-T04에서 일괄 등록 기능 폴더(`Commands/RegisterEmployees/`)와 Validator가 생겼고, Api에는 아직 Controller가 없다(HTTP 엔드포인트는 헬스 경로뿐, `/api/employee` Controller는 S06-T05). 이 트리는 코드가 바뀌는 작업에서 실제 구성으로 갱신한다.
+- S05-T04에서 PRD-001 샘플(`EmployeeEmail.cs`, Application `Commands/RegisterEmployee/` · `Queries/GetEmployeeById/`, Api `Controllers/` · `Employees/` Request / Response)을 지웠다. S06-T04에서 일괄 등록 기능 폴더(`Commands/RegisterEmployees/`)와 Validator가 생겼고, S06-T05에서 Api에 `Controllers/EmployeeController`(`POST /api/employee`)와 전용 바인더(`Employees/Import/`, [ADR-0026](adr/0026-employee-bulk-import-input-processing.md) 1절) · OpenAPI 필터(`OpenApi/`)가 생겼다(조회 2개는 S07). 이 트리는 코드가 바뀌는 작업에서 실제 구성으로 갱신한다.
 - 루트 네임스페이스: `EmergencyHub.<Service>.<Layer>`
 - 폴더는 기술 종류(Entities, Services)가 아니라 **Aggregate / 기능 단위**로 나눈다.
 - Application 기능 폴더 규칙(`Commands/<기능>/` · `Queries/<기능>/`)은 [코딩 컨벤션](../04-development/coding-conventions.md#cqrs-규칙)의 "기능 폴더 구조"가 원본이다.
@@ -265,3 +269,4 @@ EmergencyHub.Employee.MigrationService/
 | 2026-09-28 | developer | Application 트리에 `EmployeeContactResponse.cs`(Read Repository 프로젝션 record)와 `IEmployeeReadRepository` 멤버(목록 · 개수 · 이름 단건) 반영 (S05-T06) |
 | 2026-09-28 | developer | BuildingBlocks.Domain 행에 `ConflictError` · `ConflictDetail`(ADR-0028) 추가 (S06-T01) |
 | 2026-09-28 | developer | Employee 트리에 Domain `EmployeeTextRules.cs`, Application `Commands/RegisterEmployees/` · `Import/` 추가, 샘플 제거 문단을 S06-T04 구성으로 (S06-T04) |
+| 2026-09-28 | developer | Employee.Api 트리에 `Controllers/` · `Employees/Import/` · `OpenApi/` 추가, 샘플 제거 문단을 S06-T05 구성으로 (S06-T05) |

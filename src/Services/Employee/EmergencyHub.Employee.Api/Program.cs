@@ -1,6 +1,7 @@
 using EmergencyHub.BuildingBlocks.Api.DependencyInjection;
 using EmergencyHub.BuildingBlocks.Infrastructure.Persistence;
 using EmergencyHub.Employee.Api.Logging;
+using EmergencyHub.Employee.Api.OpenApi;
 using EmergencyHub.Employee.Infrastructure;
 using EmergencyHub.Employee.Infrastructure.Persistence;
 using EmergencyHub.ServiceDefaults;
@@ -48,7 +49,8 @@ public sealed class Program
     }
 
     /// <summary>
-    /// 서비스 등록: ServiceDefaults → Employee 등록 확장 하나(쓰기 · 읽기 DbContext, UnitOfWork, 규칙 기반 등록) → ready 헬스 검사 2개 → 공통 API 처리.
+    /// 서비스 등록: ServiceDefaults → Employee 등록 확장 하나(쓰기 · 읽기 DbContext, UnitOfWork, 규칙 기반 등록) → ready 헬스 검사 2개 → 공통 API 처리
+    /// → 일괄 등록 OpenAPI 요청 본문 필터(<see cref="EmployeeImportOperationFilter"/>, S06-T05).
     /// </summary>
     /// <param name="builder">웹 애플리케이션 빌더.</param>
     /// <exception cref="InvalidOperationException">
@@ -70,6 +72,7 @@ public sealed class Program
             .AddDbContextCheck<EmployeeReadDbContext>(tags: [HealthEndpoints.ReadyTag]);
 
         builder.Services.AddBuildingBlocksApi(ApiTitle);
+        builder.Services.ConfigureSwaggerGen(options => options.OperationFilter<EmployeeImportOperationFilter>());
     }
 
     /// <summary>

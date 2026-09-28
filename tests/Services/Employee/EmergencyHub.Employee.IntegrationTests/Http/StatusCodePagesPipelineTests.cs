@@ -1,4 +1,5 @@
 using System.Net;
+using EmergencyHub.BuildingBlocks.Domain.Errors;
 using EmergencyHub.Employee.IntegrationTests.Fixtures;
 using EmergencyHub.ServiceDefaults;
 
@@ -6,10 +7,14 @@ namespace EmergencyHub.Employee.IntegrationTests.Http;
 
 // S06-T01 완료 조건 ② · ④ 회귀(tester 보강): UseBuildingBlocksApi에 붙은 UseStatusCodePages는 415만 1005 ProblemDetails로 바꾸고,
 // 실제 Employee Api 파이프라인(ServiceDefaults · 헬스 엔드포인트 포함)의 본문 없는 404 · 405는 그대로 둔다.
+// S06-T05(tester T01 인계): 일괄 등록 엔드포인트의 [Consumes] 불일치 415 · 1005, 메서드 불일치 405(본문 없음),
+// 폼 한도 초과 413 · 1004(TestServer는 Kestrel MaxRequestBodySize를 적용하지 않으므로 바인더 경로, Kestrel 413은 S06-T06).
 [Collection(EmployeeDatabaseCollectionDefinition.Name)]
 [Trait("FR", "PRD-002/FR-09")]
 public sealed class StatusCodePagesPipelineTests(EmployeeDatabaseFixture database) : EmployeeDatabaseTest(database)
 {
+    private const string RegisterPath = "/api/employee";
+
     // ---- 성공: 기존 경로는 그대로 ----
 
     [Fact]
@@ -39,8 +44,47 @@ public sealed class StatusCodePagesPipelineTests(EmployeeDatabaseFixture databas
         response.Content.Headers.ContentType.Should().BeNull();
     }
 
+    [Fact]
+    public async Task Delete_RegisterEmployeesRoute_Returns405WithEmptyBody()
+    {
+        await using var factory = new EmployeeApiFactory(Database);
+        using var client = factory.CreateClient();
+
+        using var response = await client.DeleteAsync(new Uri(RegisterPath, UriKind.Relative), CancellationToken);
+
+        response.StatusCode.Should().Be(HttpStatusCode.MethodNotAllowed);
+        (await response.Content.ReadAsStringAsync(CancellationToken)).Should().BeEmpty("StatusCodePages 처리기는 415가 아니면 쓰지 않는다");
+        response.Content.Headers.ContentType.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Post_RegisterEmployeesWithUnsupportedContentType_Returns415With1005()
+    {
+        await using var factory = new EmployeeApiFactory(Database);
+        using var client = factory.CreateClient();
+        using var content = new StringContent("김이름,kim@gmail.com,010-0000-0000,2000-01-01", System.Text.Encoding.UTF8, "text/plain");
+
+        using var response = await client.PostAsync(new Uri(RegisterPath, UriKind.Relative), content, CancellationToken);
+
+        await response.ShouldBeProblemAsync(
+            HttpStatusCode.UnsupportedMediaType, 1005, CommonErrors.UnsupportedMediaType.Message, RegisterPath, CancellationToken);
+    }
+
+    [Fact]
+    public async Task Post_RegisterEmployeesMultipartOverOneMebibyte_Returns413With1004()
+    {
+        await using var factory = new EmployeeApiFactory(Database);
+        using var client = factory.CreateClient();
+        using var content = new MultipartFormDataContent { { new ByteArrayContent(new byte[(1024 * 1024) + 1]), "file", "employees.csv" } };
+
+        using var response = await client.PostAsync(new Uri(RegisterPath, UriKind.Relative), content, CancellationToken);
+
+        await response.ShouldBeProblemAsync(
+            HttpStatusCode.RequestEntityTooLarge, 1004, CommonErrors.PayloadTooLarge.Message, RegisterPath, CancellationToken);
+    }
+
     // ---- 엣지: 지원하지 않는 Content-Type이어도 경로가 없으면 415가 아니라 본문 없는 404 ----
-    // (헬스 엔드포인트는 MapHealthChecks라 모든 메서드를 받아 405 경로가 없다. Controller가 생기는 S06-T05 이후 405는 그 작업에서 확인)
+    // (헬스 엔드포인트는 MapHealthChecks라 모든 메서드를 받아 405 경로가 없다. 405는 일괄 등록 경로로 위에서 확인, S06-T05)
 
     [Fact]
     public async Task Post_UnknownRouteWithUnsupportedContentType_Returns404WithEmptyBody()

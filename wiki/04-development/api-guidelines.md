@@ -120,7 +120,7 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 | `errors` | `ValidationError`(`400`)와 `ConflictError`(`409`, ADR-0028)일 때만. 상세 없는 `409`(`3001` · `3003` · `23001` 경합)에는 없다. 키는 속성 경로를 `.` 조각마다 camelCase로 바꾼 값(`Items[0].Name` → `items[0].name`, 객체 수준은 `""`), 값은 `{ code, message }` 배열(생성 순서 유지) |
 | 바인딩 오류 | `InvalidModelStateResponseFactory` → `400` · `1001`. 필드마다 코드 `1001`, 메시지는 `1001`의 고정 문구(프레임워크 메시지에 입력 값이 들어가므로). 모델 상태 키의 JSON 경로 접두사 `$.`는 떼고 `$`는 `""` |
 | 예외 | `BadHttpRequestException` → `StatusCode`가 `413`이면 `413` · `1004`, 그 밖은 `400` · `1001`(TD-021 부분 상환, ADR-0028). 예외 분류기(`IExceptionClassifier`) 결과가 있으면 그 오류(예: 재시도 한도 초과 → `503` · `9003`), 없으면 `500` · `9001`. 변환되지 않은 DB 예외(23514 · 25006)도 `9001` |
-| `415` | `[Consumes]`에 없는 Content-Type은 라우팅이 본문 없는 `415`로 끝내므로 상태 코드 페이지 처리기가, `[FromBody]` 액션의 Content-Type 없음은 클라이언트 오류 팩토리(`IClientErrorFactory` 데코레이터)가 `415` · `1005`로 바꾼다. `[FromBody]`가 없는 액션은 Content-Type이 없으면 액션까지 간다(전용 바인더가 판정, ADR-0026). 그 밖의 클라이언트 오류 결과(`NotFound()` 등)는 프레임워크 기본 그대로다(S06-T01 실측, ADR-0028) |
+| `415` | `[Consumes]`에 없는 Content-Type은 라우팅이 본문 없는 `415`로 끝내므로 상태 코드 페이지 처리기가, `[FromBody]` 액션의 Content-Type 없음은 클라이언트 오류 팩토리(`IClientErrorFactory` 데코레이터)가 `415` · `1005`로 바꾼다. `[FromBody]`가 없는 액션은 Content-Type이 없으면 액션까지 간다(일괄 등록은 전용 바인더가 raw body로 보고 내용으로 판별하며 `415`로 거절하지 않는다, ADR-0026 2절 · S06-T05). 그 밖의 클라이언트 오류 결과(`NotFound()` 등)는 프레임워크 기본 그대로다(S06-T01 실측, ADR-0028) |
 
 - Controller는 실패 `Result`를 `return result.Error.ToProblemResult();`로 돌려준다(`ErrorProblemResult`, `ActionResult<T>`로 암시적 변환).
 
@@ -152,6 +152,7 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 
 - 표에 없는 규칙(camelCase, 정수 코드값, `null` 속성 유지, 빈 컬렉션 `[]`, 최상위 객체, `ProblemDetails`의 `code` · `traceId`)은 이 3개 엔드포인트에도 그대로 적용한다.
 - 새 엔드포인트(ID 조회, 동명이인 전체 조회 BL-121 등)는 예외를 쓰지 않고 이 문서의 기본 규칙(`/api/v1/...`)을 따른다.
+- **일괄 등록 크기 한도 · 전송 형식 오류 판정**(S06-T05 실측, [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md) 1절 · [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)): 액션 특성 `RequestSizeLimit` · `RequestFormLimits`(`MultipartBodyLengthLimit` · `ValueLengthLimit`)를 모두 1 MiB로 두고, 폼 값 공급자를 빼(`DisableFormValueProviders`) 전용 바인더만 본문을 읽는다. 폼 값 공급자를 두면 폼 한도 초과(`InvalidDataException`)가 값 공급자 → ModelState → `400` · `1001`이 되기 때문이다(multipart `file` · `data` · form-urlencoded 실측). 판정 기준은 예외 메시지가 아니라 **바이트 수**다: 본문 전체가 `RequestSizeLimit`을, multipart 본문이 `MultipartBodyLengthLimit`을, `data` 값이 `ValueLengthLimit`을 넘으면 바인더가 서버와 같은 `BadHttpRequestException`(413)을 던지고 전역 예외 처리기가 `413` · `1004`로 응답한다(네 입력 경로 모두 바인더에서 판정, Kestrel이 먼저 한도를 적용하면 본문을 읽는 중에 같은 예외가 난다). boundary 없음 · 빈 boundary, 잘리거나 boundary가 없는 multipart, multipart 헤더 수 · 길이 한도 위반, 같은 필드 두 번은 한도 초과가 아니라 전송 형식 오류라 ModelState(키 `""`) → `400` · `1001`이다. 바인더는 프레임워크 폼 해독을 쓰지 않고 원래 바이트를 넘기므로 잘못된 UTF-8은 모든 입력 경로에서 `21022`다.
 
 ## 인증 헤더
 
@@ -171,3 +172,4 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 | 2026-09-27 | developer | 에러 응답 공통 변환 규칙 표(status · type · instance · traceId · errors 키 · 바인딩 오류 · 예외 판정), `ToProblemResult` (S02-T06) |
 | 2026-09-28 | developer | ADR-0025 · 0026 · 0028 반영: 규칙 예외 절(과제 3개 엔드포인트, ADR 링크), 실패 상태 `413` · `415`, 409 `errors`(상세 Conflict 오류), `instance` · 요청 로그 · 추적 span의 라우트 템플릿(S07-T02), `BadHttpRequestException` 413 · `[Consumes]` 415 변환(S06-T01), 400 예시 코드 21001(폐기) → 21004, 409 예시 `instance`를 `/api/employee`로 (S05-T02) |
 | 2026-09-28 | developer | S06-T01 구현 반영: 공통 변환 규칙의 "S06-T01부터" 문구를 현재형으로, `errors`(`ConflictError`, 상세 없는 409 제외), `415` 행(라우팅 415 → 상태 코드 페이지, `[FromBody]` Content-Type 없음 → 클라이언트 오류 팩토리, 실측) (S06-T01) |
+| 2026-09-28 | developer | 규칙 예외 절에 일괄 등록 크기 한도 · 전송 형식 오류 판정 문단(바이트 수 기준 413 · 1004, 형식 오류 400 · 1001, 폼 값 공급자 제외), `415` 행에 Content-Type 없음의 판정 결과(내용 판별) (S06-T05) |
