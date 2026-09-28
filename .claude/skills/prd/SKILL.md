@@ -87,7 +87,7 @@ PRD: wiki/10-delivery/prd/PRD-NNN-<topic>.md
 ### ⑦ 반영
 
 1. 브랜치를 만든다: `git checkout -b feature/prd-NNN-<topic>` (작성한 PRD가 함께 넘어온다)
-2. 스프린트 문서를 템플릿으로 만든다: `wiki/10-delivery/sprints/SNN-<kebab-title>.md`, `status: planned`, 작업 표를 분할안으로 채운다(상태 `todo`).
+2. 스프린트 문서를 템플릿으로 만든다: `wiki/10-delivery/sprints/SNN-<kebab-title>.md`, `status: planned`, 작업 표를 분할안으로 채운다(상태 `todo`). 분할안의 `kind: doc` 작업은 작업 이름 뒤에 "(문서 작업)", `evidence_frame: true` 작업은 "(증빙 틀)"로 표시한다.
 3. PRD를 갱신한다: `status: stable`, `sprints`, `branch`, `release: "v0.N.0"`(`main`의 마지막 `v0.X.0` 태그 + 1, 없으면 `v0.1.0`)
 4. `wiki/10-delivery/README.md`의 PRD 목록과 스프린트 목록, `wiki/00-overview/roadmap.md` 일정표에 행을 추가한다.
 5. 커밋한다(`wiki/08-worklog/raw/`는 제외):
