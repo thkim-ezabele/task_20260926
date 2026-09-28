@@ -54,8 +54,8 @@ updated: 2026-09-29
 - [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (경고 0, 커버리지 보고 — NFR-06): 로컬 build -warnaserror 경고 0, test 통과 2,277 · 건너뜀 1 · 실패 0, 커버리지(대상 6개) 라인 99.3% · 분기 96.7%(596/616)
 - [x] 관련 위키 문서(API, 이벤트, DB)를 갱신했다 (api-guidelines · error-codes · coding-conventions · testing-strategy 등. API 명세는 S07-T04, 이벤트 · DB 스키마 변경 없음)
 - [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
-- [ ] 토픽 브랜치를 push했다 (CI 확인 · 태그 `sprint/S06`은 PRD 종료 뒤 일괄)
-- [ ] CI로만 판정할 조건 (PRD 종료 뒤 일괄): NFR-02 CI 러너에서 1,000행 측정 테스트의 4초 단언 통과, FR-10 · NFR-06 토픽 PR CI 전체 테스트 통과 · 경고 0 · 커버리지 보고 산출물
+- [x] 토픽 브랜치를 push했다 — push `ef9eb86..f5e0877`, PRD 종료 뒤 일괄 PR #8 CI [36490909577](https://github.com/thkim-ezabele/task_20260926/actions/runs/36490909577) success(22:11:43Z → 22:16:42Z, 4m59s, ubuntu-24.04, SDK 8.0.425, HEAD `8ad58cf`), 태그 `sprint/S06` → 종료 커밋 `f5e0877`
+- [x] CI로만 판정할 조건 (PRD 종료 뒤 일괄): NFR-02 CI 러너 1,000행 CSV 중앙값 281.4ms(4초 단언 통과), FR-10 · NFR-06 13개 프로젝트 통과 2,544 · 실패 0 · 건너뜀 1(기존 ArchitectureTests 1), IntegrationTests 321/321, 산출물 coverage-report · test-results, -warnaserror 빌드 통과(경고 0)
 
 ## 진행 기록
 
@@ -112,6 +112,7 @@ updated: 2026-09-29
 | 2026-09-29 | S06-T06 | 기록 | 실측 ③ | TestServer 413 테스트는 바인더(RequestFormLimits · RequestSizeLimit 메타데이터) 경로만. Kestrel 413은 네 경로 · chunked 모두 서버 413 · 1004 · DB 0건, 정확히 1 MiB 201 |
 | 2026-09-29 | - | 결과 리뷰 | 승인(대리) | orchestrator 결과 리뷰 → 대리 승인. DoD 직접 실행: build 경고 0, test 통과 2,277 · 건너뜀 1 · 실패 0, 커버리지 라인 99.3% · 분기 96.7%. new 5건 정리, BL-137 결정 대기 |
 | 2026-09-29 | - | 종료 | push | 종료 커밋 `f5e0877`(태그 대상, PRD 종료 뒤 일괄), push `ef9eb86..f5e0877`. CI 대기 · 태그 없음 |
+| 2026-09-29 | - | DoD | CI 통과 | PRD 종료 뒤 일괄: PR #8 CI [36490909577](https://github.com/thkim-ezabele/task_20260926/actions/runs/36490909577) success(22:11:43Z → 22:16:42Z, 4m59s, ubuntu-24.04, SDK 8.0.425, HEAD `8ad58cf`). 13개 프로젝트 통과 2,544 · 실패 0 · 건너뜀 1(기존 ArchitectureTests 1), IntegrationTests 321/321, 산출물 coverage-report · test-results. NFR-02 CI 중앙값 281.4ms. 태그 sprint/S06 → f5e0877 |
 
 ## 계획 리뷰
 
@@ -213,3 +214,4 @@ S05 인계 (S05 결과 리뷰 2026-09-28, 원문은 [S05 진행 기록](S05-reba
 | 2026-09-28 | orchestrator | S05 결과 리뷰: 계획 메모에 "S05 인계" 소절 추가 |
 | 2026-09-28 | orchestrator | S06 계획 확정: 완료 조건 T01~T06 수정, T04 · T06 dba 생략, DoD CI · 태그 일괄, 사전 점검 · 인계 메모 · 대리 승인 절 추가, `active` |
 | 2026-09-29 | orchestrator | S06 종료: 결과 리뷰, 생긴 백로그 / 기술부채, DoD, 회고 절(토픽 회고로), 대리 승인 4행, `done` |
+| 2026-09-29 | orchestrator | PRD-002 종료 뒤 DoD CI 기록(S07 세션): push · CI · NFR-02 · 태그 항목 체크 |

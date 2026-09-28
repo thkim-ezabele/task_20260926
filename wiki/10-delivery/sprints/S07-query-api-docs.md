@@ -52,8 +52,8 @@ updated: 2026-09-29
 - [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (경고 0, 커버리지 보고 — NFR-06): 로컬 build -warnaserror 오류 0 · 경고 0, test 통과 2,544 · 건너뜀 1 · 실패 0, 커버리지(대상 6개) 라인 99.3% · 분기 96.8%(616/636)
 - [x] 관련 위키 문서(API, 이벤트, DB)를 갱신했다 (employee-api · api-reference · error-codes · database · local-setup · roadmap · api-guidelines · logging-observability · testing-strategy · coding-conventions. 이벤트 변경 없음)
 - [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
-- [ ] CI로만 판정할 조건 (PRD 종료 뒤 일괄): 토픽 PR CI에서 S07-T03 조회 측정이 CI 임계값(200ms × 2) 안이고 CI가 통과했다(NFR-03), FR-10 · NFR-06 CI 전체 통과 · 경고 0 · 커버리지 보고 산출물
-- [ ] 토픽 브랜치를 push하고 `sprint/S07` 태그를 붙였다 (CI 통과 뒤)
+- [x] CI로만 판정할 조건 (PRD 종료 뒤 일괄): NFR-03 CI 러너 중앙값 목록 1쪽 3.7ms · page=500 7.6ms · 이름 1.9ms(400ms 단언 통과), FR-10 · NFR-06 13개 프로젝트 통과 2,544 · 실패 0 · 건너뜀 1(기존 ArchitectureTests 1), IntegrationTests 321/321, 산출물 coverage-report · test-results, -warnaserror 빌드 통과(경고 0)
+- [x] 토픽 브랜치를 push하고 `sprint/S07` 태그를 붙였다 — push `08613a9..8ad58cf`, PR #8 CI [36490909577](https://github.com/thkim-ezabele/task_20260926/actions/runs/36490909577) success(22:11:43Z → 22:16:42Z, 4m59s, ubuntu-24.04, SDK 8.0.425, HEAD `8ad58cf`), 태그 `sprint/S07` → 종료 커밋 `8ad58cf`
 
 ## 진행 기록
 
@@ -102,6 +102,8 @@ updated: 2026-09-29
 | BL-024: `traceparent` 지정 T1 POST · T2 GET `{name}` · T3 POST 409 → 대시보드 `/traces/detail/4b1d00240000000000000000000000{01,02,03}`(Edge 헤드리스 CDP) | Npgsql span 6개 `db.connection_string`에 Password 없음, `db.statement`는 `@p0` · `@__name_0` · `@__normalizedEmails_0` 자리표시자만(등록 값 grep 0건), T2 `url.path` `/api/employee/{name}` |
 | 로그 판정 | postgres `FATAL` 3D000 1건(N2, 제외), AppHost `fail:` 0, api 파일 로그 Error · Warning 0(BL-117 0건) |
 | `taskkill //F //IM EmergencyHub.AppHost.exe` → `docker ps -a --filter volume=emergency-hub-postgres-data` | 출력 없음(컨테이너 정리) |
+| 2026-09-29 | - | 종료 | push | 종료 커밋 `8ad58cf`(태그 대상), push `08613a9..8ad58cf` |
+| 2026-09-29 | - | DoD | CI 통과 | PR #8 CI [36490909577](https://github.com/thkim-ezabele/task_20260926/actions/runs/36490909577) success(22:11:43Z → 22:16:42Z, 4m59s, ubuntu-24.04, SDK 8.0.425, HEAD `8ad58cf`). 13개 프로젝트 통과 2,544 · 실패 0 · 건너뜀 1(기존 ArchitectureTests 1), IntegrationTests 321/321, 산출물 coverage-report · test-results. NFR-03 CI 중앙값 3.7 · 7.6 · 1.9ms. 태그 sprint/S06 → f5e0877, sprint/S07 → 8ad58cf |
 
 ## 계획 리뷰
 
@@ -202,3 +204,4 @@ developer 1명이 리뷰하고 orchestrator가 통합했다. 작업은 S07-T05(B
 | 2026-09-29 | orchestrator | S06 결과 리뷰: 계획 메모에 "S06 인계" 소절 추가 |
 | 2026-09-29 | orchestrator | S07 계획 확정: T05(BL-137) 추가, T02 · T03 완료 조건 수정, T04 의존, DoD CI 조건, 사전 점검 · 인계 메모 · 대리 승인 절 추가, `active` |
 | 2026-09-29 | orchestrator | S07 종료: 결과 리뷰, 생긴 백로그 / 기술부채, DoD, 회고 절(토픽 회고로), 대리 승인 2행, S05 대응표 전수 대조 반영, `done` |
+| 2026-09-29 | orchestrator | PRD-002 스프린트 DoD CI 기록: push · CI · NFR-03 · 태그 항목 체크 |
