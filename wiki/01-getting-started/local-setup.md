@@ -226,7 +226,7 @@ curl -s -i http://localhost:5180/health/ready
 | # | 명령 | 용도 | DB 연결 |
 |---|---|---|---|
 | 1 | `dotnet tool restore` | 매니페스트의 `dotnet-ef` 8.0.31 · `reportgenerator` 복원. clone 뒤 한 번, 매니페스트가 바뀌면 다시 | 없음 |
-| 2 | `dotnet ef migrations add <마이그레이션이름> --project src/Services/Employee/EmergencyHub.Employee.Infrastructure --context EmployeeDbContext` | 새 마이그레이션 생성(`Persistence/Migrations/`). 만든 뒤 같은 폴더에 `<마이그레이션 ID>.Sealed.cs`(`public sealed partial class <마이그레이션이름>;`)를 **직접 추가**한다([sealed partial 선언](../04-development/database.md#마이그레이션-규칙)) | 없음 |
+| 2 | `dotnet ef migrations add <마이그레이션이름> --project src/Services/Employee/EmergencyHub.Employee.Infrastructure --context EmployeeDbContext` | 새 마이그레이션 생성(`Persistence/Migrations/`). 만든 뒤 같은 폴더에 `<마이그레이션 ID>.Sealed.cs`(`public sealed partial class <마이그레이션이름>;`)를 **직접 추가**한다([sealed partial 선언](../04-development/database.md#마이그레이션-규칙)). 모델 스냅샷이 없을 때(운영 전 리셋으로 `Persistence/Migrations/`를 비웠을 때)는 끝에 `--output-dir Persistence/Migrations`를 **붙인다**. 없으면 기본 폴더 `Migrations/`에 네임스페이스 `EmergencyHub.Employee.Infrastructure.Migrations`로 생긴다(S05-T05 실측) | 없음 |
 | 3 | `dotnet ef migrations script --idempotent --project src/Services/Employee/EmergencyHub.Employee.Infrastructure --context EmployeeDbContext` | 전체 마이그레이션의 멱등 SQL 출력. 명명(snake_case) · 타입 · 체크 제약 검토에 쓴다. 파일로 받으려면 `--output <경로>.sql`(저장소 밖 경로 권장, 커밋하지 않음) | 없음 |
 | 4 | `dotnet ef migrations has-pending-model-changes --project src/Services/Employee/EmergencyHub.Employee.Infrastructure --context EmployeeDbContext` | 모델과 마지막 마이그레이션의 차이 확인. 차이가 없으면 `No changes have been made to the model since the last migration.`와 종료 코드 0 | 없음 |
 | 5 | `dotnet ef migrations remove --project src/Services/Employee/EmergencyHub.Employee.Infrastructure --context EmployeeDbContext` | **push 전**, 내 로컬에만 있는 마지막 마이그레이션을 되돌릴 때만. 생성 파일만 지워지므로 직접 만든 `<마이그레이션 ID>.Sealed.cs`는 손으로 지운다. push 뒤에는 금지(아래 표) | 적용 여부 확인을 위해 연결을 시도할 수 있음 |
@@ -260,6 +260,15 @@ dotnet ef migrations has-pending-model-changes --project src/Services/Employee/E
 | 생성된 마이그레이션 파일(`<ID>_<이름>.cs` · `.Designer.cs` · `ModelSnapshot.cs`) 직접 수정 | 생성 코드는 고치지 않는다. sealed 처리는 partial 선언 파일로 한다 | `*.Sealed.cs` partial 선언 |
 | 개별 마이그레이션 부분 수정 · 임의 재생성 | 운영 전 리셋(`InitialCreate` 재생성)만 예외이고 절차가 정해져 있다 | [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md) 리셋 절차 ①~⑤ |
 | 트랜잭션을 끄는 마이그레이션(`suppressTransaction: true`, `CREATE INDEX CONCURRENTLY` 등) | MigrationService 재시도가 `MigrateAsync` 전체를 다시 실행하므로 마이그레이션마다 트랜잭션이어야 안전하다 | 트랜잭션 안에서 실행되는 DDL로 설계 |
+
+### 운영 전 리셋 뒤 (볼륨 삭제 필요)
+
+운영 전 리셋([ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md), `InitialCreate` 재생성)으로 마이그레이션 ID가 바뀐 커밋을 받았으면, AppHost를 다시 실행하기 **전에 볼륨 `emergency-hub-postgres-data`를 지웁니다**. 2026-09-28 S05-T05 리셋으로 ID가 `20260927134235_InitialCreate` → `20260928090646_InitialCreate`로 바뀌었습니다.
+
+- 이유: 기존 볼륨의 `"__EFMigrationsHistory"`에는 옛 ID만 있어서, MigrationService가 새 `InitialCreate`를 미적용으로 보고 `CREATE TABLE employees`를 다시 실행합니다. 테이블이 이미 있으므로 `42P07`(duplicate_table)로 실패하고 종료 코드가 0이 아니며, Api가 시작되지 않습니다(이력 테이블 동작에서 나온 예상, 실패 재현은 하지 않음).
+- 방법: 아래 [초기화 (볼륨 · user-secrets)](#초기화-볼륨--user-secrets)의 "볼륨만 지우는 경우"(①, ②)로 충분합니다. 전체 초기화(①~④)를 해도 됩니다.
+- **다른 worktree · clone과 볼륨을 공유합니다.** 같은 머신의 다른 worktree · clone도 같은 볼륨 이름을 쓰므로, 리셋 전 커밋의 worktree에서 AppHost를 실행하면 반대로 옛 `InitialCreate`가 새 스키마 볼륨 위에서 `42P07`로 실패할 수 있습니다. 리셋 전후 브랜치를 오갈 때마다 볼륨을 지웁니다.
+- 확인: 다시 실행한 뒤 [데이터베이스 로컬 DB 구성](../04-development/database.md#로컬-db-구성-apphost)의 psql 점검 8번이 1행 `20260928090646_InitialCreate` · `8.0.31`이어야 합니다.
 
 ## 초기화 (볼륨 · user-secrets)
 
@@ -343,3 +352,4 @@ dotnet user-secrets list --project src/Aspire/EmergencyHub.AppHost | sed -E 's/ 
 | 2026-09-28 | developer | `draft`로 작성: 셸 표기 규칙, 사전 준비(SDK 8.0.400 이상 · `global.json`, Docker Engine API 1.44 / `DOCKER_API_VERSION=1.43`(BL-102), 도구 매니페스트, 개발 인증서 확인 · 신뢰 명령과 `http` 프로필 대안(BL-099)), 저장소 클론(짧은 경로 · MAX_PATH, BL-049), docker compose 제목을 "로컬 구성 (Aspire AppHost)"으로 바꿈, 로컬 설정(사전 설정 없음, 키 이름만 확인), 서비스 빌드 및 실행(명령 1개, 프로필 2개, 대시보드 확인, 중지 · 프로세스 종료 명령), 동작 확인(헬스, 등록 → 조회 두 셸 실측, Swagger). DB 마이그레이션 · 초기화 절은 dba 작성분 유지하고 절 순서만 뒤로 (S04-T03) |
 | 2026-09-28 | developer | 반려 1회째 재작업: 등록 → 조회 두 셸 명령의 `email`을 대소문자 섞인 `Hong.Gildong@Example.com`으로 바꾸고 기대 결과 조회 응답을 소문자 정규화 값 `hong.gildong@example.com`으로 맞춤(입력 → 출력 일치), 연속 빈 줄 2곳 정리 (S04-T03) |
 | 2026-09-28 | developer | 동작 확인에서 PRD-001 샘플 등록 · 조회 명령 · 기대 결과를 지우고 헬스 · Swagger(경로 0개)만 남김(샘플 API 제거) (S05-T04) |
+| 2026-09-28 | dba | 운영 전 리셋 뒤 볼륨 삭제 안내 절 추가(ID `20260928090646_InitialCreate`, 옛 볼륨의 `42P07` 예상, 다른 worktree · clone 볼륨 공유 주의, psql 점검 8번 확인), 허용 명령 2번에 스냅샷이 없을 때 `--output-dir Persistence/Migrations` 필수(S05-T05 실측) (S05-T05) |

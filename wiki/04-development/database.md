@@ -164,7 +164,7 @@ Get-Content checks-superuser.sql | docker exec -i <컨테이너> sh -c 'PGPASSWO
 | 테이블 | 복수형 | `employees`, `contact_groups` |
 | 기본 키 컬럼 | `id` | `employees.id` |
 | 외래 키 컬럼 | 단수 대상 + `_id` | `employee_id` |
-| 일반 컬럼 | 의미 단위 snake_case | `display_name`, `hired_on` |
+| 일반 컬럼 | 의미 단위 snake_case | `phone_number`, `normalized_email` |
 | 불리언 | `is_` / `has_` 접두사 | `is_primary`, `has_consent` |
 | 시각 | `_at` 접미사 (timestamptz) | `created_at`, `acknowledged_at` |
 | 날짜 | `_on` 접미사 (date) | `hired_on` |
@@ -173,21 +173,21 @@ Get-Content checks-superuser.sql | docker exec -i <컨테이너> sh -c 'PGPASSWO
 | 기본 키 제약 | `pk_<table>` | `pk_employees` |
 | 외래 키 제약 | `fk_<table>_<ref_table>_<column>` | `fk_contacts_employees_employee_id` |
 | 인덱스 | `ix_<table>_<columns>` | `ix_employees_department_id` |
-| 유니크 인덱스 | `ux_<table>_<columns>` | `ux_employees_email` |
+| 유니크 인덱스 | `ux_<table>_<columns>` | `ux_employees_normalized_email` |
 | 체크 제약 | `ck_<table>_<rule>` | `ck_employees_employee_status` |
 
 - **식별자 길이는 63바이트 이하**로 한다. PostgreSQL은 더 긴 이름을 경고 없이 잘라 저장하므로, 잘린 제약 이름은 `23505` 매핑(`ConstraintName`)과 일치하지 않는다. 길면 `<columns>` / `<rule>`을 줄여 짓는다.
 - `EFCore.NamingConventions`는 유니크 인덱스도 `ix_`로 만든다. 유니크 인덱스는 BuildingBlocks 도우미로 **`HasDatabaseName`을 명시해 `ux_`로 덮어쓴다**([EF Core 공통 모델 규칙](#ef-core-공통-모델-규칙-buildingblocksinfrastructure)).
 - `ux_` 이름은 서비스 Infrastructure의 **이름 상수 한 곳**에 두고, 매핑(`HasDatabaseName`)과 `23505` 매핑 레지스트리가 같은 상수를 참조한다(문자열 중복 금지).
 
-**적용 범위 실측**(2026-09-28, `dotnet ef migrations script --idempotent` 재생성 출력, 마이그레이션 `20260927134235_InitialCreate` 하나). 규칙 표 중 실제 스키마에 나타난 것과 아직 대상이 없는 것을 나눠 둡니다. 대상이 없는 행은 첫 사례가 생기는 작업에서 [생성 SQL 점검표](#생성-sql-점검표-ag)로 처음 실측합니다.
+**적용 범위 실측**(2026-09-28 S05-T05, `dotnet ef migrations script --idempotent` 출력, 마이그레이션 `20260928090646_InitialCreate` 하나). 규칙 표 중 실제 스키마에 나타난 것과 아직 대상이 없는 것을 나눠 둡니다. 대상이 없는 행은 첫 사례가 생기는 작업에서 [생성 SQL 점검표](#생성-sql-점검표-ag)로 처음 실측합니다.
 
 | 구분 | 이름 | 비고 |
 |---|---|---|
-| 적용됨 | 테이블 `employees`, 컬럼 `id` · `display_name` · `email` · `employee_status` · `created_at` · `updated_at`, `pk_employees`, `ux_employees_email`, `ck_employees_employee_status` | 모두 따옴표 없는 소문자 snake_case, 스키마 한정자 없음. 최장 식별자 `ck_employees_employee_status` 28바이트(63바이트 한도 안) |
-| 대상 없음 | 외래 키 컬럼 · `fk_`, `ix_`, 불리언 `is_` / `has_`, 날짜 `_on`, 비트 플래그 컬럼 | 규칙만 있고 생성 SQL에 사례가 없다(비트 플래그는 BL-088) |
+| 적용됨 | 테이블 `employees`, 컬럼 `id` · `name` · `email` · `normalized_email` · `phone_number` · `joined_on` · `employee_status` · `created_at` · `updated_at`, `pk_employees`, `ck_employees_employee_status`, `ux_employees_normalized_email`, `ix_employees_joined_on_id`, `ix_employees_name_joined_on_id` | 모두 따옴표 없는 소문자 snake_case, 스키마 한정자 없음. 최장 식별자 `ix_employees_name_joined_on_id` 30바이트(63바이트 한도 안). `ix_`는 명명 규칙이 만든 이름 그대로, 날짜 `_on`은 `joined_on`(`date`) |
+| 대상 없음 | 외래 키 컬럼 · `fk_`, 불리언 `is_` / `has_`, 비트 플래그 컬럼 | 규칙만 있고 생성 SQL에 사례가 없다(비트 플래그는 BL-088) |
 | 예외(테이블 이름) | `"__EFMigrationsHistory"` | 따옴표가 필요한 유일한 테이블 이름. 컬럼 `migration_id` · `product_version`과 PK `pk___ef_migrations_history`는 snake_case([마이그레이션 규칙](#마이그레이션-규칙)) |
-| 예외(EF 생성 조회 조건) | `"migration_id"` | idempotent 스크립트의 마이그레이션별 조건(`IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = ...)`)에서만 EF가 따옴표로 감싼다. 소문자라 따옴표 없는 이름과 같은 컬럼이다. 출력 전체의 따옴표 식별자는 `"__EFMigrationsHistory"` 5곳 · `"migration_id"` 3곳뿐이다 |
+| 예외(EF 생성 조회 조건) | `"migration_id"` | idempotent 스크립트의 마이그레이션별 조건(`IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = ...)`)에서만 EF가 따옴표로 감싼다. 소문자라 따옴표 없는 이름과 같은 컬럼이다. 출력 전체의 따옴표 식별자는 `"__EFMigrationsHistory"` 7곳 · `"migration_id"` 5곳뿐이다 |
 | 규칙 대상 밖 | 시스템 컬럼 `xmin` | 생성 SQL에 컬럼 생성이 없다([트랜잭션 & 동시성 제어](#트랜잭션--동시성-제어)) |
 | 규칙 대상 밖 | 테스트 전용 `test_fault_*` · `test_probe_*` | 통합 테스트 fixture 안에서만 만들고 지운다(마이그레이션 · 운영 스키마에 없음, [테스트 전략 · 장애 주입](testing-strategy.md#장애-주입)) |
 
@@ -276,7 +276,7 @@ var smsEnabled = await db.Employees
 | Employee | `EmployeeStatus` (`employees.employee_status`) | 1 | `Active` | 재직(활성) | 사용 |
 | Employee | `EmployeeStatus` (`employees.employee_status`) | 2 | `Inactive` | 비활성 | 사용 |
 
-- 체크 제약: `ck_employees_employee_status CHECK (employee_status IN (1, 2))`(공통 도우미가 enum 정의에서 생성, S03-T02). 원본 enum `EmergencyHub.Employee.Domain.Employees.EmployeeStatus : short`(`Unknown = 0` 예약, `Active = 1`, `Inactive = 2`)와 InitialCreate 스냅샷의 체크 제약이 일치한다(S04-T02 대조).
+- 체크 제약: `ck_employees_employee_status CHECK (employee_status IN (1, 2))`(공통 도우미가 enum 정의에서 생성, S03-T02). 원본 enum `EmergencyHub.Employee.Domain.Employees.EmployeeStatus : short`(`Unknown = 0` 예약, `Active = 1`, `Inactive = 2`)와 InitialCreate 스냅샷의 체크 제약이 일치한다(S04-T02 대조, S05-T05 재생성 `20260928090646_InitialCreate`에서도 같음).
 - 비트 플래그(`[Flags]`) 코드는 아직 없다(BL-088).
 - PRD-002 새 스키마에서도 `EmployeeStatus`(1 · 2)와 체크 제약은 그대로다(등록 시 Active=1 고정, S05-T04). 입력 형식 코드 `EmployeeImportFormat`은 DB에 저장하지 않으므로 이 표에 넣지 않는다([ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md)).
 
@@ -361,25 +361,25 @@ var smsEnabled = await db.Employees
   - 결과: 성공이면 `Environment.ExitCode = 0`, 예외 · 취소면 0이 아닌 값을 **명시적으로** 설정한 뒤 호스트를 멈춘다(`StopApplication`). 실패 로그는 `Error` 수준 하나로, 속성은 DbContext 형식 이름 · 예외 형식 · SqlState(있으면)와 예외 객체다. 연결 문자열 · 비밀번호는 넣지 않는다(`Include Error Detail` 미사용이라 `PostgresException.Detail` 값은 가려진다, SQL 파라미터 미기록). 연결 문자열 누락은 등록 시 예외로 시작 전에 종료된다(0이 아닌 종료 코드, 메시지에 값 없음).
   - MigrationService는 Worker라 HTTP · `/health` 엔드포인트가 없다. 준비 판단은 AppHost의 `WaitForCompletion`(종료 코드)이 한다. `Application Name`(예: `employee-migration`)은 선택이며, 넣으면 AppHost 연결 식에서 넣는다(코드 · 공통 옵션 구성에서 연결 문자열을 고치지 않음).
 - **설계 시점 팩터리**: `IDesignTimeDbContextFactory`는 쓰기 DbContext만 만들고, 연결 문자열은 환경 변수 또는 더미 값을 쓴다(비밀 없음). 한 어셈블리에 DbContext가 2개라 `dotnet ef`에는 `--context <Service>DbContext`가 필수다. `Migrations/**`는 생성 코드(`generated_code`)로 분석에서 뺀다. `generated_code`는 컴파일러 경고 CS1591을 끄지 못하므로 `.editorconfig` 같은 섹션에 `dotnet_diagnostic.CS1591.severity = none`을 함께 둔다(BL-047).
-- **sealed partial 선언**: 마이그레이션 · 모델 스냅샷 생성 클래스는 `sealed`가 아니어서 [코딩 컨벤션](coding-conventions.md)의 "클래스는 기본 sealed"와 아키텍처 규칙 `ClassesAreSealed`를 어긴다. **생성 파일은 고치지 않고**, 같은 폴더에 직접 작성한 partial 선언 파일을 둔다: 마이그레이션마다 `<마이그레이션 ID>.Sealed.cs`(`public sealed partial class <이름>;`), 서비스마다 `<DbContext>ModelSnapshot.Sealed.cs`(`internal sealed partial class <DbContext>ModelSnapshot;`). `migrations add`로 **새 마이그레이션을 만들 때마다** 선언 파일을 함께 추가한다. ADR-0012 리셋 절차(`InitialCreate` 재생성)에서도 같은 조치를 하고, 마이그레이션 ID(타임스탬프)가 바뀌므로 선언 파일 이름도 새 ID로 맞춘다(`Migrations/` 폴더를 지웠다면 스냅샷 선언 파일도 다시 만든다). `.editorconfig`의 `[**/Persistence/Migrations/*.Sealed.cs]` 섹션이 이 파일들을 생성 코드에서 빼므로(`generated_code = false`, CS1591 warning) 분석기 · 스타일 규칙이 그대로 적용된다(S03-T02).
+- **sealed partial 선언**: 마이그레이션 · 모델 스냅샷 생성 클래스는 `sealed`가 아니어서 [코딩 컨벤션](coding-conventions.md)의 "클래스는 기본 sealed"와 아키텍처 규칙 `ClassesAreSealed`를 어긴다. **생성 파일은 고치지 않고**, 같은 폴더에 직접 작성한 partial 선언 파일을 둔다: 마이그레이션마다 `<마이그레이션 ID>.Sealed.cs`(`public sealed partial class <이름>;`), 서비스마다 `<DbContext>ModelSnapshot.Sealed.cs`(`internal sealed partial class <DbContext>ModelSnapshot;`). `migrations add`로 **새 마이그레이션을 만들 때마다** 선언 파일을 함께 추가한다. ADR-0012 리셋 절차(`InitialCreate` 재생성)에서도 같은 조치를 하고, 마이그레이션 ID(타임스탬프)가 바뀌므로 선언 파일 이름도 새 ID로 맞춘다(`Migrations/` 폴더를 지웠다면 스냅샷 선언 파일도 다시 만든다). 리셋처럼 모델 스냅샷까지 지운 뒤 `migrations add`를 실행할 때는 **`--output-dir Persistence/Migrations`가 필수**다. 없으면 EF가 기본 폴더 `Migrations/`에 네임스페이스 `<프로젝트>.Migrations`로 만든다(S05-T05 실측, 명령은 [로컬 개발 환경 구성의 DB 마이그레이션](../01-getting-started/local-setup.md#db-마이그레이션)). `.editorconfig`의 `[**/Persistence/Migrations/*.Sealed.cs]` 섹션이 이 파일들을 생성 코드에서 빼므로(`generated_code = false`, CS1591 warning) 분석기 · 스타일 규칙이 그대로 적용된다(S03-T02).
 - **`__EFMigrationsHistory`**: snake_case 규칙의 예외는 **테이블 이름 하나뿐**이다. 테이블 이름은 EF 기본 이름을 유지하므로 SQL에서 따옴표가 필요하다(`"__EFMigrationsHistory"`). 컬럼과 기본 키 제약은 snake_case로 생성된다: `migration_id character varying(150)` · `product_version character varying(32)` · `pk___ef_migrations_history`(따옴표 불필요). 원인은 `EFCore.NamingConventions` 8.0.3의 `UseSnakeCaseNamingConvention()`이 이력 테이블 컬럼 · PK에도 적용되기 때문이다(S03-T02 `InitialCreate` idempotent SQL 실측). [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md)의 "컬럼 `MigrationId` · `ProductVersion`은 따옴표 필요" 기재(와 ADR-0022의 같은 기재)와 다르며, **이 문서가 실제 동작 기준**이다. ADR-0012 이력 컬럼 조항의 대체는 ADR 후보(S03 결과 리뷰 목록)로만 남아 있고 아직 ADR이 없다. 스키마를 지정하지 않으므로 `public."__EFMigrationsHistory"`에 생긴다([Database per Service 원칙](#database-per-service-원칙)의 스키마 규칙). 통합 테스트 Respawn 초기화 대상에서 제외한다([ADR-0022](../03-architecture/adr/0022-respawn-and-coverage-tooling.md)). 제외와 존재 확인은 **테이블 이름 대소문자 그대로** 동작한다(S03-T06 실측): Respawn `new Table("public", "__EFMigrationsHistory")`만 제외되고 소문자 · 따옴표 포함 이름은 제외되지 않으며, `to_regclass`는 따옴표를 붙인 `'public."__EFMigrationsHistory"'`로만 찾는다.
 - **운영 전 리셋 정책**: 운영 배포(Phase 4) 전까지(그보다 먼저 로컬 밖 지속 공유 DB가 생기면 그때까지) 마이그레이션 전체 리셋을 허용한다. 절차 ①~⑤와 기록 방법(리셋만 담은 커밋, 스프린트 기록, 이 문서 변경 이력 한 줄)은 [ADR-0012](../03-architecture/adr/0012-migration-apply-and-pre-production-reset.md)를 따른다.
 
 ### 생성 SQL 점검표 (a~g)
 
-마이그레이션을 추가 · 재생성하는 작업에서 dba가 `dotnet ef migrations script --idempotent` 출력(명령은 [로컬 개발 환경 구성의 DB 마이그레이션](../01-getting-started/local-setup.md#db-마이그레이션))을 점검하는 표의 **원본**입니다. 항목 이름과 순서를 바꾸지 않고, 진행 기록에는 항목마다 결과를 적습니다(해당 사례가 없으면 "대상 없음"과 근거). 실측 열은 2026-09-28 `20260927134235_InitialCreate` 재생성 출력입니다.
+마이그레이션을 추가 · 재생성하는 작업에서 dba가 `dotnet ef migrations script --idempotent` 출력(명령은 [로컬 개발 환경 구성의 DB 마이그레이션](../01-getting-started/local-setup.md#db-마이그레이션))을 점검하는 표의 **원본**입니다. 항목 이름과 순서를 바꾸지 않고, 진행 기록에는 항목마다 결과를 적습니다(해당 사례가 없으면 "대상 없음"과 근거). 실측 열은 2026-09-28 S05-T05 리셋(ADR-0012)으로 다시 만든 `20260928090646_InitialCreate`의 출력입니다.
 
 | 항목 | 점검 내용 | InitialCreate 실측 |
 |---|---|---|
-| a 명명 규칙 | 테이블 · 컬럼 · 제약 · 인덱스 이름이 [네이밍 규칙](#테이블--컬럼-네이밍-규칙-snake_case)(소문자 snake_case, 63바이트 이하)을 따르고, 스키마 한정자가 없으며, 따옴표 식별자가 f의 예외뿐이다 | 통과. 최장 28바이트, 스키마 한정자 없음, 따옴표 식별자는 `"__EFMigrationsHistory"` 5 · `"migration_id"` 3 |
-| b 타입 | 컬럼 타입이 [데이터 타입 규칙](#데이터-타입-규칙)과 같다(키 `uuid`, 코드 `smallint`, 비트 플래그 `integer` / `bigint`, 문자열 `text` / `character varying(n)`, 시각 `timestamp with time zone`). `char(n)` · `timestamp without time zone` · `money` · `float`가 없다 | 통과. `uuid` · `character varying(100)` · `character varying(254)` · `smallint` · `timestamp with time zone` 2개 |
-| c NOT NULL · 기본값 | 컬럼은 NOT NULL이 기본이고 NULL 허용은 설계에 근거가 있다. `DEFAULT`가 없다(ID는 `ValueGeneratedNever`, 감사 컬럼은 인터셉터). `xmin` 컬럼 생성이 없다 | 통과. 6개 모두 NOT NULL, `DEFAULT` 0건, `xmin` 없음 |
-| d 제약(`pk_` · `ux_` · `ck_` · `fk_`) | 제약 이름이 접두사 규칙을 따른다. `ck_` 식이 enum 정의 값(0 제외 오름차순) 또는 마스크 조건(`col >= 0 AND (col & ~mask) = 0`)과 같다. `ux_`는 매핑 이름 상수와 같다. `fk_`는 `fk_<table>_<ref_table>_<column>`이다. `DEFERRABLE`이 없다 | 통과. `pk_employees PRIMARY KEY (id)`, `ck_employees_employee_status CHECK (employee_status IN (1, 2))`, `ux_employees_email`. `fk_` 대상 없음 |
-| e 인덱스 | 인덱스 목록이 ERD 표와 같다. 유니크 인덱스가 `ix_`로 남지 않았고(`ux_`로 덮어씀) 의도하지 않은 `ix_`가 없다. `CREATE INDEX CONCURRENTLY`가 없다 | 통과. `CREATE UNIQUE INDEX ux_employees_email ON employees (email)` 1개, `ix_` 없음 |
+| a 명명 규칙 | 테이블 · 컬럼 · 제약 · 인덱스 이름이 [네이밍 규칙](#테이블--컬럼-네이밍-규칙-snake_case)(소문자 snake_case, 63바이트 이하)을 따르고, 스키마 한정자가 없으며, 따옴표 식별자가 f의 예외뿐이다 | 통과. 최장 `ix_employees_name_joined_on_id` 30바이트, 스키마 한정자 없음, 따옴표 식별자는 `"__EFMigrationsHistory"` 7 · `"migration_id"` 5 |
+| b 타입 | 컬럼 타입이 [데이터 타입 규칙](#데이터-타입-규칙)과 같다(키 `uuid`, 코드 `smallint`, 비트 플래그 `integer` / `bigint`, 문자열 `text` / `character varying(n)`, 시각 `timestamp with time zone`). `char(n)` · `timestamp without time zone` · `money` · `float`가 없다 | 통과. `uuid` · `character varying(100)` · `character varying(254)` 2개 · `character varying(20)` · `date` · `smallint` · `timestamp with time zone` 2개 |
+| c NOT NULL · 기본값 | 컬럼은 NOT NULL이 기본이고 NULL 허용은 설계에 근거가 있다. `DEFAULT`가 없다(ID는 `ValueGeneratedNever`, 감사 컬럼은 인터셉터). `xmin` 컬럼 생성이 없다 | 통과. 9개 모두 NOT NULL, `DEFAULT` 0건, `xmin` 없음 |
+| d 제약(`pk_` · `ux_` · `ck_` · `fk_`) | 제약 이름이 접두사 규칙을 따른다. `ck_` 식이 enum 정의 값(0 제외 오름차순) 또는 마스크 조건(`col >= 0 AND (col & ~mask) = 0`)과 같다. `ux_`는 매핑 이름 상수와 같다. `fk_`는 `fk_<table>_<ref_table>_<column>`이다. `DEFERRABLE`이 없다 | 통과. `pk_employees PRIMARY KEY (id)`, `ck_employees_employee_status CHECK (employee_status IN (1, 2))`, `ux_employees_normalized_email`(`EmployeeDbNames.NormalizedEmailUniqueIndex`와 같음). `DEFERRABLE` 없음, `fk_` 대상 없음 |
+| e 인덱스 | 인덱스 목록이 ERD 표와 같다. 유니크 인덱스가 `ix_`로 남지 않았고(`ux_`로 덮어씀) 의도하지 않은 `ix_`가 없다. `CREATE INDEX CONCURRENTLY`가 없다 | 통과. 3개: `CREATE INDEX ix_employees_joined_on_id ON employees (joined_on, id);` · `CREATE INDEX ix_employees_name_joined_on_id ON employees (name, joined_on, id);` · `CREATE UNIQUE INDEX ux_employees_normalized_email ON employees (normalized_email);`. 유니크 인덱스가 `ix_`로 남지 않음, `email` 인덱스 없음, `CONCURRENTLY` 없음 |
 | f 이력 테이블 예외 | `CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory"`의 테이블 이름만 예외이고 컬럼 · PK는 snake_case다. 이력 `INSERT`의 `product_version`이 EF 도구 버전과 같다 | 통과. `migration_id character varying(150)` · `product_version character varying(32)` · `pk___ef_migrations_history`, `INSERT` 값 `8.0.31` |
-| g idempotent 재실행 | 마이그레이션의 모든 문이 `IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = ...)` 블록 안에 있고 전체가 `START TRANSACTION` ~ `COMMIT`이다. 이미 적용된 DB에서 두 번 실행해도 오류 0 · 이력 1행이다 | 통과. 블록 3개(`CREATE TABLE` · `CREATE UNIQUE INDEX` · 이력 `INSERT`). 재실행은 통합 테스트 `MigrationReapplyTests`(3개, [테스트 전략](testing-strategy.md#db-검증-쿼리) Q12) |
+| g idempotent 재실행 | 마이그레이션의 모든 문이 `IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = ...)` 블록 안에 있고 전체가 `START TRANSACTION` ~ `COMMIT`이다. 이미 적용된 DB에서 두 번 실행해도 오류 0 · 이력 1행이다 | 통과. 블록 5개(`CREATE TABLE` · `CREATE INDEX` 2 · `CREATE UNIQUE INDEX` · 이력 `INSERT`). 재실행은 통합 테스트 `MigrationReapplyTests`(3개, [테스트 전략](testing-strategy.md#db-검증-쿼리) Q12) |
 
-- **생성 형식 점검(아키텍처 규칙)**: 생성 SQL과 함께 생성 C# 형식이 아키텍처 규칙에 맞는지 본다. 새 마이그레이션마다 `<마이그레이션 ID>.Sealed.cs`, 서비스마다 `<DbContext>ModelSnapshot.Sealed.cs`가 있고(위 "sealed partial 선언"), `ClassesAreSealed_ProductAssemblies_Holds`가 통과한다. 트랜잭션을 끄는 마이그레이션(`suppressTransaction: true`)이 없다(MigrationService 동작 사양). 2026-09-28 현재 `Persistence/Migrations/`에 `20260927134235_InitialCreate.Sealed.cs` · `EmployeeDbContextModelSnapshot.Sealed.cs`가 있다.
+- **생성 형식 점검(아키텍처 규칙)**: 생성 SQL과 함께 생성 C# 형식이 아키텍처 규칙에 맞는지 본다. 새 마이그레이션마다 `<마이그레이션 ID>.Sealed.cs`, 서비스마다 `<DbContext>ModelSnapshot.Sealed.cs`가 있고(위 "sealed partial 선언"), `ClassesAreSealed_ProductAssemblies_Holds`가 통과한다. 트랜잭션을 끄는 마이그레이션(`suppressTransaction: true`)이 없다(MigrationService 동작 사양). 2026-09-28 S05-T05 리셋 뒤 `Persistence/Migrations/`에 `20260928090646_InitialCreate.Sealed.cs` · `EmployeeDbContextModelSnapshot.Sealed.cs`가 있다(생성 3 + 선언 2 = 5개).
 - 점검 결과가 이 문서의 ERD · 코드 정의 표와 다르면 같은 작업에서 문서를 고친다.
 
 ## 트랜잭션 & 동시성 제어
@@ -481,18 +481,13 @@ var smsEnabled = await db.Employees
 
 ### Employee (`emergency_hub_employee`, 스키마 `public`)
 
-> **어느 쪽이 현재 기준인가(S05-T04 ~ T05 사이).** 이 절에는 두 스키마가 함께 있습니다.
-> - **EF 모델(매핑 · `EmployeeConfiguration` · 메타데이터 테스트)의 기준은 아래 "새 스키마 명세"** 입니다. S05-T04부터 매핑은 이 명세를 따릅니다. 명세는 **실측 전**이며, S05-T05 `InitialCreate` 재생성의 `--idempotent` 생성 SQL로 확정합니다.
-> - **마이그레이션 · 실제 DB(AppHost 볼륨, Testcontainers)의 기준은 그 아래 "옛 스키마"(`20260927134235_InitialCreate`)** 입니다. S05-T05 리셋 커밋 전까지 적용되는 스키마는 이것뿐이므로, 그 사이 스냅샷 비교 · 통합 테스트 실패는 S05-T04 허용 목록으로 다룹니다.
-> - S05-T05 커밋 D에서 옛 스키마 ERD · InitialCreate 대조 표를 새 실측값으로 교체하고, 새 명세의 "실측 전" 표시를 지웁니다.
+#### 새 스키마 명세 (`20260928090646_InitialCreate` 실측)
 
-#### 새 스키마 명세 (실측 전, S05-T05에서 생성 SQL로 확정)
-
-원본 요구사항: [PRD-002](../10-delivery/prd/PRD-002-employee-contacts.md) FR-01 · FR-02, [ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md). 작성: S05-T04 dba(2026-09-28). 아래 SQL 문자열은 기대값이며 아직 생성 SQL로 확인하지 않았습니다.
+원본 요구사항: [PRD-002](../10-delivery/prd/PRD-002-employee-contacts.md) FR-01 · FR-02, [ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md). 작성: S05-T04 dba(2026-09-28). S05-T05 리셋(ADR-0012)으로 다시 만든 `20260928090646_InitialCreate`의 `dotnet ef migrations script --idempotent` 출력으로 컬럼 순서 · 타입 · NOT NULL · 기본값 · 제약 · 인덱스를 확인했고, 아래 표와 모두 같습니다(2026-09-28 S05-T05 dba). 스냅샷 속성은 `EmployeeDbContextModelSnapshot`과 같습니다(ProductVersion `8.0.31`).
 
 **컬럼**(표의 순서 = `CREATE TABLE` 열 순서)
 
-| 순서 | 컬럼 | 생성 SQL 타입(기대) | NULL | 기본값 | 모델 속성 · 매핑 | 비고 |
+| 순서 | 컬럼 | 생성 SQL 타입 | NULL | 기본값 | 모델 속성 · 매핑 | 비고 |
 |---|---|---|---|---|---|---|
 | 1 | `id` | `uuid` | NOT NULL | 없음 | `Id`(`EmployeeId`), 공통 규칙의 강타입 ID 변환 · `ValueGeneratedNever` | UUID v7, Handler 생성([ADR-0013](../03-architecture/adr/0013-uuid-v7-with-uuidnext.md)) |
 | 2 | `name` | `character varying(100)` | NOT NULL | 없음 | `Name`(VO), `HasConversion`(값 ↔ `string`) + `HasMaxLength(Name.MaxLength)` | Trim + NFC 뒤 값. 옛 `display_name` 대체 |
@@ -505,14 +500,14 @@ var smsEnabled = await db.Employees
 | 9 | `updated_at` | `timestamp with time zone` | NOT NULL | 없음 | shadow `UpdatedAt`(공통 규칙) | 감사 인터셉터, UTC |
 | - | `xmin` | (생성 안 함, 시스템 컬럼 `xid`) | - | - | shadow `Version`(공통 규칙) | 생성 SQL에 컬럼 생성이 없어야 한다 |
 
-- 열 순서는 **Aggregate 속성 선언 순서**로 정한다(키 → CLR 속성 선언 순서 → shadow 속성, 옛 InitialCreate와 같은 방식). `HasColumnOrder`는 쓰지 않는다. 그래서 `Employee`의 공개 속성은 `Name` · `Email` · `NormalizedEmail` · `PhoneNumber` · `JoinedOn` · `EmployeeStatus` 순서로 선언한다. 이 순서 규칙은 EF Core 8 동작에 대한 기대이며 S05-T05 생성 SQL로 확정한다.
+- 열 순서는 **Aggregate 속성 선언 순서**로 정한다(키 → CLR 속성 선언 순서 → shadow 속성, 옛 InitialCreate와 같은 방식). `HasColumnOrder`는 쓰지 않는다. 그래서 `Employee`의 공개 속성은 `Name` · `Email` · `NormalizedEmail` · `PhoneNumber` · `JoinedOn` · `EmployeeStatus` 순서로 선언한다. 이 순서 규칙은 S05-T05 생성 SQL(`CREATE TABLE employees (` 블록의 `id` → `updated_at` 순서)로 확인했다.
 - 기본값(`DEFAULT`) · 계산 컬럼은 하나도 없다. `HasDefaultValue` · `HasDefaultValueSql`을 쓰지 않는다.
 - 값 변환기 네 개는 `EmployeeConfiguration` 안에서만 선언한다(공통 규약으로 넓히지 않음, [EF Core 구성](#ef-core-구성-npgsql)). DB → 모델 변환은 VO의 `Create`를 거친다(`v => Name.Create(v).Value`, `JoinedOn`은 `DateOnly`를 `JoinedOn.Format` · InvariantCulture 문자열로 바꿔 `Create`에 넘김). DB 값이 VO 규칙을 어기면 구체화 때 예외가 난다(DB에는 해당 ck가 없으므로 원시 SQL · 테스트 시드는 규칙에 맞는 값만 넣는다).
 - 길이 상수는 VO의 `public const`(`Name.MaxLength` 100 · `Email.MaxLength` 254 · `PhoneNumber.MaxLength` 20)를 참조하고 매핑에 숫자를 다시 쓰지 않는다. 옛 `Employee.DisplayNameMaxLength` · `Employee.EmailMaxLength`는 쓰지 않는다.
 
-**제약 · 인덱스**(기대 SQL)
+**제약 · 인덱스**(생성 SQL)
 
-| 종류 | 이름 | 대상(열 순서) | 기대 SQL | 이름 결정 방식 | 바이트 |
+| 종류 | 이름 | 대상(열 순서) | 생성 SQL | 이름 결정 방식 | 바이트 |
 |---|---|---|---|---|---|
 | 기본 키 | `pk_employees` | `(id)` | `CONSTRAINT pk_employees PRIMARY KEY (id)` | 명명 규칙(snake_case) | 12 |
 | 체크 | `ck_employees_employee_status` | `employee_status` | `CONSTRAINT ck_employees_employee_status CHECK (employee_status IN (1, 2))` | 공통 도우미(enum 정의, 0 제외) | 28 |
@@ -530,16 +525,17 @@ var smsEnabled = await db.Employees
 
 **DB에 저장하지 않는 코드**: `EmployeeImportFormat`(`Csv = 1` · `Json = 2`, [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md))은 Command 입력 코드라 컬럼 · 체크 제약이 없고 [코드 정의](#코드-정의) 표 대상이 아니다.
 
-#### 옛 스키마 (적용 중인 `20260927134235_InitialCreate`, S05-T05 리셋 때 교체)
-
-아래 ERD · 대조 표는 S05-T05 리셋 전까지 **마이그레이션 · DB에 적용되는 스키마**의 실측 기록입니다. EF 모델 기준은 위 새 스키마 명세입니다.
+#### ERD (`20260928090646_InitialCreate`)
 
 ```mermaid
 erDiagram
     employees {
         uuid id PK "pk_employees, 기본값 없음(UUID v7, Handler 생성)"
-        varchar(100) display_name "NOT NULL, 앞뒤 공백 제거 값"
-        varchar(254) email UK "NOT NULL, ux_employees_email, Trim + 소문자(Invariant) 정규화 값"
+        varchar(100) name "NOT NULL, Trim + NFC 값, ix_employees_name_joined_on_id 첫 열"
+        varchar(254) email "NOT NULL, Trim만 한 입력 표기(인덱스 없음)"
+        varchar(254) normalized_email UK "NOT NULL, ux_employees_normalized_email, ToLowerInvariant(email)"
+        varchar(20) phone_number "NOT NULL, 입력 그대로, 중복 허용"
+        date joined_on "NOT NULL, ix_employees_joined_on_id 첫 열"
         smallint employee_status "NOT NULL, ck_employees_employee_status IN (1, 2)"
         timestamptz created_at "NOT NULL, 감사(UTC)"
         timestamptz updated_at "NOT NULL, 감사(UTC)"
@@ -547,27 +543,18 @@ erDiagram
     }
 ```
 
-InitialCreate 대조(S04-T02 dba, 마이그레이션 `20260927134235_InitialCreate` · `EmployeeDbContextModelSnapshot` · `migrations script --idempotent` 출력):
+InitialCreate 대조(S05-T05 dba, 마이그레이션 `20260928090646_InitialCreate` · `EmployeeDbContextModelSnapshot` · `migrations script --idempotent` 출력): 컬럼 9개의 타입 · NOT NULL · 기본값 없음은 위 "새 스키마 명세" 컬럼 표와 같다. 스냅샷은 `xmin`을 shadow `Version`(`IsConcurrencyToken` · `ValueGeneratedOnAddOrUpdate` · `xid`)으로 담고, 생성 SQL에는 `xmin` 컬럼 생성이 없다.
 
-| 컬럼 | 생성 SQL 타입 | NULL | 기본값 | 스냅샷 속성 |
-|---|---|---|---|---|
-| `id` | `uuid` | NOT NULL | 없음 | `Id` |
-| `display_name` | `character varying(100)` | NOT NULL | 없음 | `DisplayName`, `HasMaxLength(100)` |
-| `email` | `character varying(254)` | NOT NULL | 없음 | `Email`, `HasMaxLength(254)` |
-| `employee_status` | `smallint` | NOT NULL | 없음 | `EmployeeStatus`(`short`) |
-| `created_at` | `timestamp with time zone` | NOT NULL | 없음 | shadow `CreatedAt` |
-| `updated_at` | `timestamp with time zone` | NOT NULL | 없음 | shadow `UpdatedAt` |
-| `xmin` | (생성 안 함, 시스템 컬럼) | - | - | shadow `Version`, `IsConcurrencyToken` · `ValueGeneratedOnAddOrUpdate` · `xid` |
-
-- 제약 · 인덱스: `CONSTRAINT pk_employees PRIMARY KEY (id)`, `CONSTRAINT ck_employees_employee_status CHECK (employee_status IN (1, 2))`, `CREATE UNIQUE INDEX ux_employees_email ON employees (email)`. `ix_` 인덱스 · 외래 키 · 스키마 한정자 · `DEFAULT`는 없다. DDL(`CREATE TABLE` · `CREATE INDEX`)과 이력 `INSERT`에서 따옴표 식별자는 `"__EFMigrationsHistory"`뿐이다. 그 밖에 EF가 idempotent 스크립트의 마이그레이션별 조회 조건(`IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = ...)`, 이 스크립트에서 3곳)에만 `"migration_id"`를 따옴표로 감싸 생성한다. 이름이 소문자 snake_case라 따옴표가 없어도 같은 컬럼을 가리킨다. 이력 행 `product_version`은 `8.0.31`이다.
+- 제약 · 인덱스: `CONSTRAINT pk_employees PRIMARY KEY (id)`, `CONSTRAINT ck_employees_employee_status CHECK (employee_status IN (1, 2))`, `CREATE INDEX ix_employees_joined_on_id ON employees (joined_on, id);`, `CREATE INDEX ix_employees_name_joined_on_id ON employees (name, joined_on, id);`, `CREATE UNIQUE INDEX ux_employees_normalized_email ON employees (normalized_email);`. 외래 키 · 스키마 한정자 · `DEFAULT`는 없다. DDL(`CREATE TABLE` · `CREATE INDEX`)과 이력 `INSERT`에서 따옴표 식별자는 `"__EFMigrationsHistory"`뿐이다. 그 밖에 EF가 idempotent 스크립트의 마이그레이션별 조회 조건(`IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = ...)`, 이 스크립트에서 5곳)에만 `"migration_id"`를 따옴표로 감싸 생성한다. 이름이 소문자 snake_case라 따옴표가 없어도 같은 컬럼을 가리킨다. 이력 행 `product_version`은 `8.0.31`이다.
 - ERD의 `varchar(n)`은 `character varying(n)`, `timestamptz`는 `timestamp with time zone`과 같은 타입이다(Mermaid 표기 줄임).
+- 이전 스키마(`20260927134235_InitialCreate`, 컬럼 `display_name` · `ux_employees_email`)는 S05-T05 리셋으로 없어졌다. 기록은 이 문서의 git 이력(S05-T05 이전)에 있다.
 
 | 테이블 | 인덱스 · 제약 | 비고 |
 |---|---|---|
-| `employees` | 옛 스키마: `pk_employees`(id), `ux_employees_email`(email), `ck_employees_employee_status`. 새 스키마 명세: `pk_employees`, `ck_employees_employee_status`, `ux_employees_normalized_email`, `ix_employees_joined_on_id`, `ix_employees_name_joined_on_id` | 옛 스키마의 인덱스는 2개(PK 포함). 외래 키 없음. S05-T04 · T05부터 유니크 인덱스는 `ux_employees_normalized_email`(normalized_email)이고, `CHECK (normalized_email = lower(email))`는 두지 않는다. 실측(S05-T02): U+0130(`İ`)이 .NET `ToLowerInvariant`에서는 그대로, PostgreSQL libc `lower()`에서는 `i`라 Domain이 정상 처리한 값이 23514로 거부된다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)) |
+| `employees` | `pk_employees`(id), `ck_employees_employee_status`, `ux_employees_normalized_email`(normalized_email), `ix_employees_joined_on_id`(joined_on, id), `ix_employees_name_joined_on_id`(name, joined_on, id) | 인덱스는 4개(PK 포함). 외래 키 없음. 유니크 인덱스는 `ux_employees_normalized_email`(normalized_email)이고, `CHECK (normalized_email = lower(email))`는 두지 않는다. 실측(S05-T02): U+0130(`İ`)이 .NET `ToLowerInvariant`에서는 그대로, PostgreSQL libc `lower()`에서는 `i`라 Domain이 정상 처리한 값이 23514로 거부된다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)) |
 
 - 길이 규칙은 Domain(UTF-16 코드 단위)이 `varchar(n)`(코드 포인트)보다 엄격하므로, Domain을 거친 값은 PostgreSQL SqlState `22001`(string_data_right_truncation)을 일으키지 않는다. `joined_on` 하한(1900-01-01)과 이름 · 전화번호 형식은 DB 체크 제약이 없는 Domain 규칙이다(PRD-002 FR-01, S05-T03).
-- 이름 상수(테이블 `employees`, 유니크 인덱스)는 `EmergencyHub.Employee.Infrastructure`의 한 곳(`EmployeeDbNames`)에 두고, 매핑(`ToTable` · `HasUniqueIndex`)과 23505 매핑 등록(→ 23001 `EmployeeErrors.DuplicateEmail`)이 같은 상수를 쓴다. 옛 스키마의 상수는 `EmailUniqueIndex`(`ux_employees_email`)이고, S05-T04에서 `NormalizedEmailUniqueIndex`(`ux_employees_normalized_email`)로 바뀐다(위 새 스키마 명세).
+- 이름 상수(테이블 `employees`, 유니크 인덱스)는 `EmergencyHub.Employee.Infrastructure`의 한 곳(`EmployeeDbNames`)에 두고, 매핑(`ToTable` · `HasUniqueIndex`)과 23505 매핑 등록(→ 23001 `EmployeeErrors.DuplicateEmail`)이 같은 상수를 쓴다. 상수는 `EmployeesTable`(`employees`)과 `NormalizedEmailUniqueIndex`(`ux_employees_normalized_email`)다(위 새 스키마 명세의 이름 상수 위치).
 
 ---
 
@@ -600,3 +587,4 @@ InitialCreate 대조(S04-T02 dba, 마이그레이션 `20260927134235_InitialCrea
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #13 반영: 생성 SQL 점검표 a~g 원본(InitialCreate 실측 열), 생성 형식 아키텍처 규칙 점검 |
 | 2026-09-28 | developer | ADR-0026 · 0027 반영(S05-T02 dba 문안): 단일 값 Value Object는 엔티티 설정 안 값 변환기(Employee 4개, `NormalizedEmail`은 문자열 속성), 트랜잭션 규칙에 `RegisterEmployeesCommand` 다중 Aggregate 예외(상한 1,000) 링크, `employees` 인덱스 표의 CHECK 문구를 `ux_employees_normalized_email` 기준 · U+0130 실측 근거로, 길이(UTF-16이 varchar보다 엄격, SqlState 22001 없음) · `joined_on` 하한 · 이름 · 전화 형식은 Domain 규칙 한 줄. ERD · InitialCreate 대조 표는 S05-T05에서 갱신 (S05-T02) |
 | 2026-09-28 | dba | Employee 새 스키마 명세 추가(실측 전, S05-T05 생성 SQL로 확정): 컬럼 9개 + `xmin` 열 순서 · 타입 · NOT NULL · 기본값 없음 · 매핑(VO 값 변환기 4개, `NormalizedEmail` 문자열), 제약 · 인덱스 5개 기대 SQL(`ux_employees_normalized_email` 이름 상수, `ix_` 2개 명명 규칙 생성), 최장 식별자 30바이트, 이름 상수 위치, `EmployeeImportFormat` DB 미저장. 옛 스키마(`20260927134235_InitialCreate`)와 기준 구분 문장, 이름 상수 문단 · 인덱스 표를 두 스키마로 구분 (S05-T04) |
+| 2026-09-28 | dba | ADR-0012 운영 전 리셋: Employee `InitialCreate` 재생성(`20260927134235` → `20260928090646_InitialCreate`, 리셋 커밋 5ee04a4, 로컬 볼륨 삭제 필요). 새 스키마 명세의 "실측 전" 표시 · 기준 구분 인용 블록 제거, 옛 ERD · InitialCreate 대조를 새 실측값으로 교체, 적용 범위 실측 표(`ix_` · 날짜 `_on` 적용됨, 최장 30바이트, 따옴표 7 · 5), 점검표 a~g 실측 열, 인덱스 표(4개, PK 포함) · 이름 상수 문단 · Sealed 파일 문구, 리셋 때 `--output-dir Persistence/Migrations` 필수 (S05-T05) |
