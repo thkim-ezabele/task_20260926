@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [development]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 데이터베이스 (PostgreSQL)
@@ -474,6 +474,7 @@ var smsEnabled = await db.Employees
 - 운영에 필요한 기준 데이터는 마이그레이션(`HasData`)으로 넣는다. `HasData` 기준 데이터 테이블은 통합 테스트 Respawn의 `TablesToIgnore`에 추가한다(또는 초기화 뒤 재시드, [ADR-0022](../03-architecture/adr/0022-respawn-and-coverage-tooling.md)).
 - 통합 테스트 DB 규칙(`employee_app` 재현, `postgres:17`, 쓰기 연결로 Respawn)은 [테스트 전략 · 통합 테스트](testing-strategy.md#통합-테스트-testcontainers)에 있다.
 - 개발 / 테스트용 샘플 데이터는 마이그레이션에 넣지 않고 별도 시더(개발 환경 전용)로 넣는다.
+- 조회 성능 · 계획 확인용 10,000건 fixture 시더는 Employee 통합 테스트 `TestData/EmployeeBulkSeeder`다(S07-T03). 쓰기 연결에서 `INSERT ... SELECT generate_series` 한 문장 + `ANALYZE employees`로 넣고(EF `AddRange` 아님, `VACUUM` 없음), Respawn으로 비운 뒤 테스트마다 한 번 부른다. 행 규칙(결정적): 이름 `직원{g % 2000}`(이름당 5명), 입사일 `2015-01-01 + (g × 37) % 3650`일(하루 2~3명, 목록 순서 ≠ ID 순서), ID는 g 순 버전 7 형태 고정 값, 10%는 비활성.
 
 ## 서비스별 ERD
 
@@ -523,6 +524,7 @@ var smsEnabled = await db.Employees
   - 이름: `Index Scan using ix_employees_name_joined_on_id`, Sort 없음.
   - `= ANY`(배열 매개변수 1개, 원소 1,000개): `Bitmap Index Scan on ux_employees_normalized_email`. ANALYZE만 하고 VACUUM 전이라(가시성 맵 없음) dba 예상 `Index Only Scan`과 다르다. 어느 쪽이든 같은 유니크 인덱스를 쓴다.
   - 목록 끝 페이지(예: `OFFSET 9980`)는 Seq Scan + Sort가 될 수 있고 정상이다(dba 실측 S05-T06). 전체 개수(`count(*)`)도 Seq Scan이 정상이다.
+  - 깊은 페이지 실측(S07-T03, `EmployeeBulkSeeder` 10,000건 + ANALYZE, 최상위 노드 actual time): `OFFSET 0` 0.06ms(Index Scan), `OFFSET 5000` 2.0ms(Index Scan, 5,020행 읽음), `OFFSET 9980` · `9900 LIMIT 100` 4.2~4.4ms, 끝을 넘은 `OFFSET 10000` · 상한 `OFFSET 9999900` 6.7~7.1ms(Seq Scan + `Sort Method: quicksort Memory: 1713kB`), 이름 0.02ms, 개수 1.3ms. 모두 NFR-03 200ms(HTTP 전체 기준)보다 한참 작아 10,000건 규모에서는 keyset 페이징이 필요 없다.
 - 23505 매핑: `ux_employees_normalized_email` → 23001 `EmployeeErrors.DuplicateEmail`(`AddUnitOfWork`의 `errors.Map` 한 곳, 키는 위 이름 상수).
 
 **이름 상수 위치**: `EmergencyHub.Employee.Infrastructure.Persistence.EmployeeDbNames` 한 곳에 `EmployeesTable`(`employees`, 유지)과 `NormalizedEmailUniqueIndex`(`ux_employees_normalized_email`, 옛 `EmailUniqueIndex` 대체)만 둔다. `pk_` · `ck_` · `ix_` 이름은 상수로 두지 않는다(규칙 · 도우미가 만든다). `ix_` 2개의 이름과 열 순서는 모델 메타데이터 테스트(`GetDatabaseName()`)가 고정한다.
@@ -594,3 +596,4 @@ InitialCreate 대조(S05-T05 dba, 마이그레이션 `20260928090646_InitialCrea
 | 2026-09-28 | dba | ADR-0012 운영 전 리셋: Employee `InitialCreate` 재생성(`20260927134235` → `20260928090646_InitialCreate`, 리셋 커밋 5ee04a4, 로컬 볼륨 삭제 필요). 새 스키마 명세의 "실측 전" 표시 · 기준 구분 인용 블록 제거, 옛 ERD · InitialCreate 대조를 새 실측값으로 교체, 적용 범위 실측 표(`ix_` · 날짜 `_on` 적용됨, 최장 30바이트, 따옴표 7 · 5), 점검표 a~g 실측 열, 인덱스 표(4개, PK 포함) · 이름 상수 문단 · Sealed 파일 문구, 리셋 때 `--output-dir Persistence/Migrations` 필수 (S05-T05) |
 | 2026-09-28 | developer | 커밋 재시도 오보고(TD-010) 문단에 pk · ux 동시 위반 시 `pk_employees`가 먼저 보고되는 실측(인덱스 OID 순, 배치 재전송 오보고는 3003) 추가 (S05-T06) |
 | 2026-09-28 | developer | 인덱스 용도를 확인됨(실측 S05-T06)으로: 목록 · 이름 `Index Scan` Sort 없음, `= ANY` `Bitmap Index Scan on ux_employees_normalized_email`(VACUUM 전), 끝 페이지 Seq Scan + Sort 정상 (S05-T06) |
+| 2026-09-29 | dba | 10,000건 fixture 시더(`EmployeeBulkSeeder`, 시드 데이터 절)와 깊은 페이지 · 개수 · 이름 EXPLAIN ANALYZE 실측값 추가 (S07-T03) |

@@ -2,6 +2,7 @@ using EmergencyHub.Employee.Application.Employees;
 using EmergencyHub.Employee.Domain.Employees;
 using EmergencyHub.Employee.Infrastructure.Persistence;
 using EmergencyHub.Employee.IntegrationTests.Fixtures;
+using EmergencyHub.Employee.IntegrationTests.TestData;
 using Microsoft.Extensions.DependencyInjection;
 using NpgsqlTypes;
 
@@ -9,30 +10,20 @@ namespace EmergencyHub.Employee.IntegrationTests.QueryPlans;
 
 // S05-T06 완료 조건 ④: Repository가 실제로 보낸 SQL(가로챈 명령 원문 · 매개변수)을 10,000건 + ANALYZE 데이터에서 EXPLAIN해 인덱스 사용을 확인한다.
 // 기대 계획의 원본은 dba 쿼리 명세(목록 → ix_employees_joined_on_id, 이름 → ix_employees_name_joined_on_id, = ANY → ux_employees_normalized_email, Sort 없음).
-// 판정은 앞쪽 페이지(OFFSET 0)로 한다. 끝 페이지는 Seq Scan + Sort가 될 수 있고 정상이다(dba 실측). 개수는 전체 스캔이 정상이다.
+// 인덱스 판정은 앞쪽 페이지(OFFSET 0)로 한다. 깊은 페이지는 계획을 판정하지 않고 결과 순서 · DB 실행 시간만 본다(S07-T03). 개수는 전체 스캔이 정상이다.
+// 데이터는 EmployeeBulkSeeder(10,000건 fixture 시더, 마이그레이션 시드 아님)가 넣는다.
 // SQL 원문과 계획은 테스트 출력에 남긴다(진행 기록 · tester 재확인용).
 [Collection(EmployeeDatabaseCollectionDefinition.Name)]
 [Trait("FR", "PRD-002/FR-07")]
 public sealed class EmployeeQueryPlanTests(EmployeeDatabaseFixture database) : EmployeeDatabaseTest(database)
 {
-    private const int SeedRows = 10_000;
+    // DB 실행 시간 상한(NFR-03 200ms는 HTTP 요청 전체 기준이고 tester가 잰다. 여기서는 DB 몫이 그 1/4 안인지만 본다).
+    private const double MaxDatabaseMilliseconds = 50;
 
     // 출력 줄 길이 상한(= ANY 배열 값이 계획 줄에 모두 찍히므로 자른다).
     private const int MaxOutputLineLength = 200;
 
     private static readonly string[] IndexNodes = ["Index Scan using ", "Index Only Scan using ", "Bitmap Index Scan on "];
-
-    // 이름 2,000종(이름당 5명, 동명이인), 입사일 1990 ~ 2025 분포, 10%는 비활성. normalized_email = ToLowerInvariant(email)(DB가 강제하지 않음).
-    private const string SeedSql =
-        """
-        SELECT setseed(0.42);
-        INSERT INTO employees (id, name, email, normalized_email, phone_number, joined_on, employee_status, created_at, updated_at)
-        SELECT gen_random_uuid(), '직원' || (g % 2000), 'User' || g || '@Example.com', 'user' || g || '@example.com',
-               '010-' || lpad((g % 10000)::text, 4, '0') || '-' || lpad((g % 7919)::text, 4, '0'),
-               date '1990-01-01' + (random() * 13000)::int, CASE WHEN g % 10 = 0 THEN 2 ELSE 1 END, now(), now()
-        FROM generate_series(1, 10000) AS g;
-        ANALYZE employees;
-        """;
 
     // ---- 성공 ----
 
@@ -49,6 +40,7 @@ public sealed class EmployeeQueryPlanTests(EmployeeDatabaseFixture database) : E
         var plan = await ExplainOnReadConnectionAsync(capture.Commands.Should().ContainSingle().Subject);
         plan.Should().Contain(line => line.Contains("Index Scan using ix_employees_joined_on_id", StringComparison.Ordinal));
         plan.Should().NotContain(line => line.Contains("Sort", StringComparison.Ordinal) || line.Contains("Seq Scan", StringComparison.Ordinal));
+        ActualTotalMilliseconds(plan).Should().BeLessThan(MaxDatabaseMilliseconds);
     }
 
     [Fact]
@@ -66,17 +58,18 @@ public sealed class EmployeeQueryPlanTests(EmployeeDatabaseFixture database) : E
         plan.Should().Contain(line => line.Contains("Index Scan using ix_employees_name_joined_on_id", StringComparison.Ordinal));
         plan.Should().Contain(line => line.Contains("Index Cond: ((name)::text = ", StringComparison.Ordinal));
         plan.Should().NotContain(line => line.Contains("Sort", StringComparison.Ordinal) || line.Contains("Seq Scan", StringComparison.Ordinal));
+        ActualTotalMilliseconds(plan).Should().BeLessThan(MaxDatabaseMilliseconds);
     }
 
     [Fact]
     [Trait("FR", "PRD-002/FR-06")]
     public async Task ListExistingNormalizedEmailsAsync_ThousandValuesAmongTenThousandRows_UsesNormalizedEmailUniqueIndexWithOneArrayParameter()
     {
-        // 500개는 있고(user2 · user4 ...) 500개는 없다. = ANY 배열 매개변수 1개로 유니크 인덱스를 탄다(IN 나열 · 매개변수 N개 아님).
+        // 500개는 있고(seed2 · seed4 ...) 500개는 없다. = ANY 배열 매개변수 1개로 유니크 인덱스를 탄다(IN 나열 · 매개변수 N개 아님).
         var capture = new CommandCaptureInterceptor();
         await using var services = await SeedAndCreateServicesAsync(writeInterceptor: capture);
         await using var scope = services.CreateAsyncScope();
-        var requested = Enumerable.Range(1, 1000).Select(i => i % 2 == 0 ? $"user{i}@example.com" : $"new{i}@example.com").ToArray();
+        var requested = Enumerable.Range(1, 1000).Select(i => i % 2 == 0 ? $"seed{i}@example.com" : $"new{i}@example.com").ToArray();
 
         var existing = await scope.ServiceProvider.GetRequiredService<IEmployeeRepository>().ListExistingNormalizedEmailsAsync(requested, CancellationToken);
 
@@ -103,20 +96,66 @@ public sealed class EmployeeQueryPlanTests(EmployeeDatabaseFixture database) : E
 
         var count = await scope.ServiceProvider.GetRequiredService<IEmployeeReadRepository>().CountAsync(CancellationToken);
 
-        count.Should().Be(SeedRows);
+        count.Should().Be(EmployeeBulkSeeder.Rows);
         var command = capture.Commands.Should().ContainSingle().Subject;
         command.Text.Should().NotContain("OVER");
         var plan = await ExplainOnReadConnectionAsync(command);
         plan[0].Should().StartWith("Aggregate");
+        ActualTotalMilliseconds(plan).Should().BeLessThan(MaxDatabaseMilliseconds);
+    }
+
+    // S07-T03 ③: 깊은 페이지(끝 페이지 · 끝을 넘은 페이지 · 상한 skip)도 실행 시간이 NFR-03 200ms보다 한참 작다. 계획(인덱스 또는 Seq Scan + top-N Sort)은 출력에 남기고 판정하지 않는다.
+    // skip 9,980 / take 20 = pageSize 20 끝 페이지, 9,900 / 100 = pageSize 100 끝 페이지, 10,000 / 20 = 끝을 넘은 첫 페이지, 9,999,900 / 100 = page 100,000 × pageSize 100(상한).
+    [Theory]
+    [InlineData(5_000, 20)]
+    [InlineData(9_980, 20)]
+    [InlineData(9_900, 100)]
+    [InlineData(10_000, 20)]
+    [InlineData(9_999_900, 100)]
+    public async Task ListOrderedByJoinedOnAsync_DeepPageAmongTenThousandRows_ReturnsListOrderAndRunsWellUnderNfrThreshold(int skip, int take)
+    {
+        var capture = new CommandCaptureInterceptor();
+        await using var services = await SeedAndCreateServicesAsync(readInterceptor: capture);
+        await using var scope = services.CreateAsyncScope();
+
+        var items = await scope.ServiceProvider.GetRequiredService<IEmployeeReadRepository>().ListOrderedByJoinedOnAsync(skip, take, CancellationToken);
+
+        items.Select(item => item.Id).Should().Equal(await EmployeeBulkSeeder.IdsInListOrderAsync(Database, skip, take, CancellationToken));
+        items.Should().HaveCount(Math.Clamp(EmployeeBulkSeeder.Rows - skip, 0, take));
+        var plan = await ExplainOnReadConnectionAsync(capture.Commands.Should().ContainSingle().Subject);
+        ActualTotalMilliseconds(plan).Should().BeLessThan(MaxDatabaseMilliseconds);
+    }
+
+    // 시더 행 규칙 고정: 동명이인 5명 중 가장 빠른 사람은 ID가 가장 작은 사람(g = 42)이 아니라 g = 6042다(입사일 순 정렬을 ID 순서와 구별).
+    [Fact]
+    [Trait("FR", "PRD-002/FR-08")]
+    public async Task FindFirstByNameAsync_SeededNamesakes_ReturnsEarliestJoinedNotSmallestId()
+    {
+        await using var services = await SeedAndCreateServicesAsync();
+        await using var scope = services.CreateAsyncScope();
+
+        var found = await scope.ServiceProvider.GetRequiredService<IEmployeeReadRepository>().FindFirstByNameAsync(Name.Create(EmployeeBulkSeeder.NamesakeName).Value, CancellationToken);
+
+        found.Should().NotBeNull();
+        found!.Id.Should().Be(Guid.Parse("0190a000-0000-7000-8000-00000000179a"), "g = 6042 = 0x179a");
+        found.JoinedOn.Should().Be(new DateOnly(2017, 6, 23));
+        (await EmployeeBulkSeeder.FirstIdByNameAsync(Database, EmployeeBulkSeeder.NamesakeName, CancellationToken)).Should().Be(found.Id);
+        (await EmployeeBulkSeeder.FirstIdByNameAsync(Database, EmployeeBulkSeeder.MissingName, CancellationToken)).Should().BeNull();
+    }
+
+    // 계획 첫 줄(최상위 노드)의 "actual time=시작..끝"에서 끝 값(ms)을 읽는다. 전송 · 프로젝션을 뺀 DB 실행 시간이다.
+    private static double ActualTotalMilliseconds(IReadOnlyList<string> plan)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(plan[0], @"actual time=[0-9.]+\.\.([0-9.]+)");
+        match.Success.Should().BeTrue("EXPLAIN ANALYZE 첫 줄에 actual time이 있다: " + plan[0]);
+        var milliseconds = double.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+        TestContext.Current.TestOutputHelper?.WriteLine(FormattableString.Invariant($"-- DB 실행 시간(최상위 노드): {milliseconds:0.000}ms"));
+        return milliseconds;
     }
 
     private async Task<ServiceProvider> SeedAndCreateServicesAsync(CommandCaptureInterceptor? readInterceptor = null, CommandCaptureInterceptor? writeInterceptor = null)
     {
-        await using (var connection = await Database.OpenWriteConnectionAsync(CancellationToken))
-        {
-            await connection.ExecuteSqlAsync(SeedSql, CancellationToken);
-            (await connection.ScalarAsync<long>("SELECT count(*) FROM employees", CancellationToken)).Should().Be(SeedRows);
-        }
+        await EmployeeBulkSeeder.SeedAsync(Database, CancellationToken);
 
         return Database.CreateServices(new EmployeeServicesOptions
         {
