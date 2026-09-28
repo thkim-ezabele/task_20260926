@@ -409,6 +409,7 @@ updated: 2026-09-28
 | 2026-09-28 | S05-T05 | developer | PASS | 검증(코드 변경 0): build 경고 0 · 오류 0, format 0, `DOCKER_API_VERSION=1.43 dotnet test` 13개 프로젝트 1,608(통과 1,604 · 실패 0 · 건너뜀 4 = 대상 대기 3(S06-T04 2 · S06-T05 1) + 기존 1), T04 허용 목록 59/59 green(trx 대조), Testcontainers MigrateAsync로 `20260928090646_InitialCreate` 적용(통합 104 통과), MigrationReapplyTests 3 · RespawnHistoryTableTests 6 · Migrations_OfWriteContext_AreOnlyInitialCreate · ClassesAreSealed 통과 |
 | 2026-09-28 | S05-T05 | reviewer | REJECT → dba | 반려 1회(문서 · 사실, D3). 커밋 R(5ee04a4)은 통과(Migrations만 · footer 없음 · Sealed 형식 · has-pending-model-changes 차이 없음 · 생성 SQL = 명세, build · format · test 1,604 통과 · 0 실패 · 4 건너뜀 직접 재실행). 사유: ① testing-strategy.md 246행 Q1 '기대값 (실측)'이 없어진 옛 스키마(display_name 등 6개 컬럼)로 남아 같은 표 Q2(새 실측)와 모순 ② coding-conventions.md 83행 '실제 코드' 예시의 파일 이름이 삭제된 `20260927134235_InitialCreate.Sealed.cs`. 새 커밋(Stage: dba)으로 두 곳만 고침, 커밋 R은 다시 만들지 않음. 새 BL-134 |
 | 2026-09-28 | S05-T05 | dba | PASS(재작업) | 반려 1회 재작업: testing-strategy Q1 기대값을 `20260928090646_InitialCreate` 실측 9개 컬럼(모두 NO, column_default NULL, 임시 postgres:17에서 Q1 쿼리 실측)으로, 변경 이력 행 Q1 · Q2로. coding-conventions 83행 파일 이름 주석을 `20260928090646_InitialCreate.Sealed.cs`로, 변경 이력 한 줄. 두 곳 외 변경 0, src · tests · Migrations 변경 0, check-docs 결함 4 |
+| 2026-09-28 | S05-T05 | developer | PASS(재판정) | 재작업 87e109a는 wiki만(coding-conventions · testing-strategy · 스프린트 문서), c350f7e..HEAD의 src · tests diff 0, build 경고 0 · 오류 0. test는 코드 변경 0이라 재실행 생략, c350f7e 결과(1,608 = 통과 1,604 · 실패 0 · 건너뜀 4, 허용 목록 59/59 green) 유지 |
 
 ## 계획 리뷰
 
