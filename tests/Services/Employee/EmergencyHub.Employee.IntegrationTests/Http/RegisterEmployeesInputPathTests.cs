@@ -134,6 +134,44 @@ public sealed class RegisterEmployeesInputPathTests(EmployeeDatabaseFixture data
         (await EmployeeRows.CountAsync(Database, CancellationToken)).Should().Be(0);
     }
 
+    // S07-T05 tester 보강(BL-137 결정 A): 행 0개 입력은 raw 경로뿐 아니라 네 입력 경로 모두 400 · 21028(경로 "" 하나) · DB 0건이다.
+    // 형식은 multipart-data · form-data에서 내용 판별(BOM · 앞 공백을 건너뛴 첫 바이트)로 정해지므로, BOM이 붙은 "[ ]"과
+    // 빈 줄 · NBSP · U+3000 줄이 섞인 BOM CSV도 Validator를 지나 Handler가 파싱 직후 거부해야 한다(500 · 201이 아님).
+    public static TheoryData<string, string> ZeroRowInputs()
+    {
+        var data = new TheoryData<string, string>();
+        foreach (var path in ImportContent.Paths)
+        {
+            data.Add(path, "json-empty-array");
+            data.Add(path, "json-bom-spaced-empty-array");
+            data.Add(path, "csv-bom-mixed-blank-lines");
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(ZeroRowInputs))]
+    public async Task Post_ZeroRowInputOnEveryInputPath_Returns400With21028AndStoresNothing(string path, string body)
+    {
+        byte[] bom = [0xEF, 0xBB, 0xBF];
+        (byte[] Bytes, bool Json) input = body switch
+        {
+            "json-empty-array" => ("[]"u8.ToArray(), true),
+            "json-bom-spaced-empty-array" => ([.. bom, .. "\r\n [ \t]\r\n"u8], true),
+            _ => ([.. bom, .. Encoding.UTF8.GetBytes("\n \r\n\n　 \n  ")], false),
+        };
+        await using var factory = new EmployeeApiFactory(Database);
+        using var client = factory.CreateClient();
+        using var content = ImportContent.For(path, input.Bytes, input.Json);
+
+        using var response = await client.PostAsync(ImportContent.RegisterUri, content, CancellationToken);
+
+        (await ShouldBeValidationProblemAsync(response)).FieldCodes().Should().Equal([(string.Empty, 21028)], "행 0개는 빈 입력 하나만 보고한다");
+        (await EmployeeRows.CountAsync(Database, CancellationToken)).Should().Be(0);
+        factory.Logs.Events.UnexpectedErrors().Should().BeEmpty("행 0개는 예외 경로(500 · 9001)가 아니다");
+    }
+
     // 잘못된 UTF-8(0xC3 0x28)은 네 입력 경로 모두 21022, 경로 "" 하나(HTTP 전 구간 확인).
     [Theory]
     [InlineData("multipart-file")]
