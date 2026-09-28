@@ -130,7 +130,7 @@ gitGraph
 | [S02](sprints/S02-building-blocks.md) | BuildingBlocks Application · Infrastructure와 공통 API 처리 | PRD-001 | done |
 | [S03](sprints/S03-aspire-employee.md) | Aspire와 Employee 샘플 서비스 전 구간 | PRD-001 | done |
 | [S04](sprints/S04-tests-docs-evidence.md) | 테스트 보강 · 문서 · 인수 증빙 | PRD-001 | done |
-| [S05](sprints/S05-rebase-decisions-schema.md) | 재기준화, 결정 기록, 새 직원 모델과 스키마 | PRD-002 | active |
+| [S05](sprints/S05-rebase-decisions-schema.md) | 재기준화, 결정 기록, 새 직원 모델과 스키마 | PRD-002 | done |
 | [S06](sprints/S06-bulk-register-api.md) | 일괄 등록 POST /api/employee | PRD-002 | planned |
 | [S07](sprints/S07-query-api-docs.md) | 조회 API, 조회 성능, 문서 마무리 | PRD-002 | planned |
 
@@ -146,3 +146,4 @@ gitGraph
 | 2026-09-28 | orchestrator | PRD-001 회고 링크 추가 |
 | 2026-09-28 | orchestrator | PRD-001 완료(`done`) |
 | 2026-09-28 | developer | PRD-002 토픽 · 스프린트 S05~S07 행 추가 (S05-T01 재기준화) |
+| 2026-09-28 | orchestrator | S05 `done` |

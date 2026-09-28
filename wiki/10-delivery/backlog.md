@@ -143,25 +143,25 @@ updated: 2026-09-28
 | BL-114 | local-setup 동작 확인: PowerShell 5.1 Invoke-RestMethod는 409 응답 본문(code 23001)을 예외로 바꿔 바로 보여 주지 않음. 재등록 결과 확인 방법(try/catch 또는 Invoke-WebRequest) 안내 검토 | S04-T03 tester | 하 | open | S04 종료 정리: 다음 local-setup 수정 때. |
 | BL-115 | database.md · troubleshooting 42P04 판정 문구 "(실행 횟수 − 1)"에 풀이 추가: 컨테이너가 세션 수명이라 서버 로그는 실행별, 첫 실행 0 · 이후 실행마다 한 쌍 1개 | S04-T04 dba | 하 | open | S04 종료 정리: BL-116 병합, BL-096 결정 때 함께. |
 | BL-116 | database.md psql 확인 절에 Git Bash heredoc 명령 틀(postgres · employee_app 접속, 11번 PGOPTIONS 읽기 전용 세션)과 PowerShell 5.1 인용 주의 추가 | S04-T04 dba | 하 | dropped | S04 종료 정리: BL-115에 병합. |
-| BL-117 | 새 볼륨 첫 실행에서 employee-api의 첫 /health/ready가 Unhealthy(Error 2건, EventId 103 DefaultHealthCheckService, CanConnect=false · 예외 메시지 없음, 같은 시각 서버 로그 오류 없음)로 나오는 원인 조사. 3D000처럼 첫 실행 잡음으로 판정에서 뺄지, 로깅 · 헬스 검사를 손볼지 결정 | S04-T04 tester | 중 | open | S04 종료 정리: 트리거는 배포 토픽 프로브 설계(BL-108) 또는 AppHost 테스트 모드(BL-111). 원인 조사 → 잡음 제외 · 헬스 검사 수정 중 결정. 재현 조건: 볼륨 삭제 + user-secrets clear 뒤 1회차. 2 · 3회차와 이전 11회 시작에서는 0건 |
+| BL-117 | 새 볼륨 첫 실행에서 employee-api의 첫 /health/ready가 Unhealthy(Error 2건, EventId 103 DefaultHealthCheckService, CanConnect=false · 예외 메시지 없음, 같은 시각 서버 로그 오류 없음)로 나오는 원인 조사. 3D000처럼 첫 실행 잡음으로 판정에서 뺄지, 로깅 · 헬스 검사를 손볼지 결정 | S04-T04 tester | 중 | open | S04 종료 정리: 트리거는 배포 토픽 프로브 설계(BL-108) 또는 AppHost 테스트 모드(BL-111). 원인 조사 → 잡음 제외 · 헬스 검사 수정 중 결정. 재현 조건: 볼륨 삭제 + user-secrets clear 뒤 1회차. 2 · 3회차와 이전 11회 시작에서는 0건 · S05-T05 관찰(BL-135 병합): 첫 /health/ready가 Api 시작 약 2.6초 뒤, EmployeeDbContext 924 ms · ReadDbContext 108 ms Unhealthy(message null), 두 번째 요청부터 200 · S05-T05 관찰(BL-135 병합): 첫 /health/ready가 Api 시작 약 2.6초 뒤, EmployeeDbContext 924 ms · ReadDbContext 108 ms Unhealthy(message null), 두 번째 요청부터 200 |
 | BL-118 | 대시보드 DOM 증빙 방법 문서화: Edge --dump-dom은 Blazor 대화형 렌더링 전에 끝나 본문이 비므로 원격 디버깅(CDP)으로 렌더링 뒤 DOM을 덤프해야 함 | S04-T04 tester | 하 | open | S04 종료 정리: 범위 확장 — CDP DOM 덤프, DCP API(/apis/usvc-dev.developer.microsoft.com/v1/executables) MigrationService exitCode 조회 문서화, 스크립트화 여부 판단. |
 | BL-119 | 아키텍처 테스트로 기계화: 한 파일 한 최상위 형식, Repository 본문 제약(람다 LINQ만), 테스트 enum 기반 형식 명시, Controller 서비스 로케이터 검출(BL-079 · TD-025와 함께 판단) | RETRO-PRD-001 | 중 | open | 회고 개선안 18 보류. 다음 토픽 계획 리뷰에서 편입 판단 |
 | BL-120 | check-docs.js에 완료 조건 FR ↔ 증빙 표 행 교차 점검 옵션 추가 | RETRO-PRD-001 | 하 | open | 회고 개선안 19 보류. BL-001 · 018과 묶어 판단 |
-| BL-121 | 동명이인 전체 조회 · 식별: 같은 이름의 직원 목록 반환, ID 조회 엔드포인트 또는 v2 | PRD-002 범위 밖 (Q3 · FR-08) | | new | PRD-002 FR-08의 `GET /api/employee/{name}`은 동명이인 중 입사일이 가장 빠른 1명만 반환 |
-| BL-122 | CSV 헤더 행 지원 | PRD-002 범위 밖 (Q7 · FR-03) | | new | PRD-002 FR-03은 헤더 없음만 지원(헤더를 넣으면 날짜 형식 오류로 거부). 기술부채 TD-028과 짝 |
-| BL-123 | CP949(Excel 기본 저장) CSV 지원 | PRD-002 범위 밖 (FR-03) | | new | PRD-002 FR-03은 엄격 UTF-8(BOM 허용)만 받고 CP949 바이트는 400 |
-| BL-124 | `/`가 들어간 이름(`%2F`)의 경로 조회 | PRD-002 범위 밖 (FR-08) | | new | PRD-002 FR-08에서 보장하지 않음 |
-| BL-125 | 직원 개인정보 보존 기간 · 삭제 정책 | PRD-002 범위 밖 | | new | |
-| BL-126 | 직원 정보 수정 · 삭제 API | PRD-002 범위 밖 | | new | PRD-002는 등록 · 조회만 |
-| BL-127 | 조직 · 부서 정보 | PRD-002 범위 밖 | | new | 로드맵 Phase 2 후보 토픽(인증 / 직원 · 조직 관리)과 함께 판단 |
-| BL-128 | roadmap.md Phase 1 표와 일정표의 PRD-001 행이 '진행 중 / v0.1.0 (예정)'으로 남아 있음(v0.1.0 태그 2987cdc 존재). `/retro` 종료 때 갱신 누락 | S05-T01 developer | | new | 완료 조건 밖이라 S05-T01에서 고치지 않음 |
-| BL-129 | Email local 부분의 제어 문자(예: U+0001)를 거부할지: 현재 규칙(`@` 하나 · 공백 없음 · domain `.`)으로 거르지 않음 | S05-T03 developer | | new | PRD-002 FR-01 규칙 밖이라 구현하지 않음. PRD 개정 여부 판단. S05-T03 tester: NUL(U+0000) · 짝 없는 서로게이트도 통과하며, PostgreSQL text는 NUL을 저장할 수 없어 일괄 등록 저장에서 500이 날 가능성(미실측) |
-| BL-130 | Value Object record 기본 ToString이 값을 출력(`Name { Value = 홍길동 }`): 로그 템플릿 인자로 넘기면 개인정보가 남음. ToString 재정의 또는 로그 인자 금지 규칙 검토 | S05-T03 developer | | new | NFR-04 · FR-10 개인정보 테스트(S06-T06)와 관련 |
-| BL-131 | testing-strategy 규칙 후보: xUnit v3 MemberData / InlineData는 발견 단계 직렬화에서 짝 없는 서로게이트 문자열을 바꿀 수 있으므로 `DisableDiscoveryEnumeration = true`와 입력 보존 단언을 둔다 | S05-T03 developer | | new | S05-T03 실측(21009 사례 4건 실패 후 수정) |
-| BL-132 | logging-observability.md(87 · 93 · 152행) · tdd-guide.md(51 · 71행) 예시가 PRD-001 샘플 이름(RegisterEmployeeCommandHandler 등)을 씀 | S05-T04 developer | | new | 형식 설명이라 S05에서는 두었음. S06-T04 Handler 예시 교체 때 함께 |
-| BL-133 | IntegrationTests `Http/HttpProblem.cs` · `LogEventText.cs`가 HTTP 테스트 삭제로 호출처 0 | S05-T04 developer | | new | S06-T06 HTTP 테스트에서 다시 쓰거나 삭제 |
-| BL-134 | employee-api.md 83행 409 설명이 옛 `ux_employees_email`로 남아 있음(샘플 API 제거된 PRD-001 문서) | S05-T05 reviewer | | new | S06 API 문서 작업에서 다시 쓸 대상 |
-| BL-135 | database.md '알려진 잡음 로그' 표가 BL-117(첫 /health/ready Unhealthy Error 2건)을 '잡음 아님 · 제외하지 않음'으로 두어, RETRO-PRD-001 유지 판단(BL-117 잡음 제외) · S05 계획 인계 메모와 다름. 한쪽으로 맞춤 | S05-T05 tester | | new | S05-T05에서는 승인된 인계 메모 기준으로 개수 기록 후 제외. S05-T05 관찰: Api 시작 약 2.6초 뒤 첫 요청, EmployeeDbContext 924 ms · ReadDbContext 108 ms, 두 번째 요청부터 200 |
+| BL-121 | 동명이인 전체 조회 · 식별: 같은 이름의 직원 목록 반환, ID 조회 엔드포인트 또는 v2 | PRD-002 범위 밖 (Q3 · FR-08) | 하 | open | PRD-002 FR-08의 `GET /api/employee/{name}`은 동명이인 중 입사일이 가장 빠른 1명만 반환. S05 종료 정리: 다음 토픽에서 판단 |
+| BL-122 | CSV 헤더 행 지원 | PRD-002 범위 밖 (Q7 · FR-03) | 하 | open | PRD-002 FR-03은 헤더 없음만 지원(헤더를 넣으면 날짜 형식 오류로 거부). 기술부채 TD-028과 짝. S05 종료 정리: 다음 토픽에서 판단 |
+| BL-123 | CP949(Excel 기본 저장) CSV 지원 | PRD-002 범위 밖 (FR-03) | 하 | open | PRD-002 FR-03은 엄격 UTF-8(BOM 허용)만 받고 CP949 바이트는 400. S05 종료 정리: 다음 토픽에서 판단 |
+| BL-124 | `/`가 들어간 이름(`%2F`)의 경로 조회 | PRD-002 범위 밖 (FR-08) | 하 | open | PRD-002 FR-08에서 보장하지 않음. S05 종료 정리: 다음 토픽에서 판단 |
+| BL-125 | 직원 개인정보 보존 기간 · 삭제 정책 | PRD-002 범위 밖 | 중 | open | S05 종료 정리: 다음 토픽에서 판단 |
+| BL-126 | 직원 정보 수정 · 삭제 API | PRD-002 범위 밖 | 중 | open | PRD-002는 등록 · 조회만. S05 종료 정리: 다음 토픽에서 판단 |
+| BL-127 | 조직 · 부서 정보 | PRD-002 범위 밖 | 중 | open | 로드맵 Phase 2 후보 토픽(인증 / 직원 · 조직 관리)과 함께 판단. S05 종료 정리: 다음 토픽에서 판단 |
+| BL-128 | roadmap.md Phase 1 표와 일정표의 PRD-001 행이 '진행 중 / v0.1.0 (예정)'으로 남아 있음(v0.1.0 태그 2987cdc 존재). `/retro` 종료 때 갱신 누락 | S05-T01 developer | 하 | planned:S07 | 완료 조건 밖이라 S05-T01에서 고치지 않음. S05 종료 정리: S07-T04 인계(PRD-002 행도 함께). 원인(/retro 종료 때 roadmap 갱신 누락)은 /retro PRD-002 개선 후보 |
+| BL-129 | Email local 부분의 제어 문자(예: U+0001)를 거부할지: 현재 규칙(`@` 하나 · 공백 없음 · domain `.`)으로 거르지 않음 | S05-T03 developer | 상 | planned:S06 | PRD-002 FR-01 규칙 밖이라 구현하지 않음. PRD 개정 여부 판단. S05-T03 tester: NUL(U+0000) · 짝 없는 서로게이트도 통과하며, PostgreSQL text는 NUL을 저장할 수 없어 일괄 등록 저장에서 500이 날 가능성(미실측). S05 종료 정리: S06 계획 리뷰 첫 막히는 질문(PRD FR-01 개정). 추천안: Email VO가 Cc 제어 문자 · 짝 없는 서로게이트를 21004(EmailInvalid)로 거부, S06-T04 VO 단위 테스트, S06-T06 NUL email → 400 · DB 0건. 거절 시 S06-T06에서 500 동작 실측 후 TD |
+| BL-130 | Value Object record 기본 ToString이 값을 출력(`Name { Value = 홍길동 }`): 로그 템플릿 인자로 넘기면 개인정보가 남음. ToString 재정의 또는 로그 인자 금지 규칙 검토 | S05-T03 developer | 중 | planned:S06 | NFR-04 · FR-10 개인정보 테스트(S06-T06)와 관련. S05 종료 정리: S06-T04 reviewer 점검(VO · Command를 로그 인자로 넘기지 않음) + S06-T06 개인정보 테스트. ToString 재정의 여부는 S06 계획 리뷰 |
+| BL-131 | testing-strategy 규칙 후보: xUnit v3 MemberData / InlineData는 발견 단계 직렬화에서 짝 없는 서로게이트 문자열을 바꿀 수 있으므로 `DisableDiscoveryEnumeration = true`와 입력 보존 단언을 둔다 | S05-T03 developer | 중 | planned:S06 | S05-T03 실측(21009 사례 4건 실패 후 수정). S05 종료 정리: S06-T02 · T03 인계 메모에 적용, testing-strategy 규칙 문장은 /retro PRD-002 |
+| BL-132 | logging-observability.md(87 · 93 · 152행) · tdd-guide.md(51 · 71행) 예시가 PRD-001 샘플 이름(RegisterEmployeeCommandHandler 등)을 씀 | S05-T04 developer | 하 | planned:S06 | 형식 설명이라 S05에서는 두었음. S06-T04 Handler 예시 교체 때 함께. S05 종료 정리: S06-T04 Handler 예시 교체 때 함께 |
+| BL-133 | IntegrationTests `Http/HttpProblem.cs` · `LogEventText.cs`가 HTTP 테스트 삭제로 호출처 0 | S05-T04 developer | 하 | planned:S06 | S06-T06 HTTP 테스트에서 다시 쓰거나 삭제. S05 종료 정리: S06-T06에서 재사용 또는 삭제 |
+| BL-134 | employee-api.md 83행 409 설명이 옛 `ux_employees_email`로 남아 있음(샘플 API 제거된 PRD-001 문서) | S05-T05 reviewer | 중 | planned:S07 | S06 API 문서 작업에서 다시 쓸 대상. S05 종료 정리: S07-T04 API 명세에서 다시 씀 |
+| BL-135 | database.md '알려진 잡음 로그' 표가 BL-117(첫 /health/ready Unhealthy Error 2건)을 '잡음 아님 · 제외하지 않음'으로 두어, RETRO-PRD-001 유지 판단(BL-117 잡음 제외) · S05 계획 인계 메모와 다름. 한쪽으로 맞춤 | S05-T05 tester | 중 | dropped | S05-T05에서는 승인된 인계 메모 기준으로 개수 기록 후 제외. S05-T05 관찰: Api 시작 약 2.6초 뒤 첫 요청, EmployeeDbContext 924 ms · ReadDbContext 108 ms, 두 번째 요청부터 200. S05 종료 정리: BL-117로 병합. 기준 원본은 database.md 155행 · S04 결과 리뷰(BL-117은 기록 유지 · 제외 아님 · 판정은 완료 조건 기준). 어긋난 쪽은 S05 계획 인계 메모(WL-04 인용 오류). S05-T05 PASS는 완료 조건 ④가 BL-117과 무관하게 충족되어 추인 |
 
 ---
 
@@ -179,3 +179,4 @@ updated: 2026-09-28
 | 2026-09-28 | orchestrator | S04 종료 정리: BL-111~118 정리(open 7 · dropped 1(BL-116 → BL-115)), planned:S04 21건 done, `new` 0 |
 | 2026-09-28 | orchestrator | RETRO-PRD-001: 보류 개선안 BL-119 · 120 추가(open) |
 | 2026-09-28 | developer | S05-T01: PRD-002 범위 밖 백로그 후보 BL-121~127 추가(`new`), BL-024 open → planned:S06 |
+| 2026-09-28 | orchestrator | S05 종료 정리: BL-121~135 처리(open 7 · planned:S06 5 · planned:S07 2 · dropped 1(BL-135 → BL-117 병합)), BL-128~135 추가 기록 포함, `new` 0 |

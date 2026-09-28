@@ -70,6 +70,12 @@ updated: 2026-09-28
 - T03에서 PRD-001 증빙 대응표의 "이전 대기"를 모두 닫는다.
 - S07-T02: ADR-0025 A — RequestPath · instance(ErrorProblemDetails.cs:55) · url.path 세 곳 라우트 템플릿화, 기존 instance 계약 테스트 수정 포함([ADR-0025](../../03-architecture/adr/0025-api-rule-exceptions-for-assignment-endpoints.md#이름-경로-매개변수와-개인정보), S05-T02 대리 확인).
 
+S05 인계 (S05 결과 리뷰 2026-09-28, 원문은 [S05 진행 기록](S05-rebase-decisions-schema.md#진행-기록)):
+
+- **S07-T01 · T02**: `ListOrderedByJoinedOnAsync(skip, take)` · `CountAsync` · `FindFirstByNameAsync(Name)` · `EmployeeContactResponse`(S05-T06). skip 계산과 JSON 이름(tel · joined)은 Query 몫. S07-T02는 추적 span 경로 실측. 프로젝션 `record` 위치 규칙(여러 Query가 함께 쓰면 기능 폴더 밖, 하나면 안)을 reviewer가 확인.
+- **S07-T03**: S05 증빙 테스트 대응표 HTTP 행 '이전 대기: S07-T03' 닫기. EXPLAIN 도우미(IntegrationTests QueryPlans)는 S05-T06 것을 재사용. 알려진 잡음 기준은 database.md 알려진 잡음 로그가 원본.
+- **S07-T04**: BL-128(roadmap PRD-001 · PRD-002 행) · BL-134(employee-api.md 83행), TD-028 명세 문구('헤더 행을 넣으면 날짜 형식 오류로 거부').
+
 ## 결과 리뷰
 
 > 스프린트 종료 시 orchestrator의 결과 리뷰(계획 대비 실제, 완료 조건 · FR 충족, 반려 분석)를 요약합니다.
@@ -106,3 +112,4 @@ updated: 2026-09-28
 | 2026-09-28 | - | BL-024 편입: T04에 대시보드 추적 수동 확인 추가 |
 | 2026-09-28 | developer | S05-T01: 스프린트 번호 확정, T01 dba 참조 `S05-T05` → `S05-T06`(S05 작업 재구성) |
 | 2026-09-28 | developer | S05-T02: 계획 메모에 S07-T02 라우트 템플릿 세 곳(ADR-0025) 항목 추가 |
+| 2026-09-28 | orchestrator | S05 결과 리뷰: 계획 메모에 "S05 인계" 소절 추가 |

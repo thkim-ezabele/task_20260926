@@ -2,10 +2,10 @@
 title: "S05: 재기준화, 결정 기록, 새 직원 모델과 스키마"
 type: sprint
 sprint: "S05"
-status: active
+status: done
 prd: [PRD-002]
 started: 2026-09-28
-finished:
+finished: 2026-09-28
 adrs: [ADR-0025, ADR-0026, ADR-0027, ADR-0028]
 worklogs: []
 aliases: [S05]
@@ -396,10 +396,10 @@ updated: 2026-09-28
 
 ## 완료 기준 (DoD)
 
-- [ ] 모든 작업이 `done`이거나 백로그로 이관되었다
-- [ ] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (경고 0, 커버리지 보고 — NFR-06. S05는 샘플 제거로 분모가 작아진 수치임을 적는다)
-- [ ] 관련 위키 문서(API, 이벤트, DB)를 갱신했다
-- [ ] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
+- [x] 모든 작업이 `done`이거나 백로그로 이관되었다
+- [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (경고 0, 커버리지 보고 — NFR-06. S05는 샘플 제거로 분모가 작아진 수치임을 적는다) — 로컬 Release: 경고 0, 1,638 = 통과 1,634 · 실패 0 · 건너뜀 4, 라인 99.4% · 분기 95.6%(대상 6개, coverable 910줄로 분모 축소)
+- [x] 관련 위키 문서(API, 이벤트, DB)를 갱신했다 — DB · error-codes · ADR 4건 · 기준 문서. 이벤트 변경 없음, API는 이 스프린트에 없음(employee-api.md 83행은 BL-134)
+- [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
 - [ ] 토픽 브랜치를 push하고 `sprint/S05` 태그를 붙였다
 
 ## 진행 기록
@@ -445,6 +445,7 @@ updated: 2026-09-28
 | 2026-09-28 | S05-T06 | reviewer | PASS | 16항목 통과: build 경고 0, test 1,636 = 통과 1,632 · 0 실패 · 4 건너뜀(직접 실행), format 0, Repository 람다 체인만(분기 · 로깅 · Distinct 없음), CQRS 연결 경로를 틀린 연결 테스트로 확인, 생성 SQL = dba 명세 Q-ANY · Q-LIST · Q-COUNT · Q-NAME, 대응표 재대조 114행 · 269개 bad 0 · 중복 0. ExistsByNormalizedEmailAsync 삭제 타당, EmployeeContactResponse 위치 타당(coding-conventions 기능 폴더 규칙 확장은 결과 리뷰 추인 대상), UUID v7 재시도(최대 50회, 전부 실패 확률 약 1e-10, 커버리지 수집 3회 반복 통과) 안정, EXPLAIN 3개 노드 인정은 `= ANY`에만 · 인덱스 이름 고정이라 판정 약화 없음. handoff: testing-strategy 162~163행(ReadInterceptors · AddReadDbContextInterceptors · QueryPlans 도우미) 누락과 database.md 521행 '확인됨' 반영 — tester는 테스트 코드만 고칠 수 있어 developer 보완(문서만)으로 처리. push 뒤 CI에서 UUID v7 같은 밀리초 테스트 통과 확인 |
 | 2026-09-28 | S05-T06 | developer | 보완(문서만) | reviewer handoff 처리: testing-strategy 도우미 표에 ReadInterceptors · AddReadDbContextInterceptors · QueryPlans 도우미(CommandCaptureInterceptor · CapturedCommand · QueryPlan.ExplainAsync) 추가, database.md 인덱스 용도를 '확인됨(실측 S05-T06)'으로(목록 · 이름 Index Scan Sort 없음, `= ANY` Bitmap Index Scan on ux_employees_normalized_email(VACUUM 전이라 Index Only 아님), 끝 페이지 Seq Scan + Sort 정상(dba 실측 출처 표시)). check-docs 결함 4, src · tests 변경 0 |
 | 2026-09-28 | S05-T06 | tester | PASS | 빈 곳 2개만 보강(RoundTrip [Theory] joined_on 1900-01-01 · 2999-12-31 DB 왕복 + Active → employee_status 1). ① BuildingBlocks diff 0 ② 람다 LINQ만 ③ 대응표 DB 16행 trx 대조 전부 통과 ④ EXPLAIN detailed 재실행: 목록 · 이름 Index Scan Sort 없음, `= ANY` 매개변수 1개 Bitmap Index Scan ux, 개수 Seq Scan ⑤ map-check 114행 · 269개 bad 0 · 중복 0. 문서 재실측: TD-010(임시 postgres:17 OID 순서 pk 먼저, 대조군 뒤집힘), database 521행, testing-strategy P4 · 도우미 표, coding-conventions 코드 블록 diff 0 모두 일치. test 1,638 = 통과 1,634 · 실패 0 · 건너뜀 4, build 경고 0. S06 인계: 동시 경합 · 재전송 테스트 기대값은 3003 · 로그 202, InitialCreate 재생성 때 순서 재확인 |
+| 2026-09-28 | - | 결과 리뷰 | 승인(대리) | orchestrator 결과 리뷰 → 오케스트레이션 대리 승인: 백로그 / 기술부채 정리안 전체, S06 · S07 'S05 인계' 이관, coding-conventions 프로젝션 `record` 규칙 추인(조건: Query 하나만 쓰면 기능 폴더 안), BL-135 → BL-117 병합, S05-T05 PASS 추인. DoD 직접 실행: Release build 경고 0 · 오류 0, test 1,638 = 통과 1,634 · 실패 0 · 건너뜀 4, 커버리지(대상 6개) 라인 99.4% · 분기 95.6%(coverable 910줄, 샘플 제거로 분모 축소) |
 
 ## 계획 리뷰
 
@@ -512,32 +513,60 @@ updated: 2026-09-28
 | 2026-09-28 | ① 계획 리뷰 | 작업 5 → 6 분할, 막히는 질문 1~6 추천안, 세부 기본값 · 위험 기록, 보완 조건 3개 | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 계획 리뷰 행 | 대기 |
 | 2026-09-28 | 결정(S05-T04 실패 허용 범위) | 스키마 불일치 원인 실패는 developer 단계에서 대응표에 추가해 허용(원인 한 줄), 그 밖은 BLOCKED | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 S05-T04 결정 행 | 대기 |
 | 2026-09-28 | ADR 확인(S05-T02) | **ADR 0025~0028 결정 내용(`/retro` ④ 추인 대상 ADR)**: 0025 A, 0026 (1)~(4) 추천안, 0027 원안, 0028 A, design.md 즉시 반영 | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 S05-T02 ADR 확인 행 | 대기 |
+| 2026-09-28 | ③ 결과 리뷰 | 백로그 / 기술부채 정리안(BL-121~135 · TD-028), S05 인계 이관, coding-conventions 프로젝션 record 규칙 추인, BL-135 병합 · S05-T05 PASS 추인, 회고 메모만 기록 | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 결과 리뷰 행 | 대기 |
 
 ## 결과 리뷰
 
 > 스프린트 종료 시 orchestrator의 결과 리뷰(계획 대비 실제, 완료 조건 · FR 충족, 반려 분석)를 요약합니다.
 
--
+- **계획 대비 실제**: 작업 6/6 done(계획 리뷰에서 5 → 6 분할), 이관 · BLOCKED 0. 커밋 393e3d7..3114935 29개. 테스트 1,538(v0.1.0 기준선) → 1,638(통과 1,634 · 건너뜀 4 = 대상 대기 3 + 기존 1). ADR 0025~0028 accepted(bd0cbc7)가 모든 구현 커밋보다 앞섬. 계획 밖 결정 1건(S05-T04 실패 허용 범위 확대, 대리 승인) — 허용 목록 59건은 T05 뒤 59/59 green.
+- **FR 충족**: FR-02 · FR-09 · NFR-05 충족. FR-01(VO · Aggregate · 매핑 · DB 왕복) · FR-06(Repository 사전 조회 · AddRange) · FR-07(목록 · 개수) · FR-08(이름 단건) · FR-10(VO · 메타데이터 · DB 증빙 이전) · FR-11(database · error-codes) · NFR-06(경고 0, 아키텍처 대상 대기 명시)은 S05 범위만 충족, 나머지는 S06 · S07.
+- **반려 분석**: 1회(S05-T05 reviewer → dba, 문서 · 누락(사실): 리셋 뒤 testing-strategy Q1 · coding-conventions 83행에 옛 스키마 · 파일 이름 잔존). 분류 집계 컨벤션 0 · 누락 1 · 설계 0 · 버그 0, 코드 작업 반려 0. 반려로 세지 않은 운영 결함 4건: T02 2차 호출 입력 누락(커밋 전 정정), T06 reviewer handoff 문서 갱신을 tester가 못 해 developer 보완 추가, 커밋 R Co-Authored-By trailer 해석, T05 dba 1차 migrations add 경로 오류.
+- **정정**: 계획 인계 메모의 "알려진 잡음 · 제외 기준"에 BL-117을 제외 대상으로 적은 것은 database.md 155행 · S04 결정(기록 유지, 제외 아님, 판정은 완료 조건 기준)과 어긋났다(BL-135 → BL-117 병합). S05-T05 PASS는 완료 조건 ④가 BL-117과 무관하게 충족되어 추인.
+- **추인한 draft 규칙**: coding-conventions 기능 폴더 밖에 "여러 Query가 함께 쓰는 Read Repository 프로젝션 record"를 둘 수 있음(S05-T06), 조건 "Query 하나만 쓰면 기능 폴더 안".
+- **ADR 후보**: 없음. /retro PRD-002 질문 후보: ADR-0012 "footer 없음" 커밋에 Co-Authored-By trailer를 넣을지.
+- **스프린트 종료 판정으로 옮긴 CI 조건**: push 뒤 PR #8 CI HEAD SUCCESS, UUID v7 같은 밀리초 테스트 ubuntu 러너 통과, CI Testcontainers로 새 InitialCreate 적용 · 건너뜀 4, CI 소요 시간 기록.
 
 ## 생긴 백로그 / 기술부채
 
 | ID | 제목 | 발생 작업 | 정리 결과 |
 |---|---|---|---|
-| | | | open / planned:SNN / dropped |
+| BL-121~127 | PRD-002 범위 밖(동명이인 전체 조회, CSV 헤더, CP949, `/` 이름, 보존 · 삭제, 수정 · 삭제 API, 조직 · 부서) | S05-T01 | open |
+| TD-028 | CSV 헤더 행 미지원 | S05-T01 | open(영향 하) |
+| BL-128 | roadmap PRD-001 행 미갱신 | S05-T01 | planned:S07 |
+| BL-129 | Email 제어 문자 · NUL 허용(저장 시 500 가능) | S05-T03 | planned:S06(상, S06 계획 리뷰 첫 질문) |
+| BL-130 | VO record ToString 값 출력(로그 개인정보) | S05-T03 | planned:S06 |
+| BL-131 | xUnit MemberData 서로게이트 직렬화 규칙 | S05-T03 | planned:S06 |
+| BL-132 | 기준 문서 예시의 PRD-001 샘플 이름 | S05-T04 | planned:S06 |
+| BL-133 | 호출처 없는 HTTP 테스트 도우미 | S05-T04 | planned:S06 |
+| BL-134 | employee-api.md 83행 옛 인덱스 이름 | S05-T05 | planned:S07 |
+| BL-135 | database.md 알려진 잡음 표와 계획 인계 메모의 BL-117 불일치 | S05-T05 | dropped(BL-117 병합) |
 
 ## 회고
 
+> 사용자 지시(2026-09-28): 회고는 PRD 종료 뒤 `/retro PRD-002`에서만 한다. 아래는 결과 리뷰에서 나온 **/retro 입력용 메모**이며, 스킬 · 에이전트 개선과 다음 스프린트 사전 반영(apply_before_next)은 하지 않았다.
+
 ### 잘된 점
 
--
+- 코드 작업(T03 · T04 · T06) 반려 0: dba 선행 명세(스크래치 handoff)와 인계 메모 세부 기본값의 효과.
+- 샘플 제거 → 리셋 → 이전 구간을 허용 목록(trx 59건)과 대응표(114행 · 269개, 스크립트 대조)로 기계적으로 관리.
+- 아키텍처 공허 통과를 '대상 대기' 목록 + 안전장치 테스트로 방지.
+- 값 변환기 LINQ 번역 · Owned/Complex 불가, TD-010 검사 순서, citext 권한, U+0130 차이를 임시 컨테이너로 실측해 근거로 사용.
+- 문서 작업(T01 · T02) 반려 0.
 
 ### 문제
 
--
+- 스킬이 T02 2차 호출에 1차 코드 표를 넘기지 않음(커밋 전 정정).
+- 리셋 뒤 옛 이름 잔존 grep 절차가 없어 T05 반려.
+- tester 정의가 테스트 코드만 허용해 reviewer handoff 문서 갱신을 developer 보완으로 돌림.
+- 커밋 R의 Co-Authored-By trailer 해석을 판단받지 않음.
+- T05 dba 1차 migrations add 경로 오류(--output-dir).
+- 계획 인계 메모의 BL-117 제외 기준이 기준 문서와 불일치(계획 통합 때 대조 누락).
+- 커버리지 수치를 결과 리뷰 전까지 진행 기록에 남기지 않음.
 
 ### 다음에 바꿀 것
 
--
+- /retro 입력(apply_before_next 후보 8건, 제목만): 옛 이름 grep 단언, 2단계 호출 결정 표 첨부, tester 문서 갱신 담당 결정, 알려진 잡음 기준 원본 링크, 서로게이트 테스트 데이터 규칙(BL-131), BL-129 사용자 결정, 스키마 변경 시 --output-dir 규칙, S06-T01 완료 조건 ⑤ 교체.
 
 ---
 

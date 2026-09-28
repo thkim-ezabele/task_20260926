@@ -162,7 +162,7 @@ Application 레이어는 **Command(상태 변경)와 Query(조회)를 분리**�
 
 기능 폴더 구조 (Application)
 
-- 규칙: 기능마다 `Employees/Commands/<기능>/`에 Command · Handler · Validator를, `Employees/Queries/<기능>/`에 Query · Handler · 응답 `record`를 한 폴더로 둔다. 기능 폴더 밖에는 여러 기능이 함께 쓰는 로그 정의 · Read Repository 인터페이스 · Read Repository가 돌려주는 프로젝션 `record`(여러 Query가 함께 쓰는 것)만 둔다.
+- 규칙: 기능마다 `Employees/Commands/<기능>/`에 Command · Handler · Validator를, `Employees/Queries/<기능>/`에 Query · Handler · 응답 `record`를 한 폴더로 둔다. 기능 폴더 밖에는 여러 기능이 함께 쓰는 로그 정의 · Read Repository 인터페이스 · Read Repository가 돌려주는 프로젝션 `record`(여러 Query가 함께 쓰는 것)만 둔다. Query 하나만 쓰는 프로젝션은 그 기능 폴더 안에 둔다.
 - 현재 구성(S05-T06, PRD-001 샘플 Command · Query 제거 뒤): 기능 폴더가 없다. Read Repository와 그 프로젝션 `record`는 S05-T06에서 생겼고, 일괄 등록(`Commands/RegisterEmployees/`)은 S06-T04, 목록 · 이름 조회 Query는 S07에서 생긴다.
 
 ```
@@ -494,3 +494,4 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 | 2026-09-28 | developer | PRD-001 샘플 제거 반영: 기능 폴더 구조를 규칙 + 현재 구성으로, Handler 예시를 `v0.1.0` 샘플 표시(교체는 S06-T04), `Employee.Register` VO 시그니처 · `NormalizedEmail`, Repository 실제 코드 · 값 변환기 VO 비교 규칙(실측), Controller 0개, 경고 억제 승인 목록 17건(Employee.Application CA1812 3건 삭제) (S05-T04) |
 | 2026-09-28 | dba | sealed partial 선언 실제 코드 예시의 파일 이름 주석을 리셋 뒤 `20260928090646_InitialCreate.Sealed.cs`로 교체(선언 줄 그대로) (S05-T05) |
 | 2026-09-28 | developer | Repository 실제 코드를 S05-T06 구현으로(`ListExistingNormalizedEmailsAsync` · `AddRange`, Read Repository 목록 · 개수 · 이름 단건, `ExistsByNormalizedEmailAsync` 제거), 목록 쿼리 형태(`ThenBy(Id)` · `Contains` → `= ANY` · 개수 분리, 실측), 기능 폴더 밖에 둘 수 있는 것에 Read Repository 프로젝션 `record` 추가 (S05-T06) |
+| 2026-09-28 | orchestrator | S05 결과 리뷰: 기능 폴더 밖 프로젝션 `record` 규칙 추인(대리 승인), 조건 "Query 하나만 쓰는 프로젝션은 기능 폴더 안" 추가 (S05) |

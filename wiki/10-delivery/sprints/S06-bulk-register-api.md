@@ -76,6 +76,15 @@ updated: 2026-09-28
 - 계획 리뷰에서 확인할 것: enum 1002 증빙을 Validator 단위 테스트로 대체할지(새 API에는 사용자가 enum을 직접 보내는 경로가 없음).
 - S06-T04(Validator 규칙 2개) · S06-T05(Controller 규칙 1개) 완료 조건에 아키텍처 규칙 '대상 대기' 해제를 넣는다(S06 계획 리뷰에서 반영).
 
+S05 인계 (S05 결과 리뷰 2026-09-28, 원문은 [S05 진행 기록](S05-rebase-decisions-schema.md#진행-기록)):
+
+- **S06-T01**: S05-T01 기록 행의 'S06-T01 완료 조건 확정안' ①~⑦로 현재 완료 조건 ⑤('TD-010 · BL-023 처리 반영')를 대체한다(BL-023은 PRD-001에서 done, TD-010은 위험 수용). 상세 Conflict 오류 형식을 ErrorAndResultAreNotDerived 예외 목록에 넣기, `[Consumes]` 불일치 415의 공통 ProblemDetails 변환 실측, ErrorType 11 · 12 · 팩토리 2개, BadHttpRequestException 413 → 1004.
+- **S06-T04**: ExistsByNormalizedEmailAsync는 삭제됨. `ListExistingNormalizedEmailsAsync`는 결과 순서를 보장하지 않으므로 Handler가 NormalizedEmail 값으로 행 번호와 짝짓고, Repository는 Distinct · 빈 목록 처리를 하지 않는다. 잘림 21030 · 23002, BOM · 공백만 입력 = 21028, 21028 · 21029의 PropertyName 결정과 error-codes 해당 목록. 대상 대기 규칙 2개 해제. BuildingBlocks.Api ProblemFieldError.cs:4 XML 주석 예시가 폐기 코드 21001 사용. BL-129 · BL-130 · BL-132.
+- **S06-T05**: 폼 필드의 잘못된 UTF-8 바이트 치환 여부 실측, 바인더 InvalidDataException → 413 판정 기준, 대상 대기 Controller 규칙 1개 해제.
+- **S06-T06**: 동시 경합 · 재전송 테스트 기대값은 3003 · 로그 202(TD-010, S05-T06 실측), InitialCreate를 다시 만들면 순서 재확인. S05 증빙 테스트 대응표 HTTP 행 '이전 대기: S06-T06' 닫기. BL-129 · BL-130 · BL-133. AppHost 볼륨은 새 스키마 상태이며 리셋 전 커밋 worktree에서 띄우면 42P07. 알려진 잡음 기준은 [database.md 알려진 잡음 로그](../../04-development/database.md#알려진-잡음-로그-첫-실행--재시작)가 원본(BL-117은 개수 기록, 판정은 완료 조건 기준).
+- **S06-T02 · T03**: 서로게이트 · 제어 문자 테스트 데이터는 `DisableDiscoveryEnumeration = true`와 입력 보존 단언(BL-131).
+- **공통**: S05 종료 CI에서 UUID v7 같은 밀리초 테스트 통과를 확인했으므로 S06에서는 결과만 참조한다.
+
 ## 결과 리뷰
 
 > 스프린트 종료 시 orchestrator의 결과 리뷰(계획 대비 실제, 완료 조건 · FR 충족, 반려 분석)를 요약합니다.
@@ -111,3 +120,4 @@ updated: 2026-09-28
 | 2026-09-27 | - | 스프린트 계획 (`/prd` PRD-002 분할, 가번호) |
 | 2026-09-28 | - | BL-024 편입: T06 완료 조건 ⑥에 추적 태그 실측 추가 |
 | 2026-09-28 | developer | S05-T01: 스프린트 번호 확정, T01 의존 `S05-T05` → `S05-T06`(S05 작업 재구성), 계획 메모에 '대상 대기' 해제 항목 추가 |
+| 2026-09-28 | orchestrator | S05 결과 리뷰: 계획 메모에 "S05 인계" 소절 추가 |
