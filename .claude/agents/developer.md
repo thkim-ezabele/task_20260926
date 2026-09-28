@@ -56,7 +56,7 @@ Domain · Application · Api 코드를 **TDD(단위 테스트 먼저)**로 구�
 
 1. **진입 점검** (dba 산출물): 필요한 마이그레이션이 있고 적용 가능한가, 매핑이 도메인 모델과 맞는가, DB 명명 규칙을 지켰는가. 하나라도 실패하면 **구현하지 말고** `status: REJECT`, `reject_to: dba`.
 2. **TDD 구현**: 단위 테스트 먼저 → 구현. 대상은 Domain(Aggregate, Value Object), Application(Command / Query / Handler / Validator), Api(엔드포인트).
-3. **검증**: `dotnet build`, `dotnet test`(단위 테스트)가 모두 통과해야 합니다. `dotnet format --verify-no-changes`로 스타일을 확인합니다.
+3. **검증**: `dotnet build`와 `dotnet format --verify-no-changes`, 그리고 **영향받는 테스트 프로젝트만** `dotnet test`로 통과를 확인합니다(전체 테스트 실행은 검증 단계 tester가 1회, 2026-09-28 속도 규칙). 기준 문서는 필요한 절만 Grep으로 읽고, `reasons`는 핵심만 10줄 이내로 씁니다.
    - **제출 전 자체 점검**(S02 반려 원인, 테스트 코드 포함): 최상위 형식이 2개 이상인 `.cs` 파일이 없는가, 모든 `enum`에 기반 형식(`: short` / `: int` / `: long`)이 적혀 있는가, 새 경고 억제는 `[SuppressMessage]` + `Justification`인가. 확인한 명령과 결과를 `reasons`에 적습니다.
    - **새 경고 억제**(PRD-001 회고): [코딩 컨벤션 경고 억제 규칙](../../wiki/04-development/coding-conventions.md#경고-억제-규칙)의 승인 목록에 넣을 행(파일, 규칙 ID, 사유)을 같은 작업에서 추가해 함께 제출합니다. 승인 목록 행이 없는 억제는 reviewer가 PASS할 수 없습니다. 앞선 작업에서 같은 유형의 억제가 승인 없이 들어와 있는지 grep(`SuppressMessage`, `#pragma warning disable`, `NoWarn`)으로 확인하고, 있으면 `reasons`에 적습니다.
 4. 되돌아온 경우(`rework_reasons`가 있음): 사유를 먼저 해결하고, 해결 내용을 `reasons`에 적습니다.

@@ -45,7 +45,7 @@ PRD 또는 스프린트 계획을 **데이터 관점**에서 리뷰합니다: �
 
 ### `mode: task-stage` (스프린트 작업 파이프라인 1단계)
 
-1. **진입 점검**: 작업의 완료 조건과 대응 FR을 읽고 DB 변경이 필요한지 판단합니다. 필요 없으면 `status: PASS`, `entry_check`에 "DB 변경 없음"을 적고 끝냅니다.
+1. **진입 점검**: 작업의 완료 조건과 대응 FR을 읽고 DB 변경이 필요한지 판단합니다. 필요 없으면 `status: PASS`, `entry_check`에 "DB 변경 없음"을 적고 끝냅니다. (스킬은 스키마 · 매핑 · 마이그레이션 · SQL · Repository 쿼리를 바꾸는 작업에만 dba를 호출합니다. 기준 문서는 필요한 절만 Grep으로 읽고, `reasons`는 핵심만 10줄 이내로 씁니다.)
 2. **구현**:
    - 엔티티 매핑(`IEntityTypeConfiguration<T>`), 읽기 / 쓰기 DbContext 등록, Write / Read Repository의 쿼리
    - 마이그레이션 생성: `dotnet ef migrations add <PascalCase이름>` (쓰기 DbContext)
