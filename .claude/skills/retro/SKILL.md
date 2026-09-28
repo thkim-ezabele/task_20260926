@@ -14,7 +14,7 @@ argument-hint: "PRD-NNN (예: PRD-001)"
 
 ## 규칙
 
-- **사용자 승인 지점**: ④ 회고 내용과 개선안 처리, ⑥ 병합 · 릴리스(되돌리기 어려우므로 단계별로 확인).
+- **사용자 승인 지점**: ④ 회고 내용과 개선안 처리 · 스프린트 대리 승인 일괄 추인, ⑥ 병합 · 릴리스(되돌리기 어려우므로 단계별로 확인).
 - `main` / `develop`에는 직접 push하지 않는다. 병합은 모두 GitHub PR로 한다.
 - 커밋에서 `wiki/08-worklog/raw/`는 제외한다.
 
@@ -36,6 +36,7 @@ argument-hint: "PRD-NNN (예: PRD-001)"
 - 스프린트 태그: `git tag --list "sprint/*"`
 - 토픽 PR: `gh pr view <pr> --json number,title,url,commits`
 - 이 토픽 기간의 worklog: 스프린트 문서 `worklogs` 필드
+- 대리 승인: 스프린트 문서마다 "대리 승인" 목록 중 추인되지 않은 행(스프린트, 승인 지점, 내용, 승인한 세션). 이 `/retro`를 대리로 진행하면 이번 회고의 승인도 같은 목록에 더한다
 
 ### ② 관점별 회고 (병렬)
 
@@ -60,14 +61,16 @@ PRD: <경로>
 - 요약, FR 충족 표(충족 / 부분 / 이관), 계획 대비 실제, 파이프라인 반려 분석, 백로그 / 기술부채 추이
 - 개선안 목록: 항목마다 **반영 / 보류**를 사용자에게 고르게 한다(AskUserQuestion, multiSelect).
 - ADR 후보
+- **대리 승인 일괄 추인**: ① 대리 승인 목록을 표(스프린트, 승인 지점, 내용, 승인한 세션)로 보여 주고 사용자가 한꺼번에 추인하게 한다. 추인하지 않는 행은 번호를 받아 처리(재작업 BL, 기록 정정 등)를 정한다. 사용자가 없어 추인할 수 없으면 추인 대기 행을 회고 문서 "사용자 결정 필요"에 남긴다.
 
 ### ⑤ 반영
 
 1. 회고 문서를 쓴다: `wiki/10-delivery/retros/RETRO-PRD-NNN.md` (템플릿 구성, 개선안 표의 "처리"에 반영 / 보류(BL-NNN))
 2. 보류한 개선안은 `backlog.md`에 행으로 추가한다(`status: open`, 출처 `RETRO-PRD-NNN`).
 3. PRD의 `retro` 필드와 README PRD 목록에 회고 링크를 적는다.
-4. 워크플로우 · 규칙이 바뀌는 개선안이면 `wiki/09-memory/`(policies / design) 갱신 대상을 보고한다(반영은 개선안 브랜치에서).
-5. 커밋: `docs(retro): RETRO-PRD-NNN <토픽 제목> 회고` + footer `Stage: orchestrator`, push
+4. 대리 승인 추인 결과를 각 스프린트 문서 "대리 승인" 목록의 추인 열에 적는다(`추인 RETRO-PRD-NNN` / `미추인: <처리>` / `대기`).
+5. 워크플로우 · 규칙이 바뀌는 개선안이면 `wiki/09-memory/`(policies / design) 갱신 대상을 보고한다(반영은 개선안 브랜치에서).
+6. 커밋: `docs(retro): RETRO-PRD-NNN <토픽 제목> 회고` + footer `Stage: orchestrator`, push
 
 **반영하기로 한 개선안**은 토픽 PR과 섞지 않는다. 병합 · 릴리스 후 `develop`에서 `feature/retro-prd-NNN-<설명>` 브랜치를 만들어 별도 PR로 반영한다(⑦에서 안내).
 

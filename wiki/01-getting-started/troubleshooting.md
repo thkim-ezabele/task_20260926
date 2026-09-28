@@ -39,12 +39,17 @@ updated: 2026-09-28
 
 로컬 DB는 AppHost가 띄우는 `postgres` 리소스(볼륨 `emergency-hub-postgres-data`)입니다. 서버 로그는 대시보드의 `postgres` 리소스 콘솔 로그에서 봅니다. 볼륨 · user-secrets 명령은 [로컬 개발 환경 구성의 초기화](local-setup.md#초기화-볼륨--user-secrets)가 원본입니다.
 
+- 첫 실행 · 재시작 때 나와도 되는 로그(42P04 · 3D000 · 25006 탐침 등)의 목록과 판정은 [데이터베이스 · 알려진 잡음 로그](../04-development/database.md#알려진-잡음-로그-첫-실행--재시작)가 원본입니다. 그 표에 없는 `ERROR` · `FATAL`은 아래 표에서 원인을 찾습니다.
+- DB 상태를 직접 보려면 [데이터베이스 · 로컬 DB 구성](../04-development/database.md#로컬-db-구성-apphost)의 psql 명령 틀을 씁니다. 비밀번호는 컨테이너 환경 변수로만 넘기고, 쿼리는 SQL 파일을 표준 입력으로 넘깁니다(PowerShell 5.1에서 `-c "..."`는 큰따옴표가 빠져 `syntax error at end of input`).
+- 서버 로그 확인(두 셸 공통): `docker ps --filter volume=emergency-hub-postgres-data --format '{{.Names}}'`로 컨테이너 이름을 찾고 `docker logs <컨테이너 이름>`. 컨테이너는 AppHost 실행마다 새로 만들어지므로 `docker logs`에는 지금 실행의 서버 로그만 있습니다.
+
 | 증상 | 원인 | 해결 |
 |---|---|---|
 | 서버 로그 `FATAL:  password authentication failed for user "employee_app"`, `employee-migrations`가 `Finished` · 종료 코드 `1`(로그 SqlState `28P01`), `employee-api` `Failed to start` | 볼륨이 남아 있는데 user-secrets의 비밀번호(`Parameters:*`)가 지워지거나 바뀌어 새 값이 생성됨. 비밀번호는 빈 볼륨을 처음 초기화할 때만 서버에 저장된다(S03-T05 실측: `Parameters:employee-app-password`만 제거) | AppHost를 멈추고 이름 있는 볼륨만 지운 뒤 다시 실행(초기화 절차 ①, ②). 비밀번호 쌍까지 새로 만들려면 초기화 절차 전체(볼륨 + user-secrets clear) |
 | `employee-migrations`가 `Waiting`에서 넘어가지 않고 `employee-api`도 시작하지 않음(BL-017) | MigrationService는 `employee-db`를 기다린다(`WaitFor`). `employee-db` 생성 스크립트(`CREATE DATABASE emergency_hub_employee OWNER employee_app`)가 실패하면 `employee-db`가 준비되지 않아 계속 기다린다. 서버 로그에서 아래 42P04 한 쌍 · 3D000을 뺀 `ERROR` · `FATAL`을 찾는다(예: 볼륨에 `employee_app` 롤이 없으면 `role "employee_app" does not exist`. 이 예는 미실측) | AppHost를 멈추고 이름 있는 볼륨 `emergency-hub-postgres-data`만 지운 뒤 다시 실행(초기화 절차 ①, ②). 빈 볼륨에서 초기화 스크립트가 롤을 다시 만든다. 그래도 반복되면 초기화 절차 전체 |
-| 두 번째 실행부터 서버 로그에 `ERROR:  database "emergency_hub_employee" already exists`와 `STATEMENT:  CREATE DATABASE emergency_hub_employee OWNER employee_app`가 실행마다 한 쌍(`42P04`) | **정상 잡음**. Aspire가 실행마다 생성 스크립트를 실행하고 이 오류를 무시한다. PostgreSQL에 `CREATE DATABASE IF NOT EXISTS`가 없어 스크립트로 없앨 수 없다(BL-096 기록) | 조치 없음. 판정(S03-T05 확정): 이 한 쌍과 첫 실행의 `3D000`을 뺀 `ERROR` · `FATAL` · `already exists`가 0건이고, 한 쌍의 개수가 (실행 횟수 − 1)과 같으면 정상([데이터베이스](../04-development/database.md#로컬-db-구성-apphost)). `employee_app`의 `already exists`(`42710`)가 1건이라도 있으면 초기화 스크립트가 다시 실행된 것이므로 정상이 아니다 |
+| 두 번째 실행부터 서버 로그에 `ERROR:  database "emergency_hub_employee" already exists`와 `STATEMENT:  CREATE DATABASE emergency_hub_employee OWNER employee_app`가 실행마다 한 쌍(`42P04`) | **정상 잡음**. Aspire가 실행마다 생성 스크립트를 실행하고 이 오류를 무시한다. PostgreSQL에 `CREATE DATABASE IF NOT EXISTS`가 없어 스크립트로 없앨 수 없다(BL-096 기록) | 조치 없음. 판정(S03-T05 확정): 이 한 쌍과 첫 실행의 `3D000`을 뺀 `ERROR` · `FATAL` · `already exists`가 0건이고, 한 쌍의 개수가 (실행 횟수 − 1)과 같으면 정상([데이터베이스](../04-development/database.md#로컬-db-구성-apphost)). 실행 하나의 `docker logs`로 보면 빈 볼륨 첫 실행 0개, 그 뒤 실행마다 1개이고, 여러 실행 로그를 모아 세면 합계가 (실행 횟수 − 1)이다(BL-115). `employee_app`의 `already exists`(`42710`)가 1건이라도 있으면 초기화 스크립트가 다시 실행된 것이므로 정상이 아니다 |
 | 첫 실행(빈 볼륨) 서버 로그에 `FATAL:  database "emergency_hub_employee" does not exist`(`3D000`) | **정상 잡음**. `employee-db` 헬스 검사가 생성 스크립트보다 먼저 접속해 남을 수 있다. 42P04 한 쌍과 같은 Aspire 자체 검사 잡음이다(BL-096 기록) | 조치 없음. 개수를 기록하고 오류 0 판정에서 제외한다 |
+| 빈 볼륨 첫 실행에서 `employee-api` 로그에 `Health check "EmployeeReadDbContext"` · `"EmployeeDbContext"` `with status Unhealthy`(`Error` 2건, EventId 103), 다음 `/health/ready`부터 `Healthy`(BL-117) | 원인 미상. 같은 시각 서버 로그에 연결 오류가 없고, 재현 조건은 볼륨 삭제 + user-secrets clear 뒤 1회차다(S04-T04 실측, 2 · 3회차는 0건) | **잡음으로 제외하지 않는다.** 증빙에는 기록하고 판정받는다. 이후 `/health/ready`가 `200`이면 실행은 계속할 수 있다 |
 
 ## 메시지 브로커 연결 문제
 
@@ -68,3 +73,4 @@ updated: 2026-09-28
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-28 | dba | DB 연결 문제 표(28P01 비밀번호 불일치, MigrationService Waiting(BL-017), 42P04 한 쌍 · 첫 실행 3D000 정상 잡음(BL-096, database.md 판정 문구)), Docker 관련 문제에 Testcontainers 연결 실패(`DOCKER_API_VERSION=1.43`, BL-102) 작성. 나머지 절은 developer 단계에서 작성 (S04-T03) |
 | 2026-09-28 | developer | `draft`로 작성: 빌드 오류(SDK 불일치 메시지, MAX_PATH `MSB3101` · `MSB3030`(BL-049), 경고 = 오류, `dotnet-ef` 복원), 실행 오류(https 프로필 대시보드 OTLP 0건(BL-099), Ctrl+C가 닿지 않을 때 프로세스 종료 두 셸 실측, 남은 컨테이너, AppHost 없이 Api 실행, 409 · 23001, Git Bash 한글 본문), 메시지 브로커 해당 없음(ADR-0023), Docker 관련 보충(AppHost는 API 1.43에서 동작, 이름 지정 정리). DB 연결 · Testcontainers 행은 dba 작성분 유지 (S04-T03) |
+| 2026-09-28 | - | RETRO-PRD-001 개선안 #6 반영: DB 연결 문제 절에 알려진 잡음 로그 원본(database.md) · psql 명령 틀 링크와 서버 로그 확인 명령, 42P04 "(실행 횟수 − 1)" 풀이(BL-115), 첫 실행 헬스 검사 Unhealthy 행(잡음 아님, BL-117) |
