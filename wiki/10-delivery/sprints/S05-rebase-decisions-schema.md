@@ -110,6 +110,8 @@ updated: 2026-09-28
 - EmployeeBuilder(Domain · Integration)는 새 필드로, 기본 이메일은 순번으로 고유하게.
 - (T02 dba) `normalized_email`은 DB가 강제하지 않으므로(ck · 식 인덱스 없음) 테스트 시드와 원시 SQL INSERT도 `ToLowerInvariant` 값을 넣는다. EmployeeBuilder(Integration)는 Email VO를 거쳐 값을 만든다.
 - (T01 developer) 대응표 "처리" 열이 원본이다. EmployeePersistenceRoundTripTests.GetByIdAsync_* 2건은 IEmployeeReadRepository.GetById 제거와 부딪히므로 수정 방식을 T04에서 정한다. PersistenceLogExposureTests는 샘플 의존 메서드가 0개라 2건 모두 "수정".
+- (T03 tester) Email Value는 제어 문자 · 짝 없는 서로게이트를 거르지 않는다(BL-129). NUL이 든 email 저장 시 PG 오류(22021 추정)를 실측할지는 T04 developer가 판단하고, 실측하면 진행 기록에 남긴다. 규칙 추가는 이 스프린트 범위 밖이다.
+- (T03 reviewer) EF 설정은 Name.MaxLength · Email.MaxLength · PhoneNumber.MaxLength const를 참조하고 숫자를 다시 쓰지 않는다. NormalizedEmail은 Email VO에서 가져온다. BL-130(record ToString이 값 출력)과 관련해 Aggregate가 VO를 로그 인자로 넘기지 않는지 함께 본다.
 - (T03 developer) EF HasConversion은 VO private 생성자를 쓸 수 없으므로 변환 식은 `v => Name.Create(v).Value`처럼 Create를 거친다(DB 값이 규칙을 어기면 Value 접근 예외). 참조 상수는 Name.MaxLength · Email.MaxLength · PhoneNumber.MaxLength, JoinedOn.MinValue는 static readonly.
 - (T03 developer) 폐기 상수 삭제 때 EmployeeErrorsTests.DeprecatedRows를 비우고 DocumentedRows_CountByStatus의 폐기 기대 개수 3을 고친다. `Employee.Email`(string)과 새 `Email` 형식이 같은 네임스페이스라 'Color Color' 형태가 되지만 컴파일 문제는 없다. EmployeeEmail 도우미를 지우면 IEmployeeRepository · Employee의 cref도 고친다.
 - (T02 developer) 폐기 상수 21001 · 21002 · 21006을 지우면 error-codes 해당 행 상태의 '상수 삭제 S05-T04'를 완료로 표시한다. 23001 설명의 '그 전까지는 ux_employees_email' 문구는 매핑 교체 뒤 지운다. clean-architecture 트리(EmployeeEmail.cs, Commands/Queries 샘플)와 coding-conventions 기능 폴더 구조 · 예시 안내를 샘플 제거 뒤 실제 구성으로 갱신한다(예시 코드 교체는 S06-T04). 대상 대기 목록의 원본 표는 testing-strategy '대상 대기 목록'.
@@ -242,6 +244,24 @@ updated: 2026-09-28
 | `EmergencyHub.BuildingBlocks.Infrastructure.UnitTests.Persistence.UniqueIndexNameTests.*` (17) | FR-06 | 변경 없음 | - | 계획 |
 
 
+### S05-T03 tester 대조표
+
+| 항목 | 성공 | 실패 | 엣지 |
+|---|---|---|---|
+| ① sealed record + `Create` → 필드 코드 Result | `*Tests.Create_Valid*` 4개 클래스 | 코드마다 `BeSameAs(EmployeeErrors.X)` | `*Tests.Create_Same*_AreEqual` |
+| 공백만 (4개 필드) | - | `*Tests.Create_NullEmptyOrWhitespace_Returns*Required` | `NameTests.Create_ControlCharacterOnlyThatIsNotWhitespace_ReturnsNameInvalidCharacter`, 추가 `NonWhitespaceInvisibleInputTests.*` |
+| name 최대 길이 · NFD | `NameTests.Create_AtMaxLengthAfterTrimAndNfc_Succeeds`, `Create_NfdName_NormalizesToNfc` | `Create_OverMaxLengthAfterTrimAndNfc_ReturnsNameTooLong` | `Create_NfcExpandsOverMaxLength_ReturnsNameTooLong`, `Create_NfdAndNfcOfSameName_AreEqual` |
+| name 제어 문자 · 서로게이트 | `Create_FormatCharacter_IsAllowed`, `Create_PairedSurrogate_IsAllowed` | `Create_ControlCharacterInside_*`, `Create_UnpairedSurrogate_*WithoutThrowing` | `Create_ControlCharacterOnlyAtEdges_IsTrimmedAndSucceeds`, `Create_OverMaxLengthWithControlCharacter_ReportsInvalidCharacterFirst` |
+| email 형식 · 길이 | `EmailTests.Create_ValidEmail_KeepsTrimmedInputAndLowercasesNormalized`, `Create_AtMaxLengthAfterTrim_Succeeds` | `Create_Malformed_ReturnsEmailInvalid`, `Create_OverMaxLengthAfterTrim_ReturnsEmailTooLong` | `Create_LongMalformedEmail_ReportsLengthFirst`, `Create_DottedLocalPart_IsNotCheckedForDots` |
+| 대소문자만 다른 이메일 | `EmailTests.Create_EmailsDifferingOnlyInCase_HaveSameNormalizedEmail` | - (같은 NormalizedEmail이 맞는 동작, 중복 거부는 S06 Handler) | 같은 테스트에서 Value는 다름 |
+| 전화 하이픈 경계 | `PhoneNumberTests.Create_ValidPhoneNumber_KeepsInputAsIs` | `Create_LeadingTrailingOrConsecutiveHyphen_*` | `Create_TooFewDigitsWithLeadingHyphen_ReportsInvalidHyphenFirst` |
+| 숫자 자리 · 전체 길이 · 허용 문자 | 8 · 15자리, `Create_AtMaxLengthWithMaxDigits_Succeeds` | `Create_DigitCountOutOfRange_*`, `Create_OverMaxLength_*`, `Create_CharacterOtherThanAsciiDigitOrHyphen_*` | `Create_OverMaxLengthWithPlus_ReportsInvalidCharacterFirst` |
+| `2000-02-30` · 형식 | `JoinedOnTests.Create_ValidDate_ReturnsDate` | `Create_NotExactFormatOrNonexistentDate_*` | `Create_UnderNonInvariantCurrentCulture_ParsesSameDate` |
+| joined 하한 · 미래 | `Create_MinValue_Succeeds`, `Create_FutureDate_IsAllowed` | `Create_BeforeMinValue_ReturnsJoinedOnTooEarly` | `Constants_MatchFieldRules` |
+| ④ public const | `Name/Email.MaxLength_Is*`, `Constants_MatchFieldRules` | - (상수 값 단언) | - |
+| ⑤ EmployeeErrors ↔ error-codes | `EmployeeErrorsTests.Fields_MatchDocumentedUsedAndDeprecatedRows` | `ReservedCodes_AreNotDefinedYet` | `DocumentedRows_CountByStatus` |
+| ⑥ 다른 레이어 무변경 · 경고 0 · 전체 통과 | `git show --stat f4f4117 -- src`(Domain 5개), build 경고 0, test 1,730 | - | - |
+
 ## 완료 기준 (DoD)
 
 - [ ] 모든 작업이 `done`이거나 백로그로 이관되었다
@@ -273,6 +293,8 @@ updated: 2026-09-28
 | 2026-09-28 | S05-T02 | tester | PASS | 명령 점검표: ADR 0025~0028은 bd0cbc7에서 처음 추가(A 4, 기존 ADR 수정 0), bd0cbc7 이후 · S05 계획 확정 이후 src/tests 커밋 0. frontmatter accepted 4. error-codes 47행 중복 0(공통 사용 12 · 예약 2, Employee 사용 5 · 폐기 3 · 예약 25, 예약 행 모두 작업 ID), 사용 · 폐기 20행 ↔ CommonErrors · EmployeeErrors 상수 20개 1:1. check-docs 98개 · 결함 4(bd0cbc7 트리도 같음, 새 결함 0), 새 ADR 앵커 링크 정상. 사실 문장 재실측 일치. 테스트 추가 0 |
 | 2026-09-28 | S05-T03 | dba | 해당 없음 | 파이프라인 표 dba 열 "해당 없음"(호출 생략) |
 | 2026-09-28 | S05-T03 | developer | PASS | TDD(Red: CS0103 · CS0117 확인 → Green). VO 4개(Name · Email · PhoneNumber · JoinedOn, `public sealed record`, private 생성자 · get-only, `Create(string?)` → Result, Employees 폴더), EmployeeErrors 21007~21017 11개, 상수 Name.MaxLength 100 · Email.MaxLength 254 · PhoneNumber.MaxLength 20 · Min/MaxDigitCount 8/15 · JoinedOn.Format · MinValue(static readonly). 필드별 첫 실패만 보고, 판정 순서 name 21007 → 21009 → 21008, email 21003 → 21005 → 21004, tel 21010 → 21011 → 21013 → 21014 → 21012, joined 21015 → 21016 → 21017. 명세 밖 결정 2개(tel 판정 순서, email '.' 규칙은 domain에만)는 주석 · 테스트 · error-codes에 기록. xUnit v3 MemberData 직렬화가 짝 없는 서로게이트를 바꿔 `DisableDiscoveryEnumeration = true`로 수정. error-codes 21007~21017 '사용'(Employee 사용 16 · 예약 14 · 폐기 3). Aggregate · Application · Infrastructure · EmployeeEmail 변경 0. build 경고 0 · 오류 0, `dotnet format --verify-no-changes` 0, test 통과 1,720 · 건너뜀 1 · 실패 0(추가 183), check-docs 98개 · 결함 4. 새 BL-129~131 |
+| 2026-09-28 | S05-T03 | reviewer | PASS | 표준 진입 점검 16항목 통과: build 경고 0, test 1,720 · 건너뜀 1 · 실패 0(직접 실행), format 0, FR-01 엣지 목록 전부 대조(NFD 리터럴은 hex로 확인), 규칙 코드 11개마다 실패 테스트, Domain 프레임워크 비의존, NFC · 소문자화는 VO 한 곳, 억제 0. ADR-0026 8절 · ADR-0027 대조 일치, ADR 커밋 순서 OK. 명세 밖 결정 2개는 PRD · 인계 메모와 충돌 없음 |
+| 2026-09-28 | S05-T03 | tester | PASS | FR-01 엣지 목록 · 규칙 11개 대조(대조표 아래), 빈 곳 1개(공백이 아닌 보이지 않는 문자 U+0000 · U+200B의 tel · joined · email 분류) 보강 +10(NonWhitespaceInvisibleInputTests). build 경고 0, test 1,730 통과 · 건너뜀 1 · 실패 0. error-codes 사용 16 · 폐기 3 · 예약 14 대조 일치, ADR 순서 OK. Email이 NUL(U+0000)을 허용해 PG text 저장 시 500 가능성(미실측) → BL-129에 병합 |
 
 ## 계획 리뷰
 
