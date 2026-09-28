@@ -26,7 +26,7 @@ public static class ConventionRules
     // coding-conventions "C# 언어 기능" 클래스는 기본 sealed 행의 BuildingBlocks.Domain 예외(abstract 기반은 대상에서 이미 빠짐).
     private static readonly Type[] OpenByDesign = [typeof(Error), typeof(Result)];
 
-    // 파생을 허용하는 형식과 그 파생(BuildingBlocks.Domain 안에서만): ValidationError : Error, Result<T> : Result.
+    // 파생을 허용하는 형식과 그 파생(BuildingBlocks.Domain 안에서만): ValidationError · ConflictError : Error, Result<T> : Result.
     private static readonly Type[] ErrorResultFamily = [typeof(Error), typeof(ValidationError), typeof(ConflictError), typeof(Result), typeof(Result<>)];
 
     private static readonly string[] ModelNameSuffixes = ["Command", "Query", "Request", "Response", "Dto", "Event"];

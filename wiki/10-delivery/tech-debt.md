@@ -55,6 +55,7 @@ updated: 2026-09-28
 | TD-026 | Employee.Infrastructure가 IConfiguration을 전이 참조(Microsoft.Extensions.Configuration.Abstractions 8.0.0, BuildingBlocks.Infrastructure 경유)로 사용: 직접 참조 · package-versions.md 등록 여부 판단 필요(현재 빌드 · 감사 문제 없음) | 의존성 | 하 | S03-T02 | S04 종료 정리: 문서분(package-versions 전이 참조 행)은 S04-T02 완료, 직접 참조 여부는 TD-002 때 TD-019와 함께. S04 계획 확정: S04-T02 편입(문서 한 줄). 빌드 · 감사 문제 없음. S04-T02에서 package-versions.md에 전이 사용(BuildingBlocks.Infrastructure 경유) 한 줄, 직접 참조 여부는 .NET 10 전환(TD-002) 때 TD-019와 함께 | open |
 | TD-027 | 테스트 fixture의 ApplyMigrationsAsync가 MigrationWorker 적용 코드를 복제(차이가 생겨도 못 잡음), EmployeeDatabaseFixture.OpenAsync · TestTriggers.OpenAsync 중복 | 테스트 | 하 | S03 결과 리뷰(S03-T06) | BL-103 해결 때 적용 코드를 Infrastructure 공용 메서드 하나로 모아 Worker · fixture가 같이 쓰고, OpenAsync는 fixture 한 곳으로. 그 전까지 fixture 주석에 복제 사실 · 원본 위치 | open |
 | TD-028 | CSV 헤더 행 미지원(PRD-002 FR-03, S06-T02 구현): 헤더를 넣으면 첫 줄을 데이터로 읽어 날짜 형식 오류로 요청 전체를 거부함 | 설계 | 하 | PRD-002 범위 밖 (Q7 · FR-03) | BL-122(헤더 지원) 결정 때 함께 상환 · S05 종료 정리: S06-T02는 FR-03대로 헤더 미지원 구현, S07-T04 API 명세에 명시 | open |
+| TD-029 | 제품 코드의 null-forgiving `!`(coding-conventions Nullable 규칙 위반): `InvalidModelStateResponses.cs:57` `FullName!`, `Employee.cs:40-44` EF 생성자 `null!`. EF 생성자 예외 규칙을 둘지 고칠지, 분석기 · 아키텍처 테스트 검사 방안 | 코드 | 하 | S06-T01 reviewer | 미정 | new |
 
 ---
 

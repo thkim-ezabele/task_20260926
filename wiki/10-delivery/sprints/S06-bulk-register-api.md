@@ -67,6 +67,9 @@ updated: 2026-09-28
 | 2026-09-28 | S06-T01 | dba | 해당 없음 | 파이프라인 표 dba 열 "해당 없음"(호출 생략) |
 | 2026-09-28 | S06-T01 | developer | PASS | ConflictError · 409 errors, ErrorType 11 · 12, 413 · 1004 / 415 · 1005(라우팅 415는 StatusCodePages, [FromBody] 무 CT는 ClientErrorFactory), TestHost 8.0.31 추가, 테스트 +69 |
 | 2026-09-28 | S06-T01 | 기록 | handoff | T04 ConflictError.Create 사용법, T05 [FromBody] 없는 액션은 CT 없음이면 액션 도달(판정은 바인더), T06 UseStatusCodePages 415만 처리 |
+| 2026-09-28 | S06-T01 | 결정 | 승인(대리) | 완료 조건 ② "Content-Type 없음"은 [FromBody] 경로 · [Consumes] 불일치 경로로 충족, 전용 바인더 경로의 Content-Type 없음은 T05 바인더가 판정(ADR-0026 1절) |
+| 2026-09-28 | S06-T01 | reviewer | REJECT → developer | [컨벤션] ApiServiceCollectionExtensions.cs:114 `ImplementationType!` null-forgiving 금지. 테스트 주석 3곳 415 경로 정정(handoff). TD-029 new |
+| 2026-09-28 | S06-T01 | tester | PASS | build 경고 0, format 0, test 통과 1,741 · 실패 0, check-docs 결함 4. StatusCodePagesPipelineTests +3(404 빈 본문 유지). 405 · 엔드포인트 415 확인은 T05로 |
 
 ## 계획 리뷰
 
@@ -84,7 +87,7 @@ S05 인계 (S05 결과 리뷰 2026-09-28, 원문은 [S05 진행 기록](S05-reba
 
 - **S06-T01**: S05-T01 기록 행의 'S06-T01 완료 조건 확정안' ①~⑦로 현재 완료 조건 ⑤('TD-010 · BL-023 처리 반영')를 대체한다(BL-023은 PRD-001에서 done, TD-010은 위험 수용). 상세 Conflict 오류 형식을 ErrorAndResultAreNotDerived 예외 목록에 넣기, `[Consumes]` 불일치 415의 공통 ProblemDetails 변환 실측, ErrorType 11 · 12 · 팩토리 2개, BadHttpRequestException 413 → 1004.
 - **S06-T04**: ExistsByNormalizedEmailAsync는 삭제됨. `ListExistingNormalizedEmailsAsync`는 결과 순서를 보장하지 않으므로 Handler가 NormalizedEmail 값으로 행 번호와 짝짓고, Repository는 Distinct · 빈 목록 처리를 하지 않는다. 잘림 21030 · 23002, BOM · 공백만 입력 = 21028, 21028 · 21029의 PropertyName 결정과 error-codes 해당 목록. 대상 대기 규칙 2개 해제. BuildingBlocks.Api ProblemFieldError.cs:4 XML 주석 예시가 폐기 코드 21001 사용. BL-129 · BL-130 · BL-132.
-- **S06-T05**: 폼 필드의 잘못된 UTF-8 바이트 치환 여부 실측, 바인더 InvalidDataException → 413 판정 기준, 대상 대기 Controller 규칙 1개 해제.
+- **S06-T05**: 폼 필드의 잘못된 UTF-8 바이트 치환 여부 실측, 바인더 InvalidDataException → 413 판정 기준, 대상 대기 Controller 규칙 1개 해제. (T01 결정) Content-Type 없는 요청은 [FromBody]가 없어 액션까지 온다. 바인더가 확장자 → 내용 판별로 처리하고, 판별 불가면 415 · 1005(Result `CommonErrors.UnsupportedMediaType`)로 거절하며 그 판정 결과를 진행 기록에 남긴다.
 - **S06-T06**: 동시 경합 · 재전송 테스트 기대값은 3003 · 로그 202(TD-010, S05-T06 실측), InitialCreate를 다시 만들면 순서 재확인. S05 증빙 테스트 대응표 HTTP 행 '이전 대기: S06-T06' 닫기. BL-129 · BL-130 · BL-133. AppHost 볼륨은 새 스키마 상태이며 리셋 전 커밋 worktree에서 띄우면 42P07. 알려진 잡음 기준은 [database.md 알려진 잡음 로그](../../04-development/database.md#알려진-잡음-로그-첫-실행--재시작)가 원본(BL-117은 개수 기록, 판정은 완료 조건 기준).
 - **S06-T02 · T03**: 서로게이트 · 제어 문자 테스트 데이터는 `DisableDiscoveryEnumeration = true`와 입력 보존 단언(BL-131).
 - **공통**: S05 종료 CI에서 UUID v7 같은 밀리초 테스트 통과를 확인했으므로 S06에서는 결과만 참조한다.
@@ -138,6 +141,7 @@ S05 인계 (S05 결과 리뷰 2026-09-28, 원문은 [S05 진행 기록](S05-reba
 | 날짜 | 승인 지점 | 승인 내용 | 승인한 세션 | 근거 (진행 기록) | 추인 |
 |---|---|---|---|---|---|
 | 2026-09-28 | ① 계획 리뷰 | T01~T06 완료 조건 정정안 전체, D1(BL-129 PRD FR-01 email 규칙 변경)~D6 추천안, T06 반려 2회 시 분리안 BLOCKED 보고 조건 | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 계획 리뷰 행 | 대기 |
+| 2026-09-28 | 결정 (S06-T01) | 완료 조건 ② Content-Type 없음 해석: [FromBody] · [Consumes] 불일치 두 경로로 충족, 전용 바인더 경로는 T05 판정 | 오케스트레이션 `emergency-hub-d2` | 2026-09-28 S06-T01 결정 행 | 대기 |
 
 ## 회고
 
