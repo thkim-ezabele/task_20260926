@@ -20,7 +20,7 @@ public static class EmployeeInfrastructureServiceCollectionExtensions
     private const string ReadConnectionName = "Read";
 
     /// <summary>
-    /// Api용 등록입니다: 공통 인프라 → 규칙 기반 등록(Employee Application · Infrastructure 어셈블리) → 쓰기 · 읽기 DbContext → UnitOfWork(이메일 유니크 위반 → 23001).
+    /// Api용 등록입니다: 공통 인프라 → 규칙 기반 등록(Employee Application · Infrastructure 어셈블리) → 쓰기 · 읽기 DbContext → UnitOfWork(정규화 이메일 유니크 위반 → 23001).
     /// </summary>
     /// <param name="services">서비스 컬렉션.</param>
     /// <param name="configuration">설정(<c>ConnectionStrings:Write</c> · <c>ConnectionStrings:Read</c>).</param>
@@ -44,7 +44,7 @@ public static class EmployeeInfrastructureServiceCollectionExtensions
             .AddConventionalServices(EmployeeApplicationAssembly.Assembly, EmployeeInfrastructureAssembly.Assembly)
             .AddEmployeeWriteDbContext(configuration, retry)
             .AddReadDbContext<EmployeeReadDbContext>(configuration.GetConnectionString(ReadConnectionName), retry: retry)
-            .AddUnitOfWork<EmployeeDbContext>(errors => errors.Map(EmployeeDbNames.EmailUniqueIndex, EmployeeErrors.DuplicateEmail));
+            .AddUnitOfWork<EmployeeDbContext>(errors => errors.Map(EmployeeDbNames.NormalizedEmailUniqueIndex, EmployeeErrors.DuplicateEmail));
     }
 
     /// <summary>

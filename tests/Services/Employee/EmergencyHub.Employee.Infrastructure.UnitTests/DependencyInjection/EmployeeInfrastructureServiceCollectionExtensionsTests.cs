@@ -18,7 +18,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EmergencyHub.Employee.Infrastructure.UnitTests.DependencyInjection;
 
 // S03-T02: AddEmployeeInfrastructure = 공통 인프라 → 규칙 기반 등록(Application · Infrastructure 어셈블리) → 쓰기 · 읽기 DbContext(재시도 인자)
-// → UnitOfWork(ux_employees_email → 23001). MigrationService용 AddEmployeeWriteDbContext는 쓰기만, 같은 재시도 인자 경로(dba 구현 사양 5).
+// → UnitOfWork(ux_employees_normalized_email → 23001, S05-T04). MigrationService용 AddEmployeeWriteDbContext는 쓰기만, 같은 재시도 인자 경로(dba 구현 사양 5).
 // 연결은 열지 않는다(더미 연결 문자열).
 [Trait("FR", "PRD-001/FR-06")]
 [Trait("FR", "PRD-001/FR-08")]
@@ -55,28 +55,29 @@ public sealed class EmployeeInfrastructureServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddEmployeeInfrastructure_Called_RegistersApplicationHandlers()
+    public void AddEmployeeInfrastructure_EmployeeApplicationWithoutHandlers_RegistersNoHandlersAndStillBuilds()
     {
-        // AddConventionalServices는 한 번만 부를 수 있어 Application 어셈블리도 여기서 함께 넘긴다(Api는 다시 부르지 않음).
+        // 엣지(S05-T04): PRD-001 샘플 Command · Query를 지워 Employee Application에 Handler가 없다(S06-T04에서 일괄 등록 Command Handler가 생김).
+        // Handler가 없어도 규칙 기반 등록 · 엄격 검증 빌드는 실패하지 않는다. AddConventionalServices는 한 번만 부를 수 있어 Application 어셈블리도 여기서 넘긴다.
         var services = CreateServices().AddEmployeeInfrastructure(Configuration());
 
-        services.Should().Contain(d => d.ServiceType.IsGenericType
-            && d.ServiceType.GetGenericTypeDefinition() == typeof(ICommandHandler<,>)
-            && d.ServiceKey == null);
-        services.Should().Contain(d => d.ServiceType.IsGenericType
-            && d.ServiceType.GetGenericTypeDefinition() == typeof(IQueryHandler<,>)
-            && d.ServiceKey == null);
+        services.Should().NotContain(d => d.ServiceType.IsGenericType
+            && (d.ServiceType.GetGenericTypeDefinition() == typeof(ICommandHandler<,>)
+                || d.ServiceType.GetGenericTypeDefinition() == typeof(IQueryHandler<,>)));
+        var build = () => services.BuildServiceProvider(StrictOptions).Dispose();
+        build.Should().NotThrow();
     }
 
     [Fact]
-    public void AddEmployeeInfrastructure_UniqueConstraintRegistry_MapsEmailIndexToDuplicateEmailInstance()
+    public void AddEmployeeInfrastructure_UniqueConstraintRegistry_MapsOnlyNormalizedEmailIndexToDuplicateEmailInstance()
     {
         using var provider = CreateServices().AddEmployeeInfrastructure(Configuration()).BuildServiceProvider(StrictOptions);
 
         var registry = provider.GetRequiredService<UniqueConstraintErrorRegistry>();
 
-        registry.IndexNames.Should().Equal(EmployeeDbNames.EmailUniqueIndex);
-        registry.Find("ux_employees_email").Should().BeSameAs(EmployeeErrors.DuplicateEmail);
+        registry.IndexNames.Should().Equal(EmployeeDbNames.NormalizedEmailUniqueIndex);
+        registry.IndexNames.Select(name => name.Value).Should().Equal("ux_employees_normalized_email");
+        registry.Find("ux_employees_normalized_email").Should().BeSameAs(EmployeeErrors.DuplicateEmail);
         EmployeeErrors.DuplicateEmail.Code.Should().Be(23001);
     }
 
@@ -97,11 +98,12 @@ public sealed class EmployeeInfrastructureServiceCollectionExtensionsTests
 
     [Theory]
     [InlineData("pk_employees")]
-    [InlineData("UX_EMPLOYEES_EMAIL")]
-    [InlineData("ux_employees_email ")]
+    [InlineData("UX_EMPLOYEES_NORMALIZED_EMAIL")]
+    [InlineData("ux_employees_normalized_email ")]
+    [InlineData("ix_employees_name_joined_on_id")]
     public void AddEmployeeInfrastructure_UniqueConstraintRegistry_OtherOrNonExactNames_AreNotMapped(string constraintName)
     {
-        // 실패 · 엣지: 매핑 없는 제약(pk_ 등)과 대소문자 · 공백이 다른 이름은 매핑되지 않는다(→ 3003, Ordinal 비교).
+        // 실패 · 엣지: 매핑 없는 제약(pk_ · ix_)과 대소문자 · 공백이 다른 이름은 매핑되지 않는다(→ 3003, Ordinal 비교).
         using var provider = CreateServices().AddEmployeeInfrastructure(Configuration()).BuildServiceProvider(StrictOptions);
 
         provider.GetRequiredService<UniqueConstraintErrorRegistry>().Find(constraintName).Should().BeNull();

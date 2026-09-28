@@ -158,6 +158,8 @@ updated: 2026-09-28
 | BL-129 | Email local 부분의 제어 문자(예: U+0001)를 거부할지: 현재 규칙(`@` 하나 · 공백 없음 · domain `.`)으로 거르지 않음 | S05-T03 developer | | new | PRD-002 FR-01 규칙 밖이라 구현하지 않음. PRD 개정 여부 판단. S05-T03 tester: NUL(U+0000) · 짝 없는 서로게이트도 통과하며, PostgreSQL text는 NUL을 저장할 수 없어 일괄 등록 저장에서 500이 날 가능성(미실측) |
 | BL-130 | Value Object record 기본 ToString이 값을 출력(`Name { Value = 홍길동 }`): 로그 템플릿 인자로 넘기면 개인정보가 남음. ToString 재정의 또는 로그 인자 금지 규칙 검토 | S05-T03 developer | | new | NFR-04 · FR-10 개인정보 테스트(S06-T06)와 관련 |
 | BL-131 | testing-strategy 규칙 후보: xUnit v3 MemberData / InlineData는 발견 단계 직렬화에서 짝 없는 서로게이트 문자열을 바꿀 수 있으므로 `DisableDiscoveryEnumeration = true`와 입력 보존 단언을 둔다 | S05-T03 developer | | new | S05-T03 실측(21009 사례 4건 실패 후 수정) |
+| BL-132 | logging-observability.md(87 · 93 · 152행) · tdd-guide.md(51 · 71행) 예시가 PRD-001 샘플 이름(RegisterEmployeeCommandHandler 등)을 씀 | S05-T04 developer | | new | 형식 설명이라 S05에서는 두었음. S06-T04 Handler 예시 교체 때 함께 |
+| BL-133 | IntegrationTests `Http/HttpProblem.cs` · `LogEventText.cs`가 HTTP 테스트 삭제로 호출처 0 | S05-T04 developer | | new | S06-T06 HTTP 테스트에서 다시 쓰거나 삭제 |
 
 ---
 

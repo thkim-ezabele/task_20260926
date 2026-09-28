@@ -1,6 +1,4 @@
 using EmergencyHub.BuildingBlocks.Infrastructure.Persistence;
-using EmergencyHub.Employee.Application.Employees;
-using EmergencyHub.Employee.Application.Employees.Queries.GetEmployeeById;
 using EmergencyHub.Employee.Domain.Employees;
 using EmergencyHub.Employee.Infrastructure.Persistence;
 using EmergencyHub.Employee.IntegrationTests.Fixtures;
@@ -13,7 +11,9 @@ namespace EmergencyHub.Employee.IntegrationTests.Persistence;
 
 // FR-06 공통 설정의 실제 DB 왕복(S03-T02 tester 인계, BL-082 S1 · testing-strategy.md Q8):
 // 추가 → 커밋 → 새 쓰기 DbContext로 다시 읽기(private 생성자 구체화, 강타입 ID 변환, 감사 UTC, xmin 채움)와
-// EmployeeReadRepository 프로젝션(e.Id == new EmployeeId(id) · e.Id.Value 번역, shadow 감사 시각)을 실제 PostgreSQL에서 한 번 실행한다.
+// 읽기 DbContext 프로젝션(e.Id == new EmployeeId(id) · e.Id.Value · VO .Value 최상위 프로젝션, shadow 감사 시각)을 실제 PostgreSQL에서 한 번 실행한다.
+// S05-T04: PRD-001 샘플 조회(IEmployeeReadRepository.GetByIdAsync)를 지워, 읽기 쪽 확인은 읽기 DbContext에 직접 쓴 프로젝션으로 바꿨다
+// (Read Repository 목록 · 이름 조회는 S05-T06). 새 스키마(InitialCreate 재생성)는 S05-T05에서 적용되므로 그 전에는 실패 허용 목록이다.
 [Collection(EmployeeDatabaseCollectionDefinition.Name)]
 [Trait("FR", "PRD-001/FR-06")]
 public sealed class EmployeePersistenceRoundTripTests(EmployeeDatabaseFixture database) : EmployeeDatabaseTest(database)
@@ -29,7 +29,7 @@ public sealed class EmployeePersistenceRoundTripTests(EmployeeDatabaseFixture da
     public async Task CommitThenReload_NewWriteDbContext_MaterializesThroughPrivateConstructorWithAuditAndVersion()
     {
         await using var services = Database.CreateServices(new EmployeeServicesOptions { TimeProvider = new FakeTimeProvider(Now) });
-        var employee = new EmployeeBuilder().WithDisplayName("홍길동").WithEmail("Round.Trip@Example.com").Build();
+        var employee = new EmployeeBuilder().WithName("홍길동").WithEmail("Round.Trip@Example.com").WithPhoneNumber("02-123-4567").WithJoinedOn("1999-12-31").Build();
         (await EmployeeCommits.AddAndCommitAsync(services, employee, CancellationToken)).IsSuccess.Should().BeTrue();
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<EmployeeDbContext>();
@@ -37,8 +37,8 @@ public sealed class EmployeePersistenceRoundTripTests(EmployeeDatabaseFixture da
         var loaded = await db.Set<Domain.Employees.Employee>().SingleAsync(e => e.Id == employee.Id, CancellationToken);
 
         employee.DomainEvents.Should().BeEmpty("커밋 성공 뒤 UnitOfWork가 이벤트를 비운다");
-        (loaded.Id, loaded.DisplayName, loaded.Email, loaded.EmployeeStatus)
-            .Should().Be((employee.Id, "홍길동", "round.trip@example.com", EmployeeStatus.Active));
+        (loaded.Id, loaded.Name.Value, loaded.Email.Value, loaded.NormalizedEmail, loaded.PhoneNumber.Value, loaded.JoinedOn.Value, loaded.EmployeeStatus)
+            .Should().Be((employee.Id, "홍길동", "Round.Trip@Example.com", "round.trip@example.com", "02-123-4567", new DateOnly(1999, 12, 31), EmployeeStatus.Active));
         loaded.DomainEvents.Should().BeEmpty("구체화는 Register가 아니라 private 생성자를 쓴다");
         var entry = db.Entry(loaded);
         entry.Property<DateTimeOffset>(ShadowPropertyNames.CreatedAt).CurrentValue.Should().Be(Now).And.HaveOffset(TimeSpan.Zero);
@@ -47,30 +47,42 @@ public sealed class EmployeePersistenceRoundTripTests(EmployeeDatabaseFixture da
     }
 
     [Fact]
-    public async Task GetByIdAsync_StoredEmployee_ProjectsIdValueAndShadowAuditColumnsOnReadConnection()
+    public async Task ReadContext_StoredEmployee_ProjectsIdValueValueObjectsAndShadowAuditColumns()
     {
         await using var services = Database.CreateServices(new EmployeeServicesOptions { TimeProvider = new FakeTimeProvider(Now) });
-        var employee = new EmployeeBuilder().WithStatus(EmployeeStatus.Inactive).Build();
+        var employee = new EmployeeBuilder().WithEmail("Read.Side@Example.com").WithStatus(EmployeeStatus.Inactive).Build();
         (await EmployeeCommits.AddAndCommitAsync(services, employee, CancellationToken)).IsSuccess.Should().BeTrue();
         await using var scope = services.CreateAsyncScope();
 
-        var response = await scope.ServiceProvider.GetRequiredService<IEmployeeReadRepository>().GetByIdAsync(employee.Id.Value, CancellationToken);
+        var stored = await ReadOnReadConnectionAsync(scope.ServiceProvider, employee.Id.Value);
 
-        response.Should().Be(new EmployeeResponse(employee.Id.Value, employee.DisplayName, employee.Email, EmployeeStatus.Inactive, Now, Now));
-        response!.CreatedAt.Offset.Should().Be(TimeSpan.Zero);
+        stored.Should().Be(new StoredEmployee(
+            employee.Id.Value,
+            EmployeeBuilder.DefaultName,
+            "Read.Side@Example.com",
+            "read.side@example.com",
+            EmployeeBuilder.DefaultPhoneNumber,
+            new DateOnly(2020, 3, 2),
+            EmployeeStatus.Inactive,
+            Now,
+            Now));
+        stored!.CreatedAt.Offset.Should().Be(TimeSpan.Zero);
     }
 
     // ---- 실패 ----
 
     [Fact]
-    public async Task GetByIdAsync_UnknownOrEmptyId_ReturnsNull()
+    public async Task ReadContext_UnknownOrEmptyId_ProjectsNothing()
     {
         await using var services = Database.CreateServices();
         (await EmployeeCommits.AddAndCommitAsync(services, new EmployeeBuilder().Build(), CancellationToken)).IsSuccess.Should().BeTrue();
         await using var scope = services.CreateAsyncScope();
-        var repository = scope.ServiceProvider.GetRequiredService<IEmployeeReadRepository>();
 
-        var results = new[] { await repository.GetByIdAsync(Guid.NewGuid(), CancellationToken), await repository.GetByIdAsync(Guid.Empty, CancellationToken) };
+        var results = new[]
+        {
+            await ReadOnReadConnectionAsync(scope.ServiceProvider, Guid.NewGuid()),
+            await ReadOnReadConnectionAsync(scope.ServiceProvider, Guid.Empty),
+        };
 
         results.Should().AllSatisfy(result => result.Should().BeNull());
     }
@@ -79,17 +91,17 @@ public sealed class EmployeePersistenceRoundTripTests(EmployeeDatabaseFixture da
 
     [Theory]
     [MemberData(nameof(BoundaryValues))]
-    public async Task CommitThenRead_MaxLengthAndUnicodeValues_RoundTripUnchanged(string displayName, string email)
+    public async Task CommitThenRead_MaxLengthAndUnicodeValues_RoundTripUnchanged(string name, string email, string phoneNumber)
     {
         // 도메인 길이(UTF-16 코드 단위) 이하면 DB varchar(n)(문자 수)에도 들어간다. 이모지는 2단위 = 1문자.
         await using var services = Database.CreateServices();
-        var employee = new EmployeeBuilder().WithDisplayName(displayName).WithEmail(email).Build();
+        var employee = new EmployeeBuilder().WithName(name).WithEmail(email).WithPhoneNumber(phoneNumber).Build();
         (await EmployeeCommits.AddAndCommitAsync(services, employee, CancellationToken)).IsSuccess.Should().BeTrue();
         await using var scope = services.CreateAsyncScope();
 
-        var response = await scope.ServiceProvider.GetRequiredService<IEmployeeReadRepository>().GetByIdAsync(employee.Id.Value, CancellationToken);
+        var stored = await ReadOnReadConnectionAsync(scope.ServiceProvider, employee.Id.Value);
 
-        (response!.DisplayName, response.Email).Should().Be((displayName, email));
+        (stored!.Name, stored.Email, stored.NormalizedEmail, stored.PhoneNumber).Should().Be((name, email, email.ToLowerInvariant(), phoneNumber));
     }
 
     [Fact]
@@ -111,17 +123,34 @@ public sealed class EmployeePersistenceRoundTripTests(EmployeeDatabaseFixture da
         seoul.Epoch.Should().Be(utc.Epoch);
         (seoul.Display, utc.Display).Should().Be(("2027-01-01 08:30:00.456+09", "2026-12-31 23:30:00.456+00"));
         await using var scope = services.CreateAsyncScope();
-        var response = await scope.ServiceProvider.GetRequiredService<IEmployeeReadRepository>().GetByIdAsync(employee.Id.Value, CancellationToken);
-        response!.CreatedAt.Should().Be(SeoulNewYearMorning).And.HaveOffset(TimeSpan.Zero);
-        response.CreatedAt.UtcDateTime.Should().Be(new DateTime(2026, 12, 31, 23, 30, 0, 456, DateTimeKind.Utc));
+        var stored = await ReadOnReadConnectionAsync(scope.ServiceProvider, employee.Id.Value);
+        stored!.CreatedAt.Should().Be(SeoulNewYearMorning).And.HaveOffset(TimeSpan.Zero);
+        stored.CreatedAt.UtcDateTime.Should().Be(new DateTime(2026, 12, 31, 23, 30, 0, 456, DateTimeKind.Utc));
     }
 
-    public static TheoryData<string, string> BoundaryValues() => new()
+    // 1행: name 100자 · email 254자(대문자 local, 정규화 값은 소문자) · phone 20자(숫자 11 + 하이픈 9, 경계). 2행: 이모지 50개(UTF-16 100).
+    public static TheoryData<string, string, string> BoundaryValues() => new()
     {
-        { new string('가', Domain.Employees.Employee.DisplayNameMaxLength), $"{new string('a', 64)}@{new string('b', Domain.Employees.Employee.EmailMaxLength - 64 - 1 - ".example.com".Length)}.example.com" },
-        { string.Concat(Enumerable.Repeat("😀", Domain.Employees.Employee.DisplayNameMaxLength / 2)), "emoji@example.com" },
-        { "한글 English 混合 😀", "mixed@example.com" },
+        { new string('가', Name.MaxLength), $"{new string('A', 64)}@{new string('b', Email.MaxLength - 64 - 1 - ".example.com".Length)}.example.com", "0-1-2-3-4-5-6-7-8-90" },
+        { string.Concat(Enumerable.Repeat("😀", Name.MaxLength / 2)), "Emoji@Example.com", "01012345678" },
+        { "한글 English 混合 😀", "mixed@example.com", "010-1234-5678" },
     };
+
+    // 읽기 연결(EmployeeReadDbContext)에서 VO는 .Value로, 감사 시각은 shadow property로 최상위 프로젝션한다(S05-T04 번역 실측과 같은 형태).
+    private Task<StoredEmployee?> ReadOnReadConnectionAsync(IServiceProvider scopeServices, Guid id) =>
+        scopeServices.GetRequiredService<EmployeeReadDbContext>().Set<Domain.Employees.Employee>()
+            .Where(employee => employee.Id == new EmployeeId(id))
+            .Select(employee => new StoredEmployee(
+                employee.Id.Value,
+                employee.Name.Value,
+                employee.Email.Value,
+                employee.NormalizedEmail,
+                employee.PhoneNumber.Value,
+                employee.JoinedOn.Value,
+                employee.EmployeeStatus,
+                EF.Property<DateTimeOffset>(employee, ShadowPropertyNames.CreatedAt),
+                EF.Property<DateTimeOffset>(employee, ShadowPropertyNames.UpdatedAt)))
+            .FirstOrDefaultAsync(CancellationToken);
 
     private async Task<uint> ReadXminAsync(Guid id)
     {
@@ -137,4 +166,15 @@ public sealed class EmployeePersistenceRoundTripTests(EmployeeDatabaseFixture da
         var display = await connection.ScalarAsync<string>("SELECT created_at::text FROM employees WHERE id = $1", CancellationToken, id);
         return (epoch, display);
     }
+
+    private sealed record StoredEmployee(
+        Guid Id,
+        string Name,
+        string Email,
+        string NormalizedEmail,
+        string PhoneNumber,
+        DateOnly JoinedOn,
+        EmployeeStatus EmployeeStatus,
+        DateTimeOffset CreatedAt,
+        DateTimeOffset UpdatedAt);
 }

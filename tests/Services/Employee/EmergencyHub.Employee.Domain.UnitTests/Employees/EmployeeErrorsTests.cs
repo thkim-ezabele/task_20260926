@@ -34,13 +34,8 @@ public sealed class EmployeeErrorsTests
         ("DuplicateEmail", 23001, ErrorType.Conflict),
     ];
 
-    // '폐기' 행. 상수는 PRD-001 샘플이 쓰므로 S05-T04에서 지운다(그때 이 목록을 비운다).
-    private static readonly (string Name, int Code, ErrorType Type)[] DeprecatedRows =
-    [
-        ("DisplayNameRequired", 21001, ErrorType.Validation),
-        ("DisplayNameTooLong", 21002, ErrorType.Validation),
-        ("EmployeeStatusRequired", 21006, ErrorType.Validation),
-    ];
+    // '폐기' 행(21001 · 21002 · 21006). 상수는 S05-T04에서 지웠고 번호는 재사용하지 않는다.
+    private static readonly int[] DeprecatedCodes = [21001, 21002, 21006];
 
     // '예약' 행(21018 ~ 21030, 23002). 구현 작업(S06-T02 ~ T04)이 상수를 추가하면서 '사용'으로 옮긴다.
     private static readonly int[] ReservedCodes =
@@ -49,18 +44,25 @@ public sealed class EmployeeErrorsTests
     ];
 
     [Fact]
-    public void Fields_MatchDocumentedUsedAndDeprecatedRows()
+    public void Fields_MatchDocumentedUsedRows()
     {
         Fields.Select(field => (field.Name, field.Error.Code, field.Error.Type))
-            .Should().BeEquivalentTo(UsedRows.Concat(DeprecatedRows));
+            .Should().BeEquivalentTo(UsedRows);
+    }
+
+    [Fact]
+    public void DeprecatedCodes_HaveNoConstants()
+    {
+        // 폐기 코드는 상수를 지운 뒤에도 표에 남는다(재사용 금지). 상수가 다시 생기면 실패한다.
+        Fields.Select(field => field.Error.Code).Should().NotIntersectWith(DeprecatedCodes);
     }
 
     [Fact]
     public void DocumentedRows_CountByStatus()
     {
-        // S05-T03 기준선: 사용 16 · 폐기 3 · 예약 14(error-codes Employee 표 행 수 33).
+        // S05-T04 기준선: 사용 16 · 폐기 3(상수 없음) · 예약 14(error-codes Employee 표 행 수 33).
         UsedRows.Should().HaveCount(16);
-        DeprecatedRows.Should().HaveCount(3);
+        DeprecatedCodes.Should().HaveCount(3).And.OnlyHaveUniqueItems().And.NotIntersectWith(ReservedCodes);
         ReservedCodes.Should().HaveCount(14).And.OnlyHaveUniqueItems();
     }
 

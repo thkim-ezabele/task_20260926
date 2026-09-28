@@ -13,6 +13,8 @@ updated: 2026-09-28
 >
 > [위키 홈](../README.md) · [API 레퍼런스](api-reference.md)
 
+> **S05-T04에서 이 문서의 API(`/api/v1/employees` 등록 · 조회, `EmployeesController`)를 코드에서 지웠습니다**(PRD-002 FR-01). 지금 Employee Api의 HTTP 엔드포인트는 [헬스 엔드포인트](#헬스-엔드포인트)뿐입니다. 아래 등록 · 조회 명세는 `v0.1.0`(PRD-001) 기록이며, PRD-002 API(`POST /api/employee`, `GET /api/employee` · `/api/employee/{name}`)는 S06-T05 · S07에서 이 문서에 씁니다.
+
 ## 개요
 
 | 항목 | 값 |
@@ -155,3 +157,4 @@ API 계약은 아니지만 같은 호스트가 노출합니다([로깅 & 관측�
 | 날짜 | 작성자 | 내용 |
 |---|---|---|
 | 2026-09-28 | developer | 문서 생성: 직원 등록 · 조회 요청 · 응답 · 에러 코드, 코드값 표, 헬스 엔드포인트 (S03-T04) |
+| 2026-09-28 | developer | PRD-001 샘플 API 제거 안내(현재 엔드포인트는 헬스뿐, 등록 · 조회 명세는 `v0.1.0` 기록) (S05-T04) |

@@ -247,7 +247,7 @@ SELECT (SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'test\_%' AND NOT tgis
 | Q2 | 제약 · 인덱스 이름 | `SELECT conname, contype FROM pg_constraint WHERE conrelid = 'public.employees'::regclass`, `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'employees'` | 제약 `ck_employees_employee_status`(c) · `pk_employees`(p), 인덱스 `pk_employees` · `ux_employees_email`. 체크 식은 서버가 `CHECK ((employee_status = ANY (ARRAY[1, 2])))`로 정규화해 돌려주므로 모델 문자열 `employee_status IN (1, 2)`와 **텍스트 비교하지 않는다**(값 판정은 S4 삽입으로) |
 | Q3 | S4 원시 SQL | Write 연결로 `employee_status` 0 · 3 · 9 `INSERT` | 모두 `PostgresException` `SqlState = 23514`, `ConstraintName = "ck_employees_employee_status"`, `TableName = "employees"`. 1 · 2는 성공 |
 | Q4 | S4 추적 엔트리 | 추적 엔트리의 `EmployeeStatus`를 `(EmployeeStatus)9`로 바꿔 `CommitAsync` | `DbUpdateException` 재전파(변환 없음), 내부 `23514` · 같은 `ConstraintName`, `Detail`은 가려짐(`Detail redacted ...`) |
-| Q5 | P4 23505 | 사전 검사 없이 같은 이메일 / 같은 ID | `ConstraintName`이 `EmployeeDbNames.EmailUniqueIndex.Value`면 23001, `pk_employees`면 3003 |
+| Q5 | P4 23505 | 사전 검사 없이 같은 이메일 / 같은 ID | `ConstraintName`이 `EmployeeDbNames.NormalizedEmailUniqueIndex.Value`(`ux_employees_normalized_email`, S05-T04 교체)면 23001, `pk_employees`면 3003 |
 | Q6 | S2 읽기 거부 | Read 연결로 `INSERT`, `TRUNCATE employees`(UPDATE · DELETE도 같음), `SHOW default_transaction_read_only` | `on`, 쓰기는 모두 `SqlState = 25006`(`ConstraintName` null). 명시 트랜잭션 `BEGIN ISOLATION LEVEL READ COMMITTED` 안에서도 `25006` |
 | Q7 | S3 정렬 | `IIdGenerator`로 한 밀리초 안 여러 ID(실측 200개가 같은 밀리초) → 섞어서 삽입 → `SELECT id FROM employees ORDER BY id` | 생성 순서와 같음(PostgreSQL `uuid` 비교는 바이트 순, UUIDNext `PostgreSql` 형식과 일치) |
 | Q8 | S1 UTC | 세션 `SET TIME ZONE 'Asia/Seoul'` 뒤 `SELECT created_at, extract(epoch FROM created_at)`, 그리고 `SET TIME ZONE 'UTC'` 뒤 같은 쿼리 | 두 세션의 epoch가 같다(표시만 `+09` / `+00`). EF로 읽은 `DateTimeOffset.Offset`은 0. `FakeTimeProvider`를 `+09:00` 오프셋으로 두어도 저장 값은 같은 순간의 UTC |
@@ -345,6 +345,7 @@ NetArchTest.Rules 1.3.2로 검증합니다([ADR-0021](../03-architecture/adr/002
   | `ControllersDoNotUseInfrastructureOrRepositories` | S06-T05 | `/api/employee` Controller |
 
   - **안전장치**: 대기 목록에 있는 규칙의 제품 대상이 1개 이상이면 실패한다("목록에서 빼라"). 해제 작업은 목록에서 규칙을 빼고 대상 1개 이상 단언으로 되돌린다.
+  - 구현(S05-T04): 목록은 `ArchitectureTests/Rules/PendingTargetRules.cs`(규칙 인스턴스 + 해제 작업 ID) 한 곳이고, `RuleCheck.ShouldPassOnProduct`가 목록 규칙을 판정한다. `PendingTargetRuleTests`가 목록 = 이 표(1:1), 대상 0개면 해제 작업 ID를 담은 건너뜀, 표본 범위(대상 있음)에 적용하면 "목록에서 빼라"로 실패, 목록 밖 사본은 대상 0개면 공허 통과로 실패하는지 확인한다.
   - 표본 테스트(위반 예시만 정확히 잡는지)는 대기 중에도 그대로 돈다. 대기 목록 밖의 규칙은 지금처럼 대상 0개면 실패다.
   - 대기 중 건너뜀 수: 대기 3 + 서비스 격리 1(`ServicesDoNotDependOnOtherServices`). 대상 대기로 건너뛰는 이유는 [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md)의 구현 순서(Validator S06-T04, Controller S06-T05) 때문이다.
 - **ClassesAreSealed 범위**: 대상은 `ArchitectureAssemblies.All`의 `EmergencyHub.*` 네임스페이스에 있는 추상 · static이 아닌 클래스 전부이며, **가시성(public / internal)과 관계없다**. 루트 네임스페이스 밖의 컴파일러 생성 형식(`<PrivateImplementationDetails>` 등)과 ServiceDefaults · AppHost는 대상 밖이다. EF 생성 형식도 대상이라 마이그레이션(public)과 모델 스냅샷(internal)에 직접 쓴 `*.Sealed.cs` partial 선언으로 sealed를 붙인다([데이터베이스 · 마이그레이션 규칙](database.md#마이그레이션-규칙)). S04-T02 실측: `EmployeeDbContextModelSnapshot.Sealed.cs`에서 `sealed`를 빼면 `ClassesAreSealed_ProductAssemblies_Holds`가 `EmployeeDbContextModelSnapshot`(internal)으로 실패한다. 따라서 BL-090의 "internal 생성 형식은 잡지 않음"은 현재 코드에서 재현되지 않는다(S03-T02 반려 때 InitialCreate만 보고된 원인은 확인하지 않았다). 생성 형식을 규칙에서 예외 처리하는 기준은 정하지 않았다(BL-090 트리거 대기).
@@ -437,3 +438,4 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #3 반영: 문서 · 증빙 작업 진입 점검(완료 조건 ↔ 증빙 칸 대조, 문서 사실 문장 재실측) |
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #16 반영: 증빙 표 "인수 조건 문장 → 테스트" 열, 엣지 "대상 없음"은 BL · 대상 생기면 필수 편입, AppHost 기동 확인의 한계와 재현 격리 조건 |
 | 2026-09-28 | developer | 아키텍처 테스트에 대상 대기 목록(규칙 3개 → 해제 S06-T04 · S06-T05, 건너뜀 메시지에 해제 작업 ID, 대상이 생기면 실패하는 안전장치, 표본 테스트 유지)과 `ErrorAndResultAreNotDerived`의 상세 Conflict 오류 예외(S06-T01, ADR-0028) (S05-T02) |
+| 2026-09-28 | developer | 대상 대기 목록 구현 위치(`PendingTargetRules` · `RuleCheck.ShouldPassOnProduct` · `PendingTargetRuleTests`), Q5 유니크 인덱스 상수 `NormalizedEmailUniqueIndex` (S05-T04) |

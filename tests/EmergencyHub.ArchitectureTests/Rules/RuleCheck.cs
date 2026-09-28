@@ -15,8 +15,21 @@ public sealed record RuleCheck(
     /// 제품 어셈블리가 규칙을 지키는지 단언한다. 대상이 0개면 공허 통과이므로 실패한다
     /// (서비스 전용 규칙은 서비스 어셈블리가 목록에 없는 동안만 건너뜀).
     /// </summary>
+    /// <remarks>
+    /// 대상 대기 목록(<see cref="PendingTargetRules"/>)의 규칙은 대상이 0개면 해제 작업 ID를 적어 건너뛰고,
+    /// 대상이 1개 이상이면 "목록에서 빼라"로 실패한다(안전장치, S05-T04).
+    /// </remarks>
     public void ShouldPassOnProduct()
     {
+        if (PendingTargetRules.Find(Rule) is { } pending)
+        {
+            TargetNames.Should().BeEmpty(
+                "{0}: 대상 대기 목록의 규칙에 제품 대상이 생겼다. PendingTargetRules에서 이 규칙을 목록에서 빼라(해제 작업 {1}, 원본: testing-strategy 대상 대기 목록)",
+                Rule.Name,
+                pending.ReleaseTaskId);
+            Assert.Skip($"{Rule.Name}: 대상 대기(해제 작업 {pending.ReleaseTaskId}). PRD-001 샘플 제거(S05-T04)로 제품 대상이 0개다. 규칙 동작은 표본 테스트가 확인한다.");
+        }
+
         if (TargetNames.Count == 0)
         {
             Assert.SkipWhen(

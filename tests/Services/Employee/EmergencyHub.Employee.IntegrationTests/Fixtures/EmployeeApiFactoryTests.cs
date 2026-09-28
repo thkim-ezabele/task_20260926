@@ -1,7 +1,10 @@
 using System.Net;
-using System.Net.Http.Json;
+using EmergencyHub.BuildingBlocks.Infrastructure.Persistence;
+using EmergencyHub.Employee.Infrastructure.Persistence;
 using EmergencyHub.Employee.IntegrationTests.FaultInjection;
+using EmergencyHub.Employee.IntegrationTests.TestData;
 using EmergencyHub.ServiceDefaults;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,12 +15,12 @@ namespace EmergencyHub.Employee.IntegrationTests.Fixtures;
 
 // S03-T07 도우미 스모크(완료 조건 "WebApplicationFactory 호스트는 T06 fixture를 공유하고, 쓰기 DbContext 재등록 · TimeProvider 교체 · 로그 수집 sink 주입 도우미를 쓴다").
 // HTTP 인수 시나리오(등록 → 조회, 409, 1001 · 1002 · 21006 · 9001, traceId 등)는 tester가 작성한다.
+// S05-T04: PRD-001 샘플 API를 지워 Controller가 없다. TimeProvider · 인터셉터 도우미는 Api 호스트 DI의 Repository · UnitOfWork 커밋으로 확인한다
+// (HTTP 등록 경로는 S06-T06). 새 스키마(S05-T05) 전에는 옛 테이블과 컬럼이 달라 커밋이 실패한다(실패 허용 목록).
 [Collection(EmployeeDatabaseCollectionDefinition.Name)]
 [Trait("FR", "PRD-001/FR-09")]
 public sealed class EmployeeApiFactoryTests(EmployeeDatabaseFixture database) : EmployeeDatabaseTest(database)
 {
-    private const string EmployeesPath = "/api/v1/employees";
-
     // ---- 성공 ----
 
     [Fact]
@@ -51,26 +54,32 @@ public sealed class EmployeeApiFactoryTests(EmployeeDatabaseFixture database) : 
     {
         var now = new DateTimeOffset(2026, 9, 28, 1, 2, 3, TimeSpan.Zero);
         await using var factory = new EmployeeApiFactory(Database, new EmployeeApiFactoryOptions { TimeProvider = new FakeTimeProvider(now) });
-        using var client = factory.CreateClient();
+        var employee = new EmployeeBuilder().Build();
 
-        var id = await RegisterAsync(client, "time@example.com");
-        using var get = await client.GetAsync(new Uri($"{EmployeesPath}/{id}", UriKind.Relative), CancellationToken);
+        (await EmployeeCommits.AddAndCommitAsync(factory.Services, employee, CancellationToken)).IsSuccess.Should().BeTrue();
 
-        var body = await get.Content.ReadFromJsonAsync<EmployeeBody>(CancellationToken);
-        body!.CreatedAt.Should().Be(now);
-        body.UpdatedAt.Should().Be(now);
+        await using var scope = factory.Services.CreateAsyncScope();
+        var audit = await scope.ServiceProvider.GetRequiredService<EmployeeReadDbContext>().Set<Domain.Employees.Employee>()
+            .Where(stored => stored.Id == employee.Id)
+            .Select(stored => new
+            {
+                CreatedAt = EF.Property<DateTimeOffset>(stored, ShadowPropertyNames.CreatedAt),
+                UpdatedAt = EF.Property<DateTimeOffset>(stored, ShadowPropertyNames.UpdatedAt),
+            })
+            .SingleAsync(CancellationToken);
+        audit.CreatedAt.Should().Be(now);
+        audit.UpdatedAt.Should().Be(now);
     }
 
     [Fact]
-    public async Task WriteInterceptors_Registered_ObserveApiCommandCommit()
+    public async Task WriteInterceptors_Registered_ObserveApiHostUnitOfWorkCommit()
     {
         var probe = new TransactionProbeInterceptor();
         await using var factory = new EmployeeApiFactory(Database, new EmployeeApiFactoryOptions { WriteInterceptors = [probe] });
-        using var client = factory.CreateClient();
 
-        await RegisterAsync(client, "probe@example.com");
+        (await EmployeeCommits.AddAndCommitAsync(factory.Services, new EmployeeBuilder().Build(), CancellationToken)).IsSuccess.Should().BeTrue();
 
-        probe.Commits.Should().Be(1, "운영 옵션에 덧붙인 인터셉터가 Api Command 트랜잭션을 본다");
+        probe.Commits.Should().Be(1, "운영 옵션에 덧붙인 인터셉터가 Api 호스트 UnitOfWork 트랜잭션을 본다");
     }
 
     // ---- 실패 ----
@@ -123,19 +132,4 @@ public sealed class EmployeeApiFactoryTests(EmployeeDatabaseFixture database) : 
 
         Directory.Exists(contentRoot).Should().BeFalse();
     }
-
-    private async Task<Guid> RegisterAsync(HttpClient client, string email)
-    {
-        using var response = await client.PostAsJsonAsync(
-            EmployeesPath,
-            new { displayName = "Factory Smoke", email, employeeStatus = 1 },
-            CancellationToken);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        return (await response.Content.ReadFromJsonAsync<CreatedBody>(CancellationToken))!.Id;
-    }
-
-    private sealed record CreatedBody(Guid Id);
-
-    private sealed record EmployeeBody(Guid Id, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt);
 }

@@ -162,26 +162,20 @@ Application 레이어는 **Command(상태 변경)와 Query(조회)를 분리**�
 
 기능 폴더 구조 (Application)
 
+- 규칙: 기능마다 `Employees/Commands/<기능>/`에 Command · Handler · Validator를, `Employees/Queries/<기능>/`에 Query · Handler · 응답 `record`를 한 폴더로 둔다. 기능 폴더 밖에는 여러 기능이 함께 쓰는 로그 정의 · Read Repository 인터페이스만 둔다.
+- 현재 구성(S05-T04, PRD-001 샘플 Command · Query 제거 뒤): 기능 폴더가 없다. 일괄 등록(`Commands/RegisterEmployees/`)은 S06-T04, 목록 · 이름 조회 Query는 S07에서 생긴다.
+
 ```
 EmergencyHub.Employee.Application/
+├── EmployeeApplicationAssembly.cs
 └── Employees/
-    ├── Commands/
-    │   └── RegisterEmployee/
-    │       ├── RegisterEmployeeCommand.cs
-    │       ├── RegisterEmployeeCommandHandler.cs
-    │       └── RegisterEmployeeCommandValidator.cs
-    ├── Queries/
-    │   └── GetEmployeeById/
-    │       ├── GetEmployeeByIdQuery.cs
-    │       ├── GetEmployeeByIdQueryHandler.cs
-    │       └── EmployeeResponse.cs
-    ├── EmployeeLogs.cs
-    └── IEmployeeReadRepository.cs
+    ├── EmployeeLogs.cs              # 로그 이벤트 20001(배포된 ID라 유지, S06 등록 Handler가 다시 씀)
+    └── IEmployeeReadRepository.cs   # 멤버 없음, 조회는 S05-T06에서 추가
 ```
 
-> 아래 기능 폴더 구조와 Handler 예시는 PRD-001 샘플(`RegisterEmployee` · `GetEmployeeById`)이고 S05-T04에서 샘플과 함께 코드에서 없어진다. 일괄 등록(`RegisterEmployeesCommand`)의 처리 순서와 검증 위치는 [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md)를 따르며, 예시는 S06-T04에서 실제 코드로 바꾼다. 샘플이 있는 동안(S05-T04 전)에는 아래 설명이 코드와 같다.
+> 아래 Handler 예시는 PRD-001 샘플(`v0.1.0` 태그의 `Employees/Commands/RegisterEmployee/`)이고 S05-T04에서 코드에서 지웠다. 예시는 S06-T04에서 일괄 등록(`RegisterEmployeesCommand`, 처리 순서와 검증 위치는 [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md))의 실제 코드로 바꾼다. 그때까지 예시는 Handler 형태(주입 · 저장하지 않음 · `Result` 반환)의 설명용이고, `Employee.Register` 호출 모양은 지금 코드와 다르다(아래 목록 참고).
 
-아래 예시는 `src/Services/Employee/EmergencyHub.Employee.Application/Employees/Commands/RegisterEmployee/`의 `RegisterEmployeeCommand.cs`와 `RegisterEmployeeCommandHandler.cs` 두 파일을 이어 붙이고, using · namespace · XML 문서 주석 · `[SuppressMessage]`(CA1812, [경고 억제 규칙](#경고-억제-규칙))를 뺀 것이다. 남은 줄은 소스와 같다.
+아래 예시는 `v0.1.0`의 `RegisterEmployeeCommand.cs`와 `RegisterEmployeeCommandHandler.cs` 두 파일을 이어 붙이고, using · namespace · XML 문서 주석 · `[SuppressMessage]`(CA1812, [경고 억제 규칙](#경고-억제-규칙))를 뺀 것이다.
 
 ```csharp
 public sealed record RegisterEmployeeCommand(string DisplayName, string Email, EmployeeStatus? EmployeeStatus)
@@ -216,8 +210,8 @@ internal sealed class RegisterEmployeeCommandHandler(
 
 - 저장 · 커밋은 이 Handler가 아니라 트랜잭션 데코레이터 → `IUnitOfWork`가 한다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)). Handler는 `SaveChanges`를 부르지 않는다.
 - ID는 Handler가 `IIdGenerator.NewId()`로 만든다([ADR-0013](../03-architecture/adr/0013-uuid-v7-with-uuidnext.md)).
-- `Employee.Register`는 `Result`가 아니라 `Employee`를 돌려주고, 불변식을 어기면 예외를 던진다([DDD 구현 규칙](#ddd-구현-규칙-aggregate--value-object)). 입력 오류는 Validator가 먼저 `Result`로 걸러 Handler까지 오지 않는다.
-- (PRD-001 샘플) 이메일은 값 객체가 아니라 Aggregate가 정규화한 `string`(`employee.Email`)이다. 사전 중복 검사는 정규화한 값으로 하고, 동시 요청 경합은 유니크 인덱스 `ux_employees_email` → 23505 → Infrastructure 매핑이 같은 `EmployeeErrors.DuplicateEmail` 인스턴스로 막는다. **S05-T03 · T04부터** 이메일은 Email Value Object(입력 표기 `Value`, `NormalizedEmail` = `Value.ToLowerInvariant()`)이고, Aggregate는 `NormalizedEmail` 문자열 속성을 가지며, 사전 조회와 경합 매핑은 `ux_employees_normalized_email` → 23001이다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)).
+- `Employee.Register`는 `Result`가 아니라 `Employee`를 돌려주고, 불변식을 어기면 예외를 던진다([DDD 구현 규칙](#ddd-구현-규칙-aggregate--value-object)). S05-T04부터 시그니처는 `Register(EmployeeId id, Name name, Email email, PhoneNumber phoneNumber, JoinedOn joinedOn)`이다. 필드 규칙은 호출한 쪽이 Value Object `Create`의 `Result`로 먼저 판정하고, 상태는 입력으로 받지 않고 Active(1)로 고정한다.
+- 이메일은 Email Value Object(입력 표기 `Value`, `NormalizedEmail` = `Value.ToLowerInvariant()`)이고, Aggregate는 `NormalizedEmail` 문자열 속성을 가진다. 사전 중복 검사는 정규화 값으로 하고(`IEmployeeRepository.ExistsByNormalizedEmailAsync`), 동시 요청 경합은 유니크 인덱스 `ux_employees_normalized_email` → 23505 → Infrastructure 매핑이 같은 `EmployeeErrors.DuplicateEmail`(23001) 인스턴스로 막는다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)). 위 예시의 `employee.Email`(정규화 `string`, PRD-001)은 지금 `employee.NormalizedEmail`이다.
 - 시각이 필요한 Handler는 `TimeProvider`를 주입받는다. 이 Handler는 시각을 쓰지 않는다(감사 시각은 Infrastructure 감사 인터셉터가 채움).
 
 ## Repository 규칙 (EF Core)
@@ -240,34 +234,23 @@ internal sealed class RegisterEmployeeCommandHandler(
 - LINQ 쿼리 구문(`from x in ... select`)과 원시 SQL(`FromSql`, `ExecuteSql`)은 쓰지 않는다. 원시 SQL이 꼭 필요하면 작업 문서에 사유를 남기고 사용자 승인을 받는다.
 - 선택적 조건은 코드 분기가 아니라 **람다 안의 조건식**으로 쓴다(SQL로 번역됨).
 
-실제 코드(`src/Services/Employee/EmergencyHub.Employee.Infrastructure/Persistence/Repositories/EmployeeRepository.cs`, `.../ReadRepositories/EmployeeReadRepository.cs` 두 파일을 이어 붙이고, using(별칭 `EmployeeAggregate`만 남김) · namespace · XML 문서 주석을 뺀 것. 남은 줄은 소스와 같다):
+- 값 변환기로 매핑한 Value Object 속성(Employee의 `Name` · `Email` · `PhoneNumber` · `JoinedOn`)은 조건 · 정렬에서 **Value Object끼리** 비교한다(`employee.Name == name`, `OrderBy(employee => employee.JoinedOn)`). 조건식 안의 `employee.Name.Value`는 번역되지 않는다(`InvalidOperationException` "could not be translated"). 최상위 `Select`의 `.Value` 프로젝션은 컬럼을 읽은 뒤 클라이언트에서 계산되므로 쓸 수 있다(S05-T04 실측: `ToQueryString` · 가로챈 명령).
+
+실제 코드(`src/Services/Employee/EmergencyHub.Employee.Infrastructure/Persistence/Repositories/EmployeeRepository.cs`, `.../ReadRepositories/EmployeeReadRepository.cs` 두 파일을 이어 붙이고, using(별칭 `EmployeeAggregate`만 남김) · namespace · XML 문서 주석을 뺀 것. 남은 줄은 소스와 같다). Read Repository 조회 메서드는 S05-T06에서 생긴다:
 
 ```csharp
 using EmployeeAggregate = EmergencyHub.Employee.Domain.Employees.Employee;
 
 internal sealed class EmployeeRepository(EmployeeDbContext db) : RepositoryBase<EmployeeDbContext>(db), IEmployeeRepository
 {
-    public Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken) =>
-        Db.Set<EmployeeAggregate>().AnyAsync(employee => employee.Email == email, cancellationToken);
+    public Task<bool> ExistsByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken) =>
+        Db.Set<EmployeeAggregate>().AnyAsync(employee => employee.NormalizedEmail == normalizedEmail, cancellationToken);
 
     public void Add(EmployeeAggregate employee) => Db.Set<EmployeeAggregate>().Add(employee);
 }
 
 internal sealed class EmployeeReadRepository(EmployeeReadDbContext db)
-    : ReadRepositoryBase<EmployeeReadDbContext>(db), IEmployeeReadRepository
-{
-    public Task<EmployeeResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
-        Db.Set<EmployeeAggregate>()
-            .Where(employee => employee.Id == new EmployeeId(id))
-            .Select(employee => new EmployeeResponse(
-                employee.Id.Value,
-                employee.DisplayName,
-                employee.Email,
-                employee.EmployeeStatus,
-                EF.Property<DateTimeOffset>(employee, ShadowPropertyNames.CreatedAt),
-                EF.Property<DateTimeOffset>(employee, ShadowPropertyNames.UpdatedAt)))
-            .FirstOrDefaultAsync(cancellationToken);
-}
+    : ReadRepositoryBase<EmployeeReadDbContext>(db), IEmployeeReadRepository;
 ```
 
 선택 조건을 람다 안에 쓰는 형태(설명용, 현재 코드에는 검색 쿼리가 없음):
@@ -366,7 +349,7 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 
 - 금지: Controller 본문 · 액션의 `HttpContext.RequestServices`, `IServiceProvider` 주입, `GetService<T>()` · `GetRequiredService<T>()`, 액션 매개변수 `[FromServices]`.
 - 이유: 아키텍처 규칙 `ControllersDoNotUseInfrastructureOrRepositories`는 생성자 · 액션 매개변수 같은 시그니처만 보므로, 메서드 본문에서 Repository를 꺼내는 코드는 잡지 못한다(TD-025). 그래서 reviewer가 판정하고, 규칙 기계화는 BL-119에서 판단한다.
-- 점검(Git Bash): `git ls-files src/Services | grep 'Controllers/.*\.cs$' | xargs grep -nE "IServiceProvider|RequestServices|GetRequiredService|GetService|FromServices"`. 2026-09-28 현재 출력 없음(`EmployeesController(ISender sender)`만 있음).
+- 점검(Git Bash): `git ls-files src/Services | grep 'Controllers/.*\.cs$' | xargs grep -nE "IServiceProvider|RequestServices|GetRequiredService|GetService|FromServices"`. 2026-09-28 현재 출력 없음(S05-T04에서 PRD-001 샘플 Controller를 지워 Controller 파일이 0개다. `/api/employee` Controller는 S06-T05).
 - Controller가 아닌 곳의 `GetService` · `GetRequiredService`(DI 등록 코드, Mediator 디스패처, MigrationService Worker의 스코프, BuildingBlocks.Api 바인딩 오류 응답 `InvalidModelStateResponses`의 로거 조회)는 이 규칙의 대상이 아니다.
 
 ## 비동기 프로그래밍 규칙
@@ -391,13 +374,13 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 - Aggregate Root는 **팩토리 메서드**(`Register`, `Create`)로만 생성한다. 생성자는 `private`.
 - 속성 setter는 `private`. 상태는 의미 있는 도메인 메서드(`ChangeStatus`, `AssignTo`)로만 바꾼다.
 - **실패 처리 경계: Aggregate 불변식 위반은 예외, 입력 검증 실패는 `Result`다.** 판정 기준은 "요청 값만으로 판정할 수 있는 규칙인가"다. 입력 검증 실패를 판정하는 곳은 기본이 Validator이고, Employee 필드 규칙은 Value Object `Create`다(아래 두 번째 항목).
-  - 요청 값만으로 판정할 수 있는 규칙(필수 · 길이 · 형식 · 정의된 코드값)은 Validator가 먼저 `ValidationError`(1001 + 필드 코드) `Result`로 돌려주고, Aggregate는 같은 규칙을 불변식으로 다시 검사해 어기면 예외(`ArgumentException` 계열)를 던진다. 요청 값이 아닌 인자(Handler가 만든 ID가 비어 있음 등)의 불변식 위반도 예외다. Validator를 통과한 값이 Aggregate 예외를 일으키면 Validator 누락 · 기준 불일치인 프로그래밍 오류다(전역 예외 처리기 → 9001). 그래서 두 곳은 같은 판정 코드를 쓴다(예: `EmployeeEmail.Normalize` · `IsWellFormed`, `Employee.DisplayNameMaxLength`).
+  - 요청 값만으로 판정할 수 있는 규칙(필수 · 길이 · 형식 · 정의된 코드값)은 Validator가 먼저 `ValidationError`(1001 + 필드 코드) `Result`로 돌려주고, Aggregate는 같은 규칙을 불변식으로 다시 검사해 어기면 예외(`ArgumentException` 계열)를 던진다. 요청 값이 아닌 인자(Handler가 만든 ID가 비어 있음 등)의 불변식 위반도 예외다. Validator를 통과한 값이 Aggregate 예외를 일으키면 Validator 누락 · 기준 불일치인 프로그래밍 오류다(전역 예외 처리기 → 9001). 그래서 두 곳은 같은 판정 코드를 쓴다(PRD-001 샘플은 `EmployeeEmail.Normalize` · `IsWellFormed`와 `Employee.DisplayNameMaxLength`를 함께 썼고, S05-T04에서 샘플과 함께 지웠다).
   - **Employee 필드 규칙(name · email · tel · joined)의 판정 원본은 Value Object(`Name` · `Email` · `PhoneNumber` · `JoinedOn`)의 `Create(string?)`가 돌려주는 `Result`다**(필드 코드 `Error` 하나, [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md) 8절). 세 분류는 그대로이고 첫 분류의 판정 위치만 Validator에서 Value Object로 옮긴다. 규칙과 길이 · 자리 수 상수는 Value Object 한 곳에만 두고(`public const`), Handler · Validator · EF 설정은 호출 · 참조만 한다. 호출한 쪽이 결과를 `FieldError`로 옮긴다(`RegisterEmployeesCommand`는 Handler, 다른 Command는 그 Validator). `Employee.Register`는 검증된 Value Object만 받아 문자열 규칙을 다시 검사하지 않고, `null` 인자 · 빈 ID 같은 불변식 위반만 예외로 막는다. **적용 범위는 Employee Value Object 4개다.** 다른 Aggregate의 Value Object가 같은 방식을 쓰려면 그 작업에서 이 규칙에 기준을 추가한다.
   - 저장된 데이터나 현재 상태에 따라 달라지는 실패(대상 없음, 중복, 허용되지 않은 상태 전이 같은 업무 규칙 위반)는 Handler 또는 Aggregate 메서드가 `Result`(유형 2 · 3 · 4)로 돌려준다([예외 처리 규칙](#예외-처리-규칙)).
-  - 예(PRD-001 샘플, S05-T04 전): `Employee.Register(id, displayName, email, status)`는 `Employee`를 돌려주고 불변식 위반이면 예외를 던진다. 이메일 중복(23001)은 Handler가 `Result`로 돌려준다. S05-T04부터 `Employee.Register`는 검증된 Value Object를 받는다.
+  - 예: `Employee.Register(id, name, email, phoneNumber, joinedOn)`(S05-T04)은 `Employee`를 돌려주고, 빈 ID · `null` Value Object면 예외를 던진다. 필드 규칙 위반은 Value Object `Create`의 `Result`(21003 ~ 21005, 21007 ~ 21017), 이메일 중복(23001)은 Handler가 `Result`로 돌려준다. PRD-001 샘플(`Register(id, displayName, email, status)`)은 S05-T04에서 지웠다.
 - 다른 Aggregate는 **ID로만** 참조한다.
 - ID는 강타입 `record struct`(`EmployeeId`)를 쓴다.
-- Value Object는 get-only `sealed record`로 만든다. `Create`로만 만들어야 하는 Value Object(Employee 4개)는 위치 기반 record가 아니라 **private 생성자 + get-only 속성**으로 둔다(위치 기반이면 public 생성자와 `init`이 생겨 `Create` 판정을 우회한다). 예: `public sealed record Name { private Name(string value) { Value = value; } public string Value { get; } public static Result<Name> Create(string? value) ... }`. PRD-001 샘플은 이메일을 값 객체로 만들지 않고 Aggregate가 정규화한 `string` 속성으로 두었다(`Employee.Email`, `EmployeeEmail.Normalize` = Trim + `ToLowerInvariant`, S03 결정). PRD-002부터 이메일은 Email Value Object이고(S05-T03), 입력 표기와 정규화 값(`NormalizedEmail`, NFC 없음)을 따로 가진다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)).
+- Value Object는 get-only `sealed record`로 만든다. `Create`로만 만들어야 하는 Value Object(Employee 4개)는 위치 기반 record가 아니라 **private 생성자 + get-only 속성**으로 둔다(위치 기반이면 public 생성자와 `init`이 생겨 `Create` 판정을 우회한다). 예: `public sealed record Name { private Name(string value) { Value = value; } public string Value { get; } public static Result<Name> Create(string? value) ... }`. PRD-001 샘플은 이메일을 값 객체로 만들지 않고 Aggregate가 정규화한 `string` 속성으로 두었다(`Employee.Email`, `EmployeeEmail.Normalize` = Trim + `ToLowerInvariant`, S03 결정, S05-T04에서 제거). PRD-002부터 이메일은 Email Value Object이고(S05-T03), 입력 표기와 정규화 값(`NormalizedEmail`, NFC 없음)을 따로 가진다. Aggregate는 `Email`(VO)과 `NormalizedEmail`(`string`, 유니크 인덱스 대상)을 함께 가진다(S05-T04)([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)).
 - 도메인 이벤트는 Aggregate가 발생시켜 수집한다. 지금은 **수집까지만** 하고 커밋 뒤 UnitOfWork가 `ClearDomainEvents`로 비운다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)). 디스패치는 이후 토픽, 다른 서비스로 알릴 통합 이벤트 · Outbox는 도입 보류다([ADR-0023](../03-architecture/adr/0023-deferred-adoptions.md), [ADR-0004](../03-architecture/adr/0004-adopt-event-driven-architecture.md) 유지).
 - Domain 프로젝트는 EF Core, ASP.NET Core 등 프레임워크를 참조하지 않는다(데이터 어노테이션 금지).
 
@@ -427,9 +410,9 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 - 새 억제는 developer가 억제를 추가한 같은 작업에서 아래 승인 목록에 행을 추가하고(승인 기록 칸은 해당 작업 reviewer), reviewer가 진행 기록에 승인을 남긴다. 목록에 행이 없거나 reviewer 승인 기록이 없는 억제는 반려 사유다.
   - **억제와 승인 목록 행은 함께 제출한다.** 승인 목록 행 없이 억제만 제출하면 reviewer는 PASS할 수 없다. 승인을 다음 작업으로 미루지 않는다(PRD-001에서 Employee CA1812 3건이 S03-T01에 들어오고 S04-T05에서 사후 승인됨).
   - **앞선 작업의 같은 유형을 grep한다.** 새 억제의 규칙 ID로 저장소 전체를 찾아, 같은 ID의 억제가 모두 승인 목록에 있는지 대조한다. 목록에 없는 것이 나오면 developer는 제출 내용에 적고, reviewer는 그 억제를 들여온 작업을 밝혀 승인 여부를 판정받는다.
-  - 규칙 ID 검색(Git Bash, 속성이 여러 줄이라 ID 문자열로 찾음): `git ls-files src tests | grep '\.cs$' | xargs grep -n '"<ID>:'`. 예: `"CA1812:`은 2026-09-28 현재 16줄이고 승인 목록 CA1812 행의 파일 수 합계(2 + 5 + 1 + 3 + 2 + 3)와 같다.
+  - 규칙 ID 검색(Git Bash, 속성이 여러 줄이라 ID 문자열로 찾음): `git ls-files src tests | grep '\.cs$' | xargs grep -n '"<ID>:'`. 예: `"CA1812:`은 2026-09-28 현재 13줄이고 승인 목록 CA1812 행의 파일 수 합계(2 + 5 + 1 + 2 + 3)와 같다(S05-T04에서 Employee.Application 샘플 3개 파일과 함께 3줄이 없어짐).
 
-승인 목록 (2026-09-28 현재 코드 전수, 20건 = 제품 14 + 테스트 6)
+승인 목록 (2026-09-28 현재 코드 전수, 17건 = 제품 11 + 테스트 6. S05-T04에서 Employee.Application CA1812 3건은 억제한 파일과 함께 삭제)
 
 | ID | 위치 (파일) | 사유 요약 | 승인 기록 |
 |---|---|---|---|
@@ -438,7 +421,6 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 | CA1812 | BuildingBlocks.Application `Pipeline/`의 `LoggingCommandHandlerDecorator.cs`, `LoggingQueryHandlerDecorator.cs`, `ValidationCommandHandlerDecorator.cs`, `ValidationQueryHandlerDecorator.cs`, `TransactionCommandHandlerDecorator.cs` | Scrutor `TryDecorate`로 DI가 생성 | S02-T02 reviewer |
 | CA1812 | BuildingBlocks.Infrastructure `Persistence/Conventions/StronglyTypedIdValueConverter.cs` | EF Core가 형식으로 받아 생성 | S02-T04 reviewer |
 | CA1032, CA1064 | BuildingBlocks.Api `Exceptions/RedactedException.cs` | 던지지 않는 로그 전용 내부 사본(메시지 제거가 목적) | S02-T06 reviewer |
-| CA1812 | Employee.Application `RegisterEmployeeCommandHandler.cs`, `RegisterEmployeeCommandValidator.cs`, `GetEmployeeByIdQueryHandler.cs` | `AddConventionalServices` 어셈블리 검색으로 DI가 생성 | S04-T05 reviewer(사후 승인, S03-T01 도입) |
 | CA1812 | 테스트 BuildingBlocks.Infrastructure.UnitTests `Samples/InternalSampleService.cs`, `Samples/CreateSampleCommandValidator.cs` | 어셈블리 검색 등록을 검증하는 샘플, DI가 생성 | S02-T03 reviewer |
 | EF1001 | 테스트 BuildingBlocks.Infrastructure.UnitTests `Samples/Persistence/SamplePostgresExceptions.cs` | `DbUpdateConcurrencyException` 모양 재현에 EF 내부 엔트리 필요(테스트 전용) | S02-T07 reviewer |
 | CA1812 | 테스트 ArchitectureTests `Samples/ImplementationVisibility/InternalSampleClassifier.cs`, `InternalSampleCommandHandler.cs`, `Samples/ValidatorBases/InternalSampleCommandValidator.cs` | 아키텍처 규칙 검증용 샘플, 인스턴스를 만들지 않음 | S02-T05 reviewer |
@@ -479,3 +461,4 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #15 반영: 테스트 enum 기반 형식 명시(`: int` 포함, 위반 표본 예외, 점검 명령), 생성 코드 `*.Sealed.cs` 규칙(BL-090, 실제 선언), Controller 서비스 로케이터 금지(TD-025, 점검 명령) |
 | 2026-09-28 | developer | ADR-0026 · 0027 반영: 실패 처리 경계에 Employee 필드 규칙 판정 원본(Value Object `Create` → `Result`, 적용 범위 Employee Value Object 4개), CQRS 표 트랜잭션 · 검증 행의 `RegisterEmployeesCommand` 예외, 이메일 `string` 문구를 PRD-001 샘플 설명으로 한정하고 Email Value Object · `ux_employees_normalized_email` 추가, Register 예시가 샘플(S05-T04에서 제거, S06-T04에서 교체)임을 표시 (S05-T02) |
 | 2026-09-28 | developer | Value Object 규칙에 `Create`로만 만드는 Value Object는 private 생성자 + get-only 속성(위치 기반 record 아님) 추가 (S05-T03) |
+| 2026-09-28 | developer | PRD-001 샘플 제거 반영: 기능 폴더 구조를 규칙 + 현재 구성으로, Handler 예시를 `v0.1.0` 샘플 표시(교체는 S06-T04), `Employee.Register` VO 시그니처 · `NormalizedEmail`, Repository 실제 코드 · 값 변환기 VO 비교 규칙(실측), Controller 0개, 경고 억제 승인 목록 17건(Employee.Application CA1812 3건 삭제) (S05-T04) |

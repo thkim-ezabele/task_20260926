@@ -183,11 +183,9 @@ docker ps -a --filter volume=emergency-hub-postgres-data --format '{{.Names}}'
 
 ## 동작 확인 (Swagger / Health Check)
 
-`employee-api`가 Healthy가 된 뒤 실행합니다. Api 주소는 `http://localhost:5180`이고, 엔드포인트 계약은 [직원 API](../05-api/employee-api.md)에 있습니다. 아래 결과는 2026-09-28 `http` 프로필 실행에서 확인했습니다.
+`employee-api`가 Healthy가 된 뒤 실행합니다. Api 주소는 `http://localhost:5180`입니다. S05-T04에서 PRD-001 샘플 API(`/api/v1/employees`)를 지워, 지금 확인할 HTTP 엔드포인트는 헬스 경로와 Swagger 문서뿐입니다(등록 · 조회 API는 S06-T05 · S07에서 생김, [직원 API](../05-api/employee-api.md)). 아래 헬스 체크 결과는 2026-09-28 `http` 프로필 실행에서 확인했습니다.
 
 - PowerShell 5.1에서 `curl`은 `Invoke-WebRequest`의 별칭이라 아래 PowerShell 예는 `Invoke-RestMethod`를 씁니다.
-- 본문은 ASCII 값으로 둡니다. Git Bash에서 `-d`로 한글을 넘기면 명령줄 인코딩에서 깨져 `400` · `1001`이 납니다(S03-T05 실측). 한글은 UTF-8 파일을 `--data-binary @<파일>.json`으로 보냅니다.
-- 같은 이메일로 다시 등록하면 `409` · `23001`(이메일 중복)입니다. 다시 실행할 때는 `email` 값을 바꿉니다.
 
 ### 헬스 체크
 
@@ -207,44 +205,11 @@ curl -s -i http://localhost:5180/health/ready
 
 ### 등록 → 조회
 
-PowerShell:
-
-```powershell
-$body = '{"displayName":"Hong Gildong","email":"Hong.Gildong@Example.com","employeeStatus":1}'
-$created = Invoke-RestMethod -Method Post -Uri http://localhost:5180/api/v1/employees -ContentType 'application/json' -Body $body
-$created | ConvertTo-Json
-Invoke-RestMethod "http://localhost:5180/api/v1/employees/$($created.id)" | ConvertTo-Json
-```
-
-Git Bash(두 번째 명령의 `<id>`에 첫 응답의 `id`를 넣습니다):
-
-```bash
-curl -s -i -X POST http://localhost:5180/api/v1/employees -H 'Content-Type: application/json' -d '{"displayName":"Hong Gildong","email":"Hong.Gildong@Example.com","employeeStatus":1}'
-curl -s -i http://localhost:5180/api/v1/employees/<id>
-```
-
-기대 결과(Git Bash 출력 발췌, `id` · 시각은 실행마다 다름):
-
-```http
-HTTP/1.1 201 Created
-Content-Type: application/json; charset=utf-8
-Location: http://localhost:5180/api/v1/employees/01a0e476-6e69-7265-b4ce-88b1310f916f
-
-{"id":"01a0e476-6e69-7265-b4ce-88b1310f916f"}
-```
-
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json; charset=utf-8
-
-{"id":"01a0e476-6e69-7265-b4ce-88b1310f916f","displayName":"Hong Gildong","email":"hong.gildong@example.com","employeeStatus":1,"createdAt":"2026-09-27T20:02:42.293017+00:00","updatedAt":"2026-09-27T20:02:42.293017+00:00"}
-```
-
-- `email`은 소문자로 정규화되어 저장됩니다(위 명령은 `Hong.Gildong@Example.com`으로 등록하고, 조회 응답은 `hong.gildong@example.com`). `employeeStatus`는 정수(`1` = Active), 시각은 UTC입니다. PowerShell은 같은 값을 `ConvertTo-Json` 형식으로 출력합니다.
+- PRD-001 샘플 등록 · 조회 API는 S05-T04에서 지웠습니다. 예전 명령과 기대 결과는 `v0.1.0` 태그의 이 문서에 있습니다. PRD-002 등록 API(`POST /api/employee`) 예시는 그 API를 만드는 작업(S06-T05)에서 추가합니다.
 
 ### Swagger
 
-- Swagger UI: `http://localhost:5180/swagger`(→ `/swagger/index.html`), OpenAPI 문서: `http://localhost:5180/swagger/v1/swagger.json`. Api 환경이 Development일 때만 노출됩니다([ADR-0019](../03-architecture/adr/0019-use-swashbuckle-openapi.md)). 로컬 Api는 Development입니다([환경 구성](../06-deployment/environments.md)).
+- Swagger UI: `http://localhost:5180/swagger`(→ `/swagger/index.html`), OpenAPI 문서: `http://localhost:5180/swagger/v1/swagger.json`. Api 환경이 Development일 때만 노출됩니다([ADR-0019](../03-architecture/adr/0019-use-swashbuckle-openapi.md)). 로컬 Api는 Development입니다([환경 구성](../06-deployment/environments.md)). S05-T04부터 Controller가 없어 문서의 `paths`는 비어 있습니다(단위 테스트 `ProgramTests.ConfigurePipeline_DevelopmentWithoutControllers_ServesOpenApiDocumentWithNoPaths`).
 
 ## DB 마이그레이션
 
@@ -377,3 +342,4 @@ dotnet user-secrets list --project src/Aspire/EmergencyHub.AppHost | sed -E 's/ 
 | 2026-09-28 | dba | DB 마이그레이션 절(도구 매니페스트, `--context` 필수, 허용 명령 5개 · 금지 명령 표, 셸별 실행 예)과 초기화 (볼륨 · user-secrets) 절(이름 있는 볼륨만 삭제 + user-secrets clear 함께, 키 4종, 셸별 명령, 볼륨만 지우는 경우, 버전 확인 끄기) 작성. 나머지 절은 developer 단계에서 작성 (S04-T03) |
 | 2026-09-28 | developer | `draft`로 작성: 셸 표기 규칙, 사전 준비(SDK 8.0.400 이상 · `global.json`, Docker Engine API 1.44 / `DOCKER_API_VERSION=1.43`(BL-102), 도구 매니페스트, 개발 인증서 확인 · 신뢰 명령과 `http` 프로필 대안(BL-099)), 저장소 클론(짧은 경로 · MAX_PATH, BL-049), docker compose 제목을 "로컬 구성 (Aspire AppHost)"으로 바꿈, 로컬 설정(사전 설정 없음, 키 이름만 확인), 서비스 빌드 및 실행(명령 1개, 프로필 2개, 대시보드 확인, 중지 · 프로세스 종료 명령), 동작 확인(헬스, 등록 → 조회 두 셸 실측, Swagger). DB 마이그레이션 · 초기화 절은 dba 작성분 유지하고 절 순서만 뒤로 (S04-T03) |
 | 2026-09-28 | developer | 반려 1회째 재작업: 등록 → 조회 두 셸 명령의 `email`을 대소문자 섞인 `Hong.Gildong@Example.com`으로 바꾸고 기대 결과 조회 응답을 소문자 정규화 값 `hong.gildong@example.com`으로 맞춤(입력 → 출력 일치), 연속 빈 줄 2곳 정리 (S04-T03) |
+| 2026-09-28 | developer | 동작 확인에서 PRD-001 샘플 등록 · 조회 명령 · 기대 결과를 지우고 헬스 · Swagger(경로 0개)만 남김(샘플 API 제거) (S05-T04) |

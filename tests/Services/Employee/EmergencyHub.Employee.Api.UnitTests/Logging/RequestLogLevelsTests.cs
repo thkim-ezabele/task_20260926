@@ -18,7 +18,7 @@ public sealed class RequestLogLevelsTests
     [InlineData(404)]
     [InlineData(409)]
     public void Get_ApiRequestBelow500_ReturnsInformation(int statusCode) =>
-        RequestLogLevels.Get(CreateContext("/api/v1/employees", statusCode), null).Should().Be(LogEventLevel.Information);
+        RequestLogLevels.Get(CreateContext("/api/employee", statusCode), null).Should().Be(LogEventLevel.Information);
 
     [Theory]
     [InlineData("/health/live")]
@@ -33,11 +33,11 @@ public sealed class RequestLogLevelsTests
     [InlineData(500)]
     [InlineData(503)]
     public void Get_ServerErrorStatus_ReturnsError(int statusCode) =>
-        RequestLogLevels.Get(CreateContext("/api/v1/employees", statusCode), null).Should().Be(LogEventLevel.Error);
+        RequestLogLevels.Get(CreateContext("/api/employee", statusCode), null).Should().Be(LogEventLevel.Error);
 
     [Fact]
     public void Get_Exception_ReturnsErrorEvenWith200() =>
-        RequestLogLevels.Get(CreateContext("/api/v1/employees", 200), new InvalidOperationException("boom")).Should().Be(LogEventLevel.Error);
+        RequestLogLevels.Get(CreateContext("/api/employee", 200), new InvalidOperationException("boom")).Should().Be(LogEventLevel.Error);
 
     [Fact]
     public void Get_NullContext_ThrowsArgumentNullException()

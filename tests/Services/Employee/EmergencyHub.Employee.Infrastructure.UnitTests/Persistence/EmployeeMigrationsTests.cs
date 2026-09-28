@@ -8,6 +8,8 @@ namespace EmergencyHub.Employee.Infrastructure.UnitTests.Persistence;
 
 // S03-T02: 초기 마이그레이션은 InitialCreate 1건이고, 스냅샷이 현재 모델과 같아야 한다(매핑을 바꾸고 마이그레이션을 안 만들면 실패).
 // idempotent 스크립트는 연결 없이 만든다. 실제 적용(MigrateAsync 2회, psql 2회)은 S03-T05 · T06.
+// S05-T04: 기대값은 새 스키마 명세(database.md)로 먼저 바꿨다. InitialCreate 재생성(S05-T05) 전까지 ModelSnapshot · IdempotentScript 2건은
+// 옛 마이그레이션과 달라 실패한다(S05-T04 실패 허용 목록). 문자열 형식이 T05 생성 SQL과 다르면 기대 문자열을 실측값에 맞춘다.
 [Trait("FR", "PRD-001/FR-09")]
 public sealed class EmployeeMigrationsTests : IDisposable
 {
@@ -67,13 +69,19 @@ public sealed class EmployeeMigrationsTests : IDisposable
     {
         var script = _context.GetService<IMigrator>().GenerateScript(options: MigrationsSqlGenerationOptions.Idempotent);
 
-        script.Should().Contain("CREATE TABLE employees (");
-        script.Should().Contain("CREATE UNIQUE INDEX ux_employees_email ON employees (email);");
+        script.Should().Contain(EmployeeCreateScript.CreateTableHeader);
+        script.Should().Contain("CONSTRAINT pk_employees PRIMARY KEY (id)");
         script.Should().Contain("CONSTRAINT ck_employees_employee_status CHECK (employee_status IN (1, 2))");
+        script.Should().Contain(EmployeeCreateScript.UniqueIndexSql);
+        script.Should().Contain(EmployeeCreateScript.JoinedOnIdIndexSql);
+        script.Should().Contain(EmployeeCreateScript.NameJoinedOnIdIndexSql);
         script.Should().Contain("CREATE TABLE IF NOT EXISTS \"__EFMigrationsHistory\"");
+        EmployeeCreateScript.TableLines(script).Should().Equal(EmployeeCreateScript.ExpectedTableLines);
+        EmployeeCreateScript.Count(script, "CREATE INDEX ").Should().Be(2, "ix_ 인덱스는 2개뿐이다(email 인덱스 · 옛 유니크 인덱스 없음)");
+        EmployeeCreateScript.Count(script, "CREATE UNIQUE INDEX ").Should().Be(1);
         script.Should().NotContain("public.");
         script.Should().NotContain("xmin");
         script.Should().NotContain("DEFAULT");
-        script.Should().NotContain("ix_");
+        script.Should().NotContain("CONCURRENTLY");
     }
 }

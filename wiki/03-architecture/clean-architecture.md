@@ -150,9 +150,8 @@ Employee 서비스의 실제 구성입니다(주요 파일만, 경로는 모두 
 ```
 EmergencyHub.Employee.Domain/
 └── Employees/                   # Aggregate 단위 폴더
-    ├── Employee.cs              # Aggregate Root
+    ├── Employee.cs              # Aggregate Root (Register는 VO 4개만 받음, 상태 Active 고정)
     ├── EmployeeId.cs            # 강타입 ID (record struct)
-    ├── EmployeeEmail.cs         # 이메일 정규화 · 형식 판정 static 도우미(값 객체 아님, PRD-001 샘플)
     ├── EmployeeStatus.cs        # 코드 enum (short)
     ├── Name.cs                  # Value Object (sealed record, Create → Result)
     ├── Email.cs                 # Value Object (입력 표기 Value + NormalizedEmail)
@@ -164,10 +163,8 @@ EmergencyHub.Employee.Domain/
 
 EmergencyHub.Employee.Application/
 ├── Employees/
-│   ├── Commands/RegisterEmployee/    # Command, Handler, Validator
-│   ├── Queries/GetEmployeeById/      # Query, Handler, Response
 │   ├── EmployeeLogs.cs               # [LoggerMessage]
-│   └── IEmployeeReadRepository.cs    # Read Repository 인터페이스 (IReadRepository 상속)
+│   └── IEmployeeReadRepository.cs    # Read Repository 인터페이스 (IReadRepository 상속, 멤버는 S05-T06)
 └── EmployeeApplicationAssembly.cs    # 어셈블리 검색용 마커
 
 EmergencyHub.Employee.Infrastructure/
@@ -185,8 +182,6 @@ EmergencyHub.Employee.Infrastructure/
 └── EmployeeInfrastructureAssembly.cs  # 어셈블리 검색용 마커
 
 EmergencyHub.Employee.Api/
-├── Controllers/                 # [ApiController] Controller (ISender만 주입)
-├── Employees/                   # Request / Response record
 ├── Logging/
 ├── EmployeeApiAssembly.cs
 ├── Program.cs
@@ -198,9 +193,11 @@ EmergencyHub.Employee.MigrationService/
 └── appsettings.json
 ```
 
-- PRD-002에서 Domain `Employees/`에 Value Object 4개(`Name` · `Email` · `PhoneNumber` · `JoinedOn`)를 두었고(S05-T03, Aggregate가 한 곳에서만 써서 `ValueObjects/`가 아니라 Aggregate 폴더), Aggregate의 이메일 판정은 S05-T04에서 Email Value Object로 옮긴다([ADR-0026](adr/0026-employee-bulk-import-input-processing.md) 8절, [ADR-0027](adr/0027-case-insensitive-unique-email-with-normalized-column.md)). 샘플의 `Commands/RegisterEmployee/` · `Queries/GetEmployeeById/`와 Api Request / Response는 S05-T04에서 없어진다. 이 트리는 코드가 바뀌는 작업에서 실제 구성으로 갱신한다.
+- PRD-002에서 Domain `Employees/`에 Value Object 4개(`Name` · `Email` · `PhoneNumber` · `JoinedOn`)를 두었고(S05-T03, Aggregate가 한 곳에서만 써서 `ValueObjects/`가 아니라 Aggregate 폴더), S05-T04에서 Aggregate가 이 Value Object를 속성으로 가지게 했다(이메일은 `Email` VO + `NormalizedEmail` 문자열, [ADR-0026](adr/0026-employee-bulk-import-input-processing.md) 8절, [ADR-0027](adr/0027-case-insensitive-unique-email-with-normalized-column.md)).
+- S05-T04에서 PRD-001 샘플(`EmployeeEmail.cs`, Application `Commands/RegisterEmployee/` · `Queries/GetEmployeeById/`, Api `Controllers/` · `Employees/` Request / Response)을 지웠다. 그래서 지금 Application에는 기능 폴더가 없고 Api에는 Controller가 없다(HTTP 엔드포인트는 헬스 경로뿐). 일괄 등록 기능 폴더 · Validator는 S06-T04, `/api/employee` Controller는 S06-T05에서 생긴다. 이 트리는 코드가 바뀌는 작업에서 실제 구성으로 갱신한다.
 - 루트 네임스페이스: `EmergencyHub.<Service>.<Layer>`
 - 폴더는 기술 종류(Entities, Services)가 아니라 **Aggregate / 기능 단위**로 나눈다.
+- Application 기능 폴더 규칙(`Commands/<기능>/` · `Queries/<기능>/`)은 [코딩 컨벤션](../04-development/coding-conventions.md#cqrs-규칙)의 "기능 폴더 구조"가 원본이다.
 - 필요해지면 추가하는 폴더: 여러 Aggregate가 쓰는 Value Object(Domain `ValueObjects/`), 포트 인터페이스(Application `Abstractions/`, `IService` 상속). Outbox는 도입 보류([ADR-0023](adr/0023-deferred-adoptions.md))라 Infrastructure에 `Outbox/`를 두지 않는다.
 
 > **API 스타일은 Controller**입니다([ADR-0016](adr/0016-use-controllers-for-api.md)). Controller는 `public sealed class`, `ControllerBase` 상속, `ISender`만 주입받고 요청 → Command / Query 변환, `Result` → HTTP 응답 변환만 합니다. 공통 API 처리(ProblemDetails 변환, 바인딩 오류 1001, 전역 예외 처리, Swashbuckle 설정)는 BuildingBlocks.Api에 둡니다([ADR-0024](adr/0024-building-blocks-api-for-common-http-handling.md), S02-T06).
@@ -258,4 +255,5 @@ EmergencyHub.Employee.MigrationService/
 | 2026-09-27 | developer | 저장소 구조에 `src/Aspire/EmergencyHub.ServiceDefaults`, `<Service>.MigrationService`와 테스트 프로젝트 추가 (S03-T03) |
 | 2026-09-28 | developer | 저장소 구조를 실제 경로로 갱신(AppHost · BuildingBlocks.Api · `tests/BuildingBlocks/*` · 루트 설정 파일 추가, Gateway · `deploy/` 제거), 레이어 표에 MigrationService 행, 의존성 규칙 표(Api · MigrationService 행, 아키텍처 테스트 규칙 이름 열), 서비스별 구성을 Employee 실제 구성으로, BuildingBlocks 표에 Api · `RequestValidator<T>`, Outbox 보류 반영, 공통 빌드 설정 표(IsTestProject 이름 규칙 · NuGetAudit · IVT · 이미지 태그, `Directory.Build.targets` PrivateAssets) (S04-T02, BL-048 · 066 · 087) |
 | 2026-09-28 | developer | 서비스별 구성 트리의 `EmployeeEmail.cs` 주석을 실제(static 정규화 · 판정 도우미, 값 객체 아님)로 정정, PRD-002 Value Object 4개 · 샘플 제거 예정 메모(ADR-0026 · 0027) (S05-T02) |
+| 2026-09-28 | developer | 서비스별 구성 트리를 PRD-001 샘플 제거 뒤 실제 구성으로(EmployeeEmail.cs · Application 기능 폴더 · Api Controllers · Employees 제거, Aggregate VO 속성), 기능 폴더 규칙 원본 링크 (S05-T04) |
 | 2026-09-28 | developer | Domain 트리에 Value Object 4개(`Name` · `Email` · `PhoneNumber` · `JoinedOn`)와 Aggregate 폴더에 둔 이유 추가 (S05-T03) |
