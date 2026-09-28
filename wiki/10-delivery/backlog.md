@@ -166,6 +166,8 @@ updated: 2026-09-28
 | BL-137 | 내용은 있지만 행이 0개인 일괄 등록 입력(JSON `[]`, NBSP만 있는 CSV 줄 등 Validator 공백 집합 밖이지만 파서가 빈 줄로 보는 입력)이 201 `{count:0, ids:[]}`로 처리됨. 21028로 거부할지 결정(PRD · ADR 규정 없음) | S06-T04 developer | 중 | planned:S07 | S06 종료 정리: 결정 대기(S07 계획 리뷰). 추천 A = 0행이면 21028 400(Handler 파싱 직후, PRD FR-06 · error-codes 한 줄), B = 현행 201 유지 + 명세 명시. 오케스트레이션 세션이 사용자 확인 · S07 계획: 사용자 결정 A, S07-T05에서 처리 |
 | BL-138 | 일괄 등록 성공 로그 20001(Information)이 직원마다 1줄이라 1,000행이면 1,000줄. 요약 로그(건수 1줄)로 바꿀지 검토(NFR-02 측정 때 로그 비용 확인) | S06-T04 developer | 하 | open | S06 종료 정리: NFR-02 중앙값 170.2ms로 성능 영향 없음. 트리거: 로그 수집기 도입(ADR-0023) 또는 운영 로그 비용 문제 제기 |
 | BL-139 | 통합 테스트 LogEventText.UnexpectedErrors(ids)가 이벤트 ID만으로 제외: 프레임워크 범주도 ID 1을 씀(TestServer RequestSizeLimitFilter 실측). 제외 시 SourceContext도 함께 보도록 할지 검토 | S06-T06 tester | 하 | planned:S07 | S06 종료 정리: S07-T03 developer 도구 준비에 편입(제외 시 이벤트 ID + SourceContext) |
+| BL-140 | coding-conventions Validator 규칙이 "규칙마다 WithError(Error)"만 다룸: Value Object Create 결과에 따라 코드가 달라지는 경우(GetEmployeeByNameQueryValidator Custom + AddFailure + CustomState)를 허용 패턴으로 적을지, 공용 확장(예: MustBeValid(Func<T, Result>))을 둘지 | S07-T02 reviewer | 하 | new | 동작은 WithError와 같음(RequestValidation이 CustomState를 읽음) |
+| BL-141 | ADR-0025 이름 경로 개인정보 보완 후보: (1) 결정 표 밖 네 번째 위치(호스팅 로그 범위 RequestPath, RouteTemplateRequestPathEnricher로 템플릿화) (2) 이름 경로 405(PUT · DELETE) · 일치 없음 404는 fallback으로 이름이 남음, NFR-04 범위에 포함할지 | S07-T02 developer · tester | 중 | new | ADR 후보. /retro PRD-002에서 판단(ADR 파일은 사용자 확인 후) |
 
 ---
 
