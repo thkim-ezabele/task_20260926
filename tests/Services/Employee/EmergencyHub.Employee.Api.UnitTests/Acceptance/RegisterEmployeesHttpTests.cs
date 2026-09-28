@@ -77,6 +77,25 @@ public sealed class RegisterEmployeesHttpTests : IAsyncLifetime
         Encoding.UTF8.GetString(command.Content.Span).Should().Be(text);
     }
 
+    // tester 보강(S06-T05 ②): [Consumes] 일치는 매개변수 · 대소문자를 무시해 raw 두 형식이 액션까지 온다.
+    [Theory]
+    [InlineData("application/json; charset=utf-8", EmployeeImportFormat.Json)]
+    [InlineData("text/csv; charset=utf-8", EmployeeImportFormat.Csv)]
+    [InlineData("TEXT/CSV", EmployeeImportFormat.Csv)]
+    public async Task Post_RawContentTypeWithParameterOrUpperCase_Returns201(string contentType, EmployeeImportFormat format)
+    {
+        var text = format == EmployeeImportFormat.Json ? JsonList : CsvRow;
+        using var content = new ByteArrayContent(Encoding.UTF8.GetBytes(text));
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
+
+        using var response = await PostAsync(content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var command = _commands.Should().ContainSingle().Subject;
+        command.Sources.Should().Be(EmployeeImportSources.Body);
+        command.Format.Should().Be(format);
+    }
+
     [Fact]
     public async Task Post_NoContentType_ReachesBinderAndDetectsFromContent()
     {
@@ -100,6 +119,22 @@ public sealed class RegisterEmployeesHttpTests : IAsyncLifetime
     public async Task Post_UnsupportedContentType_Returns415With1005(string contentType)
     {
         using var content = new ByteArrayContent(Encoding.UTF8.GetBytes(CsvRow));
+        content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+
+        using var response = await PostAsync(content);
+
+        await ShouldBeProblemAsync(response, HttpStatusCode.UnsupportedMediaType, 1005);
+        _commands.Should().BeEmpty();
+    }
+
+    // tester 보강(S06-T05 ②): 접미사 +json 형식은 [Consumes("application/json")]의 부분 집합으로 통과한다.
+    // 바인더가 지원하지 않는 형식으로 거절한 경로(ModelState UnsupportedContentTypeException)도 같은 415 · 1005여야 한다.
+    [Theory]
+    [InlineData("application/problem+json")]
+    [InlineData("application/merge-patch+json")]
+    public async Task Post_StructuredJsonSuffixContentType_PassesConsumesButBinderReturns415With1005(string contentType)
+    {
+        using var content = new ByteArrayContent(Encoding.UTF8.GetBytes(JsonList));
         content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
 
         using var response = await PostAsync(content);
