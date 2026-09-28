@@ -30,6 +30,7 @@ updated: 2026-09-29
 5. "push 이후에 ci, tag 는 prd 관련 스프린트 모두 종료되고나서 다 모아서 진행해주고 나머지는 동일한 플로우로 진행하고 싶어"
 6. "신규 세션이 추가되었어 스프린트 모두 종료되고 회고까지 마무리한뒤에 … readme 세션에 작업 시작하라는 메시지 보내면되 지금 … 헬스체크 메시지만 보내봐"
 7. "모든 판단은 너가 직접해야해"
+8. "다시한번 구동여부 제대로 확인해서 정상동작여부 확인해보고 develop 브랜치 main 브랜치에 머지할거야 … 백로그 기술부채 모두 남긴상태로 마무리 … 동작/문서/코드 간단하고 빠르게 정리해줘"
 
 ## 작업 내용
 
@@ -71,6 +72,15 @@ updated: 2026-09-29
   - 역병합 PR #15 → `develop`(69128e4).
   - PR #14 · #15 CI 통과(5분 1초, 4분 49초). release · backmerge · 토픽 브랜치를 정리했다.
 
+- README 세션 결과 확인: PR #17(루트 README · 입구 문서) · #18(worklog WL-2026-09-29-04) 병합(develop 2ceb12c).
+- 정리 구간(v0.2.1):
+  - 동작 재확인(develop 2ceb12c): `dotnet build -c Release -warnaserror` 경고 0 · 오류 0, `dotnet test` 13개 프로젝트 통과 2,544 · 건너뜀 1 · 실패 0.
+  - AppHost(`--launch-profile http`) 실행: `/health/ready` · `/health/live` 200. README 예시 기준 12개 호출이 모두 기대대로였다(CSV 본문 · 파일 업로드 · JSON 201, 중복 409 · 23001, 잘못된 이메일 400 · 21004, 빈 배열 400 · 21028, XML 415 · 1005, 목록 200, 잘못된 페이징 400, 이름 조회 200, 없는 이름 404 · 22001, instance는 `/api/employee/{name}`). 로그 fail · crit 0.
+  - 종료 후 남은 이 프로젝트 postgres 컨테이너만 지웠다(볼륨 `emergency-hub-postgres-data` 유지, 다른 프로젝트 컨테이너는 건드리지 않음).
+  - 문서: local-setup 저장소 클론 절의 PRD-001 토픽 브랜치 `--branch` 안내를 제거했다(BL-145 비고). 코드 변경은 없다.
+  - 백로그 · 기술부채는 상태를 바꾸지 않고 모두 기록으로 남겼다(open 항목 그대로).
+  - `develop` → `main` 병합: `release/0.2.1` → `main`, 태그 `v0.2.1`(문서 · 기록 패치 릴리스).
+
 ### 변경 파일
 
 | 파일 | 변경 | 설명 |
@@ -82,6 +92,7 @@ updated: 2026-09-29
 | `wiki/10-delivery/backlog.md`, `tech-debt.md` | 수정 | BL-144 · 145 · 146, TD-029 비고 |
 | `wiki/10-delivery/prd/PRD-002-employee-contacts.md`, `wiki/10-delivery/README.md` | 수정 | `retro` 링크, `status: done` |
 | `wiki/09-memory/sessions.md`, `policies.md` | 수정 | 현재 상태 · 다음 할 일, 튜닝 · 대리 판단 정책 |
+| `wiki/01-getting-started/local-setup.md` | 수정 | 클론 브랜치 안내 정정(v0.2.1 정리) |
 
 ## 결정 사항
 
@@ -103,7 +114,6 @@ updated: 2026-09-29
 
 ## 다음 할 일
 
-- [ ] README 세션(`emergency-hub-df`)에 작업 시작 지시(루트 README · project-overview · roadmap · 위키 홈 정비)
 - [ ] BL-145: RETRO-PRD-002 개선안 1~10을 `feature/retro-prd-002-*`에서 반영
 - [ ] 사용자 결정: 대리 승인 10행 추인(S05~S07), ADR 후보 작성 확인(BL-146), 이번 회고 대리 결정 추인, `disable-model-invocation` 유지 여부, RETRO-PRD-001 남은 항목
 - [ ] 다음 토픽 `/prd`: 첫 스프린트에 BL-146(ADR 정합화) · TD-029 · BL-144 · BL-119
