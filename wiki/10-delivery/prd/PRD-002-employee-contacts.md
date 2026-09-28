@@ -8,7 +8,7 @@ sprints: [S05, S06, S07]
 branch: "feature/prd-002-employee-contacts"
 pr: 8
 release: "v0.2.0"
-retro:
+retro: "RETRO-PRD-002"
 aliases: [PRD-002]
 tags: [delivery, prd]
 created: 2026-09-27
