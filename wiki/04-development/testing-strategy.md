@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [development]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 테스트 전략
@@ -132,8 +132,9 @@ AppHost의 로컬 DB 구성([데이터베이스 · 로컬 DB 구성](database.md
   - 실패 진단: 환경 변수 `EMERGENCYHUB_CONTAINER_LOG_DIRECTORY`가 있으면 fixture가 폐기 직전 · 시작 실패 때 컨테이너 로그를 `<폴더>/employee-postgres-<ID 12자>.log`로 저장한다(`ContainerLogs`, CI는 실패 시 아티팩트). 서버 로그에는 23505 `DETAIL`의 테스트 이메일이 보일 수 있다(`example.com`만 사용).
   - **`WebApplicationFactory` 도우미**(S03-T07): `Fixtures/EmployeeApiFactory`(`WebApplicationFactory<EmergencyHub.Employee.Api.Program>`)를 테스트 안에서 `await using var factory = new EmployeeApiFactory(Database, new EmployeeApiFactoryOptions { ... });`로 만든다(같은 컬렉션 · 같은 컨테이너, 테스트 클래스는 `EmployeeDatabaseTest` 상속). 연결 문자열 · 환경(기본 `Development`) · 빈 `OTEL_EXPORTER_OTLP_ENDPOINT`는 `UseSetting`으로 넣어 Program 등록 시점에 보인다. 마이그레이션은 하지 않는다(fixture가 적용).
     - 설정: 콘텐츠 루트는 Api `appsettings*.json`에서 `Serilog:WriteTo`만 뺀 임시 사본(`ApiContentRoot`)이라 콘솔 · 파일 로그를 쓰지 않고, 최소 수준 · 범주 재정의 · `ServiceName`은 운영과 같다. 폐기 때 사본을 지운다.
-    - `EmployeeApiFactoryOptions`: `WriteConnectionString` · `ReadConnectionString`(변형, 예: 잘못된 비밀번호 · 읽기 전용), `TimeProvider`(운영 등록을 모두 지우고 교체, 감사 시각), `WriteInterceptors`(`AddWriteDbContextInterceptors`로 운영 옵션에 덧붙임), `ConfigureServices`(운영 등록 뒤 추가 · 대역 등록). 적용 순서는 수집 싱크 → TimeProvider → 인터셉터 → 추가 등록(`ConfigureTestServices`).
-    - 로그: `factory.Logs`(`SerilogEventCollector`, DI `ILogEventSink` → `ReadFrom.Services`)가 Serilog 이벤트를 모은다. `RequestCompletions`는 요청 완료 로그(`HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms`)만, `Clear()`로 호스트 시작 로그를 비운다. 헬스 요청은 완료 로그가 없다(Verbose).
+    - `EmployeeApiFactoryOptions`: `WriteConnectionString` · `ReadConnectionString`(변형, 예: 잘못된 비밀번호 · 읽기 전용), `TimeProvider`(운영 등록을 모두 지우고 교체, 감사 시각), `WriteInterceptors`(`AddWriteDbContextInterceptors`로 운영 옵션에 덧붙임), `ConfigureServices`(운영 등록 뒤 추가 · 대역 등록), `IdGenerator`(운영 `IIdGenerator` 등록을 지우고 싱글턴 교체, 예: `ScriptedIdGenerator`), `AfterEmailLookup`(이메일 사전 조회 뒤 · 커밋 전 hook, `FaultInjection/EmailLookupHookRepository` 데코레이터), `UseKestrel`(아래). 적용 순서는 수집 싱크 → TimeProvider → IdGenerator → 사전 조회 hook → 인터셉터 → 추가 등록(`ConfigureTestServices`, 제품 코드 분기 없음, S06-T06).
+    - Kestrel 호스트(S06-T06): `UseKestrel = true`이면 같은 빌더로 TestServer 호스트와 실제 Kestrel 호스트(루프백 임의 포트, `KestrelAddress` · `CreateKestrelClient()` · `KestrelServices`)를 함께 띄운다(.NET 8 `WebApplicationFactory`에 Kestrel 옵션이 없어 빌더를 두 번 빌드). 두 호스트는 DB · `Logs` · 옵션의 대역 인스턴스를 공유한다. TestServer는 Kestrel `MaxRequestBodySize`를 적용하지 않으므로 413의 Kestrel 경로는 이 호스트로만 본다. 한도 초과 업로드는 클라이언트가 413 응답 또는 연결 끊김(`HttpRequestException`)을 받을 수 있어(실행마다 다름, 실측) `Http/KestrelSend.SendAsync` → `KestrelSendOutcome`으로 받고, 서버 쪽 최종 상태는 `Logs.RequestStatusCodes(path)`(요청 완료 로그), 저장 결과는 `TestData/EmployeeRows`로 판정한다.
+    - 로그: `factory.Logs`(`SerilogEventCollector`, DI `ILogEventSink` → `ReadFrom.Services`)가 Serilog 이벤트를 모은다. `RequestCompletions`는 요청 완료 로그(`HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms`)만, `Clear()`로 호스트 시작 로그를 비운다. 헬스 요청은 완료 로그가 없다(Verbose). `RequestStatusCodes(path)`는 경로별 요청 완료 로그의 상태 코드(S06-T06).
   - 로컬 Docker Engine이 API 1.44 미만(Docker Desktop 4.26 · Engine 24 등)이면 Testcontainers 4.15.0이 `client version 1.44 is too new`로 연결하지 못한다. 엔진을 올리거나 환경 변수 `DOCKER_API_VERSION=1.43`을 주고 실행한다(코드 · 설정 파일에 두지 않음, CI 러너는 해당 없음).
 
 ### 장애 주입
@@ -145,7 +146,7 @@ AppHost의 로컬 DB 구성([데이터베이스 · 로컬 DB 구성](database.md
 | P1 격리 수준 | 트리거(관찰) + 서버 기본값을 바꾼 연결 | Write 연결에 `Options=-c default_transaction_isolation=serializable`을 붙인 등록으로 커밋하고, 트리거가 기록한 `transaction_isolation`이 `read committed`인지 본다(명시하지 않으면 `serializable`이 나옴, 실측). 인터셉터(`IDbTransactionInterceptor.TransactionStarted`의 `IsolationLevel`)는 보조 확인으로만 쓴다(요청 값이지 서버 값이 아님) |
 | P2 커밋 시점 일시 오류 1회 | 트리거(`CONSTRAINT TRIGGER ... DEFERRABLE INITIALLY DEFERRED`) | 서버가 실제 `COMMIT`에서 `40001`을 내고 트랜잭션을 롤백한다. UoW 실측: 재시도 1회 뒤 `Success`, 행 1개, 트리거 실행 2회. 인터셉터(`TransactionCommitting`에서 예외)는 서버 커밋 전에 끊는 것이라 대안으로만 쓴다 |
 | P3 PreCommitHook 예외 | 테스트용 `IPreCommitHook` 등록 | DB 조건이 아니다. 검증은 다른 연결에서 `SELECT count(*)` = 0 |
-| P4 23505 | 장애 주입 없음 | 사전 검사를 건너뛰고 쓰기 DbContext에 직접 `Add` → `CommitAsync`. 같은 이메일 → `ux_employees_email` → 23001 · 로그 201, 같은 ID → `pk_employees` → 3003 · 로그 202(실측) |
+| P4 23505 | 장애 주입 없음 | 사전 검사를 건너뛰고 쓰기 DbContext에 직접 `Add` → `CommitAsync`. 같은 정규화 이메일(대소문자만 다른 입력 포함) → `ux_employees_normalized_email` → 23001 · 로그 201, 같은 ID → `pk_employees` → 3003 · 로그 202(실측, S05-T06 새 스키마) |
 | P5 xmin 충돌 | 장애 주입 없음 | 스코프 2개에서 같은 행을 읽고 `Deactivate()` → 먼저 커밋한 쪽 `Success`, 나중 쪽 3001 · 로그 203(실측) |
 | P6 매번 일시 오류 | 트리거(`BEFORE INSERT`, 항상 `40001`) | 실행 전략이 `DbUpdateException` 안의 `40001`을 일시 오류로 보고 재시도 → `RetryLimitExceededException`(→ 9003). 시도 수 = `MaxRetryCount + 1`(실측: 2회 한도 → 3회, 약 60ms). 인터셉터(`DbCommandInterceptor`에서 `PostgresException` 생성)는 대안 |
 | P7 Deleted 이벤트 비움 · P8 로그 | 장애 주입 없음 | P8은 로그 수집 sink로 EF `Error` 건수와 이메일 · Detail 노출을 센다 |
@@ -159,9 +160,16 @@ AppHost의 로컬 DB 구성([데이터베이스 · 로컬 DB 구성](database.md
 | `CommandFaultInterceptor(failure, failures, shouldFail?)` | `DbCommandInterceptor`. 조건에 맞는 명령을 `failures`회(`int.MaxValue`면 항상) 실패시키고 `Attempts`를 센다 |
 | `TransactionProbeInterceptor(commitFailure?, commitFailures)` | `DbTransactionInterceptor`. 요청 격리 수준(`StartedIsolationLevels`, 보조) · `CommitAttempts` · `Commits`, 커밋 직전 실패 주입(P2 대안) |
 | `InjectedFailures.SerializationFailure()` · `TransientTimeout()` | 인터셉터가 던질 `PostgresException`(40001) · `NpgsqlException(new TimeoutException())`(둘 다 일시 오류) |
-| `EmployeeServicesOptions` | `CreateServices` 인자: `Retry`(재시도 한도 축소, 예: `new DbRetryOptions(2, 10ms)`) · `WriteConnectionString` / `ReadConnectionString` · `TimeProvider`(운영 등록보다 먼저) · `WriteInterceptors` · `ConfigureServices`(운영 등록 뒤, 예: 테스트 `IPreCommitHook`) |
-| `DbContextInterceptorRegistration.AddWriteDbContextInterceptors` | 운영 등록이 만든 쓰기 DbContext 옵션 팩터리를 감싸 `AddInterceptors`만 더한다(`UseNpgsql` 재호출 없음, 감사 인터셉터 유지, EF8에 `ConfigureDbContext` 없음). `ConfigureTestServices`에서도 사용 |
+| `EmployeeServicesOptions` | `CreateServices` 인자: `Retry`(재시도 한도 축소, 예: `new DbRetryOptions(2, 10ms)`) · `WriteConnectionString` / `ReadConnectionString` · `TimeProvider`(운영 등록보다 먼저) · `WriteInterceptors` · `ReadInterceptors` · `ConfigureServices`(운영 등록 뒤, 예: 테스트 `IPreCommitHook`) |
+| `DbContextInterceptorRegistration.AddWriteDbContextInterceptors` · `AddReadDbContextInterceptors` | 운영 등록이 만든 쓰기(`EmployeeDbContext`) · 읽기(`EmployeeReadDbContext`) DbContext 옵션 팩터리를 감싸 `AddInterceptors`만 더한다(`UseNpgsql` 재호출 없음, 감사 인터셉터 유지, EF8에 `ConfigureDbContext` 없음). 팩터리 등록이 정확히 하나가 아니면 `InvalidOperationException`. `ConfigureTestServices`에서도 사용 |
+| `QueryPlans/CommandCaptureInterceptor` → `CapturedCommand(Text, Parameters)` · `QueryPlan.ExplainAsync(connection, command, cancellationToken)` | `DbCommandInterceptor`. 리더 실행 명령의 SQL 원문과 매개변수 사본(`NpgsqlParameter.Clone()`)을 `Commands`에 모으고 명령은 그대로 실행한다. `ExplainAsync`는 같은 SQL · 매개변수 앞에 `EXPLAIN (ANALYZE, BUFFERS, COSTS OFF, SUMMARY OFF) `를 붙여 실행하고 계획 줄을 돌려준다(Repository 인덱스 사용 확인, S05-T06 `EmployeeQueryPlanTests`) |
 | `TestData/EmployeeBuilder` · `EmployeeCommits.AddAndCommitAsync` | 테스트 데이터(기본 `example.com`)와 새 스코프의 Repository `Add` → `IUnitOfWork.CommitAsync`(Handler 사전 검사 없음, P4 경로) |
+| `TestData/ScriptedIdGenerator` | 정해 둔 ID를 순서대로 돌려주는 `IIdGenerator` 대역(`WithRandomIds(n)`, 다 쓰면 `InvalidOperationException`, `Rewind()`로 처음부터, 스레드 안전). `EmployeeApiFactoryOptions.IdGenerator`로 주입(같은 ID 재전송 → `pk_employees` 3003 · 로그 202, S06-T06) |
+| `FaultInjection/EmailLookupHookRepository` | `EmployeeApiFactoryOptions.AfterEmailLookup`이 있으면 붙는 `IEmployeeRepository` 데코레이터. 사전 조회 결과를 돌려주기 직전에 hook을 실행한다(hook 안에서 `EmployeeCommits.AddAndCommitAsync(factory.Services, …)`로 충돌 행을 먼저 커밋 → 요청 INSERT 23505 → 23001). hook 예외는 그대로 전파(500) |
+| `TestData/EmployeeImportData` · `ExampleFiles` · `EmployeeRows` | 요청 본문 생성(`Csv(rows, prefix)` · `Json(rows, prefix)`, 행마다 다른 이메일, `PersonalValues`로 노출 검사 값), 과제 원문 예시 fixture(`TestData/Examples/original-example.csv` 3행 · `.json` 대괄호 없는 2행, 출력 폴더 복사), `employees` 행 수 · (ID, 정규화 이메일) 조회 |
+| `Http/PersonalDataScan` · `LogEventText.RawValues` · `UnexpectedErrors` | 개인정보 값 검색(NFR-04): `FindIn`(텍스트) · `FindInJson`(원문 + 디코딩한 문자열, 기본 인코더가 한글을 이스케이프하므로 필요) · `FindInLogs` → `LogExposure`(이벤트 ID · 수준 · 범주 · 템플릿 · 값). 대소문자 무시 서수 비교. `UnexpectedErrors(ids)`는 Error 이상 중 단언한 이벤트 ID를 뺀 나머지, `UnexpectedErrors(ExpectedLogEvent, …)`는 이벤트 ID + 범주(`SourceContext`)가 모두 같은 것만 뺀다(`ExpectedLogEvent.GlobalException` = ID 1 · `GlobalExceptionHandler`, 프레임워크 `RequestSizeLimitFilter`도 ID 1이라 새 테스트는 이쪽, BL-139). `PersonalValueForms.Name(name)`은 이름의 NFC · NFD 원문과 대문자 · 소문자 퍼센트 인코딩(서수 중복 제거, 비교가 정규화를 하지 않으므로 필요) |
+| `Observability/ActivityCollector(sourceName, filter?)` → `CapturedActivity` | `ActivityListener`(소스 `NpgsqlSource` = `Npgsql` · `AspNetCoreSource` = `Microsoft.AspNetCore`, `AllDataAndRecorded`)로 끝난 span의 태그 · 이벤트 · 상태 · `TraceId` 사본을 모은다(`Tag(key)` · `Dump()`, 선택 필터, `Clear`). 요청 span은 응답 뒤에 끝나므로 `WaitForAsync(predicate, ct, count, timeout)`로 기다리고, TestServer는 보낸 `traceparent`의 trace ID, Kestrel은 `ServerPort(port)`로 고른다(같은 프로세스 HttpClient 계측이 `traceparent`를 덮음). 프로세스 전체 리스너라 테스트 안에서 만들고 폐기한다(BL-024, S07-T03) |
+| `Performance/PerformanceMeasurement.MeasureAsync` → `MeasurementResult` · `CommandCountingInterceptor` · `DbContextOptionsInspection` | 워밍업 뒤 N회(회차마다 `prepare`는 측정 제외, 조회 측정은 `prepare` 없는 오버로드: 시드는 측정 전 1회, 회차마다 `ResetAsync` 금지) `Median` · `Max` · `Describe()`, 명령 실행 직전 수 세기(`Commands` · `InsertCommands` · `InsertStatementCount`, 매개변수는 개수만), 호스트 DbContext의 `EnableSensitiveDataLogging` 여부(NFR-02, S06-T06) |
 
 **트리거 규칙**
 
@@ -243,11 +251,11 @@ SELECT (SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'test\_%' AND NOT tgis
 
 | # | 대상 | 쿼리 · 조작 | 기대값 (실측) |
 |---|---|---|---|
-| Q1 | S3 · S4 · FR-06 타입 | `SELECT column_name, data_type, character_maximum_length, is_nullable, column_default FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'employees' ORDER BY ordinal_position` | `id uuid` · `display_name character varying 100` · `email character varying 254` · `employee_status smallint` · `created_at` / `updated_at timestamp with time zone`, 모두 `NO`, `column_default` 모두 NULL |
-| Q2 | 제약 · 인덱스 이름 | `SELECT conname, contype FROM pg_constraint WHERE conrelid = 'public.employees'::regclass`, `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'employees'` | 제약 `ck_employees_employee_status`(c) · `pk_employees`(p), 인덱스 `pk_employees` · `ux_employees_email`. 체크 식은 서버가 `CHECK ((employee_status = ANY (ARRAY[1, 2])))`로 정규화해 돌려주므로 모델 문자열 `employee_status IN (1, 2)`와 **텍스트 비교하지 않는다**(값 판정은 S4 삽입으로) |
+| Q1 | S3 · S4 · FR-06 타입 | `SELECT column_name, data_type, character_maximum_length, is_nullable, column_default FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'employees' ORDER BY ordinal_position` | `id uuid` · `name character varying 100` · `email character varying 254` · `normalized_email character varying 254` · `phone_number character varying 20` · `joined_on date` · `employee_status smallint` · `created_at` / `updated_at timestamp with time zone`, 모두 `NO`, `column_default` 모두 NULL(S05-T05 `20260928090646_InitialCreate` 실측) |
+| Q2 | 제약 · 인덱스 이름 | `SELECT conname, contype FROM pg_constraint WHERE conrelid = 'public.employees'::regclass`, `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'employees'` | 제약 `ck_employees_employee_status`(c) · `pk_employees`(p), 인덱스 `ix_employees_joined_on_id` · `ix_employees_name_joined_on_id` · `pk_employees` · `ux_employees_normalized_email`(4개, 유니크 인덱스는 제약이 아니라 `pg_constraint`에 없음, S05-T05 `20260928090646_InitialCreate` 실측). 체크 식은 서버가 `CHECK ((employee_status = ANY (ARRAY[1, 2])))`로 정규화해 돌려주므로 모델 문자열 `employee_status IN (1, 2)`와 **텍스트 비교하지 않는다**(값 판정은 S4 삽입으로) |
 | Q3 | S4 원시 SQL | Write 연결로 `employee_status` 0 · 3 · 9 `INSERT` | 모두 `PostgresException` `SqlState = 23514`, `ConstraintName = "ck_employees_employee_status"`, `TableName = "employees"`. 1 · 2는 성공 |
 | Q4 | S4 추적 엔트리 | 추적 엔트리의 `EmployeeStatus`를 `(EmployeeStatus)9`로 바꿔 `CommitAsync` | `DbUpdateException` 재전파(변환 없음), 내부 `23514` · 같은 `ConstraintName`, `Detail`은 가려짐(`Detail redacted ...`) |
-| Q5 | P4 23505 | 사전 검사 없이 같은 이메일 / 같은 ID | `ConstraintName`이 `EmployeeDbNames.EmailUniqueIndex.Value`면 23001, `pk_employees`면 3003 |
+| Q5 | P4 23505 | 사전 검사 없이 같은 이메일 / 같은 ID | `ConstraintName`이 `EmployeeDbNames.NormalizedEmailUniqueIndex.Value`(`ux_employees_normalized_email`, S05-T04 교체)면 23001, `pk_employees`면 3003 |
 | Q6 | S2 읽기 거부 | Read 연결로 `INSERT`, `TRUNCATE employees`(UPDATE · DELETE도 같음), `SHOW default_transaction_read_only` | `on`, 쓰기는 모두 `SqlState = 25006`(`ConstraintName` null). 명시 트랜잭션 `BEGIN ISOLATION LEVEL READ COMMITTED` 안에서도 `25006` |
 | Q7 | S3 정렬 | `IIdGenerator`로 한 밀리초 안 여러 ID(실측 200개가 같은 밀리초) → 섞어서 삽입 → `SELECT id FROM employees ORDER BY id` | 생성 순서와 같음(PostgreSQL `uuid` 비교는 바이트 순, UUIDNext `PostgreSql` 형식과 일치) |
 | Q8 | S1 UTC | 세션 `SET TIME ZONE 'Asia/Seoul'` 뒤 `SELECT created_at, extract(epoch FROM created_at)`, 그리고 `SET TIME ZONE 'UTC'` 뒤 같은 쿼리 | 두 세션의 epoch가 같다(표시만 `+09` / `+00`). EF로 읽은 `DateTimeOffset.Offset`은 0. `FakeTimeProvider`를 `+09:00` 오프셋으로 두어도 저장 값은 같은 순간의 UTC |
@@ -316,7 +324,7 @@ NetArchTest.Rules 1.3.2로 검증합니다([ADR-0021](../03-architecture/adr/002
 | `ImplementationsAreInternalSealed` | Handler · Validator · Repository · 포트 구현은 `internal sealed` |
 | `ValidatorsDeriveFromRequestValidator` | Validator는 공통 기반 `RequestValidator<T>` 파생(아래 Validator 기반 참고) |
 | `ExplicitlyRegisteredPortsDoNotImplementMarkers` | 명시 등록 포트(`IUnitOfWork` · `IExceptionClassifier` · `IIdGenerator` · `IPreCommitHook`) 구현은 자동 등록 마커 미구현 |
-| `ErrorAndResultAreNotDerived` | `Error` / `Result` 파생 금지(`ValidationError` · `Result<T>` 제외) |
+| `ErrorAndResultAreNotDerived` | `Error` / `Result` 파생 금지(`ValidationError` · `ConflictError` · `Result<T>` 제외, `ConflictError`는 [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)) |
 | `EntityDerivedTypesAreSealed` | Entity / AggregateRoot 파생은 sealed(abstract 중간 기반 금지) |
 
 **주입 규칙** (`InjectionRules` 3개, 테스트 `ConventionRuleTests`)
@@ -336,6 +344,21 @@ NetArchTest.Rules 1.3.2로 검증합니다([ADR-0021](../03-architecture/adr/002
 
 - **대상 어셈블리는 `ArchitectureAssemblies` 한곳에서 관리한다**(현재 BuildingBlocks 4개 + Employee 5개). 서비스를 추가하면 레이어별로 목록에 넣고 csproj에 참조를 더한다. 테스트 어셈블리는 넣지 않는다. ServiceDefaults · AppHost는 규칙 대상이 아니다.
 - 규칙마다 제품 대상 형식이 1개 이상임을 단언한다(공허 통과 방지). 대상이 서비스 코드에만 있는 규칙(현재 10개: 컨벤션 · 주입 8, Controller, MigrationService)은 서비스 어셈블리가 목록에 없을 때만 건너뜀(Skip)으로 표시하고, 서비스가 들어온 지금은 대상 0개면 실패다. 서비스 ↛ 다른 서비스 규칙은 서비스가 2개 미만이면 건너뛴다(금지할 다른 서비스가 없음). **지금 건너뛰는 제품 테스트는 1개**(`ServicesDoNotDependOnOtherServices`, 서비스 1개)다(S04-T02 실측: 아키텍처 테스트 전체 100 = 통과 99 · 건너뜀 1).
+- **대상 대기 목록**(S05-T04부터, PRD-002 샘플 제거): 샘플 API · Validator가 없어지면 대상이 0개가 되는 서비스 전용 규칙(처음 3개)은 "대상 0개면 실패" 대신, 해제할 작업 ID를 적은 **대상 대기 목록**에 올려 건너뜀(Skip)으로 표시한다. 건너뜀 메시지에 해제 작업 ID를 넣는다.
+
+  지금 대기 목록은 **0개**다(`PendingTargetRules.All` 빈 목록, `PendingTargetRuleTests.All_IsEmptyLikeTheDocumentedTable`). 해제한 규칙:
+
+  | 규칙 | 해제 작업 | 대상이 생긴 코드 |
+  |---|---|---|
+  | `ValidatorsDeriveFromRequestValidator` | S06-T04 | `RegisterEmployeesCommandValidator` |
+  | `ValidatorsDoNotInjectRepositoriesOrServices` | S06-T04 | `RegisterEmployeesCommandValidator` |
+  | `ControllersDoNotUseInfrastructureOrRepositories` | S06-T05 | `EmployeeController`(`/api/employee`) |
+
+  - **안전장치**: 대기 목록에 있는 규칙의 제품 대상이 1개 이상이면 실패한다("목록에서 빼라"). 해제 작업은 목록에서 규칙을 빼고 대상 1개 이상 단언으로 되돌린다.
+  - 구현(S05-T04): 목록은 `ArchitectureTests/Rules/PendingTargetRules.cs`(규칙 인스턴스 + 해제 작업 ID) 한 곳이고, `RuleCheck.ShouldPassOnProduct`가 목록 규칙을 판정한다. `PendingTargetRuleTests`가 목록 = 위 문장(0개), 해제한 규칙 3개가 목록 밖이고 제품 대상이 있음, 대상 0개면 해제 작업 ID를 담은 건너뜀, 대상이 생긴 규칙이 목록에 남으면 "목록에서 빼라"로 실패, 목록 밖 규칙은 대상 0개면 공허 통과로 실패하는지 확인한다. 제품 목록이 빈 뒤(S06-T05)에는 안전장치를 표본 목록(`RuleCheck.ShouldPassOnProduct(IReadOnlyList<PendingTargetRule>)` · `PendingTargetRules.Find(rule, list)`)으로 확인한다.
+  - 표본 테스트(위반 예시만 정확히 잡는지)는 대기 중에도 그대로 돈다. 대기 목록 밖의 규칙은 지금처럼 대상 0개면 실패다.
+  - 해제 기록: S06-T04가 `RegisterEmployeesCommandValidator`로 Validator 규칙 2개를, S06-T05가 `EmployeeController`로 Controller 규칙 1개를 목록에서 뺐다(`PendingTargetRuleTests.ReleasedRules_AreOutsideListAndHaveProductTargets`).
+  - 건너뜀 수: 대기 0 + 서비스 격리 1(`ServicesDoNotDependOnOtherServices`). S06-T05 실측: 아키텍처 테스트 전체 108 = 통과 107 · 건너뜀 1. 대상 대기가 있었던 이유는 [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md)의 구현 순서(Validator S06-T04, Controller S06-T05) 때문이다.
 - **ClassesAreSealed 범위**: 대상은 `ArchitectureAssemblies.All`의 `EmergencyHub.*` 네임스페이스에 있는 추상 · static이 아닌 클래스 전부이며, **가시성(public / internal)과 관계없다**. 루트 네임스페이스 밖의 컴파일러 생성 형식(`<PrivateImplementationDetails>` 등)과 ServiceDefaults · AppHost는 대상 밖이다. EF 생성 형식도 대상이라 마이그레이션(public)과 모델 스냅샷(internal)에 직접 쓴 `*.Sealed.cs` partial 선언으로 sealed를 붙인다([데이터베이스 · 마이그레이션 규칙](database.md#마이그레이션-규칙)). S04-T02 실측: `EmployeeDbContextModelSnapshot.Sealed.cs`에서 `sealed`를 빼면 `ClassesAreSealed_ProductAssemblies_Holds`가 `EmployeeDbContextModelSnapshot`(internal)으로 실패한다. 따라서 BL-090의 "internal 생성 형식은 잡지 않음"은 현재 코드에서 재현되지 않는다(S03-T02 반려 때 InitialCreate만 보고된 원인은 확인하지 않았다). 생성 형식을 규칙에서 예외 처리하는 기준은 정하지 않았다(BL-090 트리거 대기).
 - 규칙마다 테스트 어셈블리 안 표본 네임스페이스에 위반 예시와 지킨 예시를 두고, 같은 규칙 객체가 위반 예시만 정확히 잡는지 확인한다.
 - 아키텍처 테스트 프로젝트에는 `coverlet.collector`를 넣지 않는다. 수집기가 출력 폴더의 제품 DLL을 계측하면 Coverlet 추적 형식 의존이 생겨 Domain 규칙이 실패한다(S02-T05 실측).
@@ -425,3 +448,13 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 | 2026-09-28 | developer | 아키텍처 테스트 절을 규칙 정의와 1:1 표로(의존성 10 · 컨벤션 12 · 주입 3, 선언 참조 · 대상 목록 점검), 규칙 목록 원본을 테스트 프로젝트로, 건너뜀 11 → 1 실측, ClassesAreSealed 범위(가시성 무관, 실측으로 BL-090 전제 불일치 기록), Validator 공통 기반 `RequestValidator<T>`, 커버리지 대상 6개 표 · 대상 아님 · 수집 안 함, 스모크 미도입(BL-111), CI 절 대상 6개 (S04-T02, BL-066 · 068 · 087 · 090) |
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #3 반영: 문서 · 증빙 작업 진입 점검(완료 조건 ↔ 증빙 칸 대조, 문서 사실 문장 재실측) |
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #16 반영: 증빙 표 "인수 조건 문장 → 테스트" 열, 엣지 "대상 없음"은 BL · 대상 생기면 필수 편입, AppHost 기동 확인의 한계와 재현 격리 조건 |
+| 2026-09-28 | developer | 아키텍처 테스트에 대상 대기 목록(규칙 3개 → 해제 S06-T04 · S06-T05, 건너뜀 메시지에 해제 작업 ID, 대상이 생기면 실패하는 안전장치, 표본 테스트 유지)과 `ErrorAndResultAreNotDerived`의 상세 Conflict 오류 예외(S06-T01, ADR-0028) (S05-T02) |
+| 2026-09-28 | developer | 대상 대기 목록 구현 위치(`PendingTargetRules` · `RuleCheck.ShouldPassOnProduct` · `PendingTargetRuleTests`), Q5 유니크 인덱스 상수 `NormalizedEmailUniqueIndex` (S05-T04) |
+| 2026-09-28 | dba | Q1 · Q2 기대값을 S05-T05 리셋(`20260928090646_InitialCreate`) 뒤 실측값으로 교체: Q1 컬럼 9개(`name` · `normalized_email` · `phone_number` · `joined_on` 추가, `display_name` 제거, 모두 `NO` · 기본값 NULL), Q2 인덱스 `ix_employees_joined_on_id` · `ix_employees_name_joined_on_id` · `pk_employees` · `ux_employees_normalized_email`, 제약 2개 그대로 (S05-T05) |
+| 2026-09-28 | developer | 장애 주입 P4 행을 새 스키마 실측으로(`ux_employees_normalized_email` → 23001, 대소문자만 다른 입력 포함, UnitOfWorkConflictTests green 뒤) (S05-T06) |
+| 2026-09-28 | developer | 장애 주입 도우미 표에 `EmployeeServicesOptions.ReadInterceptors`, `AddReadDbContextInterceptors`, `QueryPlans` 도우미(`CommandCaptureInterceptor` · `CapturedCommand` · `QueryPlan.ExplainAsync`) 추가 (S05-T06) |
+| 2026-09-28 | developer | `ErrorAndResultAreNotDerived` 예외 목록을 코드(`ErrorResultFamily`)와 1:1로: `ValidationError` · `ConflictError` · `Result<T>` (S06-T01) |
+| 2026-09-28 | developer | 대상 대기 목록에서 Validator 규칙 2개 해제(`RegisterEmployeesCommandValidator`), 표 1행 · 건너뜀 대기 1 + 격리 1(실측 106 = 통과 104 · 건너뜀 2) (S06-T04) |
+| 2026-09-28 | developer | 대상 대기 목록에서 Controller 규칙 해제(`EmployeeController`), 목록 0개 · 해제 기록 표 3행, 안전장치는 표본 목록으로, 건너뜀 대기 0 + 격리 1(실측 108 = 통과 107 · 건너뜀 1) (S06-T05) |
+| 2026-09-28 | developer | 통합 테스트 도구 추가: `EmployeeApiFactoryOptions`의 `IdGenerator` · `AfterEmailLookup` · `UseKestrel`(실제 Kestrel 호스트), `KestrelSend`, `RequestStatusCodes`, `ScriptedIdGenerator` · `EmailLookupHookRepository` · `EmployeeImportData` · `ExampleFiles` · `EmployeeRows` · `PersonalDataScan` · `NpgsqlActivityCollector` · 성능 측정 도우미 (S06-T06) |
+| 2026-09-29 | developer | 통합 테스트 도구 확장: `UnexpectedErrors(ExpectedLogEvent, …)`(이벤트 ID + 범주, BL-139), `PersonalValueForms.Name`, `NpgsqlActivityCollector` → `ActivityCollector`(소스 지정 · `TraceId` · `WaitForAsync` · `ServerPort`), `PerformanceMeasurement.MeasureAsync` 준비 없는 오버로드, 호스트가 Api `Microsoft.AspNetCore` Warning 재정의를 쓰는지 고정 테스트 (S07-T03) |

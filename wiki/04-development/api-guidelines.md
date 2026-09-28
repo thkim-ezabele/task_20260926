@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [development]
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-09-29
 ---
 
 # API 설계 가이드
@@ -15,6 +15,7 @@ updated: 2026-09-27
 > [위키 홈](../README.md)
 
 > API 스타일은 `[ApiController]` Controller([ADR-0016](../03-architecture/adr/0016-use-controllers-for-api.md)), OpenAPI 도구는 Swashbuckle([ADR-0019](../03-architecture/adr/0019-use-swashbuckle-openapi.md))입니다.
+> 과제 필수 3개 엔드포인트(`/api/employee`)는 이 문서의 일부 규칙에서 벗어납니다. 범위와 내용은 [규칙 예외](#규칙-예외-과제-api-명세-adr-0025)를 봅니다.
 
 ## URL 및 리소스 네이밍
 
@@ -39,7 +40,7 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 | `DELETE` | 삭제 Command | `204` (이미 없으면 `404`) |
 
 - Command는 **생성한 ID 정도만** 반환한다. 변경 후 상태가 필요하면 클라이언트가 Query로 다시 조회한다.
-- 실패 상태 코드는 에러 유형으로 정해진다: `400` 검증, `401` 인증, `403` 권한, `404` 없음, `409` 충돌, `422` 업무 규칙, `500` / `502` / `503` 서버 · 외부([에러 코드 체계](../05-api/error-codes.md#에러-코드-체계)).
+- 실패 상태 코드는 에러 유형으로 정해진다: `400` 검증, `413` 본문 크기 초과, `415` 지원하지 않는 Content-Type, `401` 인증, `403` 권한, `404` 없음, `409` 충돌, `422` 업무 규칙, `500` / `502` / `503` 서버 · 외부([에러 코드 체계](../05-api/error-codes.md#에러-코드-체계)). `413` · `415`의 근거는 [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)이다.
 
 ### 멱등성
 
@@ -80,13 +81,13 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
   "title": "Conflict",
   "status": 409,
   "detail": "이미 등록된 이메일입니다.",
-  "instance": "/api/v1/employees",
+  "instance": "/api/employee",
   "code": 23001,
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
 }
 ```
 
-검증 실패(`400`)는 필드별 오류를 `errors`에 담습니다.
+검증 실패(`400`)는 필드별 오류를 `errors`에 담습니다. 행별 충돌(`409`, 상세 Conflict 오류 `ConflictError`)도 같은 모양의 `errors`를 씁니다([ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)).
 
 ```json
 {
@@ -97,7 +98,7 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
   "code": 1001,
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
   "errors": {
-    "email": [{ "code": 21001, "message": "이메일 형식이 아닙니다." }],
+    "email": [{ "code": 21004, "message": "이메일 형식이 올바르지 않습니다." }],
     "notificationChannels": [{ "code": 1002, "message": "정의되지 않은 채널입니다." }]
   }
 }
@@ -110,15 +111,16 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 
 | 항목 | 규칙 |
 |---|---|
-| `status` | `ErrorType`으로 정한다([에러 코드 체계](../05-api/error-codes.md#에러-코드-체계)). 예약 값 `None` · 정의되지 않은 값은 `500` |
+| `status` | `ErrorType`으로 정한다([에러 코드 체계](../05-api/error-codes.md#에러-코드-체계)). `PayloadTooLarge` → `413`, `UnsupportedMediaType` → `415`(ADR-0028). 예약 값 `None` · 정의되지 않은 값은 `500` |
 | `type` / `title` | `https://httpstatuses.io/{status}` / 상태 코드의 표준 문구(`Conflict` 등) |
 | `detail` | `Error.Message`. 전역 예외 처리기는 오류의 고정 메시지만 쓴다(예외 메시지 · 스택 미노출) |
-| `instance` | 요청 경로(`PathBase + Path`). 쿼리 문자열은 넣지 않는다(개인정보가 들어갈 수 있음) |
+| `instance` | 라우트 템플릿이 있으면 `PathBase` + 라우트 템플릿(예: `/api/employee/{name}`, 대소문자 그대로, 모든 엔드포인트), 없으면 요청 경로(`PathBase + Path`)다. 템플릿은 현재 엔드포인트, 없으면 `IExceptionHandlerFeature.Endpoint`(500 경로)의 `RouteEndpoint` 템플릿이다. 템플릿이 없는 응답: 라우팅 전 오류, 일치하는 엔드포인트 없음(404 · 405), `[Consumes]` 불일치 415(라우팅이 `RouteEndpoint`가 아닌 엔드포인트를 고름). 쿼리 문자열은 넣지 않는다(개인정보가 들어갈 수 있음). 요청 완료 로그 `RequestPath` · 추적 span `url.path` · 요청 안 로그의 호스팅 범위 `RequestPath`도 같은 템플릿이다(`PathBase` 없음, [로깅 · 공통 필드](logging-observability.md#공통-필드-enricher), [ADR-0025](../03-architecture/adr/0025-api-rule-exceptions-for-assignment-endpoints.md#이름-경로-매개변수와-개인정보)) |
 | `code` | JSON 숫자 |
 | `traceId` | W3C trace-id(`Activity.Current.TraceId`, 32자리 16진수). `Activity`가 없거나 W3C 형식이 아니면 `HttpContext.TraceIdentifier` |
-| `errors` | `ValidationError`일 때만. 키는 속성 경로를 `.` 조각마다 camelCase로 바꾼 값(`Items[0].Name` → `items[0].name`, 객체 수준은 `""`), 값은 `{ code, message }` 배열(생성 순서 유지) |
+| `errors` | `ValidationError`(`400`)와 `ConflictError`(`409`, ADR-0028)일 때만. 상세 없는 `409`(`3001` · `3003` · `23001` 경합)에는 없다. 키는 속성 경로를 `.` 조각마다 camelCase로 바꾼 값(`Items[0].Name` → `items[0].name`, 객체 수준은 `""`), 값은 `{ code, message }` 배열(생성 순서 유지) |
 | 바인딩 오류 | `InvalidModelStateResponseFactory` → `400` · `1001`. 필드마다 코드 `1001`, 메시지는 `1001`의 고정 문구(프레임워크 메시지에 입력 값이 들어가므로). 모델 상태 키의 JSON 경로 접두사 `$.`는 떼고 `$`는 `""` |
-| 예외 | `BadHttpRequestException` → `400` · `1001`. 예외 분류기(`IExceptionClassifier`) 결과가 있으면 그 오류(예: 재시도 한도 초과 → `503` · `9003`), 없으면 `500` · `9001`. 변환되지 않은 DB 예외(23514 · 25006)도 `9001` |
+| 예외 | `BadHttpRequestException` → `StatusCode`가 `413`이면 `413` · `1004`, 그 밖은 `400` · `1001`(TD-021 부분 상환, ADR-0028). 예외 분류기(`IExceptionClassifier`) 결과가 있으면 그 오류(예: 재시도 한도 초과 → `503` · `9003`), 없으면 `500` · `9001`. 변환되지 않은 DB 예외(23514 · 25006)도 `9001` |
+| `415` | `[Consumes]`에 없는 Content-Type은 라우팅이 본문 없는 `415`로 끝내므로 상태 코드 페이지 처리기가, `[FromBody]` 액션의 Content-Type 없음은 클라이언트 오류 팩토리(`IClientErrorFactory` 데코레이터)가 `415` · `1005`로 바꾼다. `[FromBody]`가 없는 액션은 Content-Type이 없으면 액션까지 간다(일괄 등록은 전용 바인더가 raw body로 보고 내용으로 판별하며 `415`로 거절하지 않는다, ADR-0026 2절 · S06-T05). 그 밖의 클라이언트 오류 결과(`NotFound()` 등)는 프레임워크 기본 그대로다(S06-T01 실측, ADR-0028) |
 
 - Controller는 실패 `Result`를 `return result.Error.ToProblemResult();`로 돌려준다(`ErrorProblemResult`, `ActionResult<T>`로 암시적 변환).
 
@@ -138,6 +140,20 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 }
 ```
 
+## 규칙 예외 (과제 API 명세, ADR-0025)
+
+과제 필수 3개 엔드포인트는 과제 명세를 그대로 따르고, 아래 항목에서만 이 문서의 규칙과 다르게 한다. 원본(항목별 규칙과 예외 값)은 [ADR-0025 예외 목록](../03-architecture/adr/0025-api-rule-exceptions-for-assignment-endpoints.md#예외-목록)이다.
+
+| 적용 범위 (이 3개만) | 다른 점 |
+|---|---|
+| `GET /api/employee?page={page}&pageSize={pageSize}` | 버전 없는 단수형 경로, `page`(1부터, 기본 1, 1 ~ 100,000) / `pageSize`(기본 20, 1 ~ 100), 응답 `{ items, totalCount, page, pageSize }`, `sort` 없음(`joined_on` → `id` 고정) |
+| `GET /api/employee/{name}` | 경로 매개변수가 ID가 아니라 이름(앞뒤 공백 제거 + NFC 뒤 정확히 일치, 동명이인이면 입사일이 빠른 1명) |
+| `POST /api/employee` | 여러 직원을 한 번에 등록, `201` + `{ "count": N, "ids": [...] }`(`Location` 없음), `[Consumes]` 4종(multipart · form-urlencoded · `text/csv` · `application/json`), 실패에 `413` · `415` 추가. 입력 처리는 [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md) |
+
+- 표에 없는 규칙(camelCase, 정수 코드값, `null` 속성 유지, 빈 컬렉션 `[]`, 최상위 객체, `ProblemDetails`의 `code` · `traceId`)은 이 3개 엔드포인트에도 그대로 적용한다.
+- 새 엔드포인트(ID 조회, 동명이인 전체 조회 BL-121 등)는 예외를 쓰지 않고 이 문서의 기본 규칙(`/api/v1/...`)을 따른다.
+- **일괄 등록 크기 한도 · 전송 형식 오류 판정**(S06-T05 실측, [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md) 1절 · [ADR-0028](../03-architecture/adr/0028-building-blocks-error-contract-extension.md)): 액션 특성 `RequestSizeLimit` · `RequestFormLimits`(`MultipartBodyLengthLimit` · `ValueLengthLimit`)를 모두 1 MiB로 두고, 폼 값 공급자를 빼(`DisableFormValueProviders`) 전용 바인더만 본문을 읽는다. 폼 값 공급자를 두면 폼 한도 초과(`InvalidDataException`)가 값 공급자 → ModelState → `400` · `1001`이 되기 때문이다(multipart `file` · `data` · form-urlencoded 실측). 판정 기준은 예외 메시지가 아니라 **바이트 수**다: 본문 전체가 `RequestSizeLimit`을, multipart 본문이 `MultipartBodyLengthLimit`을, `data` 값이 `ValueLengthLimit`을 넘으면 바인더가 서버와 같은 `BadHttpRequestException`(413)을 던지고 전역 예외 처리기가 `413` · `1004`로 응답한다(네 입력 경로 모두 바인더에서 판정, Kestrel이 먼저 한도를 적용하면 본문을 읽는 중에 같은 예외가 난다). boundary 없음 · 빈 boundary, 잘리거나 boundary가 없는 multipart, multipart 헤더 수 · 길이 한도 위반, 같은 필드 두 번은 한도 초과가 아니라 전송 형식 오류라 ModelState(키 `""`) → `400` · `1001`이다. 바인더는 프레임워크 폼 해독을 쓰지 않고 원래 바이트를 넘기므로 잘못된 UTF-8은 모든 입력 경로에서 `21022`다.
+
 ## 인증 헤더
 
 - `Authorization: Bearer <access token>`. 토큰 발급과 검증 방식(JWT / OIDC)은 Identity 서비스 설계 때 정한다(🟡).
@@ -154,3 +170,7 @@ CQRS에 맞춰 **Query는 `GET`, Command는 `POST` / `PUT` / `PATCH` / `DELETE`*
 | 2026-09-27 | - | 기본 규칙 초안: URL, 메서드 · 상태 코드(CQRS), 멱등성(`Idempotency-Key`), 버저닝, 정수 코드 직렬화, ProblemDetails(`code`, `traceId`), 페이징 · 정렬 · 필터, 인증 헤더 |
 | 2026-09-27 | developer | API 스타일(Controller, ADR-0016) · OpenAPI 도구(Swashbuckle, ADR-0019) 확정 반영 (S01-T04) |
 | 2026-09-27 | developer | 에러 응답 공통 변환 규칙 표(status · type · instance · traceId · errors 키 · 바인딩 오류 · 예외 판정), `ToProblemResult` (S02-T06) |
+| 2026-09-28 | developer | ADR-0025 · 0026 · 0028 반영: 규칙 예외 절(과제 3개 엔드포인트, ADR 링크), 실패 상태 `413` · `415`, 409 `errors`(상세 Conflict 오류), `instance` · 요청 로그 · 추적 span의 라우트 템플릿(S07-T02), `BadHttpRequestException` 413 · `[Consumes]` 415 변환(S06-T01), 400 예시 코드 21001(폐기) → 21004, 409 예시 `instance`를 `/api/employee`로 (S05-T02) |
+| 2026-09-28 | developer | S06-T01 구현 반영: 공통 변환 규칙의 "S06-T01부터" 문구를 현재형으로, `errors`(`ConflictError`, 상세 없는 409 제외), `415` 행(라우팅 415 → 상태 코드 페이지, `[FromBody]` Content-Type 없음 → 클라이언트 오류 팩토리, 실측) (S06-T01) |
+| 2026-09-28 | developer | 규칙 예외 절에 일괄 등록 크기 한도 · 전송 형식 오류 판정 문단(바이트 수 기준 413 · 1004, 형식 오류 400 · 1001, 폼 값 공급자 제외), `415` 행에 Content-Type 없음의 판정 결과(내용 판별) (S06-T05) |
+| 2026-09-29 | developer | `instance` 행을 구현으로: `PathBase` + 라우트 템플릿(500 경로는 `IExceptionHandlerFeature.Endpoint`), 템플릿 없는 응답 목록(404 · 405 · `[Consumes]` 415), 호스팅 로그 범위 `RequestPath` 포함 (S07-T02) |

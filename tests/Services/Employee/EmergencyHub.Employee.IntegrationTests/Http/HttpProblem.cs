@@ -9,7 +9,7 @@ namespace EmergencyHub.Employee.IntegrationTests.Http;
 /// </summary>
 /// <remarks>
 /// 형태: <c>application/problem+json</c>, 키는 <c>type</c> · <c>title</c> · <c>status</c> · <c>detail</c> · <c>instance</c> · <c>code</c> · <c>traceId</c>
-/// (+ 검증 실패면 <c>errors</c>)뿐이고, <c>type</c>은 <c>https://httpstatuses.io/{status}</c>, <c>code</c>는 JSON 숫자, <c>traceId</c>는 32자리 소문자 16진수입니다.
+/// (+ 검증 실패 · 상세 충돌이면 <c>errors</c>)뿐이고, <c>type</c>은 <c>https://httpstatuses.io/{status}</c>, <c>code</c>는 JSON 숫자, <c>traceId</c>는 32자리 소문자 16진수입니다.
 /// </remarks>
 internal static class HttpProblem
 {
@@ -24,6 +24,9 @@ internal static class HttpProblem
     /// <param name="detail">기대 고정 문구(에러 정의의 메시지).</param>
     /// <param name="instance">기대 <c>instance</c>(요청 경로, 쿼리 문자열 없음).</param>
     /// <param name="cancellationToken">취소 토큰.</param>
+    /// <param name="hasErrors">
+    /// <c>errors</c> 확장이 있어야 하는지입니다. <see langword="null"/>이면 <c>code == 1001</c>일 때만 있습니다(상세 Conflict 409는 <see langword="true"/>로 지정, ADR-0028).
+    /// </param>
     /// <returns>본문 루트(복제본).</returns>
     public static async Task<JsonElement> ShouldBeProblemAsync(
         this HttpResponseMessage response,
@@ -31,7 +34,8 @@ internal static class HttpProblem
         int code,
         string detail,
         string instance,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool? hasErrors = null)
     {
         response.StatusCode.Should().Be(status);
         response.Content.Headers.ContentType!.MediaType.Should().Be(ContentType);
@@ -44,8 +48,8 @@ internal static class HttpProblem
 
         var statusNumber = (int)status;
         var keys = root.EnumerateObject().Select(property => property.Name).ToArray();
-        var expectedKeys = code == 1001 ? [.. BaseKeys, "errors"] : BaseKeys;
-        keys.Should().Equal(expectedKeys, "ProblemDetails 키와 순서는 문서 예시와 같다(검증 실패만 errors를 더한다)");
+        var expectedKeys = hasErrors ?? code == 1001 ? [.. BaseKeys, "errors"] : BaseKeys;
+        keys.Should().Equal(expectedKeys, "ProblemDetails 키와 순서는 문서 예시와 같다(검증 실패 · 상세 충돌만 errors를 더한다)");
 
         root.GetProperty("type").GetString().Should().Be("https://httpstatuses.io/" + statusNumber.ToString(CultureInfo.InvariantCulture));
         root.GetProperty("title").GetString().Should().NotBeNullOrWhiteSpace();

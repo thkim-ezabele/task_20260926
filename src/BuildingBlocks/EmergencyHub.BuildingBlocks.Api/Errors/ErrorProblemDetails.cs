@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using EmergencyHub.BuildingBlocks.Api.Routing;
 using EmergencyHub.BuildingBlocks.Domain.Errors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,9 +15,10 @@ namespace EmergencyHub.BuildingBlocks.Api.Errors;
 /// <remarks>
 /// <list type="bullet">
 /// <item><description><c>status</c>: <see cref="ErrorStatusCodes.ToStatusCode"/>. <c>type</c>: <c>https://httpstatuses.io/{status}</c>. <c>title</c>: 상태 코드의 표준 문구.</description></item>
-/// <item><description><c>detail</c>: <see cref="Error.Message"/>. <c>instance</c>: 요청 경로(<c>PathBase + Path</c>). 쿼리 문자열은 개인정보가 들어갈 수 있어 넣지 않습니다.</description></item>
+/// <item><description><c>detail</c>: <see cref="Error.Message"/>. <c>instance</c>: 라우트 템플릿이 있으면 <c>PathBase</c> + 템플릿(예: <c>/api/employee/{name}</c>), 없으면(라우팅 전 오류 · 일치하는 엔드포인트 없음 · <c>[Consumes]</c> 불일치 415) 요청 경로(<c>PathBase + Path</c>)입니다(ADR-0025). 경로 매개변수 값과 쿼리 문자열은 개인정보가 들어갈 수 있어 넣지 않습니다.</description></item>
 /// <item><description>확장 <c>code</c>(정수, JSON 숫자)와 <c>traceId</c>는 항상 넣습니다.</description></item>
-/// <item><description><see cref="ValidationError"/>면 확장 <c>errors</c>에 필드별 상세를 camelCase 키로 묶어 넣습니다(키 · 항목 모두 생성 순서 유지).</description></item>
+/// <item><description><see cref="ValidationError"/>(400)와 <see cref="ConflictError"/>(409, ADR-0028)면 확장 <c>errors</c>에 항목별 상세를 camelCase 키로 묶어 넣습니다
+/// (키 · 항목 모두 생성 순서 유지, 두 오류가 같은 모양). 그 밖의 오류(상세 없는 409 포함)에는 <c>errors</c>가 없습니다.</description></item>
 /// </list>
 /// </remarks>
 public static class ErrorProblemDetails
@@ -52,17 +54,30 @@ public static class ErrorProblemDetails
             Title = ReasonPhrases.GetReasonPhrase(status),
             Status = status,
             Detail = error.Message,
-            Instance = (httpContext.Request.PathBase + httpContext.Request.Path).Value,
+            Instance = GetInstance(httpContext),
         };
 
         problem.Extensions[CodeExtension] = error.Code;
         problem.Extensions[TraceIdExtension] = GetTraceId(httpContext);
-        if (error is ValidationError validation)
+        switch (error)
         {
-            problem.Extensions[ErrorsExtension] = GroupByJsonKey(validation.Errors);
+            case ValidationError validation:
+                problem.Extensions[ErrorsExtension] = GroupByJsonKey(validation.Errors.Select(item => (item.PropertyName, item.Code, item.Message)));
+                break;
+            case ConflictError conflict:
+                problem.Extensions[ErrorsExtension] = GroupByJsonKey(conflict.Details.Select(item => (item.PropertyName, item.Code, item.Message)));
+                break;
         }
 
         return problem;
+    }
+
+    /// <summary>라우트 템플릿이 있으면 <c>PathBase</c> + 템플릿, 없으면 <c>PathBase + Path</c>입니다(ADR-0025).</summary>
+    private static string? GetInstance(HttpContext httpContext)
+    {
+        var request = httpContext.Request;
+        var template = RouteTemplatePath.Find(httpContext);
+        return (request.PathBase + (template is null ? request.Path : new PathString(template))).Value;
     }
 
     /// <summary>
@@ -77,20 +92,20 @@ public static class ErrorProblemDetails
             : httpContext.TraceIdentifier;
     }
 
-    private static Dictionary<string, ProblemFieldError[]> GroupByJsonKey(IReadOnlyList<FieldError> errors)
+    private static Dictionary<string, ProblemFieldError[]> GroupByJsonKey(IEnumerable<(string PropertyName, int Code, string Message)> errors)
     {
         // Dictionary는 삭제가 없으면 추가 순서대로 열거된다. 키 순서 = 처음 나온 순서.
         var grouped = new Dictionary<string, List<ProblemFieldError>>(StringComparer.Ordinal);
-        foreach (var fieldError in errors)
+        foreach (var (propertyName, code, message) in errors)
         {
-            var key = FieldErrorKeys.ToJsonKey(fieldError.PropertyName);
+            var key = FieldErrorKeys.ToJsonKey(propertyName);
             if (!grouped.TryGetValue(key, out var items))
             {
                 items = [];
                 grouped.Add(key, items);
             }
 
-            items.Add(new ProblemFieldError(fieldError.Code, fieldError.Message));
+            items.Add(new ProblemFieldError(code, message));
         }
 
         return grouped.ToDictionary(pair => pair.Key, pair => pair.Value.ToArray(), StringComparer.Ordinal);

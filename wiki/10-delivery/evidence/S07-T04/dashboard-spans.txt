@@ -1,0 +1,264 @@
+# S07-T04 BL-024 대시보드 span 속성 텍스트 (2026-09-29, Aspire 9.5.2 대시보드 http://localhost:15180, http 프로필)
+# Edge 헤드리스(CDP, --remote-debugging-port)로 /traces/detail/<traceId>를 열고 span 행을 눌러 상세 패널의 document.body.innerText를 저장했다.
+# 대시보드는 로컬 한정 ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true로 실행(로그인 토큰 없음, 설정 파일 · 코드 미변경). 마스킹한 값 없음(비밀번호 · 토큰이 화면에 없음).
+# 요청: T1 POST 201(등록 값: 추적확인 / bl024.probe@example.com / 010-2424-2424 / 2024-02-24), T2 GET /api/employee/{name} 200(같은 이름), T3 POST 409(대소문자만 다른 이메일). 명령은 http-curl.txt.
+
+===== t1-s0 (t1 span 1) =====
+범위 = 12
+SpanId = b25ad3b2145d2497
+Name = POST api/employee
+Kind = Server
+http.request.method = POST
+http.response.status_code = 201
+http.route = api/employee
+network.protocol.version = 1.1
+server.address = localhost
+server.port = 5180
+url.path = /api/employee
+url.scheme = http
+user_agent.original = curl/8.21.0
+컨텍스트 = 3
+Source = Microsoft.AspNetCore
+TraceId = 4b1d0024000000000000000000000001
+ParentId = 00000000000000a1
+리소스 = 5
+service.name = employee-api
+service.instance.id = gqjcauth
+telemetry.sdk.language = dotnet
+telemetry.sdk.name = opentelemetry
+telemetry.sdk.version = 1.19.1
+
+===== t1-s1 (t1 span 2) =====
+범위 = 15
+SpanId = 58710d1dcb91bbff
+Name = emergency_hub_employee
+Kind = Client
+Status = Ok
+Destination = postgres
+db.connection_id = 89
+db.connection_string = Host=localhost;Port=51305;Database=emergency_hub_employee;Username=employee_app;Application Name=employee-api-write
+db.name = emergency_hub_employee
+db.statement = SELECT e.normalized_email FROM employees AS e WHERE e.normalized_email = ANY (@__normalizedEmails_0)
+db.system = postgresql
+db.user = employee_app
+net.peer.ip = ::1
+net.peer.name = localhost
+net.peer.port = 51305
+net.transport = ip_tcp
+컨텍스트 = 4
+Source = Npgsql
+Version = 0.1.0
+TraceId = 4b1d0024000000000000000000000001
+ParentId = b25ad3b2145d2497
+리소스 = 5
+service.name = employee-api
+service.instance.id = gqjcauth
+telemetry.sdk.language = dotnet
+telemetry.sdk.name = opentelemetry
+telemetry.sdk.version = 1.19.1
+
+===== t1-s2 (t1 span 3) =====
+범위 = 15
+SpanId = ae4305009f3d68bf
+Name = emergency_hub_employee
+Kind = Client
+Status = Ok
+Destination = postgres
+db.connection_id = 89
+db.connection_string = Host=localhost;Port=51305;Database=emergency_hub_employee;Username=employee_app;Application Name=employee-api-write
+db.name = emergency_hub_employee
+db.statement = SAVEPOINT "__EFSavePoint";
+db.system = postgresql
+db.user = employee_app
+net.peer.ip = ::1
+net.peer.name = localhost
+net.peer.port = 51305
+net.transport = ip_tcp
+컨텍스트 = 4
+Source = Npgsql
+Version = 0.1.0
+TraceId = 4b1d0024000000000000000000000001
+ParentId = b25ad3b2145d2497
+리소스 = 5
+service.name = employee-api
+service.instance.id = gqjcauth
+telemetry.sdk.language = dotnet
+telemetry.sdk.name = opentelemetry
+telemetry.sdk.version = 1.19.1
+
+===== t1-s3 (t1 span 4) =====
+범위 = 15
+SpanId = 635766e315f8115e
+Name = emergency_hub_employee
+Kind = Client
+Status = Ok
+Destination = postgres
+db.connection_id = 89
+db.connection_string = Host=localhost;Port=51305;Database=emergency_hub_employee;Username=employee_app;Application Name=employee-api-write
+db.name = emergency_hub_employee
+db.statement = INSERT INTO employees (id, created_at, email, employee_status, joined_on, name, normalized_email, phone_number, updated_at) VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8) RETURNING xmin;
+db.system = postgresql
+db.user = employee_app
+net.peer.ip = ::1
+net.peer.name = localhost
+net.peer.port = 51305
+net.transport = ip_tcp
+컨텍스트 = 4
+Source = Npgsql
+Version = 0.1.0
+TraceId = 4b1d0024000000000000000000000001
+ParentId = b25ad3b2145d2497
+리소스 = 5
+service.name = employee-api
+service.instance.id = gqjcauth
+telemetry.sdk.language = dotnet
+telemetry.sdk.name = opentelemetry
+telemetry.sdk.version = 1.19.1
+
+===== t1-s4 (t1 span 5) =====
+범위 = 15
+SpanId = f8ee12f4b3664cd6
+Name = emergency_hub_employee
+Kind = Client
+Status = Ok
+Destination = postgres
+db.connection_id = 89
+db.connection_string = Host=localhost;Port=51305;Database=emergency_hub_employee;Username=employee_app;Application Name=employee-api-write
+db.name = emergency_hub_employee
+db.statement = RELEASE SAVEPOINT "__EFSavePoint";
+db.system = postgresql
+db.user = employee_app
+net.peer.ip = ::1
+net.peer.name = localhost
+net.peer.port = 51305
+net.transport = ip_tcp
+컨텍스트 = 4
+Source = Npgsql
+Version = 0.1.0
+TraceId = 4b1d0024000000000000000000000001
+ParentId = b25ad3b2145d2497
+리소스 = 5
+service.name = employee-api
+service.instance.id = gqjcauth
+telemetry.sdk.language = dotnet
+telemetry.sdk.name = opentelemetry
+telemetry.sdk.version = 1.19.1
+
+===== t2-s0 (t2 span 1) =====
+범위 = 12
+SpanId = 63b2e0798d5f1512
+Name = GET api/employee/{name}
+Kind = Server
+http.request.method = GET
+http.response.status_code = 200
+http.route = api/employee/{name}
+network.protocol.version = 1.1
+server.address = localhost
+server.port = 5180
+url.path = /api/employee/{name}
+url.scheme = http
+user_agent.original = curl/8.21.0
+컨텍스트 = 3
+Source = Microsoft.AspNetCore
+TraceId = 4b1d0024000000000000000000000002
+ParentId = 00000000000000a2
+리소스 = 5
+service.name = employee-api
+service.instance.id = gqjcauth
+telemetry.sdk.language = dotnet
+telemetry.sdk.name = opentelemetry
+telemetry.sdk.version = 1.19.1
+
+===== t2-s1 (t2 span 2) =====
+범위 = 15
+SpanId = 27f03783e8501902
+Name = emergency_hub_employee
+Kind = Client
+Status = Ok
+Destination = postgres
+db.connection_id = 90
+db.connection_string = Host=localhost;Port=51305;Database=emergency_hub_employee;Username=employee_app;Application Name=employee-api-read;Options="-c default_transaction_read_only=on"
+db.name = emergency_hub_employee
+db.statement = SELECT e.id, e.name, e.email, e.phone_number, e.joined_on FROM employees AS e WHERE e.name = @__name_0 ORDER BY e.joined_on, e.id LIMIT 1
+db.system = postgresql
+db.user = employee_app
+net.peer.ip = ::1
+net.peer.name = localhost
+net.peer.port = 51305
+net.transport = ip_tcp
+컨텍스트 = 4
+Source = Npgsql
+Version = 0.1.0
+TraceId = 4b1d0024000000000000000000000002
+ParentId = 63b2e0798d5f1512
+리소스 = 5
+service.name = employee-api
+service.instance.id = gqjcauth
+telemetry.sdk.language = dotnet
+telemetry.sdk.name = opentelemetry
+telemetry.sdk.version = 1.19.1
+
+===== t3-s0 (t3 span 1) =====
+범위 = 12
+SpanId = e95f22d380cc46e9
+Name = POST api/employee
+Kind = Server
+http.request.method = POST
+http.response.status_code = 409
+http.route = api/employee
+network.protocol.version = 1.1
+server.address = localhost
+server.port = 5180
+url.path = /api/employee
+url.scheme = http
+user_agent.original = curl/8.21.0
+컨텍스트 = 3
+Source = Microsoft.AspNetCore
+TraceId = 4b1d0024000000000000000000000003
+ParentId = 00000000000000a3
+리소스 = 5
+service.name = employee-api
+service.instance.id = gqjcauth
+telemetry.sdk.language = dotnet
+telemetry.sdk.name = opentelemetry
+telemetry.sdk.version = 1.19.1
+
+===== t3-s1 (t3 span 2) =====
+범위 = 15
+SpanId = a59d3672a2b266e1
+Name = emergency_hub_employee
+Kind = Client
+Status = Ok
+Destination = postgres
+db.connection_id = 89
+db.connection_string = Host=localhost;Port=51305;Database=emergency_hub_employee;Username=employee_app;Application Name=employee-api-write
+db.name = emergency_hub_employee
+db.statement = SELECT e.normalized_email FROM employees AS e WHERE e.normalized_email = ANY (@__normalizedEmails_0)
+db.system = postgresql
+db.user = employee_app
+net.peer.ip = ::1
+net.peer.name = localhost
+net.peer.port = 51305
+net.transport = ip_tcp
+컨텍스트 = 4
+Source = Npgsql
+Version = 0.1.0
+TraceId = 4b1d0024000000000000000000000003
+ParentId = e95f22d380cc46e9
+리소스 = 5
+service.name = employee-api
+service.instance.id = gqjcauth
+telemetry.sdk.language = dotnet
+telemetry.sdk.name = opentelemetry
+telemetry.sdk.version = 1.19.1
+
+===== 판정 grep (위 9개 span 텍스트 파일 각각) =====
+t1-s0: Password(i)=0 bl024(i)=0 010-2424=0 추적확인=0 %EC=0 2024-02-24=0
+t1-s1: Password(i)=0 bl024(i)=0 010-2424=0 추적확인=0 %EC=0 2024-02-24=0
+t1-s2: Password(i)=0 bl024(i)=0 010-2424=0 추적확인=0 %EC=0 2024-02-24=0
+t1-s3: Password(i)=0 bl024(i)=0 010-2424=0 추적확인=0 %EC=0 2024-02-24=0
+t1-s4: Password(i)=0 bl024(i)=0 010-2424=0 추적확인=0 %EC=0 2024-02-24=0
+t2-s0: Password(i)=0 bl024(i)=0 010-2424=0 추적확인=0 %EC=0 2024-02-24=0
+t2-s1: Password(i)=0 bl024(i)=0 010-2424=0 추적확인=0 %EC=0 2024-02-24=0
+t3-s0: Password(i)=0 bl024(i)=0 010-2424=0 추적확인=0 %EC=0 2024-02-24=0
+t3-s1: Password(i)=0 bl024(i)=0 010-2424=0 추적확인=0 %EC=0 2024-02-24=0

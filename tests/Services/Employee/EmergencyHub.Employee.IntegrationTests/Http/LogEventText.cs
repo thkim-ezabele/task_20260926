@@ -37,4 +37,92 @@ internal static class LogEventText
         && structure.Properties.FirstOrDefault(property => property.Name == "Id")?.Value is ScalarValue { Value: int id }
             ? id
             : null;
+
+    /// <summary>
+    /// 속성의 스칼라 값을 렌더링 전 원래 값(<see cref="object.ToString"/>, 따옴표 · 이스케이프 없음)으로 모두 펼칩니다(구조 · 목록 · 사전 안쪽 포함).
+    /// </summary>
+    /// <param name="logEvent">이벤트.</param>
+    /// <returns>값 목록.</returns>
+    public static IReadOnlyList<string> RawValues(LogEvent logEvent)
+    {
+        ArgumentNullException.ThrowIfNull(logEvent);
+
+        var values = new List<string>();
+        foreach (var property in logEvent.Properties.Values)
+        {
+            CollectRaw(property, values);
+        }
+
+        return values;
+    }
+
+    /// <summary>
+    /// Error 이상(Error · Fatal) 이벤트 중 이벤트 ID가 <paramref name="expectedEventIds"/>에 없는 것을 돌려줍니다(S06-T06 인계 메모: 테스트가 일부러 낸 로그만 제외).
+    /// </summary>
+    /// <param name="events">수집한 이벤트.</param>
+    /// <param name="expectedEventIds">테스트가 일부러 낸 로그의 이벤트 ID(단언한 뒤 제외). 이벤트 ID가 없는 이벤트는 제외되지 않습니다.</param>
+    /// <returns>판정받을 이벤트.</returns>
+    public static IReadOnlyList<LogEvent> UnexpectedErrors(this IEnumerable<LogEvent> events, params int[] expectedEventIds)
+    {
+        ArgumentNullException.ThrowIfNull(events);
+        ArgumentNullException.ThrowIfNull(expectedEventIds);
+
+        return [.. events.Where(logEvent => logEvent.Level >= LogEventLevel.Error && !(logEvent.EventId() is { } id && expectedEventIds.Contains(id)))];
+    }
+
+    /// <summary>
+    /// Error 이상(Error · Fatal) 이벤트 중 이벤트 ID와 범주가 모두 <paramref name="expected"/> · <paramref name="more"/>의 하나와 같은 것을 뺀 나머지를 돌려줍니다(BL-139).
+    /// </summary>
+    /// <remarks>
+    /// 이벤트 ID만 받는 오버로드는 다른 범주의 같은 ID(예: <c>RequestSizeLimitFilter</c> ID 1)까지 제외합니다. 새 테스트는 이 오버로드를 씁니다
+    /// (예: <c>UnexpectedErrors(ExpectedLogEvent.GlobalException)</c>).
+    /// </remarks>
+    /// <param name="events">수집한 이벤트.</param>
+    /// <param name="expected">테스트가 일부러 낸 로그(단언한 뒤 제외).</param>
+    /// <param name="more">더 제외할 로그.</param>
+    /// <returns>판정받을 이벤트.</returns>
+    public static IReadOnlyList<LogEvent> UnexpectedErrors(this IEnumerable<LogEvent> events, ExpectedLogEvent expected, params ExpectedLogEvent[] more)
+    {
+        ArgumentNullException.ThrowIfNull(events);
+        ArgumentNullException.ThrowIfNull(expected);
+        ArgumentNullException.ThrowIfNull(more);
+
+        ExpectedLogEvent[] excluded = [expected, .. more];
+        return [.. events.Where(logEvent => logEvent.Level >= LogEventLevel.Error && !excluded.Any(item => item.Matches(logEvent)))];
+    }
+
+    private static void CollectRaw(LogEventPropertyValue value, List<string> values)
+    {
+        switch (value)
+        {
+            case ScalarValue scalar:
+                values.Add(Convert.ToString(scalar.Value, CultureInfo.InvariantCulture) ?? string.Empty);
+                break;
+            case StructureValue structure:
+                foreach (var property in structure.Properties)
+                {
+                    CollectRaw(property.Value, values);
+                }
+
+                break;
+            case SequenceValue sequence:
+                foreach (var element in sequence.Elements)
+                {
+                    CollectRaw(element, values);
+                }
+
+                break;
+            case DictionaryValue dictionary:
+                foreach (var entry in dictionary.Elements)
+                {
+                    CollectRaw(entry.Key, values);
+                    CollectRaw(entry.Value, values);
+                }
+
+                break;
+            default:
+                values.Add(value.ToString());
+                break;
+        }
+    }
 }

@@ -20,7 +20,7 @@ namespace EmergencyHub.BuildingBlocks.Domain.Errors;
 /// </list>
 /// <para>
 /// "모델은 <c>record</c>, 클래스는 기본 <c>sealed</c>" 규칙의 예외로 <b>non-sealed</b> <c>record</c>입니다.
-/// 검증 실패의 필드별 상세를 담는 <see cref="ValidationError"/>가 파생합니다(ADR-0018).
+/// 검증 실패의 필드별 상세를 담는 <see cref="ValidationError"/>(ADR-0018)와 행별 충돌 상세를 담는 <see cref="ConflictError"/>(ADR-0028)가 파생합니다.
 /// 값을 받는 생성자는 <c>private protected</c>라 어셈블리 밖에서는 유형별 팩토리로만 새 값을 만듭니다.
 /// 다만 파생을 이 어셈블리로 막지는 못합니다. non-sealed <c>record</c>는 컴파일러가 만드는 복사 생성자가
 /// <c>protected</c>여야 하므로(더 좁히면 CS8878) 어셈블리 밖에서도 복사 생성자를 불러 파생할 수 있습니다.
@@ -68,6 +68,20 @@ public record Error
     /// <returns>만든 오류.</returns>
     /// <exception cref="ArgumentException">코드 또는 메시지가 규칙을 어긴 경우.</exception>
     public static Error Validation(int code, string message) => new(code, message, ErrorType.Validation);
+
+    /// <summary>요청 본문 크기 초과(<see cref="ErrorType.PayloadTooLarge"/>, 유형 자리 1) 오류를 만듭니다.</summary>
+    /// <param name="code">에러 코드.</param>
+    /// <param name="message">메시지.</param>
+    /// <returns>만든 오류.</returns>
+    /// <exception cref="ArgumentException">코드 또는 메시지가 규칙을 어긴 경우.</exception>
+    public static Error PayloadTooLarge(int code, string message) => new(code, message, ErrorType.PayloadTooLarge);
+
+    /// <summary>지원하지 않는 요청 Content-Type(<see cref="ErrorType.UnsupportedMediaType"/>, 유형 자리 1) 오류를 만듭니다.</summary>
+    /// <param name="code">에러 코드.</param>
+    /// <param name="message">메시지.</param>
+    /// <returns>만든 오류.</returns>
+    /// <exception cref="ArgumentException">코드 또는 메시지가 규칙을 어긴 경우.</exception>
+    public static Error UnsupportedMediaType(int code, string message) => new(code, message, ErrorType.UnsupportedMediaType);
 
     /// <summary>대상 없음(<see cref="ErrorType.NotFound"/>, 유형 자리 2) 오류를 만듭니다.</summary>
     /// <param name="code">에러 코드.</param>

@@ -71,6 +71,8 @@
     <PackageVersion Include="Respawn" Version="7.0.0" />
     <!-- WebApplicationFactory<Program>(HTTP 통합 테스트, S03-T07). ASP.NET Core 런타임과 같은 8.0 패치. ADR 없이 package-versions.md에 기록. -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.31" />
+    <!-- TestServer(BuildingBlocks.Api 표본 Controller의 [Consumes] 415 실측, S06-T01). Mvc.Testing 8.0.31의 전이 의존과 같은 버전. ADR 없이 package-versions.md에 기록. -->
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="8.0.31" />
     <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
   </ItemGroup>

@@ -22,6 +22,21 @@ public sealed class SerilogEventCollector : ILogEventSink
     public IReadOnlyList<LogEvent> RequestCompletions =>
         [.. _events.Where(logEvent => logEvent.MessageTemplate.Text == RequestCompletionTemplate)];
 
+    /// <summary>
+    /// 경로가 <paramref name="path"/>인 요청 완료 로그의 HTTP 상태 코드를 받은 순서로 돌려줍니다(서버 쪽 최종 상태, S06-T06).
+    /// </summary>
+    /// <remarks>
+    /// Kestrel이 본문 한도 초과로 응답을 쓴 뒤 연결을 닫으면 클라이언트는 <see cref="HttpRequestException"/>만 받을 수 있습니다. 그때도 서버가 쓴 상태는 이 목록에 남습니다.
+    /// </remarks>
+    /// <param name="path">요청 경로(쿼리 문자열 없음, 대소문자 구분).</param>
+    /// <returns>상태 코드 목록.</returns>
+    public IReadOnlyList<int> RequestStatusCodes(string path) =>
+        [.. RequestCompletions
+            .Where(logEvent => logEvent.Properties.TryGetValue("RequestPath", out var value) && value is ScalarValue { Value: string requestPath } && requestPath == path)
+            .Select(logEvent => logEvent.Properties["StatusCode"] is ScalarValue { Value: int statusCode }
+                ? statusCode
+                : throw new InvalidOperationException("요청 완료 로그의 StatusCode가 정수가 아닙니다."))];
+
     /// <inheritdoc/>
     public void Emit(LogEvent logEvent)
     {

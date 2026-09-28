@@ -77,7 +77,7 @@ notes: ["분할 근거, 순서 제약"]
 
 ### `mode: sprint-plan-integrate`
 
-dba · developer · reviewer · tester의 스프린트 계획 리뷰를 통합해 **계획 수정안**을 냅니다. 완료 조건을 고칠 때도 "완료 조건 작성" 규칙(5~7문장, 세부 단언은 `handoff`)을 지킵니다. 리뷰 지적을 완료 조건에 모두 붙이지 말고, 단계 입력으로 넘길 것은 따로 적습니다.
+developer의 스프린트 계획 리뷰(2026-09-28부터 계획 리뷰는 developer 1명)를 받아 **계획 수정안**을 냅니다. 꼭 필요한 변경만 내고, 작업 분할 · 추가는 막히는 경우에만 제안합니다. 완료 조건을 고칠 때도 "완료 조건 작성" 규칙(5~7문장, 세부 단언은 `handoff`)을 지킵니다. 리뷰 지적을 완료 조건에 모두 붙이지 말고, 단계 입력으로 넘길 것은 따로 적습니다.
 
 ```yaml
 summary: "..."
@@ -94,8 +94,7 @@ risks: [{ severity: high|medium|low, item: "..." }]
 - 완료 조건과 FR 충족 여부
 - 반려 이력 분석: 어느 단계에서 왜 반려됐는지, 원인 유형(컨벤션 / 누락 / 설계 / 버그)
 - `new` 상태의 백로그 / 기술부채 전부에 대해: 중복 병합, 기존 항목 갱신, 우선순위(상 / 중 / 하) 또는 영향도, 처리(`open` / `planned:SNN` / `dropped`)와 이유, 기술부채 상환 계획
-- 스프린트 회고 초안(잘된 점 / 문제 / 다음에 바꿀 것)
-- **다음 스프린트 전에 반영할 회고 개선**(PRD-001 회고: S03 회고 개선을 미뤄 S04에서 재발): 이번 스프린트의 반려 원인 중 다음 스프린트 작업에서 재발할 수 있는 것을 골라, 다음 스프린트 계획 리뷰 전에 반영할 대상(작업 인계 메모, 완료 조건, 기준 문서)과 함께 `apply_before_next`로 반환합니다. 스킬 · 에이전트 파일 변경은 토픽 `/retro`에서 하므로 여기에는 넣지 않습니다.
+- 스프린트 회고는 하지 않습니다(2026-09-28 사용자 지시). 회고는 PRD의 모든 스프린트가 끝난 뒤 `/retro`의 `retro-integrate`에서만 합니다. 다음 스프린트 작업에 꼭 넘길 것은 `handoff`로만 반환합니다.
 
 ```yaml
 result:
@@ -105,8 +104,7 @@ result:
 triage:
   backlog: [{ id: BL-001, priority: 상|중|하, status: "open|planned:S02|dropped", reason: "...", merge_into: null }]
   tech_debt: [{ id: TD-001, impact: 상|중|하, status: "open|planned:S02", repayment: "...", merge_into: null }]
-retro_draft: { good: ["..."], problems: ["..."], next: ["..."] }
-apply_before_next: [{ cause: "S03-T04 반려: ...", target: "S04-T02 인계 메모 | 완료 조건 | 기준 문서 경로", change: "..." }]
+handoff: [{ to: "SNN-TNN", note: "..." }]   # 다음 스프린트 작업에 넘길 것만
 dod: [{ item: "...", ok: true|false, note: "..." }]
 ```
 

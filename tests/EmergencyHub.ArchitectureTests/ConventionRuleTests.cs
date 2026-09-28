@@ -2,6 +2,7 @@ namespace EmergencyHub.ArchitectureTests;
 
 // 컨벤션 · 주입 규칙을 제품 어셈블리(ArchitectureAssemblies)에 적용한다. 규칙마다 테스트 1개, 대상 형식 1개 이상 단언.
 // 대상이 서비스 코드에만 있는 규칙(TargetsOnlyInServices)은 서비스 어셈블리가 목록에 없는 동안(S03 전) 건너뜀으로 표시된다.
+// 대상 대기 목록(PendingTargetRules, S05-T04)의 규칙은 대상 0개면 해제 작업 ID를 적어 건너뛰고, 대상이 생기면 실패한다(S06-T05부터 목록은 비어 있음).
 // 규칙 원본은 ConventionRules · InjectionRules의 Source. 위반 예시는 ConventionRuleSampleTests.
 [Trait("FR", "PRD-001/FR-09")]
 [Trait("NFR", "PRD-001/NFR-02")]
@@ -47,7 +48,7 @@ public sealed class ConventionRuleTests
     public void ImplementationsAreInternalSealed_ProductAssemblies_Holds() =>
         ConventionRules.ImplementationsAreInternalSealed.CheckProduct().ShouldPassOnProduct();
 
-    // coding-conventions Validator 규칙, ADR-0018 — 대상은 서비스 코드(S03)
+    // coding-conventions Validator 규칙, ADR-0018 — 대상은 서비스 코드(RegisterEmployeesCommandValidator). 대상 대기는 S06-T04에서 해제
     [Fact]
     public void ValidatorsDeriveFromRequestValidator_ProductAssemblies_Holds() =>
         ConventionRules.ValidatorsDeriveFromRequestValidator.CheckProduct().ShouldPassOnProduct();
@@ -72,7 +73,7 @@ public sealed class ConventionRuleTests
     public void HandlersDoNotDependOnSender_ProductAssemblies_Holds() =>
         InjectionRules.HandlersDoNotDependOnSender.CheckProduct().ShouldPassOnProduct();
 
-    // ADR-0018(Validator DB 접근 금지), BL-029 — 대상은 서비스 코드(S03)
+    // ADR-0018(Validator DB 접근 금지), BL-029 — 대상은 서비스 코드(RegisterEmployeesCommandValidator). 대상 대기는 S06-T04에서 해제
     [Fact]
     public void ValidatorsDoNotInjectRepositoriesOrServices_ProductAssemblies_Holds() =>
         InjectionRules.ValidatorsDoNotInjectRepositoriesOrServices.CheckProduct().ShouldPassOnProduct();

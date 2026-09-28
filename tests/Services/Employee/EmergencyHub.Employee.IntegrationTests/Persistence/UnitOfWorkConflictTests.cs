@@ -78,7 +78,8 @@ public sealed class UnitOfWorkConflictTests(EmployeeDatabaseFixture database) : 
     [InlineData("dup@example.com", "  DUP@Example.COM ")]
     public async Task CommitAsync_SameNormalizedEmailWithoutPreCheck_Returns23001FromEmailUniqueIndex(string storedEmail, string newEmail)
     {
-        // 대소문자 · 앞뒤 공백 차이는 도메인이 정규화하므로 DB 유니크 인덱스(일반 인덱스, lower() 식 아님)에서 같은 값으로 걸린다.
+        // 대소문자 · 앞뒤 공백 차이는 Email VO가 normalized_email로 정규화하므로 DB 유니크 인덱스(일반 인덱스, lower() 식 아님)에서 같은 값으로 걸린다.
+        // S05-T04: 인덱스는 ux_employees_normalized_email(normalized_email). DB 수준 이전 확인은 S05-T06.
         await using var services = Database.CreateServices();
         (await EmployeeCommits.AddAndCommitAsync(services, new EmployeeBuilder().WithEmail(storedEmail).Build(), CancellationToken)).IsSuccess.Should().BeTrue();
         services.GetFakeLogCollector().Clear();
@@ -88,11 +89,30 @@ public sealed class UnitOfWorkConflictTests(EmployeeDatabaseFixture database) : 
         result.Error.Should().BeSameAs(EmployeeErrors.DuplicateEmail);
         var log = UnitOfWorkLogs(services).Should().ContainSingle().Subject;
         (log.Id.Id, log.Level).Should().Be((201, LogLevel.Debug));
-        log.GetStructuredStateValue("ConstraintName").Should().Be(EmployeeDbNames.EmailUniqueIndex.Value);
+        log.GetStructuredStateValue("ConstraintName").Should().Be(EmployeeDbNames.NormalizedEmailUniqueIndex.Value);
         log.GetStructuredStateValue("SqlState").Should().Be("23505");
         log.GetStructuredStateValue("ErrorCode").Should().Be("23001");
         await using var connection = await Database.OpenWriteConnectionAsync(CancellationToken);
         (await connection.ScalarAsync<long>("SELECT count(*) FROM employees", CancellationToken)).Should().Be(1);
+    }
+
+    [Fact]
+    [Trait("FR", "PRD-002/FR-06")]
+    public async Task CommitAsync_EmailDifferingOnlyInCase_Returns23001AndKeepsFirstRowInputNotation()
+    {
+        // S05-T06 완료 조건 ③(ADR-0027): 대소문자만 다른 두 이메일은 normalized_email이 같아 23505 → 23001(Conflict)이다.
+        // 먼저 저장한 행은 입력 표기(email)를 그대로 보존하고, 정규화 값만 소문자다. 나중 입력의 표기는 저장되지 않는다.
+        await using var services = Database.CreateServices();
+        (await EmployeeCommits.AddAndCommitAsync(services, new EmployeeBuilder().WithEmail("Hong.GilDong@Example.COM").Build(), CancellationToken)).IsSuccess.Should().BeTrue();
+
+        var result = await EmployeeCommits.AddAndCommitAsync(services, new EmployeeBuilder().WithEmail("hong.gildong@example.com").Build(), CancellationToken);
+
+        result.Error.Should().BeSameAs(EmployeeErrors.DuplicateEmail);
+        result.Error.Type.Should().Be(ErrorType.Conflict);
+        await using var connection = await Database.OpenWriteConnectionAsync(CancellationToken);
+        (await connection.ScalarAsync<long>("SELECT count(*) FROM employees", CancellationToken)).Should().Be(1);
+        (await connection.ScalarAsync<string>("SELECT email || '|' || normalized_email FROM employees", CancellationToken))
+            .Should().Be("Hong.GilDong@Example.COM|hong.gildong@example.com");
     }
 
     [Fact]

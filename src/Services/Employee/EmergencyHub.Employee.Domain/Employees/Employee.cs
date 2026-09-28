@@ -8,63 +8,84 @@ namespace EmergencyHub.Employee.Domain.Employees;
 /// </summary>
 /// <remarks>
 /// <para>
-/// 불변식(이름 1 ~ 100자, 이메일 형식 · 1 ~ 254자, 정의된 상태, 빈 ID 아님)을 어기면 예외를 던집니다(S03 계획 리뷰 결정).
-/// 입력 오류는 Application Validator가 먼저 <c>Result</c>(21001 ~ 21006, 1002)로 거르므로, 여기 예외는 프로그래밍 오류입니다.
-/// 길이는 정규화 뒤 <see cref="string.Length"/>(UTF-16 코드 단위) 기준입니다.
+/// <see cref="Register"/>는 <c>Create</c>로 검증된 Value Object만 받습니다(PRD-002 FR-01, ADR-0026 8절). 필드 규칙 위반은 VO <c>Create</c>의
+/// Result(21003 ~ 21005, 21007 ~ 21017)가 판정하므로 여기서 다시 검사하지 않고, 빈 ID · <see langword="null"/> VO 같은 불변식 위반만
+/// 예외로 막습니다(coding-conventions "실패 처리 경계").
 /// </para>
 /// <para>
-/// 감사 컬럼(<c>created_at</c> · <c>updated_at</c>)과 동시성 토큰(<c>xmin</c>)은 Infrastructure의 shadow property라 여기 없습니다.
+/// 상태는 등록 시 <see cref="EmployeeStatus.Active"/>(1)로 고정하고 입력으로 받지 않습니다(PRD-002 Q13, API 비노출).
+/// <see cref="NormalizedEmail"/>은 <see cref="Email.NormalizedEmail"/> 값을 그대로 가지며 유일성 판정 · 유니크 인덱스 대상입니다(ADR-0027).
+/// </para>
+/// <para>
+/// 공개 속성의 선언 순서가 <c>employees</c> 열 순서입니다(database.md 새 스키마 명세). 감사 컬럼(<c>created_at</c> · <c>updated_at</c>)과
+/// 동시성 토큰(<c>xmin</c>)은 Infrastructure의 shadow property라 여기 없습니다.
 /// </para>
 /// </remarks>
 public sealed class Employee : AggregateRoot<EmployeeId>
 {
-    /// <summary>표시 이름 최대 길이(DB <c>varchar(100)</c>).</summary>
-    public const int DisplayNameMaxLength = 100;
-
-    /// <summary>이메일 최대 길이(DB <c>varchar(254)</c>).</summary>
-    public const int EmailMaxLength = 254;
-
-    private Employee(EmployeeId id, string displayName, string email, EmployeeStatus employeeStatus)
+    private Employee(EmployeeId id, Name name, Email email, PhoneNumber phoneNumber, JoinedOn joinedOn)
         : base(id)
     {
-        DisplayName = displayName;
+        Name = name;
         Email = email;
-        EmployeeStatus = employeeStatus;
+        NormalizedEmail = email.NormalizedEmail;
+        PhoneNumber = phoneNumber;
+        JoinedOn = joinedOn;
+        EmployeeStatus = EmployeeStatus.Active;
     }
 
-    // EF Core 구체화 전용. 도메인 코드는 Register를 쓴다.
+    // EF Core 구체화 전용. 도메인 코드는 Register를 쓴다. 값은 EF가 private setter로 채운다.
     private Employee()
     {
+        Name = null!;
+        Email = null!;
+        NormalizedEmail = null!;
+        PhoneNumber = null!;
+        JoinedOn = null!;
     }
 
-    /// <summary>표시 이름(앞뒤 공백 제거한 값)입니다.</summary>
-    public string DisplayName { get; private set; } = string.Empty;
+    /// <summary>이름(앞뒤 공백 제거 + NFC, <see cref="Employees.Name.Create"/>)입니다.</summary>
+    public Name Name { get; private set; }
 
-    /// <summary>이메일(앞뒤 공백 제거 + 문화권 무관 소문자, <see cref="EmployeeEmail.Normalize"/>)입니다.</summary>
-    public string Email { get; private set; } = string.Empty;
+    /// <summary>이메일(입력 표기는 <see cref="Email.Value"/>)입니다.</summary>
+    public Email Email { get; private set; }
+
+    /// <summary>정규화한 이메일(<see cref="Email.NormalizedEmail"/>, 문화권 무관 소문자)입니다. 이메일 유일성은 이 값으로 판정합니다.</summary>
+    public string NormalizedEmail { get; private set; }
+
+    /// <summary>전화번호(입력 그대로)입니다.</summary>
+    public PhoneNumber PhoneNumber { get; private set; }
+
+    /// <summary>입사일입니다.</summary>
+    public JoinedOn JoinedOn { get; private set; }
 
     /// <summary>직원 상태입니다. DB 컬럼 이름이 <c>employee_status</c>가 되도록 속성 이름을 형식 이름과 같게 둡니다.</summary>
     public EmployeeStatus EmployeeStatus { get; private set; }
 
     /// <summary>
-    /// 직원을 등록합니다. 이름과 이메일을 정규화하고 <see cref="EmployeeRegisteredDomainEvent"/>를 수집합니다.
+    /// 직원을 등록합니다. 상태는 <see cref="EmployeeStatus.Active"/>로 고정하고 <see cref="EmployeeRegisteredDomainEvent"/>를 수집합니다.
     /// </summary>
     /// <param name="id">직원 ID. Handler가 <c>IIdGenerator</c>로 만듭니다.</param>
-    /// <param name="displayName">표시 이름. 앞뒤 공백을 지운 뒤 1 ~ 100자여야 합니다.</param>
-    /// <param name="email">이메일. 정규화한 뒤 형식이 맞고 1 ~ 254자여야 합니다.</param>
-    /// <param name="status">직원 상태. 정의된 값이어야 하고 0(예약)은 안 됩니다.</param>
+    /// <param name="name">검증된 이름.</param>
+    /// <param name="email">검증된 이메일.</param>
+    /// <param name="phoneNumber">검증된 전화번호.</param>
+    /// <param name="joinedOn">검증된 입사일.</param>
     /// <returns>등록한 직원.</returns>
-    /// <exception cref="ArgumentException">ID가 비었거나, 이름 · 이메일이 비었거나 형식 · 길이 규칙을 어긴 경우.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="displayName"/> 또는 <paramref name="email"/>이 <see langword="null"/>인 경우.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="status"/>가 예약 값이거나 정의되지 않은 경우.</exception>
-    public static Employee Register(EmployeeId id, string displayName, string email, EmployeeStatus status)
+    /// <exception cref="ArgumentException">ID가 빈 값인 경우.</exception>
+    /// <exception cref="ArgumentNullException">Value Object 중 하나가 <see langword="null"/>인 경우.</exception>
+    public static Employee Register(EmployeeId id, Name name, Email email, PhoneNumber phoneNumber, JoinedOn joinedOn)
     {
         if (id.Value == Guid.Empty)
         {
             throw new ArgumentException("직원 ID가 비어 있습니다.", nameof(id));
         }
 
-        var employee = new Employee(id, NormalizeDisplayName(displayName), NormalizeEmail(email), EnsureDefined(status));
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(email);
+        ArgumentNullException.ThrowIfNull(phoneNumber);
+        ArgumentNullException.ThrowIfNull(joinedOn);
+
+        var employee = new Employee(id, name, email, phoneNumber, joinedOn);
         employee.Raise(new EmployeeRegisteredDomainEvent(id));
 
         return employee;
@@ -74,33 +95,4 @@ public sealed class Employee : AggregateRoot<EmployeeId>
     /// 직원을 비활성으로 바꿉니다. 이미 비활성이면 아무것도 바꾸지 않습니다(멱등).
     /// </summary>
     public void Deactivate() => EmployeeStatus = EmployeeStatus.Inactive;
-
-    private static string NormalizeDisplayName(string displayName)
-    {
-        ArgumentNullException.ThrowIfNull(displayName);
-
-        var trimmed = displayName.Trim();
-        if (trimmed.Length is 0 or > DisplayNameMaxLength)
-        {
-            throw new ArgumentException($"표시 이름은 앞뒤 공백을 지운 뒤 1 ~ {DisplayNameMaxLength}자여야 합니다.", nameof(displayName));
-        }
-
-        return trimmed;
-    }
-
-    private static string NormalizeEmail(string email)
-    {
-        var normalized = EmployeeEmail.Normalize(email);
-        if (normalized.Length > EmailMaxLength || !EmployeeEmail.IsWellFormed(normalized))
-        {
-            throw new ArgumentException($"이메일은 형식이 맞고 앞뒤 공백을 지운 뒤 1 ~ {EmailMaxLength}자여야 합니다.", nameof(email));
-        }
-
-        return normalized;
-    }
-
-    private static EmployeeStatus EnsureDefined(EmployeeStatus status) =>
-        status != EmployeeStatus.Unknown && Enum.IsDefined(status)
-            ? status
-            : throw new ArgumentOutOfRangeException(nameof(status), status, "직원 상태는 정의된 값이어야 합니다(0은 예약 값).");
 }

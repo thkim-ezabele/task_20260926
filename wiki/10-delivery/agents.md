@@ -79,29 +79,27 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    P{{"① 계획 리뷰<br/>dba ∥ developer ∥ reviewer ∥ tester"}} --> PO[orchestrator 통합]
+    P["① 계획 리뷰<br/>developer"] --> PO[orchestrator 통합]
     PO -->|사용자 승인| T
     subgraph T["② 작업마다 (SNN-TNN)"]
         direction LR
-        A[dba] --> B[developer] --> C[reviewer] --> E[tester]
+        A["dba<br/>(DB 작업만)"] --> B[developer] --> V{{"검증<br/>reviewer(코드 리뷰) ∥ tester(실행 검증)"}}
         B -. 반려 .-> A
-        C -. 반려 .-> B
-        C -. 반려 .-> A
-        E -. 반려 .-> B
-        E -. 반려 .-> A
+        V -. 반려 .-> B
+        V -. 반려 .-> A
     end
     T --> O[③ 결과 리뷰<br/>orchestrator]
     O --> BL[④ 백로그 / 기술부채 정리<br/>orchestrator]
-    BL -->|사용자 승인| RE[⑤ 회고 초안, push, 태그 sprint/SNN]
-    RE -->|마지막 스프린트| RT["/retro 안내"]
+    BL -->|사용자 승인| RE[⑤ push]
+    RE -->|마지막 스프린트| CI["CI 확인 · 태그 sprint/SNN 일괄 → /retro 안내"]
 ```
 
 0. **사전 점검**: 브랜치 · 스프린트 상태 · 작업 트리와 함께 **실행 환경**(Docker 실행, `global.json`을 만족하는 SDK, `gh` 인증)을 확인한다. 부족하면 사용자에게 알리고 진행 여부를 묻는다. 환경 문제로 미루는 검증은 진행 기록에 남긴다.
-1. **계획 리뷰**: 네 에이전트가 병렬로 계획을 리뷰하고 orchestrator가 통합해 계획 수정안을 낸다. 사용자 승인 후 스프린트를 `active`로 바꾼다.
-2. **작업 파이프라인**: 작업마다 dba → developer → reviewer → tester 순서로 진행한다. 각 단계는 [진입 점검](#단계-인계-계약)을 먼저 하고, 끝나면 **로컬 커밋**한다([커밋 규칙](#커밋-규칙)). 스프린트 문서의 작업별 파이프라인 표에서 dba 열이 "해당 없음"인 작업은 **dba를 호출하지 않고** 진행 기록에 "해당 없음" 한 줄만 남긴다(그 줄은 developer 단계 커밋에 포함). 테스트 작성 범위는 [테스트 범위](#테스트-범위)를 따른다. 문서 · ADR 작업은 [문서 작업과 ADR 확인](#문서-작업과-adr-확인)을 따른다.
+1. **계획 리뷰**: developer가 계획을 리뷰하고 orchestrator가 통합해 계획 수정안을 낸다(PRD 단계에서 병렬 리뷰를 했으므로 스프린트에서는 1명, 2026-09-28 사용자 결정). 사용자 승인 후 스프린트를 `active`로 바꾼다.
+2. **작업 파이프라인**: 작업마다 dba → developer → 검증(reviewer ∥ tester 병렬) 순서로 진행한다. reviewer는 **코드 리뷰만**(빌드 · 테스트 실행 없음), tester는 **실행 검증**(build · format · 전체 test · check-docs를 작업당 1회, 빈 곳 테스트 보강, 사실 재실측)을 맡는다. dba는 스키마 · 매핑 · 마이그레이션 · SQL · Repository 쿼리를 바꾸는 작업에만 호출한다. 진행 기록은 한 행 200자 이내, 대조표는 스프린트 문서에 옮기지 않는다. 각 단계는 [진입 점검](#단계-인계-계약)을 먼저 하고, 끝나면 **로컬 커밋**한다([커밋 규칙](#커밋-규칙)). 스프린트 문서의 작업별 파이프라인 표에서 dba 열이 "해당 없음"인 작업은 **dba를 호출하지 않고** 진행 기록에 "해당 없음" 한 줄만 남긴다(그 줄은 developer 단계 커밋에 포함). 테스트 작성 범위는 [테스트 범위](#테스트-범위)를 따른다. 문서 · ADR 작업은 [문서 작업과 ADR 확인](#문서-작업과-adr-확인)을 따른다.
 3. **결과 리뷰** (orchestrator): 계획 대비 실제(완료 · 이관 · 추가 작업), 완료 조건과 FR 충족, 반려 이력 분석
 4. **백로그 / 기술부채 정리** (orchestrator): 스프린트 동안 `new`로 쌓인 항목의 중복 병합, 기존 항목 갱신, 우선순위, 다음 스프린트 편입(`planned:SNN`), 상환 계획. 사용자 승인 후 반영하며, 끝나면 `new` 항목이 남지 않는다.
-5. **마무리**: 스프린트 문서의 회고 초안, DoD 점검, frontmatter(`status: done`, `finished`, `adrs`) 갱신, 정리 커밋, **push → 토픽 PR의 CI 통과 확인 → DoD 결과(CI 실행 · 소요 시간) 기록 커밋 · push → 태그 `sprint/SNN`**. CI가 실패하면 원인 작업을 재작업하고 통과할 때까지 태그를 붙이지 않는다. PRD의 마지막 스프린트면 `/retro PRD-NNN` 실행을 안내한다.
+5. **마무리**: DoD 점검(증빙 대응표 전수 대조는 여기서 1회), frontmatter(`status: done`, `finished`, `adrs`) 갱신, 정리 커밋, **push**. 스프린트 회고는 하지 않는다(회고는 `/retro`에서만). CI 대기와 태그는 스프린트마다 하지 않고, **PRD의 마지막 스프린트 push 뒤 한 번에** 토픽 PR CI 통과 확인 → 스프린트별 DoD CI 기록 → 스프린트별 종료 커밋에 `sprint/SNN` 태그를 붙인다(2026-09-28 사용자 지시). CI가 실패하면 원인 작업을 재작업하고 통과할 때까지 태그를 붙이지 않는다. 그다음 `/retro PRD-NNN` 실행을 안내한다.
 
 ## `/retro PRD-NNN`: 토픽 회고
 
@@ -158,8 +156,8 @@ handoff:                          # 같은 스프린트 안에서 반영할 메�
 | 진입 단계 | 진입 점검 (실패하면 반려) | 기준 문서 |
 |---|---|---|
 | **developer** (← dba) | 마이그레이션이 있고 적용되는가, 매핑이 도메인 모델과 맞는가, DB 명명 규칙을 지켰는가 | [데이터베이스](../04-development/database.md) |
-| **reviewer** (← developer) | 빌드 성공, 단위 테스트(성공 / 실패 / 엣지)가 있고 통과, 아키텍처 테스트 통과, 코딩 컨벤션(모델 `record`, Repository는 람다 쿼리만, DI 마커 상속, CQRS 읽기 / 쓰기 분리), 로그 규칙(메시지 템플릿, 개인정보 금지)과 `dotnet format`, 완료 조건 대비 누락 없음 | [코딩 컨벤션](../04-development/coding-conventions.md), [Clean Architecture](../03-architecture/clean-architecture.md), [로깅](../04-development/logging-observability.md) |
-| **tester** (← reviewer) | reviewer PASS, 인수 조건을 테스트할 수 있는 구현인가. 테스트 실패는 원인에 따라 developer나 dba로 반려 | [테스트 전략](../04-development/testing-strategy.md) |
+| **reviewer** (← developer, 코드 읽기만) | 단위 테스트(성공 / 실패 / 엣지)가 있는가, 코딩 컨벤션(모델 `record`, Repository는 람다 쿼리만, DI 마커 상속, CQRS 읽기 / 쓰기 분리), 로그 규칙(메시지 템플릿, 개인정보 금지)과 `dotnet format`, 완료 조건 대비 누락 없음 | [코딩 컨벤션](../04-development/coding-conventions.md), [Clean Architecture](../03-architecture/clean-architecture.md), [로깅](../04-development/logging-observability.md) |
+| **tester** (← developer, reviewer와 병렬) | 인수 조건을 테스트할 수 있는 구현인가, 빌드(경고 = 오류) · format · 전체 테스트(아키텍처 포함) 통과. 실패는 원인에 따라 developer나 dba로 반려 | [테스트 전략](../04-development/testing-strategy.md) |
 
 ## 인계 메모
 
@@ -187,7 +185,7 @@ developer와 tester가 테스트를 어디까지 쓸지 정한다(S02 회고, �
 | **기반 · 셋팅** (BuildingBlocks, DI 등록, 공통 규칙, 빌드 · CI 설정) | 완료 조건 **항목마다** 성공 / 실패 / 엣지를 **최소 1개씩**. 그 밖의 엣지는 tester가 판단 | 완료 조건 대조에서 빈 곳만 보강 |
 
 - tester는 **완료 조건 · FR 인수 조건과 대조해 빈 곳이 있을 때만** 테스트를 추가한다. developer 테스트와 같은 시나리오를 다른 조립으로 다시 확인하는 테스트는 만들지 않는다.
-- tester가 "빈 곳 없음"(추가 0)으로 판정하면 근거로 **대조표**를 반환하고 스킬이 진행 기록에 남긴다. 완료 조건 항목마다 성공 / 실패 / 엣지 테스트 이름을 적고, 칸이 비면 그 이유를 적는다. 대조표가 없으면 "빈 곳 없음"으로 인정하지 않는다(S03 회고).
+- tester가 "빈 곳 없음"(추가 0)으로 판정하면 근거로 **대조표**를 반환한다(스킬은 스프린트 문서에 옮기지 않고 진행 기록에 항목 수만 적는다). 완료 조건 항목마다 성공 / 실패 / 엣지 테스트 이름을 적고, 칸이 비면 그 이유를 적는다. 대조표가 없으면 "빈 곳 없음"으로 인정하지 않는다(S03 회고).
 
   | 완료 조건 항목 | 성공 | 실패 | 엣지 |
   |---|---|---|---|
@@ -197,7 +195,7 @@ developer와 tester가 테스트를 어디까지 쓸지 정한다(S02 회고, �
 
 ## 회귀 규칙
 
-- 반려되면 **반려된 단계부터 뒤 단계를 모두 다시** 거친다. 예: tester → dba 반려면 dba → developer → reviewer → tester.
+- 반려되면 **반려된 단계부터 뒤 단계를 모두 다시** 거친다. 예: 검증 → dba 반려면 dba → developer → 검증(reviewer ∥ tester).
 - 재작업은 **새 커밋**으로 쌓는다(reset 금지).
 - 작업 하나에서 반려가 **총 3회**에 이르면 멈추고 사용자에게 보고한다(BLOCKED).
 - 반려 이력(단계, 되돌린 곳, 사유)은 스프린트 문서의 "진행 기록"에 남긴다. 사유에는 [반려 분류](#반려-분류)를 하나 붙인다.
@@ -235,7 +233,7 @@ flowchart LR
 - **reviewer · tester**는 커밋된 `accepted` 파일만 판정한다.
 - **반려**: 형식(템플릿, frontmatter, 링크, 오탈자) 반려는 사용자에게 다시 묻지 않고 developer 2차에서 새 커밋으로 고친다. 결정 내용이 바뀌는 반려는 developer 1차로 돌아가 다시 확인받는다. 둘 다 반려 3회 한도에 포함한다.
 - push 전 토픽 브랜치 안의 수정은 ADR 불변 규칙 위반으로 보지 않는다. 불변 규칙은 push된 `accepted` ADR부터 적용한다.
-- **단계별 판정**: dba는 DB 관련 내용이 있을 때만 검토한다(없으면 "해당 없음" PASS). developer는 TDD · 빌드 전제를 적용하지 않는다. reviewer는 코드 점검표 대신 스프린트 파이프라인 표의 reviewer 열과 [문서 점검표](#문서-점검표)(D1~D5)로 판정하고, 반려하면 [반려 분류](#반려-분류)의 문서 분류를 붙인다. tester는 테스트 코드 대신 명령 기반 점검표로 검증하고 명령과 출력을 남긴다.
+- **단계별 판정**: dba는 DB 관련 내용이 있을 때만 호출한다(없으면 호출 생략). developer는 TDD · 빌드 전제를 적용하지 않는다. reviewer는 코드 점검표 대신 스프린트 파이프라인 표의 reviewer 열과 [문서 점검표](#문서-점검표)(D2 · D4 · D5, D1 · D3은 tester)로 판정하고, 반려하면 [반려 분류](#반려-분류)의 문서 분류를 붙인다. tester는 테스트 코드 대신 명령 기반 점검표로 검증하고 명령과 출력을 남긴다.
 - ADR과 draft 기준 문서가 충돌하면 ADR을 따르고, 같은 스프린트 안에서 기준 문서를 고친다.
 
 ### 문서 점검표
@@ -265,13 +263,13 @@ flowchart LR
 
 <본문>
 
-Stage: dba | developer | reviewer | tester
+Stage: dba | developer | reviewer, tester
 ```
 
-- 단계마다 커밋한다. 다만 **reviewer PASS는 따로 커밋하지 않고** 진행 기록에 적어 두었다가 tester 단계 커밋에 함께 넣는다. reviewer REJECT · BLOCKED는 바로 커밋한다. 작업 하나의 커밋은 보통 developer · tester · 완료 처리 3개가 된다(dba가 파일을 바꾼 작업은 dba 커밋 추가).
+- 단계마다 커밋한다. 검증 단계(reviewer ∥ tester)는 tester 변경과 두 진행 기록을 **한 커밋**으로 남기고, 작업 완료 처리도 함께 넣을 수 있다. 반려 · BLOCKED는 바로 커밋한다. 작업 하나의 커밋은 보통 developer · 검증 2개가 된다(dba가 파일을 바꾼 작업은 dba 커밋 추가).
 - **커밋 타입**: 제품 파일(코드 · 설정 · 기준 문서 · ADR)이 바뀐 단계는 에이전트의 `commit_message`(`feat` · `fix` · `test` · `build` · `ci` · `docs(<scope>)` 등)를 쓴다. 판정 · 기록만 남는 단계(스프린트 문서 · 백로그 · 기술부채만 바뀜)는 에이전트와 관계없이 `docs(sprint): SNN-TNN <단계> 판정 (SNN-TNN)`으로 통일한다.
 - 문서를 바꾼 단계는 커밋 전에 `node scripts/check-docs.js`로 결함이 늘지 않았는지 확인한다.
-- push는 스프린트 종료 때 한 번 한다.
+- push는 스프린트 종료 때 한 번 한다. CI 확인 · 태그는 PRD 마지막 스프린트 뒤 일괄로 한다.
 
 ---
 
@@ -286,3 +284,4 @@ Stage: dba | developer | reviewer | tester
 | 2026-09-27 | - | S01 회고 반영: 사전 환경 점검, `handoff`(같은 스프린트 인계 메모는 백로그 아님), 커밋 타입 규칙, 종료 frontmatter 갱신, CI 통과 후 태그 |
 | 2026-09-27 | - | S02 회고 반영: dba "해당 없음" 호출 생략, reviewer PASS 커밋을 tester 커밋에 병합, 완료 조건 작성 규칙(5~7문장), 테스트 범위(기반 · 셋팅은 항목당 최소 1개, tester는 빈 곳만), 완료 조건 항목 임의 이관 금지 |
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #2 · 4 · 5 · 12 · 17 반영: 문서 점검표 D1~D5 · 반려 분류(코드 4종 · 문서 4종) 원본, 인계 메모(알려진 잡음 · 제외 기준, 틀 기준은 기록용, "선택" 제안은 BL), ADR 전제와 기준 문서(실측 뒤 확정, ADR 대조 항목, 같은 작업에서 기준 문서 수정), tester "빈 곳 없음" 대조표 |
+| 2026-09-28 | - | 스프린트 속도 튜닝(사용자 결정, S05 약 6.5시간): 계획 리뷰 developer 1명 + orchestrator, 검증 단계 reviewer(코드 리뷰만) ∥ tester(실행 검증 작업당 1회), dba는 DB 작업만, 진행 기록 한 행 200자 · 대조표 문서 미기록, 대응표 전수 대조는 종료 때 1회, 스프린트 회고 폐지(`/retro`만), CI 확인 · 태그는 PRD 마지막 스프린트 뒤 일괄 |

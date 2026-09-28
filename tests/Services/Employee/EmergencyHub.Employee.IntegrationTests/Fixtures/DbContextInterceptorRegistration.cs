@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EmergencyHub.Employee.IntegrationTests.Fixtures;
 
 /// <summary>
-/// 운영 등록이 만든 쓰기 DbContext 옵션에 테스트 인터셉터를 덧붙입니다(testing-strategy.md "장애 주입").
+/// 운영 등록이 만든 쓰기 · 읽기 DbContext 옵션에 테스트 인터셉터를 덧붙입니다(testing-strategy.md "장애 주입").
 /// </summary>
 /// <remarks>
 /// EF Core 8에는 <c>ConfigureDbContext</c>가 없고, <c>UseNpgsql</c>을 다시 부르면 실행 전략 설정 한 곳 규칙(BL-073)이 깨집니다.
@@ -20,22 +20,35 @@ public static class DbContextInterceptorRegistration
     /// <param name="interceptors">덧붙일 인터셉터(등록 순서대로 실행).</param>
     /// <returns>같은 <paramref name="services"/>.</returns>
     /// <exception cref="InvalidOperationException">쓰기 DbContext 옵션이 팩터리로 한 번 등록되어 있지 않은 경우.</exception>
-    public static IServiceCollection AddWriteDbContextInterceptors(this IServiceCollection services, params IInterceptor[] interceptors)
+    public static IServiceCollection AddWriteDbContextInterceptors(this IServiceCollection services, params IInterceptor[] interceptors) =>
+        AddInterceptors<EmployeeDbContext>(services, interceptors);
+
+    /// <summary>읽기 DbContext(<see cref="EmployeeReadDbContext"/>) 옵션에 인터셉터를 덧붙입니다. 운영 등록(<c>AddEmployeeInfrastructure</c>) 뒤에 부릅니다.</summary>
+    /// <remarks>Read Repository가 실제로 보낸 명령(SQL · 매개변수)을 가로채 EXPLAIN으로 다시 실행할 때 씁니다(S05-T06).</remarks>
+    /// <param name="services">서비스 컬렉션.</param>
+    /// <param name="interceptors">덧붙일 인터셉터(등록 순서대로 실행).</param>
+    /// <returns>같은 <paramref name="services"/>.</returns>
+    /// <exception cref="InvalidOperationException">읽기 DbContext 옵션이 팩터리로 한 번 등록되어 있지 않은 경우.</exception>
+    public static IServiceCollection AddReadDbContextInterceptors(this IServiceCollection services, params IInterceptor[] interceptors) =>
+        AddInterceptors<EmployeeReadDbContext>(services, interceptors);
+
+    private static IServiceCollection AddInterceptors<TContext>(IServiceCollection services, IInterceptor[] interceptors)
+        where TContext : DbContext
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(interceptors);
 
-        var descriptors = services.Where(descriptor => descriptor.ServiceType == typeof(DbContextOptions<EmployeeDbContext>)).ToList();
+        var descriptors = services.Where(descriptor => descriptor.ServiceType == typeof(DbContextOptions<TContext>)).ToList();
         if (descriptors is not [{ ImplementationFactory: { } originalFactory } descriptor])
         {
             throw new InvalidOperationException(
-                $"DbContextOptions<{nameof(EmployeeDbContext)}> 팩터리 등록이 정확히 하나여야 합니다(찾은 개수 {descriptors.Count}). AddEmployeeInfrastructure 뒤에 부르세요.");
+                $"DbContextOptions<{typeof(TContext).Name}> 팩터리 등록이 정확히 하나여야 합니다(찾은 개수 {descriptors.Count}). AddEmployeeInfrastructure 뒤에 부르세요.");
         }
 
         services.Remove(descriptor);
         services.Add(new ServiceDescriptor(
-            typeof(DbContextOptions<EmployeeDbContext>),
-            provider => new DbContextOptionsBuilder<EmployeeDbContext>((DbContextOptions<EmployeeDbContext>)originalFactory(provider))
+            typeof(DbContextOptions<TContext>),
+            provider => new DbContextOptionsBuilder<TContext>((DbContextOptions<TContext>)originalFactory(provider))
                 .AddInterceptors(interceptors)
                 .Options,
             descriptor.Lifetime));

@@ -16,7 +16,8 @@ namespace EmergencyHub.BuildingBlocks.Api.Exceptions;
 /// <remarks>
 /// <para>판정 순서:</para>
 /// <list type="number">
-/// <item><description><see cref="BadHttpRequestException"/>(요청 본문 · 헤더를 읽지 못함) → 400, 1001(<see cref="CommonErrors.ValidationFailed"/>). 로그 302(Information).</description></item>
+/// <item><description><see cref="BadHttpRequestException"/>(요청 본문 · 헤더를 읽지 못함) → <see cref="BadHttpRequestException.StatusCode"/>가 413이면 413, 1004(<see cref="CommonErrors.PayloadTooLarge"/>),
+/// 그 밖은 400, 1001(<see cref="CommonErrors.ValidationFailed"/>, ADR-0028 · TD-021 부분 상환). 로그 302(Information).</description></item>
 /// <item><description>클라이언트가 요청을 끊어 난 취소 · 입출력 예외 → 판정은 9001 그대로, 로그 수준만 낮춤(303, Information). 본문은 끊긴 연결이라 쓰지 않습니다.</description></item>
 /// <item><description>등록된 <see cref="IExceptionClassifier"/>를 등록 순서대로 묻고 처음 나온 오류로 응답. 로그 301(Warning). 예: 재시도 한도 초과 → 9003.</description></item>
 /// <item><description>모두 <see langword="null"/>이면(분류기가 0개여도) 500, 9001(<see cref="CommonErrors.Unexpected"/>). 로그 이벤트 ID 1(Error).</description></item>
@@ -90,8 +91,9 @@ internal sealed class GlobalExceptionHandler(
 
         if (exception is BadHttpRequestException badRequest)
         {
-            logger.BadHttpRequestRejected(badRequest.StatusCode, CommonErrors.ValidationFailed.Code);
-            return CommonErrors.ValidationFailed;
+            var rejected = badRequest.StatusCode == StatusCodes.Status413PayloadTooLarge ? CommonErrors.PayloadTooLarge : CommonErrors.ValidationFailed;
+            logger.BadHttpRequestRejected(badRequest.StatusCode, rejected.Code);
+            return rejected;
         }
 
         if (aborted)
