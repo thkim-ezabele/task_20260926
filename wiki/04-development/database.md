@@ -278,6 +278,7 @@ var smsEnabled = await db.Employees
 
 - 체크 제약: `ck_employees_employee_status CHECK (employee_status IN (1, 2))`(공통 도우미가 enum 정의에서 생성, S03-T02). 원본 enum `EmergencyHub.Employee.Domain.Employees.EmployeeStatus : short`(`Unknown = 0` 예약, `Active = 1`, `Inactive = 2`)와 InitialCreate 스냅샷의 체크 제약이 일치한다(S04-T02 대조).
 - 비트 플래그(`[Flags]`) 코드는 아직 없다(BL-088).
+- PRD-002 새 스키마에서도 `EmployeeStatus`(1 · 2)와 체크 제약은 그대로다(등록 시 Active=1 고정, S05-T04). 입력 형식 코드 `EmployeeImportFormat`은 DB에 저장하지 않으므로 이 표에 넣지 않는다([ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md)).
 
 ## EF Core 구성 (Npgsql)
 
@@ -480,6 +481,59 @@ var smsEnabled = await db.Employees
 
 ### Employee (`emergency_hub_employee`, 스키마 `public`)
 
+> **어느 쪽이 현재 기준인가(S05-T04 ~ T05 사이).** 이 절에는 두 스키마가 함께 있습니다.
+> - **EF 모델(매핑 · `EmployeeConfiguration` · 메타데이터 테스트)의 기준은 아래 "새 스키마 명세"** 입니다. S05-T04부터 매핑은 이 명세를 따릅니다. 명세는 **실측 전**이며, S05-T05 `InitialCreate` 재생성의 `--idempotent` 생성 SQL로 확정합니다.
+> - **마이그레이션 · 실제 DB(AppHost 볼륨, Testcontainers)의 기준은 그 아래 "옛 스키마"(`20260927134235_InitialCreate`)** 입니다. S05-T05 리셋 커밋 전까지 적용되는 스키마는 이것뿐이므로, 그 사이 스냅샷 비교 · 통합 테스트 실패는 S05-T04 허용 목록으로 다룹니다.
+> - S05-T05 커밋 D에서 옛 스키마 ERD · InitialCreate 대조 표를 새 실측값으로 교체하고, 새 명세의 "실측 전" 표시를 지웁니다.
+
+#### 새 스키마 명세 (실측 전, S05-T05에서 생성 SQL로 확정)
+
+원본 요구사항: [PRD-002](../10-delivery/prd/PRD-002-employee-contacts.md) FR-01 · FR-02, [ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md). 작성: S05-T04 dba(2026-09-28). 아래 SQL 문자열은 기대값이며 아직 생성 SQL로 확인하지 않았습니다.
+
+**컬럼**(표의 순서 = `CREATE TABLE` 열 순서)
+
+| 순서 | 컬럼 | 생성 SQL 타입(기대) | NULL | 기본값 | 모델 속성 · 매핑 | 비고 |
+|---|---|---|---|---|---|---|
+| 1 | `id` | `uuid` | NOT NULL | 없음 | `Id`(`EmployeeId`), 공통 규칙의 강타입 ID 변환 · `ValueGeneratedNever` | UUID v7, Handler 생성([ADR-0013](../03-architecture/adr/0013-uuid-v7-with-uuidnext.md)) |
+| 2 | `name` | `character varying(100)` | NOT NULL | 없음 | `Name`(VO), `HasConversion`(값 ↔ `string`) + `HasMaxLength(Name.MaxLength)` | Trim + NFC 뒤 값. 옛 `display_name` 대체 |
+| 3 | `email` | `character varying(254)` | NOT NULL | 없음 | `Email`(VO, 입력 표기 `Value`), `HasConversion` + `HasMaxLength(Email.MaxLength)` | Trim만 한 입력 표기 보존. **인덱스 없음** |
+| 4 | `normalized_email` | `character varying(254)` | NOT NULL | 없음 | `NormalizedEmail`(`string`), 변환기 없음 + `HasMaxLength(Email.MaxLength)` | `ToLowerInvariant(email)`. 값은 Email VO에서 가져온다(DB 제약으로 강제하지 않음) |
+| 5 | `phone_number` | `character varying(20)` | NOT NULL | 없음 | `PhoneNumber`(VO), `HasConversion` + `HasMaxLength(PhoneNumber.MaxLength)` | 입력 그대로 저장, 중복 허용 |
+| 6 | `joined_on` | `date` | NOT NULL | 없음 | `JoinedOn`(VO), `HasConversion`(값 ↔ `DateOnly`) | 하한 1900-01-01은 Domain 규칙(DB ck 없음) |
+| 7 | `employee_status` | `smallint` | NOT NULL | 없음 | `EmployeeStatus`(`short` enum), `HasCodeCheckConstraint()` | 등록 시 Active=1은 Aggregate가 넣는다(DB 기본값 두지 않음). API 비노출 |
+| 8 | `created_at` | `timestamp with time zone` | NOT NULL | 없음 | shadow `CreatedAt`(공통 규칙) | 감사 인터셉터, UTC |
+| 9 | `updated_at` | `timestamp with time zone` | NOT NULL | 없음 | shadow `UpdatedAt`(공통 규칙) | 감사 인터셉터, UTC |
+| - | `xmin` | (생성 안 함, 시스템 컬럼 `xid`) | - | - | shadow `Version`(공통 규칙) | 생성 SQL에 컬럼 생성이 없어야 한다 |
+
+- 열 순서는 **Aggregate 속성 선언 순서**로 정한다(키 → CLR 속성 선언 순서 → shadow 속성, 옛 InitialCreate와 같은 방식). `HasColumnOrder`는 쓰지 않는다. 그래서 `Employee`의 공개 속성은 `Name` · `Email` · `NormalizedEmail` · `PhoneNumber` · `JoinedOn` · `EmployeeStatus` 순서로 선언한다. 이 순서 규칙은 EF Core 8 동작에 대한 기대이며 S05-T05 생성 SQL로 확정한다.
+- 기본값(`DEFAULT`) · 계산 컬럼은 하나도 없다. `HasDefaultValue` · `HasDefaultValueSql`을 쓰지 않는다.
+- 값 변환기 네 개는 `EmployeeConfiguration` 안에서만 선언한다(공통 규약으로 넓히지 않음, [EF Core 구성](#ef-core-구성-npgsql)). DB → 모델 변환은 VO의 `Create`를 거친다(`v => Name.Create(v).Value`, `JoinedOn`은 `DateOnly`를 `JoinedOn.Format` · InvariantCulture 문자열로 바꿔 `Create`에 넘김). DB 값이 VO 규칙을 어기면 구체화 때 예외가 난다(DB에는 해당 ck가 없으므로 원시 SQL · 테스트 시드는 규칙에 맞는 값만 넣는다).
+- 길이 상수는 VO의 `public const`(`Name.MaxLength` 100 · `Email.MaxLength` 254 · `PhoneNumber.MaxLength` 20)를 참조하고 매핑에 숫자를 다시 쓰지 않는다. 옛 `Employee.DisplayNameMaxLength` · `Employee.EmailMaxLength`는 쓰지 않는다.
+
+**제약 · 인덱스**(기대 SQL)
+
+| 종류 | 이름 | 대상(열 순서) | 기대 SQL | 이름 결정 방식 | 바이트 |
+|---|---|---|---|---|---|
+| 기본 키 | `pk_employees` | `(id)` | `CONSTRAINT pk_employees PRIMARY KEY (id)` | 명명 규칙(snake_case) | 12 |
+| 체크 | `ck_employees_employee_status` | `employee_status` | `CONSTRAINT ck_employees_employee_status CHECK (employee_status IN (1, 2))` | 공통 도우미(enum 정의, 0 제외) | 28 |
+| 유니크 인덱스 | `ux_employees_normalized_email` | `(normalized_email)` | `CREATE UNIQUE INDEX ux_employees_normalized_email ON employees (normalized_email);` | **이름 상수** `EmployeeDbNames.NormalizedEmailUniqueIndex` + `HasUniqueIndex` | 29 |
+| 인덱스 | `ix_employees_joined_on_id` | `(joined_on, id)` | `CREATE INDEX ix_employees_joined_on_id ON employees (joined_on, id);` | 명명 규칙 생성(`HasDatabaseName` 없음) | 25 |
+| 인덱스 | `ix_employees_name_joined_on_id` | `(name, joined_on, id)` | `CREATE INDEX ix_employees_name_joined_on_id ON employees (name, joined_on, id);` | 명명 규칙 생성(`HasDatabaseName` 없음) | 30 |
+
+- 인덱스는 이 3개뿐이다(PK 제외). `email` 컬럼 인덱스, 옛 `ux_employees_email`, `CHECK (normalized_email = lower(email))`, 식 인덱스(`lower(...)`)는 두지 않는다(근거는 아래 인덱스 표 비고 · ADR-0027).
+- 체크 제약은 `ck_employees_employee_status` 하나다(`EmployeeStatus` Active=1 · Inactive=2 유지, `Deactivate` 유지). 외래 키 · `DEFERRABLE` · `CONCURRENTLY`는 없다.
+- 최장 식별자는 `ix_employees_name_joined_on_id` **30바이트**다(63바이트 한도 안). 계획 리뷰 인계 메모의 "29바이트"는 `ux_employees_normalized_email` 기준 값이며, `ix_` 2개를 포함하면 30이다(S05-T04 dba 계산).
+- 인덱스 용도(S05-T06 EXPLAIN으로 확인): `ix_employees_joined_on_id`는 목록 조회 `ORDER BY joined_on, id` + Skip / Take, `ix_employees_name_joined_on_id`는 이름 단건 조회(`WHERE name = @p ORDER BY joined_on, id LIMIT 1`, Sort 없음), `ux_employees_normalized_email`은 중복 판정 `normalized_email = ANY(@p)`와 23505.
+- 23505 매핑: `ux_employees_normalized_email` → 23001 `EmployeeErrors.DuplicateEmail`(`AddUnitOfWork`의 `errors.Map` 한 곳, 키는 위 이름 상수).
+
+**이름 상수 위치**: `EmergencyHub.Employee.Infrastructure.Persistence.EmployeeDbNames` 한 곳에 `EmployeesTable`(`employees`, 유지)과 `NormalizedEmailUniqueIndex`(`ux_employees_normalized_email`, 옛 `EmailUniqueIndex` 대체)만 둔다. `pk_` · `ck_` · `ix_` 이름은 상수로 두지 않는다(규칙 · 도우미가 만든다). `ix_` 2개의 이름과 열 순서는 모델 메타데이터 테스트(`GetDatabaseName()`)가 고정한다.
+
+**DB에 저장하지 않는 코드**: `EmployeeImportFormat`(`Csv = 1` · `Json = 2`, [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md))은 Command 입력 코드라 컬럼 · 체크 제약이 없고 [코드 정의](#코드-정의) 표 대상이 아니다.
+
+#### 옛 스키마 (적용 중인 `20260927134235_InitialCreate`, S05-T05 리셋 때 교체)
+
+아래 ERD · 대조 표는 S05-T05 리셋 전까지 **마이그레이션 · DB에 적용되는 스키마**의 실측 기록입니다. EF 모델 기준은 위 새 스키마 명세입니다.
+
 ```mermaid
 erDiagram
     employees {
@@ -510,10 +564,10 @@ InitialCreate 대조(S04-T02 dba, 마이그레이션 `20260927134235_InitialCrea
 
 | 테이블 | 인덱스 · 제약 | 비고 |
 |---|---|---|
-| `employees` | `pk_employees`(id), `ux_employees_email`(email), `ck_employees_employee_status` | 인덱스는 2개. 외래 키 없음. S05-T04 · T05부터 유니크 인덱스는 `ux_employees_normalized_email`(normalized_email)이고, `CHECK (normalized_email = lower(email))`는 두지 않는다. 실측(S05-T02): U+0130(`İ`)이 .NET `ToLowerInvariant`에서는 그대로, PostgreSQL libc `lower()`에서는 `i`라 Domain이 정상 처리한 값이 23514로 거부된다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)) |
+| `employees` | 옛 스키마: `pk_employees`(id), `ux_employees_email`(email), `ck_employees_employee_status`. 새 스키마 명세: `pk_employees`, `ck_employees_employee_status`, `ux_employees_normalized_email`, `ix_employees_joined_on_id`, `ix_employees_name_joined_on_id` | 옛 스키마의 인덱스는 2개(PK 포함). 외래 키 없음. S05-T04 · T05부터 유니크 인덱스는 `ux_employees_normalized_email`(normalized_email)이고, `CHECK (normalized_email = lower(email))`는 두지 않는다. 실측(S05-T02): U+0130(`İ`)이 .NET `ToLowerInvariant`에서는 그대로, PostgreSQL libc `lower()`에서는 `i`라 Domain이 정상 처리한 값이 23514로 거부된다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)) |
 
 - 길이 규칙은 Domain(UTF-16 코드 단위)이 `varchar(n)`(코드 포인트)보다 엄격하므로, Domain을 거친 값은 PostgreSQL SqlState `22001`(string_data_right_truncation)을 일으키지 않는다. `joined_on` 하한(1900-01-01)과 이름 · 전화번호 형식은 DB 체크 제약이 없는 Domain 규칙이다(PRD-002 FR-01, S05-T03).
-- 이름 상수(테이블 `employees`, `ux_employees_email`)는 `EmergencyHub.Employee.Infrastructure`의 한 곳에 두고, 매핑(`ToTable` · `HasUniqueIndex`)과 23505 매핑 등록(`ux_employees_email` → 23001 `EmployeeErrors.DuplicateEmail`)이 같은 상수를 쓴다.
+- 이름 상수(테이블 `employees`, 유니크 인덱스)는 `EmergencyHub.Employee.Infrastructure`의 한 곳(`EmployeeDbNames`)에 두고, 매핑(`ToTable` · `HasUniqueIndex`)과 23505 매핑 등록(→ 23001 `EmployeeErrors.DuplicateEmail`)이 같은 상수를 쓴다. 옛 스키마의 상수는 `EmailUniqueIndex`(`ux_employees_email`)이고, S05-T04에서 `NormalizedEmailUniqueIndex`(`ux_employees_normalized_email`)로 바뀐다(위 새 스키마 명세).
 
 ---
 
@@ -545,3 +599,4 @@ InitialCreate 대조(S04-T02 dba, 마이그레이션 `20260927134235_InitialCrea
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #6 반영: psql 명령 틀(SQL 파일을 표준 입력으로, 두 셸), 42P04 "(실행 횟수 − 1)" 풀이(BL-115), 알려진 잡음 로그 표 N1~N5와 잡음 아닌 BL-117, 명명 규칙 적용 범위 실측 표 |
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #13 반영: 생성 SQL 점검표 a~g 원본(InitialCreate 실측 열), 생성 형식 아키텍처 규칙 점검 |
 | 2026-09-28 | developer | ADR-0026 · 0027 반영(S05-T02 dba 문안): 단일 값 Value Object는 엔티티 설정 안 값 변환기(Employee 4개, `NormalizedEmail`은 문자열 속성), 트랜잭션 규칙에 `RegisterEmployeesCommand` 다중 Aggregate 예외(상한 1,000) 링크, `employees` 인덱스 표의 CHECK 문구를 `ux_employees_normalized_email` 기준 · U+0130 실측 근거로, 길이(UTF-16이 varchar보다 엄격, SqlState 22001 없음) · `joined_on` 하한 · 이름 · 전화 형식은 Domain 규칙 한 줄. ERD · InitialCreate 대조 표는 S05-T05에서 갱신 (S05-T02) |
+| 2026-09-28 | dba | Employee 새 스키마 명세 추가(실측 전, S05-T05 생성 SQL로 확정): 컬럼 9개 + `xmin` 열 순서 · 타입 · NOT NULL · 기본값 없음 · 매핑(VO 값 변환기 4개, `NormalizedEmail` 문자열), 제약 · 인덱스 5개 기대 SQL(`ux_employees_normalized_email` 이름 상수, `ix_` 2개 명명 규칙 생성), 최장 식별자 30바이트, 이름 상수 위치, `EmployeeImportFormat` DB 미저장. 옛 스키마(`20260927134235_InitialCreate`)와 기준 구분 문장, 이름 상수 문단 · 인덱스 표를 두 스키마로 구분 (S05-T04) |
