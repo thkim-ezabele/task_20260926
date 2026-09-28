@@ -18,7 +18,7 @@ updated: 2026-09-28
 
 - PRD: [PRD-002](../prd/PRD-002-employee-contacts.md)
 - 토픽 브랜치: `feature/prd-002-employee-contacts` · 스프린트 종료 태그: `sprint/S05`
-- 스프린트 번호는 **가번호**다. PRD-001 병합 뒤 T01에서 확정한다.
+- 스프린트 번호는 S05-T01에서 확정했다(PRD-001 S01~S04 다음 번호, PRD `sprints` · 파일 이름 · 작업 ID 일치).
 
 ## 목표
 
@@ -28,7 +28,7 @@ updated: 2026-09-28
 
 | ID | 작업 | 요구사항 | 완료 조건 | 의존 | 상태 | 커밋 |
 |---|---|---|---|---|---|---|
-| S05-T01 | 재기준화 (문서 작업) | NFR-05, NFR-06 | ① `develop`(`v0.1.0` 포함)이 토픽 브랜치에 병합되었음을 `git merge-base --is-ancestor`로 확인하고 병합 커밋 해시(`7160967`)를 진행 기록에 남겼다 ② 스프린트 번호(PRD `sprints` · 파일 이름 · ID 일치), ADR 번호 0025~0028, 에러 코드 범위를 확정했다 ③ 범위 밖 항목을 `BL` / `TD`로 등록했고 BL-024는 `planned:S06`이다 ④ `10-delivery/README` 목록 · roadmap에 PRD-002 행이 있고, S06 · S07 문서의 S05 작업 참조가 새 번호와 맞으며, check-docs 결함이 기준선(4, BL-018) 이하다 ⑤ TD-010(위험 수용 · open) · BL-019 · BL-023 · BL-024 처리 결과와 S02-T06 ProblemDetails 계약 확인 결과(S06-T01 완료 조건 확정안)를 진행 기록에 남겼다 ⑥ `v0.1.0` 기준 전체 테스트 이름 기준선을 저장하고, 이를 바탕으로 증빙 테스트 대응표 틀을 이 문서에 만들었다 ⑦ `dotnet build` 경고 0, `dotnet test` 통과(`DOCKER_API_VERSION=1.43`)를 확인했다 | PRD-001 병합 | todo | |
+| S05-T01 | 재기준화 (문서 작업) | NFR-05, NFR-06 | ① `develop`(`v0.1.0` 포함)이 토픽 브랜치에 병합되었음을 `git merge-base --is-ancestor`로 확인하고 병합 커밋 해시(`7160967`)를 진행 기록에 남겼다 ② 스프린트 번호(PRD `sprints` · 파일 이름 · ID 일치), ADR 번호 0025~0028, 에러 코드 범위를 확정했다 ③ 범위 밖 항목을 `BL` / `TD`로 등록했고 BL-024는 `planned:S06`이다 ④ `10-delivery/README` 목록 · roadmap에 PRD-002 행이 있고, S06 · S07 문서의 S05 작업 참조가 새 번호와 맞으며, check-docs 결함이 기준선(4, BL-018) 이하다 ⑤ TD-010(위험 수용 · open) · BL-019 · BL-023 · BL-024 처리 결과와 S02-T06 ProblemDetails 계약 확인 결과(S06-T01 완료 조건 확정안)를 진행 기록에 남겼다 ⑥ `v0.1.0` 기준 전체 테스트 이름 기준선을 저장하고, 이를 바탕으로 증빙 테스트 대응표 틀을 이 문서에 만들었다 ⑦ `dotnet build` 경고 0, `dotnet test` 통과(`DOCKER_API_VERSION=1.43`)를 확인했다 | PRD-001 병합 | doing | |
 | S05-T02 | ADR 4건과 기준 문서 반영 (문서 작업, 사용자 확인) | FR-09, FR-11, NFR-05 | ① ADR 4건(0025~0028)을 1차 초안 → 확인(대리) → 2차 작성으로 `accepted` 커밋했고, 이 커밋이 T03 이후 모든 구현 커밋보다 앞선다 ② ADR ②에 ADR-0018 범위 예외(행 검증은 `RegisterEmployeesCommand` Handler 한정), VO `Create` → Result를 Employee 필드 규칙 판정 원본으로 삼는 적용 범위, 다중 Aggregate 단일 트랜잭션 예외(상한 1,000), TD-010 위험 문구가 있다 ③ api-guidelines에 예외 절(적용 범위 3개 엔드포인트)과 ADR 링크가 있다 ④ error-codes Employee 표에서 21001 · 21002 · 21006을 `폐기`로 표시하고, 21003~21005 · 22001 · 23001은 뜻을 유지한 채 설명만 갱신했으며(23001은 `ux_employees_normalized_email`), 새 Employee 코드와 공통 413 · 415를 정수로 할당하고 행마다 구현 작업 ID(예약)를 표시했다 ⑤ coding-conventions(실패 처리 경계, 이메일 string 문구, Register 예시), database.md VO 매핑 원칙(단일 값 VO는 값 변환기), clean-architecture 트리 주석(EmployeeEmail), testing-strategy 아키텍처 절("대상 대기" 목록)이 ADR과 일치한다 ⑥ ADR 목록과 09-memory/design 갱신 대상을 표시했고 check-docs 새 결함이 0이다 | T01 | todo | |
 | S05-T03 | Employee Value Object 4개 (Domain 로직, 기존 Aggregate 미변경) | FR-01, FR-10, NFR-05 | ① Name · Email(입력 표기 + NormalizedEmail) · PhoneNumber · JoinedOn은 sealed record이고 `Create(string?)`가 T02에서 할당한 필드 코드 Error를 담은 Result를 반환한다 ② FR-01 필드 규칙(인계 메모의 세부 기본값)을 모두 구현했다 ③ 단위 테스트가 FR-01 인수 조건 엣지 목록 전부와 규칙마다 성공 / 실패 / 엣지를 다룬다 ④ 길이 · 자리 수 상수는 VO 한 곳에 public const로 두어 EF 설정이 참조할 수 있다 ⑤ EmployeeErrors에 새 코드 상수를 추가하고 EmployeeErrorsTests 표를 error-codes와 1:1로 갱신했다(폐기 상수 삭제는 T04) ⑥ Employee Aggregate · Application · Infrastructure는 바뀌지 않았고 빌드 경고 0, 전체 테스트(단위 · 아키텍처 · 통합)가 통과한다 | T02 | todo | |
 | S05-T04 | Employee Aggregate 재설계, EF 매핑 · 23505 교체, 샘플 API 제거 (마이그레이션 제외) | FR-01, FR-02, FR-10, NFR-06 | ① `Employee.Register`는 검증된 VO만 받고 `employee_status`를 Active=1로 고정하며, `display_name` → `name`, EmployeeRegisteredDomainEvent는 유지한다 ② EmployeeConfiguration이 dba 명세(database.md, "실측 전" 표시)의 컬럼 · 타입 · NOT NULL · `ck_employees_employee_status` · `ux_employees_normalized_email` · `ix_` 2개와 일치하고, 23505 매핑은 `ux_employees_normalized_email` → 23001이다 ③ 샘플 API · Command · Query · Validator · Handler와 폐기 코드 상수(21001 · 21002 · 21006)를 제거했고, 샘플 의존 테스트는 대응표 "처리" 열대로 삭제 · 수정했으며(Skip 금지) 샘플 잔존 grep이 0이다 ④ 대상이 0개가 되는 아키텍처 규칙 3개는 해제 작업 ID(S06-T04 · S06-T05)를 적은 "대상 대기" 목록으로만 건너뛰고, 대기 규칙에 대상이 생기면 실패하는 안전장치 테스트가 있다 ⑤ EmployeeModelMetadataTests · DI 등록 테스트는 새 스키마 기대값으로 통과하고, EmployeeMigrationsTests 2건은 새 스키마 기대값으로 먼저 바꿨다 ⑥ 빌드 경고 0, 컴파일 실패 0이고, 실패 테스트는 진행 기록에 확정한 허용 목록(trx 이름)과 1:1이다 | T03 | todo | |
@@ -80,6 +80,7 @@ updated: 2026-09-28
 - TD-010 위험 문구: "정상 요청이 409(3003, 행 번호 없음)로 보일 수 있음. pk와 ux 제약의 검사 순서는 S05-T06 실측 뒤 확정."
 - database.md 한 줄: 길이는 Domain(UTF-16)이 varchar(코드 포인트)보다 엄격해 22001이 생기지 않는다. `joined_on` 하한, 이름 · 전화 형식은 DB ck 없는 Domain 규칙.
 - error-codes 표 ↔ 코드 대조(S04-T05 방식)에서 예약 행은 따로 센다.
+- (T01 developer) ADR 번호: 0025 ① · 0026 ② · 0027 ③ · 0028 ④. ADR ④ 근거 계약 사실: FieldError.Create는 Validation 유형만, ValidationError는 sealed · 1001 고정, ErrorProblemDetails의 `errors`는 ValidationError에만, ErrorStatusCodes 9종(그 밖 500), BadHttpRequestException은 전부 400 · 1001(TD-021). 413 · 415의 ErrorType 값과 코드 유형 자리(T=1의 1004 · 1005 후보 또는 예비 T=6~8)는 1차 초안의 확인 항목으로 올린다.
 
 **S05-T03**
 
@@ -102,6 +103,7 @@ updated: 2026-09-28
 - 실패 허용 목록: 단위는 `EmployeeMigrationsTests.ModelSnapshot_HasNoDifferencesFromCurrentModel` · `IdempotentScript_CreatesEmployeesAndHistoryWithoutSchemaXminOrDefault` 2건, 통합은 대응표 "수정(T05 뒤 green)" 행만. developer 단계에서 trx 이름으로 확정해 진행 기록에 남기고, **목록 밖 실패가 나오면 BLOCKED**.
 - reviewer grep: 패턴 `api/v1/employees|RegisterEmployee|GetEmployeeById|DisplayName|display_name|ux_employees_email`, 범위 `src/` · `tests/Services` · `tests/Aspire`. 제외: `Persistence/Migrations`(T05까지), `wiki`, `tests/BuildingBlocks`(리터럴 표본), HealthEndpointsTests InlineData, EF의 `DisplayName()` 호출.
 - EmployeeBuilder(Domain · Integration)는 새 필드로, 기본 이메일은 순번으로 고유하게.
+- (T01 developer) 대응표 "처리" 열이 원본이다. EmployeePersistenceRoundTripTests.GetByIdAsync_* 2건은 IEmployeeReadRepository.GetById 제거와 부딪히므로 수정 방식을 T04에서 정한다. PersistenceLogExposureTests는 샘플 의존 메서드가 0개라 2건 모두 "수정".
 - (T01 dba) 23505 매핑 교체 대상은 `EmployeeDbNames.EmailUniqueIndex`(EmployeeDbNames.cs:20)와 EmployeeInfrastructureServiceCollectionExtensions.cs:47의 `errors.Map` 한 곳. 옛 이름 `ux_employees_email`이 EmployeeEmail.cs:9, EmployeeErrors.cs:10, EmployeeRepository.cs:9, RegisterEmployeeCommandHandler.cs:16(샘플, 삭제 대상) 주석에 남아 있다. BuildingBlocks UniqueIndexName.cs:22 · UniqueConstraintErrorsBuilder.cs:10의 주석 예시는 동작 영향이 없으므로 두어도 된다(grep 제외 범위).
 
 **S05-T05**
@@ -117,7 +119,116 @@ updated: 2026-09-28
 - EXPLAIN: 10,000건 + ANALYZE(또는 `enable_seqscan=off`). 대상은 목록(`ix_employees_joined_on_id`), 이름(`ix_employees_name_joined_on_id`, Sort 없음), `list.Contains`가 만든 `= ANY`(ux). COUNT(*) 전체 스캔은 정상. 생성 SQL 원문을 함께 기록.
 - UUID v7 정렬: 같은 밀리초 안 1,000건 생성 → `ORDER BY id`가 생성 순서와 같은지.
 - TD-010 실측: pk · ux 동시 위반 1회로 어느 제약이 먼저 검사되는지(3003 / 23001)만 보고 진행 기록과 TD-010 행에 남긴다. 재현 테스트는 만들지 않고 S06 동시 경합 테스트에 인계.
+- (T01 developer) 이전(T06) 행은 UnitOfWorkConflictTests 6건(23505 → 23001 2 · pk → 3003 1 · xmin 3). EmployeeSchemaTests(ck · 읽기 연결 · UUID v7)와 RoundTrip 감사 UTC 1건은 "수정" 행이며 "이전 확인 S05-T06"이 붙어 있다. ⑤의 1:1 대조 기준선은 스크래치 `test-baseline-v0.1.0.tsv`(없으면 `v0.1.0`에서 trx로 재생성).
 - tester 보강 후보: name 100자 · 서로게이트 왕복, `joined_on` 1900-01-01 · 미래 왕복, `employee_status` 1 저장 · ck 위반, phone 20자 경계.
+
+## 증빙 테스트 대응표
+
+> 이전 테스트 이름은 `v0.1.0` 기준입니다.
+
+- 기준선(S05-T01): `v0.1.0` 전체 테스트 1,538개(통과 1,537 · 건너뜀 1, 테스트 프로젝트 13개). `v0.1.0`과 HEAD의 코드 차이가 없어(`git diff --stat v0.1.0 HEAD -- src tests` 출력 없음) HEAD에서 `dotnet test --logger trx`로 뽑았습니다.
+- 대상: 인계 메모 S05-T01의 "처리" 계획값에 든 클래스와, 이전 항목(ck · 23505 · xmin · 읽기 연결 쓰기 거부 · UUID v7 · 감사 UTC)이 든 테스트입니다. 95행, 테스트 226개(삭제 96 · 수정 35 · 이전 6 · 변경 없음 89).
+- 표기: `클래스.*`는 그 클래스 전체, `클래스.메서드`는 그 메서드의 모든 사례(`[Theory]` 데이터 포함)입니다. 괄호 안 수는 기준선의 사례 수입니다. "PRD-001 FR Trait"는 클래스 · 메서드의 `[Trait]` 값이고, 없으면 `-`입니다.
+- 처리: `삭제`(샘플 제거, 새 테스트는 "새 테스트 또는 작업 ID"의 작업에서) · `수정(T04, T05 뒤 green)` · `이전(T06)` · `변경 없음`(경로 · 이름 리터럴 표본). 상태는 `계획`으로 시작하고, 각 작업이 처리한 뒤 새 테스트 이름과 함께 갱신합니다.
+
+| 이전 테스트(전체 이름) | PRD-001 FR Trait | 처리 | 새 테스트 또는 작업 ID | 상태 |
+|---|---|---|---|---|
+| `EmergencyHub.Employee.IntegrationTests.Http.EmployeeRegistrationHttpTests.Get_UnknownOrEmptyId_Returns404With22001ProblemDetails` (2) | FR-08 | 삭제 | 이전 대기: S07-T03 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.EmployeeRegistrationHttpTests.PostThenGet_ValidRequest_Returns201WithLocationOfGetRouteAnd200WithNormalizedEmail` (1) | FR-08 | 삭제 | 이전 대기: S06-T06 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.EmployeeRegistrationHttpTests.Post_ConcurrentInsertBetweenPreCheckAndInsert_Returns409With23001WithoutEfErrorAnd102After20001` (1) | FR-08 | 삭제 | 이전 대기: S06-T06 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.EmployeeRegistrationHttpTests.Post_DisplayNameOfEmojis_Accepts50AndRejects51With21002` (2) | FR-08 | 삭제 | 이전 대기: S06-T06 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.EmployeeRegistrationHttpTests.Post_Email254CharsAfterTrimWithSurroundingSpacesAndUppercase_Returns201AndStoresNormalized` (1) | FR-08 | 삭제 | 이전 대기: S06-T06 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.EmployeeRegistrationHttpTests.Post_SameEmailAfterTrimAndLowercase_Returns409With23001AndKeepsFirstRowOnly` (1) | FR-08 | 삭제 | 이전 대기: S06-T06 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.ProblemDetailsHttpTests.Get_NonGuidId_Returns400With1001UnderIdKeyInsteadOf404` (1) | FR-07 | 삭제 | 이전 대기: S07-T03(1001 HTTP) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.ProblemDetailsHttpTests.Get_UnhandledExceptionInReadRepository_Returns500With9001WithoutOriginalMessageAndLogsOnceAtError` (1) | FR-07 | 삭제 | 이전 대기: S06-T06(500 형식) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.ProblemDetailsHttpTests.Post_EmployeeStatusAsString_Returns400With1001UnderEmployeeStatusKey` (1) | FR-07 | 삭제 | 이전 대기: S07-T03(1001 HTTP) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.ProblemDetailsHttpTests.Post_EmptyBody_Returns400With21001And21003And21006InFieldOrder` (1) | FR-07 | 삭제 | 이전 대기: S06-T06 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.ProblemDetailsHttpTests.Post_MalformedJson_Returns400With1001AndFieldCode1001` (1) | FR-07 | 삭제 | 이전 대기: S07-T03(1001 HTTP) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.ProblemDetailsHttpTests.Post_MissingOrNullEmployeeStatus_Returns400With21006` (2) | FR-07 | 삭제 | 대체 없음(21006 폐기, 계획 결정 3) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.ProblemDetailsHttpTests.Post_TraceparentHeader_ProblemTraceIdEqualsIncomingTraceId` (1) | FR-07 | 삭제 | 이전 대기: S06-T06 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.ProblemDetailsHttpTests.Post_UndefinedEmployeeStatus_Returns400With1001AndField1002` (2) | FR-07 | 삭제 | 이전 대기: S06-T04(enum 1002, Validator 수준) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.OpenApiContractHttpTests.*` (2) | FR-07 | 삭제 | 이전 대기: S06-T05 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.ReadOnlyWriteRejectionHttpTests.*` (1) | FR-08 · FR-07 | 삭제 | 이전 대기: S06-T06(HTTP 500, DB 수준은 EmployeeSchemaTests 행) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Http.RequestCompletionLogTests.*` (4) | FR-03 · FR-09 | 삭제 | 이전 대기: S06-T06 | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.Controllers.EmployeesControllerTests.Constructor_DependsOnlyOnSender` (1) | FR-08 · FR-07 | 삭제 | 이전 대기: S06-T05 | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.Controllers.EmployeesControllerTests.GetByIdAsync_EmptyGuid_StillSendsQuery` (1) | FR-08 · FR-07 | 삭제 | 이전 대기: S07-T02 | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.Controllers.EmployeesControllerTests.GetByIdAsync_Found_Returns200WithResponse` (1) | FR-08 · FR-07 | 삭제 | 이전 대기: S07-T02 | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.Controllers.EmployeesControllerTests.GetByIdAsync_NotFound_ReturnsProblemResultWith22001` (1) | FR-08 · FR-07 | 삭제 | 이전 대기: S07-T02 | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.Controllers.EmployeesControllerTests.RegisterAsync_CommandSucceeds_Returns201AtGetRouteWithIdBody` (1) | FR-08 · FR-07 | 삭제 | 이전 대기: S06-T05 | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.Controllers.EmployeesControllerTests.RegisterAsync_DuplicateEmail_ReturnsProblemResultWith23001` (1) | FR-08 · FR-07 | 삭제 | 이전 대기: S06-T05 | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.Controllers.EmployeesControllerTests.RegisterAsync_NullFields_SendsEmptyStringsAndNullStatus` (1) | FR-08 · FR-07 | 삭제 | 이전 대기: S06-T05 | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.Controllers.EmployeesControllerTests.RegisterAsync_NullRequest_ThrowsArgumentNullException` (1) | FR-08 · FR-07 | 삭제 | 이전 대기: S06-T05 | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.Controllers.EmployeesControllerTests.RegisterAsync_Request_SendsCommandWithSameValuesAndToken` (1) | FR-08 · FR-07 | 삭제 | 이전 대기: S06-T05 | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.Controllers.EmployeesControllerTests.RegisterAsync_UndefinedStatus_PassesValueUnchangedForValidator` (2) | FR-08 · FR-07 | 삭제 | 이전 대기: S06-T05 | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.Controllers.EmployeesControllerTests.RegisterAsync_ValidationFailed_ReturnsProblemResultWithValidationError` (1) | FR-08 · FR-07 | 삭제 | 이전 대기: S06-T05 | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.Controllers.EmployeesControllerTests.Routes_AreApiV1EmployeesWithoutIdConstraint` (1) | FR-08 · FR-07 | 삭제 | 이전 대기: S06-T05 | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandHandlerTests.*` (13) | - | 삭제 | 이전 대기: S06-T04 | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_AllPropertiesInvalid_CollectsOneFailurePerPropertyInOrder` (1) | - | 삭제 | 이전 대기: S06-T04 | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_DisplayNameOverMaxLength_Reports21002` (2) | - | 삭제 | S05-T03(Value Object 필드 규칙) | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_DisplayNameWithinMaxLengthAfterTrim_HasNoFailures` (5) | - | 삭제 | S05-T03(Value Object 필드 규칙) | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_EmailAtMaxLengthWithSurroundingWhitespace_HasNoFailures` (1) | - | 삭제 | S05-T03(Value Object 필드 규칙) | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_EmailOverMaxLength_Reports21005` (1) | - | 삭제 | S05-T03(Value Object 필드 규칙) | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_EmailWithCaseOrSurroundingWhitespace_HasNoFailures` (3) | - | 삭제 | S05-T03(Value Object 필드 규칙) | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_LongMalformedEmail_ReportsLengthFirstAndStops` (1) | - | 삭제 | S05-T03(Value Object 필드 규칙) | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_MalformedEmail_Reports21004` (4) | - | 삭제 | S05-T03(Value Object 필드 규칙) | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_MissingDisplayName_Reports21001Only` (4) | - | 삭제 | S05-T03(Value Object 필드 규칙) | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_MissingEmail_Reports21003Only` (4) | - | 삭제 | S05-T03(Value Object 필드 규칙) | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_MissingEmployeeStatus_Reports21006Only` (1) | - | 삭제 | 대체 없음(21006 폐기, 계획 결정 3) | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_ReservedOrUndefinedEmployeeStatus_Reports1002OnEmployeeStatus` (4) | - | 삭제 | 이전 대기: S06-T04(enum 1002) | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_UnicodeDisplayNameOverMaxLength_Reports21002` (3) | - | 삭제 | S05-T03(Value Object 필드 규칙) | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Commands.RegisterEmployee.RegisterEmployeeCommandValidatorTests.Validate_ValidCommand_HasNoFailures` (2) | - | 삭제 | 이전 대기: S06-T04 | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.Queries.GetEmployeeById.GetEmployeeByIdQueryHandlerTests.*` (4) | - | 삭제 | 이전 대기: S07-T02 | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.ContractShapeTests.ApplicationAssemblyMarker_PointsToApplicationAssembly` (1) | - | 삭제 | 이전 대기: S06-T04 | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.ContractShapeTests.EmployeeReadRepository_InheritsReadMarkerOnly` (1) | - | 삭제 | S05-T06 | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.ContractShapeTests.EmployeeResponse_HasDocumentedMembersInOrder` (1) | - | 삭제 | 이전 대기: S07-T01 | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.ContractShapeTests.GetEmployeeByIdQuery_IsQueryOfEmployeeResponseByGuid` (1) | - | 삭제 | 이전 대기: S07-T02 | 계획 |
+| `EmergencyHub.Employee.Application.UnitTests.Employees.ContractShapeTests.RegisterEmployeeCommand_IsRecordCommandReturningEmployeeIdWithNullableStatus` (1) | - | 삭제 | 이전 대기: S06-T04 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Schema.EmployeeSchemaTests.Columns_AfterMigration_MatchSampleTableTypesWithoutDefaults` (1) | FR-08 | 수정(T04, T05 뒤 green) | S05-T04 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Schema.EmployeeSchemaTests.CommitAsync_TrackedEntryWithUndefinedStatus_RethrowsDbUpdateExceptionWithCheckConstraintAndRedactedDetail` (4) | FR-08 | 수정(T04, T05 뒤 green) | S05-T04, 이전 확인 S05-T06(ck) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Schema.EmployeeSchemaTests.ConstraintAndIndexNames_AfterMigration_EqualEfModelNamesAndConstants` (1) | FR-08 | 수정(T04, T05 뒤 green) | S05-T04 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Schema.EmployeeSchemaTests.OrderById_IdsGeneratedWithinSameMillisecondInsertedShuffled_ReturnsGenerationOrder` (1) | FR-08 · FR-06 | 수정(T04, T05 뒤 green) | S05-T04, 이전 확인 S05-T06(UUID v7) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Schema.EmployeeSchemaTests.RawInsert_DefinedStatus_IsAccepted` (2) | FR-08 | 수정(T04, T05 뒤 green) | S05-T04, 이전 확인 S05-T06(ck) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Schema.EmployeeSchemaTests.RawInsert_StatusOutsideSmallintRange_IsRejectedByColumnType22003` (1) | FR-08 | 수정(T04, T05 뒤 green) | S05-T04, 이전 확인 S05-T06(ck) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Schema.EmployeeSchemaTests.RawInsert_UndefinedOrReservedStatus_IsRejectedByCheckConstraint23514` (4) | FR-08 | 수정(T04, T05 뒤 green) | S05-T04, 이전 확인 S05-T06(ck) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Schema.EmployeeSchemaTests.ReadConnection_InsertInsideExplicitReadCommittedTransaction_IsStillRejectedWith25006` (1) | FR-08 | 수정(T04, T05 뒤 green) | S05-T04, 이전 확인 S05-T06(읽기 연결 쓰기 거부) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Schema.EmployeeSchemaTests.ReadConnection_WriteStatement_IsRejectedWith25006` (3) | FR-08 | 수정(T04, T05 뒤 green) | S05-T04, 이전 확인 S05-T06(읽기 연결 쓰기 거부) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Schema.EmployeeSchemaTests.ReadDbContext_RawInsertThroughProductionRegistration_IsRejectedWith25006` (1) | FR-08 | 수정(T04, T05 뒤 green) | S05-T04, 이전 확인 S05-T06(읽기 연결 쓰기 거부) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.FaultInjection.TestTriggersTests.*` (4) | FR-05 | 수정(T04, T05 뒤 green) | S05-T04 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Persistence.EmployeePersistenceRoundTripTests.CommitThenRead_MaxLengthAndUnicodeValues_RoundTripUnchanged` (3) | FR-06 | 수정(T04, T05 뒤 green) | S05-T04 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Persistence.EmployeePersistenceRoundTripTests.CommitThenReload_NewWriteDbContext_MaterializesThroughPrivateConstructorWithAuditAndVersion` (1) | FR-06 | 수정(T04, T05 뒤 green) | S05-T04 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Persistence.EmployeePersistenceRoundTripTests.Commit_TimeProviderAtPlusNineAndSeoulSession_StoresSameInstantAsUtc` (1) | FR-06 | 수정(T04, T05 뒤 green) | S05-T04, 이전 확인 S05-T06(감사 UTC) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Persistence.EmployeePersistenceRoundTripTests.GetByIdAsync_StoredEmployee_ProjectsIdValueAndShadowAuditColumnsOnReadConnection` (1) | FR-06 | 수정(T04, T05 뒤 green) | S05-T04 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Persistence.EmployeePersistenceRoundTripTests.GetByIdAsync_UnknownOrEmptyId_ReturnsNull` (1) | FR-06 | 수정(T04, T05 뒤 green) | S05-T04 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Persistence.PersistenceLogExposureTests.*` (2) | FR-05 | 수정(T04, T05 뒤 green) | S05-T04 | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Fixtures.EmployeeApiFactoryTests.Configuration_ContentRootCopy_HasNoSerilogSinksButKeepsLevelsAndNoOtlpEndpoint` (1) | FR-09 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Fixtures.EmployeeApiFactoryTests.Constructor_NullDatabase_Throws` (1) | FR-09 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Fixtures.EmployeeApiFactoryTests.CreateClient_FixtureConnections_ReadyHealthReturns200Healthy` (1) | FR-09 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Fixtures.EmployeeApiFactoryTests.CreateClient_WrongWritePassword_ReadyHealthReturns503` (1) | FR-09 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Fixtures.EmployeeApiFactoryTests.Dispose_Factory_DeletesContentRootCopy` (1) | FR-09 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Fixtures.EmployeeApiFactoryTests.Logs_HostLogger_CollectsEventWithServiceNameFromSettings` (1) | FR-09 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Fixtures.EmployeeApiFactoryTests.TimeProvider_Replaced_AuditTimestampsUseFakeTime` (1) | FR-09 | 수정(T04, T05 뒤 green) | S05-T04(샘플 API 의존) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Fixtures.EmployeeApiFactoryTests.WriteInterceptors_Registered_ObserveApiCommandCommit` (1) | FR-09 | 수정(T04, T05 뒤 green) | S05-T04(샘플 API 의존) | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.ProgramTests.ConfigurePipeline_Development_ServesOpenApiWithEmployeeRoutes` (1) | FR-08 · FR-11 | 수정(T04, T05 뒤 green) | S05-T04(라우트 의존) | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.ProgramTests.ConfigurePipeline_NonDevelopment_DoesNotServeOpenApi` (3) | FR-08 · FR-11 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.ProgramTests.ConfigureServices_CalledTwice_Throws` (1) | FR-08 · FR-11 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.ProgramTests.ConfigureServices_Development_DoesNotEnableSensitiveDataLogging` (1) | FR-08 · FR-11 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.ProgramTests.ConfigureServices_HealthChecks_AreExactlyTwoDbContextChecksTaggedReady` (1) | FR-08 · FR-11 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.ProgramTests.ConfigureServices_ReadMissing_ThrowsWithoutConnectionValues` (1) | FR-08 · FR-11 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.ProgramTests.ConfigureServices_WriteAndRead_BuildsWithScopeValidationAndResolvesSenderAndBothContexts` (1) | FR-08 · FR-11 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.ProgramTests.ConfigureServices_WriteMissing_ThrowsWithoutConnectionValues` (1) | FR-08 · FR-11 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.ProgramTests.ConfigureServices_WriteWhitespace_Throws` (1) | FR-08 · FR-11 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.Api.UnitTests.ProgramTests.DbRetry_IsThreeRetriesWithFiveSecondMaxDelay` (1) | FR-08 · FR-11 | 변경 없음 | - | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Persistence.UnitOfWorkConflictTests.CommitAsync_DeactivateAlreadyInactiveEmployee_WritesNothingAndKeepsXminAndUpdatedAt` (1) | FR-08 | 이전(T06) | S05-T06(xmin) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Persistence.UnitOfWorkConflictTests.CommitAsync_SameIdDifferentEmail_Returns3003FromPrimaryKeyAndLogs202AtWarning` (1) | FR-08 | 이전(T06) | S05-T06(23505 pk → 3003) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Persistence.UnitOfWorkConflictTests.CommitAsync_SameNormalizedEmailWithoutPreCheck_Returns23001FromEmailUniqueIndex` (2) | FR-08 | 이전(T06) | S05-T06(23505 → 23001) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Persistence.UnitOfWorkConflictTests.CommitAsync_SecondScopeDeactivatesWithStaleXmin_Returns3001AndLogs203AtDebug` (1) | FR-08 | 이전(T06) | S05-T06(xmin) | 계획 |
+| `EmergencyHub.Employee.IntegrationTests.Persistence.UnitOfWorkConflictTests.CommitAsync_TwoScopesDeactivateSameEmployee_FirstSucceedsAndUpdatesXminAndUpdatedAtOnly` (1) | FR-08 | 이전(T06) | S05-T06(xmin) | 계획 |
+| `EmergencyHub.ServiceDefaults.UnitTests.HealthEndpointsTests.IsHealthPath_Path_ReturnsWhetherUnderHealthSegment(path: "/api/v1/employees", expected: False)` | FR-03 | 변경 없음 | - | 계획 |
+| `EmergencyHub.BuildingBlocks.Api.UnitTests.Acceptance.ExceptionResponseAcceptanceTests.*` (9) | FR-07 | 변경 없음 | - | 계획 |
+| `EmergencyHub.BuildingBlocks.Api.UnitTests.Acceptance.ResultResponseAcceptanceTests.*` (25) | FR-07 | 변경 없음 | - | 계획 |
+| `EmergencyHub.BuildingBlocks.Api.UnitTests.Errors.ErrorProblemDetailsTests.*` (20) | - | 변경 없음 | - | 계획 |
+| `EmergencyHub.BuildingBlocks.Infrastructure.UnitTests.Persistence.UniqueIndexNameTests.*` (17) | FR-06 | 변경 없음 | - | 계획 |
+
 
 ## 완료 기준 (DoD)
 
@@ -135,6 +246,9 @@ updated: 2026-09-28
 |---|---|---|---|---|
 | 2026-09-28 | - | 계획 리뷰 | 승인(대리) | 작업 5 → 6(옛 T03을 T03 VO · T04 Aggregate · 매핑 · 샘플 제거로 분할, 옛 T04 · T05는 T05 · T06). 막히는 질문 6개 추천안 채택, 보완 조건 3개(대상 대기 해제 ID와 S06 계획 메모, T04 실패 허용 목록 확정 · 목록 밖 실패 BLOCKED, S06 · S07 참조 수정은 T01 커밋) |
 | 2026-09-28 | S05-T01 | dba | PASS | 현황 확인: 마이그레이션 `20260927134235_InitialCreate` 1건(product_version 8.0.31), 23505 매핑 `ux_employees_email` → 23001 1건(EmployeeInfrastructureServiceCollectionExtensions.cs:47), Migrations 폴더 5개(생성 3 + Sealed 2). database.md 변경 없음. handoff → T04(옛 이름 주석 5곳) · T05(리셋 전 기준) |
+| 2026-09-28 | S05-T01 | developer | PASS | 문서 작업. ① `git merge-base --is-ancestor v0.1.0 HEAD` 0, `origin/develop`(210b128) 0, 병합 커밋 `7160967`(앞선 `1f671da`와 함께 v0.1.0 포함) ② 스프린트 S05~S07 확정, ADR 0025 ① API 규칙 예외 · 0026 ② 일괄 가져오기 입력 처리 · 0027 ③ 이메일 대소문자 무시 유일 · 0028 ④ BuildingBlocks 오류 계약 확장, Employee 새 검증 코드 21007~, 공통 413 · 415는 T02에서 할당. 사용 중 코드 Common 12 · Employee 8이 error-codes 표와 일치 ③ BL-121~127 · TD-028 new, BL-024 planned:S06 ④ README PRD-002 · S05~S07 행, roadmap Phase 2 행, S06-T01 의존 · S07-T01 dba 칸 S05-T05 → S05-T06, S06 계획 메모 '대상 대기' 해제, check-docs 94개 · 결함 4 ⑤ TD-010 위험 수용 · open(S05-T06 1회 실측), BL-019 done(3003), BL-023 done(d2263d6), BL-024 planned:S06 ⑥ 기준선 1,538개(통과 1,537 · 건너뜀 1, 13개 프로젝트, trx), 대응표 95행 · 226개(삭제 96 · 수정 35 · 이전 6 · 변경 없음 89) ⑦ build 경고 0 · 오류 0, test 실패 0 · 건너뜀 1. 새 BL-128(roadmap PRD-001 행 미갱신) |
+| 2026-09-28 | S05-T01 | developer | 기록 | S02-T06 계약 확인: ProblemDetails는 code · traceId 항상, `errors`는 ValidationError(400, 1001 고정, sealed)에만. FieldError는 Validation 유형만 받아 409 행 오류 표현 불가. ErrorType → HTTP 9종, 413 · 415 없음. BadHttpRequestException은 400 · 1001(TD-021), multipart InvalidDataException은 9001. `Rows[3].Email` → `rows[3].email`. **S06-T01 완료 조건 확정안**(S06 계획 리뷰 입력): ① ErrorType.Conflict + 행 경로 · 정수 코드 · 메시지 목록을 가진 상세 Conflict 오류(BuildingBlocks.Domain), 409 `errors`(ValidationError와 같은 키 · `{code, message}`) ② ErrorType PayloadTooLarge · UnsupportedMediaType → 413 · 415 + ADR-0028 공통 코드 ③ BadHttpRequestException 413은 413 · 새 코드, 그 밖은 400 · 1001 유지(TD-021 부분 상환, multipart InvalidDataException은 S06-T05) ④ 기존 409(3001 · 3003 · 23001) · 400 형식 · ErrorType 9종 · FieldError 제한 하위 호환 단위 테스트 ⑤ 23505 detail 비노출 ⑥ TD-010은 ADR ② 위험 문구 · S05-T06 실측만, BL-023 처리됨 ⑦ error-codes · api-guidelines · CommonErrorsTests 1:1 |
+| 2026-09-28 | S05-T01 | developer | 기록 | 비차단 질문 판단(추천안): 범위 밖 중 '→ 백로그' 표시 없는 4개(인증 / 권한, 프론트엔드, Idempotency-Key · 통합 이벤트, Employee 외 서비스)는 이미 roadmap · ADR-0023 · api-guidelines에 있어 등록하지 않음(완료 조건 ③ 해석). RETRO-PRD-001 ADR 후보는 0029부터 또는 PRD-002 병합 뒤(→ `/retro` 입력). 413 · 415 ErrorType 값 · 코드 자리는 T02 1차 초안에서 확인. T04 실패 허용 목록 범위는 오케스트레이션에 확인 요청 |
 
 ## 계획 리뷰
 
@@ -236,3 +350,4 @@ updated: 2026-09-28
 | 2026-09-27 | - | 스프린트 계획 (`/prd` PRD-002 분할, 가번호) |
 | 2026-09-28 | - | BL-024 편입 확정, .NET 10 미진행 메모 |
 | 2026-09-28 | orchestrator | 계획 리뷰 확정(작업 5 → 6, 인계 메모, 대리 승인) |
+| 2026-09-28 | developer | S05-T01: 스프린트 번호 확정, 증빙 테스트 대응표 틀(`v0.1.0` 기준선) 추가 |

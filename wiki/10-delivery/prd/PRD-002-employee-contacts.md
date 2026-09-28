@@ -18,7 +18,7 @@ updated: 2026-09-28
 # PRD-002: 직원 연락처 조회 · 일괄 등록 (CSV / JSON)
 
 - 받은 날: 2026-09-27
-- 스프린트: [S05](../sprints/S05-rebase-decisions-schema.md), [S06](../sprints/S06-bulk-register-api.md), [S07](../sprints/S07-query-api-docs.md) (가번호, S05-T01에서 확정)
+- 스프린트: [S05](../sprints/S05-rebase-decisions-schema.md), [S06](../sprints/S06-bulk-register-api.md), [S07](../sprints/S07-query-api-docs.md) (S05-T01에서 확정)
 - 토픽 브랜치: `feature/prd-002-employee-contacts` · PR: [#8](https://github.com/thkim-ezabele/task_20260926/pull/8) · 릴리스: `v0.2.0` · 회고: -
 - 선행 토픽: [PRD-001 기반 구축](PRD-001-foundation.md) (병합 후 스프린트 시작)
 
@@ -198,3 +198,4 @@ updated: 2026-09-28
 | 2026-09-27 | - | 스프린트 분할(S05~S07 가번호, 작업 15개) 승인, 세부 기본값(Q9~Q11, Q16) 확정, `stable` |
 | 2026-09-27 | - | Draft PR #8 연결 |
 | 2026-09-28 | - | develop(v0.1.0) 병합, BL-024 편입(NFR-04 · FR-10, Q17), .NET 10 전환 미진행 기록 |
+| 2026-09-28 | developer | S05-T01 재기준화: 스프린트 번호 S05~S07 확정 |

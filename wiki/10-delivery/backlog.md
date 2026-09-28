@@ -50,7 +50,7 @@ updated: 2026-09-28
 | BL-021 | check-docs.js: 링크 대상에 공백이 있거나 `<...>` 안에 공백이 있는 형식은 점검에서 빠짐(현재 해당 링크 없음). CI 편입 전 보완 검토 | S01-T02 | 하 | dropped | BL-001로 병합(CI 편입 전 check-docs 보완) |
 | BL-022 | database.md 트랜잭션 절 "기본값(Read Committed)을 쓴다"를 ADR-0014 "Read Committed 명시"에 맞춰 정리 | S01-T02 | 하 | done | database.md "Read Committed를 명시한다" (ADR-0014) (기존: S01-T04) |
 | BL-023 | 23505가 UoW에서 Result로 바뀌어도 EF가 CommandError · SaveChangesFailed를 Error로 먼저 기록(정상 경합 경로에 Error 로그 2건). ConfigureWarnings로 수준을 낮출지 결정 | S01-T03 | 중 | done | S03-T06 d2263d6: EF 실패 로그 3종 Debug, 23505 경로 EF Error 2 → 0, 변환되지 않는 예외는 전역 처리기 Error 1회 유지. ADR 대체 후보(ADR-0020 75행) |
-| BL-024 | Aspire 대시보드 추적에서 db.connection_string 태그에 비밀번호가 없는지, 로그 · 추적에 파라미터 값이 없는지 실측 | S01-T03 | 상 | open | NFR-06 관련. S03 계획 리뷰에서 S03-T04 완료 조건에 편입 권장 (기존: S03-T05) |
+| BL-024 | Aspire 대시보드 추적에서 db.connection_string 태그에 비밀번호가 없는지, 로그 · 추적에 파라미터 값이 없는지 실측 | S01-T03 | 상 | planned:S06 | S05-T01: PRD-002 편입(Q17 · NFR-04, 2026-09-28 사용자 결정). 자동 테스트(`ActivityListener`) S06-T06, 대시보드 수동 확인 S07-T04. NFR-06 관련. S03 계획 리뷰에서 S03-T04 완료 조건에 편입 권장 (기존: S03-T05) |
 | BL-025 | coding-conventions CQRS 표의 Command 반환 `Result`를 `Result<Unit>`으로 수정(ADR-0015) | S01-T03 | 중 | done | coding-conventions Result<Unit> (기존: S01-T04) |
 | BL-026 | package-versions에 Serilog.Sinks.Async · Serilog.Enrichers.Environment 버전 · 라이선스 행 추가 | S01-T03 | 하 | done | package-versions.md Serilog.Sinks.Async · Enrichers.Environment 행 (기존: S01-T04) |
 | BL-027 | logging-observability에 반영: `Logging:LogLevel` 미사용, EF 로그 수준, 민감 데이터 규칙, 중복 방지 방식(ADR-0020) | S01-T03 | 중 | done | logging-observability ADR-0020 반영 (기존: S01-T04) |
@@ -147,6 +147,14 @@ updated: 2026-09-28
 | BL-118 | 대시보드 DOM 증빙 방법 문서화: Edge --dump-dom은 Blazor 대화형 렌더링 전에 끝나 본문이 비므로 원격 디버깅(CDP)으로 렌더링 뒤 DOM을 덤프해야 함 | S04-T04 tester | 하 | open | S04 종료 정리: 범위 확장 — CDP DOM 덤프, DCP API(/apis/usvc-dev.developer.microsoft.com/v1/executables) MigrationService exitCode 조회 문서화, 스크립트화 여부 판단. |
 | BL-119 | 아키텍처 테스트로 기계화: 한 파일 한 최상위 형식, Repository 본문 제약(람다 LINQ만), 테스트 enum 기반 형식 명시, Controller 서비스 로케이터 검출(BL-079 · TD-025와 함께 판단) | RETRO-PRD-001 | 중 | open | 회고 개선안 18 보류. 다음 토픽 계획 리뷰에서 편입 판단 |
 | BL-120 | check-docs.js에 완료 조건 FR ↔ 증빙 표 행 교차 점검 옵션 추가 | RETRO-PRD-001 | 하 | open | 회고 개선안 19 보류. BL-001 · 018과 묶어 판단 |
+| BL-121 | 동명이인 전체 조회 · 식별: 같은 이름의 직원 목록 반환, ID 조회 엔드포인트 또는 v2 | PRD-002 범위 밖 (Q3 · FR-08) | | new | PRD-002 FR-08의 `GET /api/employee/{name}`은 동명이인 중 입사일이 가장 빠른 1명만 반환 |
+| BL-122 | CSV 헤더 행 지원 | PRD-002 범위 밖 (Q7 · FR-03) | | new | PRD-002 FR-03은 헤더 없음만 지원(헤더를 넣으면 날짜 형식 오류로 거부). 기술부채 TD-028과 짝 |
+| BL-123 | CP949(Excel 기본 저장) CSV 지원 | PRD-002 범위 밖 (FR-03) | | new | PRD-002 FR-03은 엄격 UTF-8(BOM 허용)만 받고 CP949 바이트는 400 |
+| BL-124 | `/`가 들어간 이름(`%2F`)의 경로 조회 | PRD-002 범위 밖 (FR-08) | | new | PRD-002 FR-08에서 보장하지 않음 |
+| BL-125 | 직원 개인정보 보존 기간 · 삭제 정책 | PRD-002 범위 밖 | | new | |
+| BL-126 | 직원 정보 수정 · 삭제 API | PRD-002 범위 밖 | | new | PRD-002는 등록 · 조회만 |
+| BL-127 | 조직 · 부서 정보 | PRD-002 범위 밖 | | new | 로드맵 Phase 2 후보 토픽(인증 / 직원 · 조직 관리)과 함께 판단 |
+| BL-128 | roadmap.md Phase 1 표와 일정표의 PRD-001 행이 '진행 중 / v0.1.0 (예정)'으로 남아 있음(v0.1.0 태그 2987cdc 존재). `/retro` 종료 때 갱신 누락 | S05-T01 developer | | new | 완료 조건 밖이라 S05-T01에서 고치지 않음 |
 
 ---
 
@@ -163,3 +171,4 @@ updated: 2026-09-28
 | 2026-09-28 | developer | S04-T01: Aspire 스모크 미도입 근거 · 재도입 조건으로 BL-111 추가(`new`) |
 | 2026-09-28 | orchestrator | S04 종료 정리: BL-111~118 정리(open 7 · dropped 1(BL-116 → BL-115)), planned:S04 21건 done, `new` 0 |
 | 2026-09-28 | orchestrator | RETRO-PRD-001: 보류 개선안 BL-119 · 120 추가(open) |
+| 2026-09-28 | developer | S05-T01: PRD-002 범위 밖 백로그 후보 BL-121~127 추가(`new`), BL-024 open → planned:S06 |

@@ -36,7 +36,7 @@ updated: 2026-09-28
 | TD-007 | Aspire.Hosting 9.5.2 전이 MessagePack 2.5.192 취약(GHSA 11건, 높음 2건): 2.5.305 수동 고정 유지(AppHost 한정, Aspire 전환 시 제거) | 인프라 | 중 | S01-T01 | AppHost 한정 수동 고정 유지, NuGetAuditMode=all로 감시. Aspire 전환(TD-002) 때 제거 | open |
 | TD-008 | net8.0 앱에 Microsoft.Extensions.* · System.Diagnostics.DiagnosticSource 10.0.0 전이 유입(Scrutor 7, Serilog.AspNetCore 10, OpenTelemetry 1.19). 취약점 없는 OTel은 모두 DiagnosticSource 10 요구 | 인프라 | 중 | S01-T01 | S02 · S03 실행 시 런타임 호환 관찰. S03-T05 실측: 실제 로드는 DI · Abstractions 모두 앱 로컬 10.0.0이라 혼합 없음, Scrutor Decorate 정상(TD-020 병합). .NET 10 전환(TD-002)으로 해소 | open |
 | TD-009 | xUnit v2 선택 시 xunit 2.9.3이 NuGet Legacy 폐기(보안 수정만) | 테스트 | 하 | S01-T01 | 발생하지 않음: ADR-0021 xUnit v3 채택 (5b94975) | resolved |
-| TD-010 | 커밋 응답 중 연결이 끊기면 실행 전략이 SaveChanges를 재실행해 pk_ 23505 · xmin 충돌을 잘못 보고할 수 있음. 운영 전 verifySucceeded 또는 멱등 키로 해소 | 설계 | 중 | S01-T02 | Phase 4 전 verifySucceeded 또는 Idempotency-Key로 해소. 재현 방법: S03-T06 장애 주입 도우미(쓰기 인터셉터 재등록)에 TransactionCommittedAsync에서 NpgsqlException(new TimeoutException())을 1회 던지는 인터셉터를 더해 재실행 오보고(3003 · 3001)를 Red로 둔 뒤 상환. S03에서는 BL-081 P9로 제외 | open |
+| TD-010 | 커밋 응답 중 연결이 끊기면 실행 전략이 SaveChanges를 재실행해 pk_ 23505 · xmin 충돌을 잘못 보고할 수 있음. 운영 전 verifySucceeded 또는 멱등 키로 해소 | 설계 | 중 | S01-T02 | Phase 4 전 verifySucceeded 또는 Idempotency-Key로 해소. 재현 방법: S03-T06 장애 주입 도우미(쓰기 인터셉터 재등록)에 TransactionCommittedAsync에서 NpgsqlException(new TimeoutException())을 1회 던지는 인터셉터를 더해 재실행 오보고(3003 · 3001)를 Red로 둔 뒤 상환. S03에서는 BL-081 P9로 제외. S05-T01: PRD-002 위험 수용 · open 유지(2026-09-28 사용자 사전 합의). S05-T06에서 pk · ux 검사 순서 1회 실측, ADR ② 위험 항목 | open |
 | TD-011 | EF Core 8 MigrateAsync에 마이그레이션 잠금 없음(EF 9 추가): 적용 주체를 MigrationService 1개로 제한, Phase 4는 번들 / 스크립트 | 인프라 | 중 | S01-T02 | S03 확인: 적용 주체 MigrationService 1개(WithReplicas 없음), Api Migrate 호출 0건(T04 grep). Phase 4 번들 / 스크립트 전환은 남음 | open |
 | TD-012 | ServiceDefaults가 Aspire 템플릿과 달라짐(OTel 로그 공급자 제거, 신호별 OTLP 내보내기, ADR-0020). Aspire 버전을 올릴 때 차이를 다시 적용해야 함 | 인프라 | 하 | S01-T03 | 1단계(템플릿 차이 주석 · ADR-0020 링크)는 S03-T03 19954f4에서 이행(ServiceDefaults csproj · ServiceDefaultsExtensions 주석). 남은 것: Aspire 전환(TD-002) 때 템플릿 차이 재적용 | open |
 | TD-013 | NetArchTest.Rules 1.3.2(2021-05 이후 릴리스 없음) · NSubstitute.Analyzers.CSharp 1.0.17(2024-02 이후 없음) 유지 중단. 막히면 ArchUnitNET 전환 검토(ADR-0021) | 테스트 | 중 | S01-T04 | S02-T05 스파이크: NetArchTest 1.3.2가 net8.0 · internal · IL 의존 · 커스텀 규칙 모두 동작, ArchUnitNET 전환 불필요. 유지 중단 위험만 남음, .NET 10 전환(TD-002) 때 재검토 | open |
@@ -54,6 +54,7 @@ updated: 2026-09-28
 | TD-025 | Controller ↛ Repository 아키텍처 규칙은 시그니처 기준이라 메서드 본문 서비스 로케이터(GetRequiredService<IXxxRepository>())는 잡지 못함 | 테스트 | 하 | S02-T05 | 그 전까지 reviewer 점검표에 'Controller 본문 서비스 로케이터 금지', 필요해지면 Mono.Cecil IL 피연산자 규칙 추가 | open |
 | TD-026 | Employee.Infrastructure가 IConfiguration을 전이 참조(Microsoft.Extensions.Configuration.Abstractions 8.0.0, BuildingBlocks.Infrastructure 경유)로 사용: 직접 참조 · package-versions.md 등록 여부 판단 필요(현재 빌드 · 감사 문제 없음) | 의존성 | 하 | S03-T02 | S04 종료 정리: 문서분(package-versions 전이 참조 행)은 S04-T02 완료, 직접 참조 여부는 TD-002 때 TD-019와 함께. S04 계획 확정: S04-T02 편입(문서 한 줄). 빌드 · 감사 문제 없음. S04-T02에서 package-versions.md에 전이 사용(BuildingBlocks.Infrastructure 경유) 한 줄, 직접 참조 여부는 .NET 10 전환(TD-002) 때 TD-019와 함께 | open |
 | TD-027 | 테스트 fixture의 ApplyMigrationsAsync가 MigrationWorker 적용 코드를 복제(차이가 생겨도 못 잡음), EmployeeDatabaseFixture.OpenAsync · TestTriggers.OpenAsync 중복 | 테스트 | 하 | S03 결과 리뷰(S03-T06) | BL-103 해결 때 적용 코드를 Infrastructure 공용 메서드 하나로 모아 Worker · fixture가 같이 쓰고, OpenAsync는 fixture 한 곳으로. 그 전까지 fixture 주석에 복제 사실 · 원본 위치 | open |
+| TD-028 | CSV 헤더 행 미지원(PRD-002 FR-03, S06-T02 구현): 헤더를 넣으면 첫 줄을 데이터로 읽어 날짜 형식 오류로 요청 전체를 거부함 | 설계 | | PRD-002 범위 밖 (Q7 · FR-03) | BL-122(헤더 지원) 결정 때 함께 상환 | new |
 
 ---
 
@@ -68,3 +69,4 @@ updated: 2026-09-28
 | 2026-09-28 | orchestrator | S03 종료 정리: TD-004 · TD-020 resolved(TD-020은 TD-008 병합), TD-008 · 010 · 011 · 012 · 021 · 026 상환 계획 갱신, TD-027 추가, `new` 0 |
 | 2026-09-28 | orchestrator | S04 계획 확정: TD-024 · TD-026 open → planned:S04, TD-016 배정을 S04-T01(코드) · S04-T05(문서)로 나눔 |
 | 2026-09-28 | orchestrator | S04 종료 정리: TD-016 · TD-024 resolved, TD-026 open(문서분 완료), `new` 0 |
+| 2026-09-28 | developer | S05-T01: TD-010 PRD-002 위험 수용 메모(S05-T06 실측, ADR ② 위험 항목), TD-028 추가(`new`) |
