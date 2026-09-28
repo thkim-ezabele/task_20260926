@@ -25,6 +25,8 @@ updated: 2026-09-28
 - `/sprint` 시작 시 환경 점검(Docker, SDK, gh). 종료 시 push → 토픽 PR CI 통과 확인 → DoD 기록 → 태그 `sprint/SNN`(CI 통과 전 태그 금지).
 - 판정 · 기록만 남는 단계 커밋은 `docs(sprint): SNN-TNN <단계> 판정`. 문서 변경 시 `node scripts/check-docs.js`(링크 · 앵커 · frontmatter · 표 구조).
 - S02 회고 규칙: 파이프라인 표 dba 열이 "해당 없음"이면 dba 호출 생략, reviewer PASS는 tester 커밋에 병합(작업당 커밋 약 3개). 완료 조건은 5~7문장(세부 단언은 handoff). 테스트 범위: 도메인 로직은 TDD 전체, 기반 · 셋팅은 완료 조건 항목당 성공 / 실패 / 엣지 최소 1개, tester는 빈 곳만 보강. 완료 조건 항목은 작업자가 혼자 스프린트 밖으로 내보내지 않음(BLOCKED로 판단받음). 원본: [에이전트 워크플로우](../10-delivery/agents.md#테스트-범위)
+- RETRO-PRD-001 반영(PR #13): 문서 작업은 점검표 D1~D5 · 반려 분류(코드 컨벤션 / 누락 / 설계 / 버그, 문서 형식 / 사실 / 누락 / 범위 밖), 인계 메모에 알려진 잡음 · 제외 기준, CI로만 판정할 조건은 스프린트 종료 판정, 대리 승인은 스프린트 문서 목록 → `/retro` ④ 일괄 추인, dba 생성 SQL 점검표 a~g(원본 database.md), 환경 점검에 Docker API · dev-certs. 원본: [에이전트 워크플로우](../10-delivery/agents.md)
+- 병행 토픽 예외(PRD-002 선례): 같은 폴더에서 다른 세션이 작업 중이면 git worktree로 분리, 토픽 브랜치에는 새 파일만, 공유 문서 · 번호는 첫 작업(재기준화)에서.
 - S03부터 오케스트레이션 세션이 스프린트 세션에 SendMessage로 지시하고 승인 지점(계획 리뷰 · 결정 · BLOCKED · 결과 리뷰)을 처리한다. 스킬 개선은 토픽 `/retro`에서 한꺼번에(진행 중 변경 금지).
 - 흐름 제어와 커밋은 스킬(메인 세션), 판단은 orchestrator. 서브에이전트는 다른 서브에이전트를 부를 수 없다. 에이전트 모델은 메인 세션 상속.
 - 구현: `.claude/agents/`(orchestrator, dba, developer, reviewer, tester), `.claude/skills/`(prd, sprint, retro). 에이전트는 프롬프트 첫 줄 `mode:`로 작업 구분.

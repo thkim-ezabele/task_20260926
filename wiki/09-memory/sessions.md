@@ -12,19 +12,16 @@ updated: 2026-09-28
 
 ## 현재 상태
 
-- **PRD-001 완료 · 릴리스 `v0.1.0`**. 토픽 PR #7 → `develop`(bf286a6), 릴리스 PR #10 → `main`(2987cdc) · 태그 `v0.1.0`, 역병합 PR #11 → `develop`(a3bd6db). 토픽 브랜치는 삭제. 회고 [RETRO-PRD-001](../10-delivery/retros/RETRO-PRD-001.md).
-- 결과: FR 11 · NFR 7 충족, 테스트 1,537 통과 + 1 건너뜀, 커버리지 라인 99.4% · 분기 94.6%, CI 약 4분. 반려 11회(문서 7 · 코드 4, 설계 · 버그 0).
-- S03 · S04와 회고는 사용자 부재 중 오케스트레이션 세션(emergency-hub-a2)이 승인을 대리했다. 대리 승인 항목 추인, ADR 후보 10건, 스킬 호출 설정 유지 여부 등 9개가 [사용자 결정 필요](../10-delivery/retros/RETRO-PRD-001.md#사용자-결정-필요)에 있다.
-- 회고 개선안 19건: 반영 17(아직 미반영, `feature/retro-prd-001-*`에서 할 일) · 보류 2(BL-119 · 120).
-- 백로그 / 기술부채: `new` 0. 상 우선순위 open: BL-002(.NET 10 전환) · BL-024, 기술부채 TD-002. BL-117(첫 실행 헬스 검사 Error, 중) 원인 미상.
-- 로컬: 개발 인증서 미신뢰, Docker Engine API 1.43(`DOCKER_API_VERSION=1.43`). 다른 worktree `emergency-hub-prd-002`에 `feature/prd-002-employee-contacts`(이전 develop 2764402 기준)가 있다.
+- **진행 중 토픽: [PRD-002 직원 연락처 조회 · 일괄 등록](../10-delivery/prd/PRD-002-employee-contacts.md)** (`stable`, FR 11 / NFR 6, 릴리스 `v0.2.0`). 브랜치 `feature/prd-002-employee-contacts`(`develop` 210b128 병합 · push, 7160967), [Draft PR #8](https://github.com/thkim-ezabele/task_20260926/pull/8) CI 통과. 스프린트 S05~S07(작업 15개) 모두 `planned`, **`/sprint S05` 직전 상태**.
+- PRD-001 완료 · `v0.1.0`(PR #7 · #10 · #11). 회고 [RETRO-PRD-001](../10-delivery/retros/RETRO-PRD-001.md) 개선안 17건 반영 완료(PR #13, 210b128), 보류 2건(BL-119 · 120).
+- 사용자 결정(2026-09-28): .NET 10 전환(BL-002) 진행 안 함, BL-024는 PRD-002 편입(S06-T06 · S07-T04). PRD-002 문서에는 반영, `backlog.md` 상태 변경은 S05-T01에서.
+- 코드: Employee 샘플은 아직 PRD-001 모델(`DisplayName`, `api/v1/employees`) → S05-T03 재설계 · T04 리셋 필요. 테스트 1,537 통과 · 1 건너뜀, check-docs 결함 4(BL-018).
+- 로컬: 메인 폴더에서 토픽 브랜치 작업(worktree `emergency-hub-prd-002`는 제거). Docker API 1.43(`DOCKER_API_VERSION=1.43`), 개발 인증서 미신뢰.
 
 ## 다음 할 일
 
-- [ ] RETRO-PRD-001 사용자 결정 9개 확인(대리 승인 추인, ADR 후보 작성, `disable-model-invocation` 유지 여부, BL-113 · 065, .NET 10 전환, BL-024 · 117 편입, 이메일, 익명 볼륨)
-- [ ] 회고 개선안 17건을 `develop`에서 `feature/retro-prd-001-<설명>` 브랜치로 반영(별도 PR)
-- [ ] PRD-002 토픽 브랜치를 새 `develop`(v0.1.0 포함) 기준으로 갱신할지 확인
-- [ ] (선택) 개발 인증서 신뢰 후 https 프로필 OTLP 재확인, 대시보드 스크린샷 3장
+- [ ] `/sprint S05`: T01 재기준화(번호 확정, README 목록 · roadmap, 범위 밖 항목 BL-121~ · TD-028~ 등록, BL-024 `planned:S06`, TD-010 편입 여부, ADR 0025~ · 에러 코드 예약) → T02 ADR 4건 사용자 확인
+- [ ] RETRO-PRD-001 사용자 결정 남은 항목(대리 승인 추인, ADR 후보 (a)~(j), `disable-model-invocation` 유지 여부, BL-113 · 065 · 117, 이메일, 익명 볼륨)
 - [ ] BL-018(raw-log frontmatter) 해결로 check-docs 결함 0 기준선 확보
 - [ ] 프로젝트 범위(In / Out of Scope)와 이해관계자 정의
 
@@ -41,3 +38,4 @@ updated: 2026-09-28
 | [WL-2026-09-28-01](../08-worklog/2026-09/2026-09-28-01-sprint-s03.md) | 2026-09-28 | `/sprint S03`(오케스트레이션 세션 지시): Aspire AppHost · ServiceDefaults · Employee 샘플 5계층 · 통합 테스트(테스트 1,033 → 1,533), 작업 5 → 7 재구성, 반려 1 · BLOCKED 0, 결정 A(이력 컬럼), BL-023 · 073 확정, 요청 로그 결함 수정, 실행 증빙, BL · TD 정리, 태그 `sprint/S03` |
 | [WL-2026-09-28-02](../08-worklog/2026-09/2026-09-28-02-sprint-s04.md) | 2026-09-28 | `/sprint S04`(오케스트레이션 세션 지시): 작업 4 → 6, 커버리지 대상 6개 · MigrationService Development, 기준 문서 갱신 · todo 문서 5개 draft, 새 clone 재현(http 프로필) · CI 실패 표시 확인 · FR / NFR 증빙 표, 반려 6 · BLOCKED 0, BL · TD 정리, 태그 `sprint/S04` |
 | [WL-2026-09-28-03](../08-worklog/2026-09/2026-09-28-03-prd-001-orchestration-retro-release.md) | 2026-09-28 | 오케스트레이션 세션: S03 · S04를 다른 세션에 진행시키며 승인 대리, 스킬 호출 설정 제거, `/retro PRD-001`(개선안 19 · ADR 후보 10), PR #7 병합 · `v0.1.0` 릴리스 · 역병합 |
+| [WL-2026-09-28-04](../08-worklog/2026-09/2026-09-28-04-prd-002-topic-and-retro-improvements.md) | 2026-09-27~28 | `/prd` PRD-002(직원 연락처 조회 · CSV / JSON 일괄 등록, FR 11 / NFR 6) 병행 토픽으로 생성(worktree, Draft PR #8), PRD-001 뒤 develop 병합, BL-024 편입 · .NET 10 미진행, 회고 개선안 17건 반영(PR #13) |
