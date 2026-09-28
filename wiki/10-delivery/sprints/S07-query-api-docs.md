@@ -32,7 +32,7 @@ updated: 2026-09-29
 | S07-T02 | 이름 조회 Query와 `GET /api/employee/{name}`, 라우트 템플릿 세 곳(ADR-0025) | FR-08, FR-10, NFR-04 | Query Validator는 공백을 뗀 뒤 빈 이름이면 400 · 21007, 그 밖의 Name 규칙 실패면 400 · 21008 / 21009를 낸다(Name Value Object 판정). Handler는 trim + NFC 뒤 정확히 일치하는(대소문자 구분) 이름을 찾고, 동명이인이면 `joined_on` · `id` 순으로 첫 1명을 돌려주며, 없으면 404 · 22001을 낸다. 요청 완료 로그 `RequestPath` · `ProblemDetails.instance` · 추적 span `url.path` 세 곳은 모든 엔드포인트에서 라우트 템플릿이 있으면 템플릿(instance는 PathBase + 템플릿)을, 없으면 지금처럼 요청 경로를 쓴다. 500 예외 경로에서도 세 곳이 템플릿을 쓴다. 요청 경로를 단언하던 기존 `instance` 계약 테스트를 새 계약으로 고치고, 세 곳마다 템플릿 있음(성공) · 템플릿 없음(요청 경로 유지) · 500 경로 테스트를 둔다. ADR-0025 "이름 경로 매개변수와 개인정보" 결정 표와 API 설계 가이드 `instance` 행을 구현과 대조해 진행 기록에 남긴다. 단위 테스트가 통과하고, 세 곳과 로그에 이름 값이 없다 | S06-T06 | done | 0879a18 |
 | S07-T03 | 조회 통합 테스트와 10,000건 조회 성능 측정 | FR-07, FR-08, FR-10, NFR-03, NFR-04 | ① 페이징 경계: 25건에서 `page=2&pageSize=10` → 11~20번째, 마지막 페이지를 넘으면 빈 `items` · 200 · 올바른 `totalCount`, `page=0` · `pageSize=101` → 1003, `page=abc` → 1001 ② 한글 URL 200, NFD 조회, 없는 이름 404, 공백 이름 400, 동명이인 3명 중 가장 빠른 1명 ③ 10,000건 fixture 시더(마이그레이션 시드 아님)로 두 조회를 로컬에서 측정해 200ms 이내 측정값과 EXPLAIN 인덱스 사용 결과를 진행 기록에 남김 ④ `{name}` 라우트에 일치한 요청(200 · 400 · 404 · 500)의 응답 본문 · `instance` · 요청 완료 로그 · 추적 span `url.path`에 이름 값 없음 ⑤ S05 증빙 대응표의 나머지 행(1001 HTTP, GET 행)을 닫아 "이전 대기" 0건 | T01, T02 | done | 7c18da7 · 6ba8083 · 9716aca |
 | S07-T05 | 행 0개 일괄 등록 입력 21028 거부(BL-137, 도메인 로직) | FR-06, FR-10 | 파싱 결과 행이 0개면 Handler가 파싱 직후, DB 조회와 `AddRange` 전에 400 · 21028(경로 `""`)을 돌려주고 아무것도 저장하지 않는다. 행이 1개 이상이면 지금 동작 그대로다. 0행을 201로 고정하던 Handler · Controller 단위 테스트를 새 동작으로 고친다(파서 테스트는 유지). 입력 경로 통합 테스트에 0행 JSON(`[]`)과 0행 CSV를 넣어 400 · 21028 · DB 0건을 확인한다. PRD FR-06과 error-codes 21028 행에 한 줄씩(판정 원본에 Handler 0행 추가) 반영하고 BL-137을 닫는다. 단위 · 통합 테스트가 통과한다 | S06-T06 | done | a2f76ea |
-| S07-T04 | 문서 마무리와 Aspire curl 실행 기록 (문서 작업) | FR-11 | API 명세(3개 엔드포인트, 행 오류 경로 규칙, `curl -F file=@` · `-F data=` · `--data-binary` + Content-Type 예시), error-codes · database(일괄 트랜잭션 예외 링크, 리셋 이력) · local-setup 등록 · 조회 예시가 draft 이상. Aspire로 띄운 상태에서 curl 예시를 모두 실행하고, **BL-024** 대시보드 추적 화면에서 `db.connection_string`에 비밀번호가 없고 span 태그에 등록 값이 없음을 확인해(마스킹 캡처를 `evidence/S07-T04/`에) 진행 기록에 명령 · 출력을 남기고, worklog 반영은 사용자에게 안내(`/worklog`) | T03, T05 | doing | |
+| S07-T04 | 문서 마무리와 Aspire curl 실행 기록 (문서 작업) | FR-11 | API 명세(3개 엔드포인트, 행 오류 경로 규칙, `curl -F file=@` · `-F data=` · `--data-binary` + Content-Type 예시), error-codes · database(일괄 트랜잭션 예외 링크, 리셋 이력) · local-setup 등록 · 조회 예시가 draft 이상. Aspire로 띄운 상태에서 curl 예시를 모두 실행하고, **BL-024** 대시보드 추적 화면에서 `db.connection_string`에 비밀번호가 없고 span 태그에 등록 값이 없음을 확인해(마스킹 캡처를 `evidence/S07-T04/`에) 진행 기록에 명령 · 출력을 남기고, worklog 반영은 사용자에게 안내(`/worklog`) | T03, T05 | done | a3a66c2 · 770953b |
 
 상태: `todo` · `doing` · `done` · `blocked`(반려 3회) · `moved:BL-NNN`(백로그로 이관)
 
@@ -84,6 +84,8 @@ updated: 2026-09-29
 | 2026-09-29 | S07-T04 | reviewer | REJECT → developer | 문서 사실: local-setup.md:241 curl.exe 경로 역슬래시 누락. D2 · D4 · D5 나머지 통과, 코드 번호 일치 |
 | 2026-09-29 | S07-T04 | tester | REJECT → developer | 같은 241행 경로 + evidence README 마스킹 문장(머리말 1줄 grep 일치). curl 28개 재실측 일치, check-docs 6(BL-018), build 경고 0 |
 | 2026-09-29 | S07-T04 | developer | PASS | 재작업: local-setup.md:241 경로 역슬래시 복원(od -c 확인), evidence README 마스킹 문장 정정. check-docs 6(BL-018), U+FFFD 0 |
+| 2026-09-29 | S07-T04 | reviewer | PASS | 재검증: 241행 경로 복원 · 마스킹 문장 정정 확인, C:Windows 잔존 0, 범위 밖 변경 없음 |
+| 2026-09-29 | S07-T04 | tester | PASS | 재검증: od -c 역슬래시 3개, 마스킹 grep 재실측 일치, check-docs 6(BL-018), U+FFFD 0 |
 
 
 ### S07-T04 Aspire curl 실행 기록 (2026-09-29, developer)
