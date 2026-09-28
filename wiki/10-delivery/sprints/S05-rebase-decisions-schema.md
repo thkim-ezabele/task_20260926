@@ -341,6 +341,20 @@ updated: 2026-09-28
 | 58 | `IntegrationTests.Schema.EmployeeSchemaTests.ReadConnection_WriteStatement_IsRejectedWith25006(sql: "UPDATE employees SET name = 'changed'")` | Expected (exception.SqlState, exception.ConstraintName) to be equal to |
 | 59 | `IntegrationTests.Schema.EmployeeSchemaTests.ReadDbContext_RawInsertThroughProductionRegistration_IsRejectedWith25006` | Expected (act to be the same string, but they differ at index 0: |
 
+### S05-T06 tester 대조표
+
+| 항목 | 기존 테스트 | 판정 |
+|---|---|---|
+| ① `= ANY` 쓰기 연결 · AddRange · BuildingBlocks 변경 0 | EmployeeRepositoryDatabaseTests 7건, QueryPlan `= ANY`, diff 없음 | 빈 곳 없음 |
+| ② 목록 · 개수 · 이름 단건 정렬 | EmployeeReadRepositoryDatabaseTests 8건 | 빈 곳 없음 |
+| ③ ck · 23001 · 3003 · xmin · 25006 · UUID v7 · UTC · NFC | 대응표 DB 16행 + 새 테스트 2건 | 빈 곳 없음 |
+| ④ EXPLAIN 3개 | EmployeeQueryPlanTests 4건 | 빈 곳 없음(생성 SQL 재확인) |
+| ⑤ 대응표와 기준선 1:1 | map-check + trx 대조 | 빈 곳 없음 |
+| name 100자 · 서로게이트, phone 20자 경계 | RoundTrip BoundaryValues | 이미 있음 |
+| employee_status ck 위반 | EmployeeSchemaTests 23514 · 22003 | 이미 있음 |
+| employee_status 1이 EF 경로로 저장 | 없었음 | 추가 |
+| joined_on 1900-01-01 · 미래 DB 왕복 | 없었음(단위 변환기만) | 추가(2사례) |
+
 ### S05-T05 tester 대조표
 
 | 완료 조건 항목 | 성공 | 실패 | 엣지 |
@@ -430,6 +444,7 @@ updated: 2026-09-28
 | 2026-09-28 | S05-T06 | developer | PASS | TDD(Testcontainers). ① IEmployeeRepository `ListExistingNormalizedEmailsAsync(IReadOnlyCollection<string>)`(람다 `Contains` → `= ANY`, 쓰기 연결) · `AddRange`, ExistsByNormalizedEmailAsync는 대체 삭제, BuildingBlocks 변경 0 ② IEmployeeReadRepository `ListOrderedByJoinedOnAsync(skip, take)` · `CountAsync` · `FindFirstByNameAsync(Name)`, 반환 `EmployeeContactResponse` ③ ck · 23505 → 23001(새 대소문자만 다른 이메일, 입력 표기 보존) · pk → 3003 · xmin 3 · 25006 · UUID v7(같은 밀리초 1,000건 묶음, UUIDNext 실측 30회 중 11회 한 밀리초) · 감사 UTC · 새 NFD → NFC 저장 모두 green ④ EXPLAIN 자동 테스트(QueryPlans/EmployeeQueryPlanTests 4건, 10,000건 + ANALYZE, 인터셉터로 가로챈 실제 SQL): 목록 `SELECT e.id, e.name, e.email, e.phone_number, e.joined_on FROM employees AS e ORDER BY e.joined_on, e.id LIMIT @__p_1 OFFSET @__p_0` → Index Scan `ix_employees_joined_on_id`(hit 22, Sort 없음), 이름 `... WHERE e.name = @__name_0 ORDER BY e.joined_on, e.id LIMIT 1` → Index Scan `ix_employees_name_joined_on_id`(hit 3), `= ANY` `SELECT e.normalized_email FROM employees AS e WHERE e.normalized_email = ANY (@__normalizedEmails_0)`(매개변수 1개) → Bitmap Index Scan `ux_employees_normalized_email`(VACUUM 없어 Index Only 아님, 같은 인덱스), 개수 Seq Scan(정상) ⑤ 대응표 DB 16행 '이전 완료(T06)', HTTP 16행 '이전 대기: S06-T06 / S07-T03'(대체 없음 1), 기준선 대조 114행 · 269개 bad 0 · 중복 0. database.md 411행 TD-010 문장, testing-strategy P4 교체, coding-conventions · clean-architecture 동기화. build 경고 0, format 0, test 1,636 = 통과 1,632 · 실패 0 · 건너뜀 4(+28), check-docs 결함 4 |
 | 2026-09-28 | S05-T06 | reviewer | PASS | 16항목 통과: build 경고 0, test 1,636 = 통과 1,632 · 0 실패 · 4 건너뜀(직접 실행), format 0, Repository 람다 체인만(분기 · 로깅 · Distinct 없음), CQRS 연결 경로를 틀린 연결 테스트로 확인, 생성 SQL = dba 명세 Q-ANY · Q-LIST · Q-COUNT · Q-NAME, 대응표 재대조 114행 · 269개 bad 0 · 중복 0. ExistsByNormalizedEmailAsync 삭제 타당, EmployeeContactResponse 위치 타당(coding-conventions 기능 폴더 규칙 확장은 결과 리뷰 추인 대상), UUID v7 재시도(최대 50회, 전부 실패 확률 약 1e-10, 커버리지 수집 3회 반복 통과) 안정, EXPLAIN 3개 노드 인정은 `= ANY`에만 · 인덱스 이름 고정이라 판정 약화 없음. handoff: testing-strategy 162~163행(ReadInterceptors · AddReadDbContextInterceptors · QueryPlans 도우미) 누락과 database.md 521행 '확인됨' 반영 — tester는 테스트 코드만 고칠 수 있어 developer 보완(문서만)으로 처리. push 뒤 CI에서 UUID v7 같은 밀리초 테스트 통과 확인 |
 | 2026-09-28 | S05-T06 | developer | 보완(문서만) | reviewer handoff 처리: testing-strategy 도우미 표에 ReadInterceptors · AddReadDbContextInterceptors · QueryPlans 도우미(CommandCaptureInterceptor · CapturedCommand · QueryPlan.ExplainAsync) 추가, database.md 인덱스 용도를 '확인됨(실측 S05-T06)'으로(목록 · 이름 Index Scan Sort 없음, `= ANY` Bitmap Index Scan on ux_employees_normalized_email(VACUUM 전이라 Index Only 아님), 끝 페이지 Seq Scan + Sort 정상(dba 실측 출처 표시)). check-docs 결함 4, src · tests 변경 0 |
+| 2026-09-28 | S05-T06 | tester | PASS | 빈 곳 2개만 보강(RoundTrip [Theory] joined_on 1900-01-01 · 2999-12-31 DB 왕복 + Active → employee_status 1). ① BuildingBlocks diff 0 ② 람다 LINQ만 ③ 대응표 DB 16행 trx 대조 전부 통과 ④ EXPLAIN detailed 재실행: 목록 · 이름 Index Scan Sort 없음, `= ANY` 매개변수 1개 Bitmap Index Scan ux, 개수 Seq Scan ⑤ map-check 114행 · 269개 bad 0 · 중복 0. 문서 재실측: TD-010(임시 postgres:17 OID 순서 pk 먼저, 대조군 뒤집힘), database 521행, testing-strategy P4 · 도우미 표, coding-conventions 코드 블록 diff 0 모두 일치. test 1,638 = 통과 1,634 · 실패 0 · 건너뜀 4, build 경고 0. S06 인계: 동시 경합 · 재전송 테스트 기대값은 3003 · 로그 202, InitialCreate 재생성 때 순서 재확인 |
 
 ## 계획 리뷰
 

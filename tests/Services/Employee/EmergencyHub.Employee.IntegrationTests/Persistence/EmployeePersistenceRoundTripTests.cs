@@ -124,6 +124,27 @@ public sealed class EmployeePersistenceRoundTripTests(EmployeeDatabaseFixture da
         (await connection.ScalarAsync<long>("SELECT count(*) FROM employees WHERE name = $1", CancellationToken, nfd)).Should().Be(0);
     }
 
+    [Theory]
+    [Trait("FR", "PRD-002/FR-01")]
+    [InlineData("1900-01-01")]
+    [InlineData("2999-12-31")]
+    public async Task CommitThenRawRead_JoinedOnLowerBoundOrFutureDate_StoresDateUnchangedAndActiveStatusAsOne(string joinedOn)
+    {
+        // S05-T06 tester 보강: joined_on 하한(1900-01-01, 포함)과 미래 날짜(허용)는 DB date 컬럼에 날짜 그대로 저장되고(시간대 이동 없음),
+        // 등록 상태 Active는 employee_status smallint 1로 저장된다(ADR-0008). 읽기 Repository 목록 프로젝션에서도 같은 날짜로 돌아온다.
+        await using var services = Database.CreateServices();
+        var employee = new EmployeeBuilder().WithJoinedOn(joinedOn).Build();
+
+        (await EmployeeCommits.AddAndCommitAsync(services, employee, CancellationToken)).IsSuccess.Should().BeTrue();
+
+        await using var connection = await Database.OpenWriteConnectionAsync(CancellationToken);
+        (await connection.ScalarAsync<string>("SELECT joined_on::text FROM employees WHERE id = $1", CancellationToken, employee.Id.Value)).Should().Be(joinedOn);
+        (await connection.ScalarAsync<short>("SELECT employee_status FROM employees WHERE id = $1", CancellationToken, employee.Id.Value)).Should().Be((short)1);
+        await using var scope = services.CreateAsyncScope();
+        var listed = await scope.ServiceProvider.GetRequiredService<Application.Employees.IEmployeeReadRepository>().ListOrderedByJoinedOnAsync(0, 10, CancellationToken);
+        listed.Should().ContainSingle().Which.JoinedOn.Should().Be(DateOnly.ParseExact(joinedOn, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+    }
+
     [Fact]
     public async Task Commit_TimeProviderAtPlusNineAndSeoulSession_StoresSameInstantAsUtc()
     {
