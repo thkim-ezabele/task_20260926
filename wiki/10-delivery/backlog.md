@@ -161,6 +161,7 @@ updated: 2026-09-28
 | BL-132 | logging-observability.md(87 · 93 · 152행) · tdd-guide.md(51 · 71행) 예시가 PRD-001 샘플 이름(RegisterEmployeeCommandHandler 등)을 씀 | S05-T04 developer | | new | 형식 설명이라 S05에서는 두었음. S06-T04 Handler 예시 교체 때 함께 |
 | BL-133 | IntegrationTests `Http/HttpProblem.cs` · `LogEventText.cs`가 HTTP 테스트 삭제로 호출처 0 | S05-T04 developer | | new | S06-T06 HTTP 테스트에서 다시 쓰거나 삭제 |
 | BL-134 | employee-api.md 83행 409 설명이 옛 `ux_employees_email`로 남아 있음(샘플 API 제거된 PRD-001 문서) | S05-T05 reviewer | | new | S06 API 문서 작업에서 다시 쓸 대상 |
+| BL-135 | database.md '알려진 잡음 로그' 표가 BL-117(첫 /health/ready Unhealthy Error 2건)을 '잡음 아님 · 제외하지 않음'으로 두어, RETRO-PRD-001 유지 판단(BL-117 잡음 제외) · S05 계획 인계 메모와 다름. 한쪽으로 맞춤 | S05-T05 tester | | new | S05-T05에서는 승인된 인계 메모 기준으로 개수 기록 후 제외. S05-T05 관찰: Api 시작 약 2.6초 뒤 첫 요청, EmployeeDbContext 924 ms · ReadDbContext 108 ms, 두 번째 요청부터 200 |
 
 ---
 

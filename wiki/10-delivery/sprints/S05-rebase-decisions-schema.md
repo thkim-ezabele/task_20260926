@@ -132,6 +132,7 @@ updated: 2026-09-28
 
 **S05-T06**
 
+- (T05 tester) AppHost 볼륨 `emergency-hub-postgres-data`는 새 스키마로 다시 만들어진 상태. 리셋 전 커밋의 worktree에서 AppHost를 띄우면 42P07 가능.
 - (T05 dba) testing-strategy P4 행(148행)의 'ux_employees_email → 23001 · 로그 201 (실측)'을 23505 경로 이전 테스트(UnitOfWorkConflictTests) green 확인 뒤 `ux_employees_normalized_email`로 고친다.
 - EXPLAIN: 10,000건 + ANALYZE(또는 `enable_seqscan=off`). 대상은 목록(`ix_employees_joined_on_id`), 이름(`ix_employees_name_joined_on_id`, Sort 없음), `list.Contains`가 만든 `= ANY`(ux). COUNT(*) 전체 스캔은 정상. 생성 SQL 원문을 함께 기록.
 - (T02 developer) ADR-0026 11절의 TD-010 pk · ux 검사 순서는 실측 뒤 진행 기록과 TD-010 행에 남긴다(ADR 본문은 고치지 않음).
@@ -337,6 +338,16 @@ updated: 2026-09-28
 | 58 | `IntegrationTests.Schema.EmployeeSchemaTests.ReadConnection_WriteStatement_IsRejectedWith25006(sql: "UPDATE employees SET name = 'changed'")` | Expected (exception.SqlState, exception.ConstraintName) to be equal to |
 | 59 | `IntegrationTests.Schema.EmployeeSchemaTests.ReadDbContext_RawInsertThroughProductionRegistration_IsRejectedWith25006` | Expected (act to be the same string, but they differ at index 0: |
 
+### S05-T05 tester 대조표
+
+| 완료 조건 항목 | 성공 | 실패 | 엣지 |
+|---|---|---|---|
+| ① 커밋 R은 Migrations 경로만, footer 없음 | `git show --name-status 5ee04a4`: 경로 7건 모두 Migrations/ | 경로 밖 0 | Snapshot.Sealed 유지 · 새 Sealed 1개, `MigrationAndSnapshotTypes_*_AreAllSealed` 통과 |
+| ② · ③ 커밋 D 기록 · 문서 갱신 | 5937f21 `Stage: dba`, 문서 수치 = DB 실측 | reviewer 반려(Q1 · 83행)는 87e109a로 재작업 | local-setup 42P07은 예상 · 미재현 표기 |
+| ④ 볼륨 삭제 → AppHost http, 종료 코드 0, `/health/ready` 200 | exitCode 0, ready · live 200, `d employees` 명세 일치 | 새 오류 0(3D000 1 · BL-117 2 기록 후 제외) | 다른 볼륨 5개 그대로, 남은 컨테이너 · 프로세스 0 |
+| ⑤ MigrateAsync, test 전체 통과, 허용 목록 green, 건너뜀 3 + 1 | 1,604 통과 · 0 실패, 통합 104 | 허용 목록 59/59 green | 건너뜀 메시지에 해제 작업 ID(S06-T04 × 2, S06-T05 × 1) + 기존 1 |
+| ⑥ developer 단계 코드 변경 0 | `git diff --stat 5ee04a4 HEAD -- src tests` 출력 없음 | 해당 없음 | 해당 없음 |
+
 ### S05-T04 tester 대조표
 
 | 완료 조건 | 성공 | 실패 | 엣지 |
@@ -410,6 +421,8 @@ updated: 2026-09-28
 | 2026-09-28 | S05-T05 | reviewer | REJECT → dba | 반려 1회(문서 · 사실, D3). 커밋 R(5ee04a4)은 통과(Migrations만 · footer 없음 · Sealed 형식 · has-pending-model-changes 차이 없음 · 생성 SQL = 명세, build · format · test 1,604 통과 · 0 실패 · 4 건너뜀 직접 재실행). 사유: ① testing-strategy.md 246행 Q1 '기대값 (실측)'이 없어진 옛 스키마(display_name 등 6개 컬럼)로 남아 같은 표 Q2(새 실측)와 모순 ② coding-conventions.md 83행 '실제 코드' 예시의 파일 이름이 삭제된 `20260927134235_InitialCreate.Sealed.cs`. 새 커밋(Stage: dba)으로 두 곳만 고침, 커밋 R은 다시 만들지 않음. 새 BL-134 |
 | 2026-09-28 | S05-T05 | dba | PASS(재작업) | 반려 1회 재작업: testing-strategy Q1 기대값을 `20260928090646_InitialCreate` 실측 9개 컬럼(모두 NO, column_default NULL, 임시 postgres:17에서 Q1 쿼리 실측)으로, 변경 이력 행 Q1 · Q2로. coding-conventions 83행 파일 이름 주석을 `20260928090646_InitialCreate.Sealed.cs`로, 변경 이력 한 줄. 두 곳 외 변경 0, src · tests · Migrations 변경 0, check-docs 결함 4 |
 | 2026-09-28 | S05-T05 | developer | PASS(재판정) | 재작업 87e109a는 wiki만(coding-conventions · testing-strategy · 스프린트 문서), c350f7e..HEAD의 src · tests diff 0, build 경고 0 · 오류 0. test는 코드 변경 0이라 재실행 생략, c350f7e 결과(1,608 = 통과 1,604 · 실패 0 · 건너뜀 4, 허용 목록 59/59 green) 유지 |
+| 2026-09-28 | S05-T05 | reviewer | PASS(재판정) | 재작업 두 곳이 생성 SQL · 소스와 같음(Q1 컬럼 9개 순서 · 타입 · NO · NULL = t05-idempotent.sql · EmployeeSchemaTests, coding-conventions 파일 이름 · 선언 줄 = 소스), c350f7e..HEAD src · tests 변경 0, check-docs 결함 4. 커밋 순서 R → D → developer → 반려 → dba 재작업 → developer 재판정(reset 없음). 나머지는 이전 판정 유지 |
+| 2026-09-28 | S05-T05 | tester | PASS | 볼륨 `emergency-hub-postgres-data`만 삭제(다른 볼륨 5개 그대로, 전후 이름 diff 0) → AppHost http: employee-migrations exitCode 0(DCP), `/health/ready` · `/health/live` 200, `d employees` = 새 스키마 명세 · Q1 · Q2 · 점검 8번(이력 1행 `20260928090646_InitialCreate` · 8.0.31), 소유자 employee_app. 로그 새 오류 0: FATAL 3D000 1건 · BL-117 Error 2건(EventId 103, 첫 /health/ready, Api 시작 약 2.6초 뒤, EmployeeDbContext 924 ms · ReadDbContext 108 ms Unhealthy, message null)은 계획 인계 메모의 알려진 잡음 기준대로 개수 기록 후 제외(database.md 알려진 잡음 표는 BL-117을 '제외하지 않음'으로 둬 불일치 → BL-135, 결과 리뷰 보고). test 재실행 1,608 = 통과 1,604 · 실패 0 · 건너뜀 4(대상 대기 3 + 기존 1), T04 허용 목록 59/59 green, 추가 테스트 0. 정리: AppHost 종료, 남은 프로세스 · 컨테이너 0 |
 
 ## 계획 리뷰
 
