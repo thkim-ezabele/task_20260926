@@ -17,7 +17,7 @@ namespace EmergencyHub.Employee.IntegrationTests.TestData;
 /// <item><c>id</c>: <c>0190a000-0000-7000-8000-{g 16진수 12자리}</c>(버전 7 · 변형 8 형태, g 순으로 증가).</item>
 /// <item><c>name</c>: <c>직원{g % 2000}</c>(한글, 이름 2,000종 × 5명 = 동명이인). <see cref="NamesakeName"/>은 g = 42 · 2042 · 4042 · 6042 · 8042.</item>
 /// <item><c>joined_on</c>: <c>2015-01-01 + (g × 37) % 3650</c>일. 하루에 2~3명이라 같은 입사일에서 <c>id</c> 순 보조 정렬이 쓰이고, 목록 순서가 ID 순서와 다릅니다.
-/// 동명이인 <see cref="NamesakeName"/> 중 가장 빠른 사람은 ID가 가장 작은 사람이 아닙니다(g = 6042, 입사일 2017-06-24).</item>
+/// 동명이인 <see cref="NamesakeName"/> 중 가장 빠른 사람은 ID가 가장 작은 사람이 아닙니다(g = 6042, 입사일 2017-06-23).</item>
 /// <item><c>email</c>: <c>Seed{g}@Example.com</c>, <c>normalized_email</c>은 소문자(DB는 강제하지 않음, ADR-0027).</item>
 /// <item><c>employee_status</c>: g % 10 = 0이면 2(비활성), 아니면 1. 목록 · 개수 · 이름 조회는 상태와 무관합니다.</item>
 /// </list>
