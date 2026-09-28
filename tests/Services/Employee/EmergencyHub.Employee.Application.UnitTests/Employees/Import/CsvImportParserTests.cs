@@ -187,6 +187,16 @@ public sealed class CsvImportParserTests
     }
 
     [Fact]
+    public void Parse_UnexpectedQuoteAfterMultiLineQuotedField_ReportsStartLineAndRecoversAtNextLine()
+    {
+        // 따옴표 안 줄바꿈으로 2줄에 걸친 레코드에서 21021이 나면 시작 줄로 보고하고, 오류가 난 물리 줄 다음부터 다시 읽는다.
+        var parsed = ParseSuccess("\"a\r\nb\"x,\"c,d,e\nf,g,h,i");
+
+        parsed.Errors.Should().Equal(new ImportRowError(1, EmployeeErrors.CsvUnexpectedQuote));
+        parsed.Rows.Should().Equal(new ImportRow(3, "f", "g", "h", "i"));
+    }
+
+    [Fact]
     public void Parse_RowWithQuoteErrorAndWrongColumnCount_ReportsQuoteErrorOnly()
     {
         var parsed = ParseSuccess("a\"b,c");
