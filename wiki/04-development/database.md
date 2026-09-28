@@ -408,7 +408,7 @@ var smsEnabled = await db.Employees
 - 감사 인터셉터는 재시도마다 다시 실행되어 `created_at` · `updated_at`을 다시 계산한다(허용).
 - Outbox 확장 지점은 재시도 때 다시 호출된다. 확장 지점에 들어가는 코드는 멱등이어야 한다(같은 엔트리를 두 번 Add하지 않음).
 - 실패(변환된 `Result` 또는 예외) 뒤에는 `AcceptAllChanges` · `ClearDomainEvents`를 하지 않고 추적기를 비우지도 않는다. **스코프 하나 = Command 하나**가 전제이므로 실패한 스코프의 DbContext로 다른 Command를 커밋하지 않는다.
-- 커밋 응답을 받는 중 연결이 끊기면 실제로는 성공한 커밋을 재시도해 `pk_` `23505`(→ 3003) 또는 `xmin` 충돌(→ 3001)로 잘못 보고할 수 있다(TD-010). 이 경우 로그 202(매핑 없는 유니크 위반, 제약 이름 `pk_...`)로 드러난다.
+- 커밋 응답을 받는 중 연결이 끊기면 실제로는 성공한 커밋을 재시도해 `pk_` `23505`(→ 3003) 또는 `xmin` 충돌(→ 3001)로 잘못 보고할 수 있다(TD-010). 이 경우 로그 202(매핑 없는 유니크 위반, 제약 이름 `pk_...`)로 드러난다. pk · ux를 함께 위반하면 인덱스 생성(OID) 순서로 pk_employees가 먼저 보고된다(실측 S05-T06). 그래서 배치 재전송 오보고는 23001이 아니라 3003이다. 인덱스 생성 순서가 바뀌면 달라질 수 있다.
 
 ### 영속성 예외 변환
 
@@ -588,3 +588,4 @@ InitialCreate 대조(S05-T05 dba, 마이그레이션 `20260928090646_InitialCrea
 | 2026-09-28 | developer | ADR-0026 · 0027 반영(S05-T02 dba 문안): 단일 값 Value Object는 엔티티 설정 안 값 변환기(Employee 4개, `NormalizedEmail`은 문자열 속성), 트랜잭션 규칙에 `RegisterEmployeesCommand` 다중 Aggregate 예외(상한 1,000) 링크, `employees` 인덱스 표의 CHECK 문구를 `ux_employees_normalized_email` 기준 · U+0130 실측 근거로, 길이(UTF-16이 varchar보다 엄격, SqlState 22001 없음) · `joined_on` 하한 · 이름 · 전화 형식은 Domain 규칙 한 줄. ERD · InitialCreate 대조 표는 S05-T05에서 갱신 (S05-T02) |
 | 2026-09-28 | dba | Employee 새 스키마 명세 추가(실측 전, S05-T05 생성 SQL로 확정): 컬럼 9개 + `xmin` 열 순서 · 타입 · NOT NULL · 기본값 없음 · 매핑(VO 값 변환기 4개, `NormalizedEmail` 문자열), 제약 · 인덱스 5개 기대 SQL(`ux_employees_normalized_email` 이름 상수, `ix_` 2개 명명 규칙 생성), 최장 식별자 30바이트, 이름 상수 위치, `EmployeeImportFormat` DB 미저장. 옛 스키마(`20260927134235_InitialCreate`)와 기준 구분 문장, 이름 상수 문단 · 인덱스 표를 두 스키마로 구분 (S05-T04) |
 | 2026-09-28 | dba | ADR-0012 운영 전 리셋: Employee `InitialCreate` 재생성(`20260927134235` → `20260928090646_InitialCreate`, 리셋 커밋 5ee04a4, 로컬 볼륨 삭제 필요). 새 스키마 명세의 "실측 전" 표시 · 기준 구분 인용 블록 제거, 옛 ERD · InitialCreate 대조를 새 실측값으로 교체, 적용 범위 실측 표(`ix_` · 날짜 `_on` 적용됨, 최장 30바이트, 따옴표 7 · 5), 점검표 a~g 실측 열, 인덱스 표(4개, PK 포함) · 이름 상수 문단 · Sealed 파일 문구, 리셋 때 `--output-dir Persistence/Migrations` 필수 (S05-T05) |
+| 2026-09-28 | developer | 커밋 재시도 오보고(TD-010) 문단에 pk · ux 동시 위반 시 `pk_employees`가 먼저 보고되는 실측(인덱스 OID 순, 배치 재전송 오보고는 3003) 추가 (S05-T06) |

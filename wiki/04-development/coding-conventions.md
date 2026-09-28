@@ -162,15 +162,16 @@ Application 레이어는 **Command(상태 변경)와 Query(조회)를 분리**�
 
 기능 폴더 구조 (Application)
 
-- 규칙: 기능마다 `Employees/Commands/<기능>/`에 Command · Handler · Validator를, `Employees/Queries/<기능>/`에 Query · Handler · 응답 `record`를 한 폴더로 둔다. 기능 폴더 밖에는 여러 기능이 함께 쓰는 로그 정의 · Read Repository 인터페이스만 둔다.
-- 현재 구성(S05-T04, PRD-001 샘플 Command · Query 제거 뒤): 기능 폴더가 없다. 일괄 등록(`Commands/RegisterEmployees/`)은 S06-T04, 목록 · 이름 조회 Query는 S07에서 생긴다.
+- 규칙: 기능마다 `Employees/Commands/<기능>/`에 Command · Handler · Validator를, `Employees/Queries/<기능>/`에 Query · Handler · 응답 `record`를 한 폴더로 둔다. 기능 폴더 밖에는 여러 기능이 함께 쓰는 로그 정의 · Read Repository 인터페이스 · Read Repository가 돌려주는 프로젝션 `record`(여러 Query가 함께 쓰는 것)만 둔다.
+- 현재 구성(S05-T06, PRD-001 샘플 Command · Query 제거 뒤): 기능 폴더가 없다. Read Repository와 그 프로젝션 `record`는 S05-T06에서 생겼고, 일괄 등록(`Commands/RegisterEmployees/`)은 S06-T04, 목록 · 이름 조회 Query는 S07에서 생긴다.
 
 ```
 EmergencyHub.Employee.Application/
 ├── EmployeeApplicationAssembly.cs
 └── Employees/
+    ├── EmployeeContactResponse.cs   # Read Repository 프로젝션 record(목록 · 이름 조회 공용)
     ├── EmployeeLogs.cs              # 로그 이벤트 20001(배포된 ID라 유지, S06 등록 Handler가 다시 씀)
-    └── IEmployeeReadRepository.cs   # 멤버 없음, 조회는 S05-T06에서 추가
+    └── IEmployeeReadRepository.cs   # 목록 · 개수 · 이름 단건
 ```
 
 > 아래 Handler 예시는 PRD-001 샘플(`v0.1.0` 태그의 `Employees/Commands/RegisterEmployee/`)이고 S05-T04에서 코드에서 지웠다. 예시는 S06-T04에서 일괄 등록(`RegisterEmployeesCommand`, 처리 순서와 검증 위치는 [ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md))의 실제 코드로 바꾼다. 그때까지 예시는 Handler 형태(주입 · 저장하지 않음 · `Result` 반환)의 설명용이고, `Employee.Register` 호출 모양은 지금 코드와 다르다(아래 목록 참고).
@@ -211,7 +212,7 @@ internal sealed class RegisterEmployeeCommandHandler(
 - 저장 · 커밋은 이 Handler가 아니라 트랜잭션 데코레이터 → `IUnitOfWork`가 한다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)). Handler는 `SaveChanges`를 부르지 않는다.
 - ID는 Handler가 `IIdGenerator.NewId()`로 만든다([ADR-0013](../03-architecture/adr/0013-uuid-v7-with-uuidnext.md)).
 - `Employee.Register`는 `Result`가 아니라 `Employee`를 돌려주고, 불변식을 어기면 예외를 던진다([DDD 구현 규칙](#ddd-구현-규칙-aggregate--value-object)). S05-T04부터 시그니처는 `Register(EmployeeId id, Name name, Email email, PhoneNumber phoneNumber, JoinedOn joinedOn)`이다. 필드 규칙은 호출한 쪽이 Value Object `Create`의 `Result`로 먼저 판정하고, 상태는 입력으로 받지 않고 Active(1)로 고정한다.
-- 이메일은 Email Value Object(입력 표기 `Value`, `NormalizedEmail` = `Value.ToLowerInvariant()`)이고, Aggregate는 `NormalizedEmail` 문자열 속성을 가진다. 사전 중복 검사는 정규화 값으로 하고(`IEmployeeRepository.ExistsByNormalizedEmailAsync`), 동시 요청 경합은 유니크 인덱스 `ux_employees_normalized_email` → 23505 → Infrastructure 매핑이 같은 `EmployeeErrors.DuplicateEmail`(23001) 인스턴스로 막는다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)). 위 예시의 `employee.Email`(정규화 `string`, PRD-001)은 지금 `employee.NormalizedEmail`이다.
+- 이메일은 Email Value Object(입력 표기 `Value`, `NormalizedEmail` = `Value.ToLowerInvariant()`)이고, Aggregate는 `NormalizedEmail` 문자열 속성을 가진다. 사전 중복 검사는 정규화 값 목록으로 한 번에 하고(`IEmployeeRepository.ListExistingNormalizedEmailsAsync`, `= ANY` 배열 매개변수 1개, S05-T06), 동시 요청 경합은 유니크 인덱스 `ux_employees_normalized_email` → 23505 → Infrastructure 매핑이 같은 `EmployeeErrors.DuplicateEmail`(23001) 인스턴스로 막는다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)). 위 예시의 `employee.Email`(정규화 `string`, PRD-001)은 지금 `employee.NormalizedEmail`이다.
 - 시각이 필요한 Handler는 `TimeProvider`를 주입받는다. 이 Handler는 시각을 쓰지 않는다(감사 시각은 Infrastructure 감사 인터셉터가 채움).
 
 ## Repository 규칙 (EF Core)
@@ -235,22 +236,51 @@ internal sealed class RegisterEmployeeCommandHandler(
 - 선택적 조건은 코드 분기가 아니라 **람다 안의 조건식**으로 쓴다(SQL로 번역됨).
 
 - 값 변환기로 매핑한 Value Object 속성(Employee의 `Name` · `Email` · `PhoneNumber` · `JoinedOn`)은 조건 · 정렬에서 **Value Object끼리** 비교한다(`employee.Name == name`, `OrderBy(employee => employee.JoinedOn)`). 조건식 안의 `employee.Name.Value`는 번역되지 않는다(`InvalidOperationException` "could not be translated"). 최상위 `Select`의 `.Value` 프로젝션은 컬럼을 읽은 뒤 클라이언트에서 계산되므로 쓸 수 있다(S05-T04 실측: `ToQueryString` · 가로챈 명령).
+- 목록 조회 쿼리 형태(S05-T06 실측, 가로챈 명령 원문): 정렬은 `OrderBy(JoinedOn).ThenBy(Id)`를 함께 써야 `ORDER BY e.joined_on, e.id`가 복합 인덱스와 맞고 결과가 안정적이다. 값 목록 조건은 람다 `Contains`로 쓰면 배열 매개변수 1개의 `= ANY (@...)`로 번역된다(`IN (...)` 나열 아님). 목록과 개수는 메서드를 나누고 `COUNT(*) OVER()`를 쓰지 않는다. `Distinct` · 빈 목록 처리 같은 판단은 Handler가 한다.
 
-실제 코드(`src/Services/Employee/EmergencyHub.Employee.Infrastructure/Persistence/Repositories/EmployeeRepository.cs`, `.../ReadRepositories/EmployeeReadRepository.cs` 두 파일을 이어 붙이고, using(별칭 `EmployeeAggregate`만 남김) · namespace · XML 문서 주석을 뺀 것. 남은 줄은 소스와 같다). Read Repository 조회 메서드는 S05-T06에서 생긴다:
+실제 코드(`src/Services/Employee/EmergencyHub.Employee.Infrastructure/Persistence/Repositories/EmployeeRepository.cs`, `.../ReadRepositories/EmployeeReadRepository.cs` 두 파일을 이어 붙이고, using(별칭 `EmployeeAggregate`만 남김) · namespace · XML 문서 주석을 뺀 것. 남은 줄은 소스와 같다):
 
 ```csharp
 using EmployeeAggregate = EmergencyHub.Employee.Domain.Employees.Employee;
 
 internal sealed class EmployeeRepository(EmployeeDbContext db) : RepositoryBase<EmployeeDbContext>(db), IEmployeeRepository
 {
-    public Task<bool> ExistsByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken) =>
-        Db.Set<EmployeeAggregate>().AnyAsync(employee => employee.NormalizedEmail == normalizedEmail, cancellationToken);
+    public Task<List<string>> ListExistingNormalizedEmailsAsync(IReadOnlyCollection<string> normalizedEmails, CancellationToken cancellationToken) =>
+        Db.Set<EmployeeAggregate>()
+            .Where(employee => normalizedEmails.Contains(employee.NormalizedEmail))
+            .Select(employee => employee.NormalizedEmail)
+            .ToListAsync(cancellationToken);
 
     public void Add(EmployeeAggregate employee) => Db.Set<EmployeeAggregate>().Add(employee);
+
+    public void AddRange(IEnumerable<EmployeeAggregate> employees) => Db.Set<EmployeeAggregate>().AddRange(employees);
 }
 
 internal sealed class EmployeeReadRepository(EmployeeReadDbContext db)
-    : ReadRepositoryBase<EmployeeReadDbContext>(db), IEmployeeReadRepository;
+    : ReadRepositoryBase<EmployeeReadDbContext>(db), IEmployeeReadRepository
+{
+    public Task<List<EmployeeContactResponse>> ListOrderedByJoinedOnAsync(int skip, int take, CancellationToken cancellationToken) =>
+        Db.Set<EmployeeAggregate>()
+            .OrderBy(employee => employee.JoinedOn)
+            .ThenBy(employee => employee.Id)
+            .Skip(skip)
+            .Take(take)
+            .Select(employee => new EmployeeContactResponse(
+                employee.Id.Value, employee.Name.Value, employee.Email.Value, employee.PhoneNumber.Value, employee.JoinedOn.Value))
+            .ToListAsync(cancellationToken);
+
+    public Task<int> CountAsync(CancellationToken cancellationToken) =>
+        Db.Set<EmployeeAggregate>().CountAsync(cancellationToken);
+
+    public Task<EmployeeContactResponse?> FindFirstByNameAsync(Name name, CancellationToken cancellationToken) =>
+        Db.Set<EmployeeAggregate>()
+            .Where(employee => employee.Name == name)
+            .OrderBy(employee => employee.JoinedOn)
+            .ThenBy(employee => employee.Id)
+            .Select(employee => new EmployeeContactResponse(
+                employee.Id.Value, employee.Name.Value, employee.Email.Value, employee.PhoneNumber.Value, employee.JoinedOn.Value))
+            .FirstOrDefaultAsync(cancellationToken);
+}
 ```
 
 선택 조건을 람다 안에 쓰는 형태(설명용, 현재 코드에는 검색 쿼리가 없음):
@@ -463,3 +493,4 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 | 2026-09-28 | developer | Value Object 규칙에 `Create`로만 만드는 Value Object는 private 생성자 + get-only 속성(위치 기반 record 아님) 추가 (S05-T03) |
 | 2026-09-28 | developer | PRD-001 샘플 제거 반영: 기능 폴더 구조를 규칙 + 현재 구성으로, Handler 예시를 `v0.1.0` 샘플 표시(교체는 S06-T04), `Employee.Register` VO 시그니처 · `NormalizedEmail`, Repository 실제 코드 · 값 변환기 VO 비교 규칙(실측), Controller 0개, 경고 억제 승인 목록 17건(Employee.Application CA1812 3건 삭제) (S05-T04) |
 | 2026-09-28 | dba | sealed partial 선언 실제 코드 예시의 파일 이름 주석을 리셋 뒤 `20260928090646_InitialCreate.Sealed.cs`로 교체(선언 줄 그대로) (S05-T05) |
+| 2026-09-28 | developer | Repository 실제 코드를 S05-T06 구현으로(`ListExistingNormalizedEmailsAsync` · `AddRange`, Read Repository 목록 · 개수 · 이름 단건, `ExistsByNormalizedEmailAsync` 제거), 목록 쿼리 형태(`ThenBy(Id)` · `Contains` → `= ANY` · 개수 분리, 실측), 기능 폴더 밖에 둘 수 있는 것에 Read Repository 프로젝션 `record` 추가 (S05-T06) |

@@ -97,6 +97,25 @@ public sealed class UnitOfWorkConflictTests(EmployeeDatabaseFixture database) : 
     }
 
     [Fact]
+    [Trait("FR", "PRD-002/FR-06")]
+    public async Task CommitAsync_EmailDifferingOnlyInCase_Returns23001AndKeepsFirstRowInputNotation()
+    {
+        // S05-T06 완료 조건 ③(ADR-0027): 대소문자만 다른 두 이메일은 normalized_email이 같아 23505 → 23001(Conflict)이다.
+        // 먼저 저장한 행은 입력 표기(email)를 그대로 보존하고, 정규화 값만 소문자다. 나중 입력의 표기는 저장되지 않는다.
+        await using var services = Database.CreateServices();
+        (await EmployeeCommits.AddAndCommitAsync(services, new EmployeeBuilder().WithEmail("Hong.GilDong@Example.COM").Build(), CancellationToken)).IsSuccess.Should().BeTrue();
+
+        var result = await EmployeeCommits.AddAndCommitAsync(services, new EmployeeBuilder().WithEmail("hong.gildong@example.com").Build(), CancellationToken);
+
+        result.Error.Should().BeSameAs(EmployeeErrors.DuplicateEmail);
+        result.Error.Type.Should().Be(ErrorType.Conflict);
+        await using var connection = await Database.OpenWriteConnectionAsync(CancellationToken);
+        (await connection.ScalarAsync<long>("SELECT count(*) FROM employees", CancellationToken)).Should().Be(1);
+        (await connection.ScalarAsync<string>("SELECT email || '|' || normalized_email FROM employees", CancellationToken))
+            .Should().Be("Hong.GilDong@Example.COM|hong.gildong@example.com");
+    }
+
+    [Fact]
     public async Task CommitAsync_SameIdDifferentEmail_Returns3003FromPrimaryKeyAndLogs202AtWarning()
     {
         // 매핑 없는 유니크 위반(pk_employees)은 공통 3003. 실제 DB의 PK 이름이 규칙 이름(pk_<table>)과 같아야 로그 · 판정이 맞는다.

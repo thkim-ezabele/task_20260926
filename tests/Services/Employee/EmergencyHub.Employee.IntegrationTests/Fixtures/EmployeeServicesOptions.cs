@@ -30,6 +30,9 @@ public sealed record EmployeeServicesOptions
     /// <summary>쓰기 DbContext에 덧붙일 인터셉터입니다(<see cref="DbContextInterceptorRegistration.AddWriteDbContextInterceptors"/>).</summary>
     public IReadOnlyList<IInterceptor> WriteInterceptors { get; init; } = [];
 
+    /// <summary>읽기 DbContext에 덧붙일 인터셉터입니다(<see cref="DbContextInterceptorRegistration.AddReadDbContextInterceptors"/>).</summary>
+    public IReadOnlyList<IInterceptor> ReadInterceptors { get; init; } = [];
+
     /// <summary>운영 등록 <b>뒤에</b> 실행할 추가 등록입니다(예: 테스트용 <c>IPreCommitHook</c>).</summary>
     public Action<IServiceCollection>? ConfigureServices { get; init; }
 }

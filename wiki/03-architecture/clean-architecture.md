@@ -163,8 +163,9 @@ EmergencyHub.Employee.Domain/
 
 EmergencyHub.Employee.Application/
 ├── Employees/
+│   ├── EmployeeContactResponse.cs    # Read Repository 프로젝션 record (목록 · 이름 조회 공용)
 │   ├── EmployeeLogs.cs               # [LoggerMessage]
-│   └── IEmployeeReadRepository.cs    # Read Repository 인터페이스 (IReadRepository 상속, 멤버는 S05-T06)
+│   └── IEmployeeReadRepository.cs    # Read Repository 인터페이스 (IReadRepository 상속, 목록 · 개수 · 이름 단건)
 └── EmployeeApplicationAssembly.cs    # 어셈블리 검색용 마커
 
 EmergencyHub.Employee.Infrastructure/
@@ -257,3 +258,4 @@ EmergencyHub.Employee.MigrationService/
 | 2026-09-28 | developer | 서비스별 구성 트리의 `EmployeeEmail.cs` 주석을 실제(static 정규화 · 판정 도우미, 값 객체 아님)로 정정, PRD-002 Value Object 4개 · 샘플 제거 예정 메모(ADR-0026 · 0027) (S05-T02) |
 | 2026-09-28 | developer | 서비스별 구성 트리를 PRD-001 샘플 제거 뒤 실제 구성으로(EmployeeEmail.cs · Application 기능 폴더 · Api Controllers · Employees 제거, Aggregate VO 속성), 기능 폴더 규칙 원본 링크 (S05-T04) |
 | 2026-09-28 | developer | Domain 트리에 Value Object 4개(`Name` · `Email` · `PhoneNumber` · `JoinedOn`)와 Aggregate 폴더에 둔 이유 추가 (S05-T03) |
+| 2026-09-28 | developer | Application 트리에 `EmployeeContactResponse.cs`(Read Repository 프로젝션 record)와 `IEmployeeReadRepository` 멤버(목록 · 개수 · 이름 단건) 반영 (S05-T06) |

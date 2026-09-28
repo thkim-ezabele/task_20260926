@@ -105,6 +105,26 @@ public sealed class EmployeePersistenceRoundTripTests(EmployeeDatabaseFixture da
     }
 
     [Fact]
+    [Trait("FR", "PRD-002/FR-01")]
+    public async Task Commit_NfdName_StoresNfcCodePointsInNameColumn()
+    {
+        // S05-T06 완료 조건 ③: NFD(자모 분리)로 들어온 이름은 Name.Create가 NFC로 바꿔 저장한다. DB 값이 NFC 문자열과 바이트까지 같고,
+        // 서버의 NFC 판정(IS NFC NORMALIZED)도 참이며 자모 분리 형태로는 찾을 수 없다.
+        await using var services = Database.CreateServices();
+        var nfd = "홍길동".Normalize(System.Text.NormalizationForm.FormD);
+        nfd.Length.Should().BeGreaterThan(3, "NFD 입력은 자모 분리 형태여야 한다");
+        var employee = new EmployeeBuilder().WithName(nfd).Build();
+
+        (await EmployeeCommits.AddAndCommitAsync(services, employee, CancellationToken)).IsSuccess.Should().BeTrue();
+
+        await using var connection = await Database.OpenWriteConnectionAsync(CancellationToken);
+        (await connection.ScalarAsync<string>("SELECT name FROM employees WHERE id = $1", CancellationToken, employee.Id.Value)).Should().Be("홍길동");
+        (await connection.ScalarAsync<int>("SELECT char_length(name) FROM employees WHERE id = $1", CancellationToken, employee.Id.Value)).Should().Be(3);
+        (await connection.ScalarAsync<bool>("SELECT name IS NFC NORMALIZED FROM employees WHERE id = $1", CancellationToken, employee.Id.Value)).Should().BeTrue();
+        (await connection.ScalarAsync<long>("SELECT count(*) FROM employees WHERE name = $1", CancellationToken, nfd)).Should().Be(0);
+    }
+
+    [Fact]
     public async Task Commit_TimeProviderAtPlusNineAndSeoulSession_StoresSameInstantAsUtc()
     {
         // S1: FakeTimeProvider가 +09:00 값을 돌려주고 EF 연결 세션이 Asia/Seoul이어도 timestamptz에는 같은 순간이 저장되고, 읽은 값의 오프셋은 0이다.

@@ -8,54 +8,62 @@ using EmployeeAggregate = EmergencyHub.Employee.Domain.Employees.Employee;
 
 namespace EmergencyHub.Employee.Infrastructure.UnitTests.Persistence;
 
-// S03-T02: Write Repository는 쿼리만 담는다(coding-conventions "Repository 규칙"). DB 없이 명령을 가로채 SQL · 매개변수를 확인한다.
+// S03-T02 · S05-T06: Write Repository는 쿼리만 담는다(coding-conventions "Repository 규칙"). DB 없이 명령을 가로채 SQL · 매개변수를 확인한다.
 // 정규화 이메일은 호출자(Email VO)가 만든 값을 normalized_email과 그대로 비교한다(ToLower · Trim 없음, ADR-0027).
 [Trait("FR", "PRD-001/FR-08")]
 public sealed class EmployeeRepositoryTests
 {
     [Fact]
-    public async Task ExistsByNormalizedEmailAsync_MatchingRow_ReturnsTrue()
+    public async Task ListExistingNormalizedEmailsAsync_Values_SendsOneArrayParameterWithEqualsAny()
     {
-        var database = new FakeQueryDatabase(ExistsResult(true));
+        // S05-T06(PRD-002 FR-06): 람다 Contains는 = ANY(배열 매개변수 1개)로 번역된다. IN (...) 나열 · 매개변수 N개면 dba 명세 위반이다.
+        var database = new FakeQueryDatabase(NormalizedEmailRows("hong@example.com"));
         await using var context = EmployeeDbContexts.CreateWrite(database);
+        string[] requested = ["hong@example.com", "kim@example.com"];
 
-        var exists = await new EmployeeRepository(context).ExistsByNormalizedEmailAsync("hong@example.com", TestContext.Current.CancellationToken);
+        var existing = await new EmployeeRepository(context).ListExistingNormalizedEmailsAsync(requested, TestContext.Current.CancellationToken);
 
-        exists.Should().BeTrue();
-        database.CommandTexts.Should().ContainSingle().Which.Should().Contain("EXISTS").And.Contain("FROM employees");
-    }
-
-    [Fact]
-    public async Task ExistsByNormalizedEmailAsync_NoRow_ReturnsFalse()
-    {
-        var database = new FakeQueryDatabase(ExistsResult(false));
-        await using var context = EmployeeDbContexts.CreateWrite(database);
-
-        var exists = await new EmployeeRepository(context).ExistsByNormalizedEmailAsync("nobody@example.com", TestContext.Current.CancellationToken);
-
-        exists.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task ExistsByNormalizedEmailAsync_MixedCaseValue_IsComparedAsGivenWithoutCaseFolding()
-    {
-        // 엣지: 정규화는 Domain(Email.NormalizedEmail) 몫이다. Repository가 lower() · trim()을 넣으면 인덱스를 못 쓴다.
-        var database = new FakeQueryDatabase(ExistsResult(false));
-        await using var context = EmployeeDbContexts.CreateWrite(database);
-
-        await new EmployeeRepository(context).ExistsByNormalizedEmailAsync(" Hong@Example.com ", TestContext.Current.CancellationToken);
-
+        existing.Should().Equal("hong@example.com");
         var sql = database.CommandTexts.Should().ContainSingle().Subject;
-        sql.Should().Contain("e.normalized_email = @");
-        sql.Should().NotContain("e.email = @", "입력 표기 컬럼(email)은 비교하지 않는다");
+        sql.Should().Contain("SELECT e.normalized_email").And.Contain("FROM employees AS e").And.Contain("e.normalized_email = ANY (@");
+        sql.Should().NotContain(" IN (");
+        database.ParameterValues.Should().ContainSingle().Which.Should().BeAssignableTo<IEnumerable<string>>().Which.Should().Equal(requested);
+    }
+
+    [Fact]
+    public async Task ListExistingNormalizedEmailsAsync_MixedCaseValue_IsComparedAsGivenWithoutCaseFolding()
+    {
+        // 실패 쪽: 정규화는 Domain(Email.NormalizedEmail) 몫이다. Repository가 lower() · trim()을 넣거나 입력 표기 컬럼(email)을 비교하면 인덱스를 못 쓴다.
+        var database = new FakeQueryDatabase(NormalizedEmailRows());
+        await using var context = EmployeeDbContexts.CreateWrite(database);
+
+        var existing = await new EmployeeRepository(context).ListExistingNormalizedEmailsAsync([" Hong@Example.com "], TestContext.Current.CancellationToken);
+
+        existing.Should().BeEmpty();
+        var sql = database.CommandTexts.Should().ContainSingle().Subject;
+        sql.Should().NotContain("e.email", "입력 표기 컬럼(email)은 비교하지 않는다");
         sql.Should().NotContainAny("lower(", "upper(", "trim(");
-        database.ParameterValues.Should().Equal(" Hong@Example.com ");
+        database.ParameterValues.Should().ContainSingle().Which.Should().BeAssignableTo<IEnumerable<string>>().Which.Should().Equal(" Hong@Example.com ");
+    }
+
+    [Fact]
+    public async Task ListExistingNormalizedEmailsAsync_ThousandValues_StillSendsExactlyOneParameter()
+    {
+        // 엣지: 상한 1,000행(ADR-0026)이어도 SQL · 매개변수 수는 입력 개수와 무관하다(계획 캐시 · 매개변수 한도).
+        var database = new FakeQueryDatabase(NormalizedEmailRows());
+        await using var context = EmployeeDbContexts.CreateWrite(database);
+        var requested = Enumerable.Range(1, 1000).Select(i => $"user{i}@example.com").ToArray();
+
+        await new EmployeeRepository(context).ListExistingNormalizedEmailsAsync(requested, TestContext.Current.CancellationToken);
+
+        database.ParameterValues.Should().ContainSingle().Which.Should().BeAssignableTo<IEnumerable<string>>().Which.Should().HaveCount(1000);
+        database.CommandTexts.Should().ContainSingle().Which.Should().NotContain("user1@example.com", "값은 SQL 문자열에 들어가지 않는다");
     }
 
     [Fact]
     public async Task Add_NewEmployee_IsTrackedAsAddedWithoutSaving()
     {
-        var database = new FakeQueryDatabase(ExistsResult(false));
+        var database = new FakeQueryDatabase(NormalizedEmailRows());
         await using var context = EmployeeDbContexts.CreateWrite(database);
         var employee = EmployeeDbContexts.NewEmployee();
 
@@ -63,6 +71,30 @@ public sealed class EmployeeRepositoryTests
 
         context.Entry(employee).State.Should().Be(EntityState.Added);
         database.CommandTexts.Should().BeEmpty("저장은 UnitOfWork가 한다");
+    }
+
+    [Fact]
+    public async Task AddRange_NewEmployees_AreAllTrackedAsAddedWithoutSaving()
+    {
+        var database = new FakeQueryDatabase(NormalizedEmailRows());
+        await using var context = EmployeeDbContexts.CreateWrite(database);
+        var employees = new[] { EmployeeDbContexts.NewEmployee("a@example.com"), EmployeeDbContexts.NewEmployee("b@example.com") };
+
+        new EmployeeRepository(context).AddRange(employees);
+
+        employees.Select(employee => context.Entry(employee).State).Should().Equal(EntityState.Added, EntityState.Added);
+        database.CommandTexts.Should().BeEmpty("저장은 UnitOfWork가 한다");
+    }
+
+    [Fact]
+    public async Task AddRange_Empty_TracksNothing()
+    {
+        // 엣지: 빈 목록은 아무것도 추적하지 않는다(판단 · 분기는 Handler 몫이라 Repository는 그대로 넘긴다).
+        await using var context = EmployeeDbContexts.CreateWrite(new FakeQueryDatabase(NormalizedEmailRows()));
+
+        new EmployeeRepository(context).AddRange([]);
+
+        context.ChangeTracker.Entries().Should().BeEmpty();
     }
 
     [Fact]
@@ -120,11 +152,15 @@ public sealed class EmployeeRepositoryTests
         return result;
     }
 
-    private static DataTable ExistsResult(bool exists)
+    private static DataTable NormalizedEmailRows(params string[] values)
     {
         var table = new DataTable();
-        table.Columns.Add("exists", typeof(bool));
-        table.Rows.Add(exists);
+        table.Columns.Add("normalized_email", typeof(string));
+        foreach (var value in values)
+        {
+            table.Rows.Add(value);
+        }
+
         return table;
     }
 }

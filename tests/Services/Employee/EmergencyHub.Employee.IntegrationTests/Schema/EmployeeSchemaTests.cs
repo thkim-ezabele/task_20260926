@@ -26,6 +26,9 @@ public sealed class EmployeeSchemaTests(EmployeeDatabaseFixture database) : Empl
         "INSERT INTO employees (id, name, email, normalized_email, phone_number, joined_on, employee_status, created_at, updated_at) "
         + "VALUES ($1, 'Schema Test', $2, $3, '010-1234-5678', DATE '2020-03-02', $4, now(), now())";
 
+    private const int SameMillisecondIds = 1000;
+    private const int MaxSameMillisecondAttempts = 50;
+
     // ---- 성공 ----
 
     [Fact]
@@ -101,13 +104,17 @@ public sealed class EmployeeSchemaTests(EmployeeDatabaseFixture database) : Empl
     public async Task OrderById_IdsGeneratedWithinSameMillisecondInsertedShuffled_ReturnsGenerationOrder()
     {
         // S3 · Q7: 운영 IIdGenerator(UUIDNext PostgreSql 형식)는 같은 밀리초 안에서도 단조 증가하고, PostgreSQL uuid 비교(바이트 순)와 순서가 같다.
+        // S05-T06: 같은 밀리초 안 1,000건(일괄 등록 상한)으로 확인한다. 1,000건이 한 밀리초에 모두 들어간 묶음이 나올 때까지 다시 만든다
+        // (로컬 실측: 1,000건 30회 중 11회가 한 밀리초, 나머지는 두 밀리초에 걸침).
         await using var services = Database.CreateServices();
         await using var scope = services.CreateAsyncScope();
         var generator = scope.ServiceProvider.GetRequiredService<IIdGenerator>();
-        var generated = Enumerable.Range(0, 200).Select(_ => generator.NewId()).ToList();
-        generated.GroupBy(UnixMilliseconds).Max(group => group.Count()).Should().BeGreaterThan(1, "같은 밀리초 안의 ID가 섞여 있어야 이 검증이 의미 있다");
+        var generated = Enumerable.Range(0, MaxSameMillisecondAttempts)
+            .Select(_ => Enumerable.Range(0, SameMillisecondIds).Select(_ => generator.NewId()).ToList())
+            .FirstOrDefault(batch => batch.Select(UnixMilliseconds).Distinct().Count() == 1);
+        generated.Should().NotBeNull($"{MaxSameMillisecondAttempts}번 안에 1,000건이 한 밀리초에 들어간 묶음이 있어야 이 검증이 의미 있다");
         var repository = scope.ServiceProvider.GetRequiredService<IEmployeeRepository>();
-        foreach (var id in generated.OrderBy(_ => Random.Shared.Next()))
+        foreach (var id in generated!.OrderBy(_ => Random.Shared.Next()))
         {
             repository.Add(new EmployeeBuilder().WithId(new EmployeeId(id)).Build());
         }

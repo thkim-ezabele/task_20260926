@@ -145,7 +145,7 @@ AppHost의 로컬 DB 구성([데이터베이스 · 로컬 DB 구성](database.md
 | P1 격리 수준 | 트리거(관찰) + 서버 기본값을 바꾼 연결 | Write 연결에 `Options=-c default_transaction_isolation=serializable`을 붙인 등록으로 커밋하고, 트리거가 기록한 `transaction_isolation`이 `read committed`인지 본다(명시하지 않으면 `serializable`이 나옴, 실측). 인터셉터(`IDbTransactionInterceptor.TransactionStarted`의 `IsolationLevel`)는 보조 확인으로만 쓴다(요청 값이지 서버 값이 아님) |
 | P2 커밋 시점 일시 오류 1회 | 트리거(`CONSTRAINT TRIGGER ... DEFERRABLE INITIALLY DEFERRED`) | 서버가 실제 `COMMIT`에서 `40001`을 내고 트랜잭션을 롤백한다. UoW 실측: 재시도 1회 뒤 `Success`, 행 1개, 트리거 실행 2회. 인터셉터(`TransactionCommitting`에서 예외)는 서버 커밋 전에 끊는 것이라 대안으로만 쓴다 |
 | P3 PreCommitHook 예외 | 테스트용 `IPreCommitHook` 등록 | DB 조건이 아니다. 검증은 다른 연결에서 `SELECT count(*)` = 0 |
-| P4 23505 | 장애 주입 없음 | 사전 검사를 건너뛰고 쓰기 DbContext에 직접 `Add` → `CommitAsync`. 같은 이메일 → `ux_employees_email` → 23001 · 로그 201, 같은 ID → `pk_employees` → 3003 · 로그 202(실측) |
+| P4 23505 | 장애 주입 없음 | 사전 검사를 건너뛰고 쓰기 DbContext에 직접 `Add` → `CommitAsync`. 같은 정규화 이메일(대소문자만 다른 입력 포함) → `ux_employees_normalized_email` → 23001 · 로그 201, 같은 ID → `pk_employees` → 3003 · 로그 202(실측, S05-T06 새 스키마) |
 | P5 xmin 충돌 | 장애 주입 없음 | 스코프 2개에서 같은 행을 읽고 `Deactivate()` → 먼저 커밋한 쪽 `Success`, 나중 쪽 3001 · 로그 203(실측) |
 | P6 매번 일시 오류 | 트리거(`BEFORE INSERT`, 항상 `40001`) | 실행 전략이 `DbUpdateException` 안의 `40001`을 일시 오류로 보고 재시도 → `RetryLimitExceededException`(→ 9003). 시도 수 = `MaxRetryCount + 1`(실측: 2회 한도 → 3회, 약 60ms). 인터셉터(`DbCommandInterceptor`에서 `PostgresException` 생성)는 대안 |
 | P7 Deleted 이벤트 비움 · P8 로그 | 장애 주입 없음 | P8은 로그 수집 sink로 EF `Error` 건수와 이메일 · Detail 노출을 센다 |
@@ -440,3 +440,4 @@ dotnet tool run reportgenerator "-reports:TestResults/*/coverage.cobertura.xml" 
 | 2026-09-28 | developer | 아키텍처 테스트에 대상 대기 목록(규칙 3개 → 해제 S06-T04 · S06-T05, 건너뜀 메시지에 해제 작업 ID, 대상이 생기면 실패하는 안전장치, 표본 테스트 유지)과 `ErrorAndResultAreNotDerived`의 상세 Conflict 오류 예외(S06-T01, ADR-0028) (S05-T02) |
 | 2026-09-28 | developer | 대상 대기 목록 구현 위치(`PendingTargetRules` · `RuleCheck.ShouldPassOnProduct` · `PendingTargetRuleTests`), Q5 유니크 인덱스 상수 `NormalizedEmailUniqueIndex` (S05-T04) |
 | 2026-09-28 | dba | Q1 · Q2 기대값을 S05-T05 리셋(`20260928090646_InitialCreate`) 뒤 실측값으로 교체: Q1 컬럼 9개(`name` · `normalized_email` · `phone_number` · `joined_on` 추가, `display_name` 제거, 모두 `NO` · 기본값 NULL), Q2 인덱스 `ix_employees_joined_on_id` · `ix_employees_name_joined_on_id` · `pk_employees` · `ux_employees_normalized_email`, 제약 2개 그대로 (S05-T05) |
+| 2026-09-28 | developer | 장애 주입 P4 행을 새 스키마 실측으로(`ux_employees_normalized_email` → 23001, 대소문자만 다른 입력 포함, UnitOfWorkConflictTests green 뒤) (S05-T06) |
