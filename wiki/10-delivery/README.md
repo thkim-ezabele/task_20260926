@@ -132,7 +132,7 @@ gitGraph
 | [S04](sprints/S04-tests-docs-evidence.md) | 테스트 보강 · 문서 · 인수 증빙 | PRD-001 | done |
 | [S05](sprints/S05-rebase-decisions-schema.md) | 재기준화, 결정 기록, 새 직원 모델과 스키마 | PRD-002 | done |
 | [S06](sprints/S06-bulk-register-api.md) | 일괄 등록 POST /api/employee | PRD-002 | done |
-| [S07](sprints/S07-query-api-docs.md) | 조회 API, 조회 성능, 문서 마무리 | PRD-002 | planned |
+| [S07](sprints/S07-query-api-docs.md) | 조회 API, 조회 성능, 문서 마무리 | PRD-002 | active |
 
 ---
 
