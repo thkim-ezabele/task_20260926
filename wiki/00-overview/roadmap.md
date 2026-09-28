@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [overview]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 로드맵
@@ -20,9 +20,9 @@ updated: 2026-09-28
 | 구분 | 내용 | 상태 |
 |---|---|---|
 | 위키 · 개발 흐름 | 위키 구조, ADR 0001 ~ 0010, Git Flow, 개발 흐름(토픽 → 스프린트 → 회고), 에이전트 · 스킬, 기준 문서 기본판 | 🟢 완료 |
-| **[PRD-001 기반 구축](../10-delivery/prd/PRD-001-foundation.md)** | 기술 결정 ADR, Aspire 9.x 로컬 인프라(AppHost + PostgreSQL + MigrationService), 솔루션 구조([Clean Architecture](../03-architecture/clean-architecture.md)), BuildingBlocks(직접 구현 Mediator 파이프라인, `AddConventionalServices`, EF 공통 규칙), Employee 샘플, 빌드 설정, 단위 · 통합 · 아키텍처 테스트, CI(GitHub Actions) | 🔵 진행 중 |
+| **[PRD-001 기반 구축](../10-delivery/prd/PRD-001-foundation.md)** | 기술 결정 ADR, Aspire 9.x 로컬 인프라(AppHost + PostgreSQL + MigrationService), 솔루션 구조([Clean Architecture](../03-architecture/clean-architecture.md)), BuildingBlocks(직접 구현 Mediator 파이프라인, `AddConventionalServices`, EF 공통 규칙), Employee 샘플, 빌드 설정, 단위 · 통합 · 아키텍처 테스트, CI(GitHub Actions). 릴리스 `v0.1.0`([회고](../10-delivery/retros/RETRO-PRD-001.md)) | 🟢 완료 |
 
-PRD-001에서 정한 방향 (S01에서 ADR로 확정 예정, [PRD-001 질문과 답변](../10-delivery/prd/PRD-001-foundation.md#질문과-답변)):
+PRD-001에서 정한 방향 (S01에서 ADR 0011 ~ 0023으로 확정, [PRD-001 질문과 답변](../10-delivery/prd/PRD-001-foundation.md#질문과-답변)):
 
 - Mediator: 직접 구현 (로깅 → 검증 → 트랜잭션 데코레이터 파이프라인)
 - API 스타일: Controller
@@ -36,7 +36,7 @@ PRD-001에서 정한 방향 (S01에서 ADR로 확정 예정, [PRD-001 질문과 
 
 | 구분 | 내용 | 상태 |
 |---|---|---|
-| **[PRD-002 직원 연락처 조회 · 일괄 등록](../10-delivery/prd/PRD-002-employee-contacts.md)** | Employee 연락정보 모델 재설계(스키마 리셋), CSV / JSON 일괄 등록 `POST /api/employee`, 목록 · 이름 조회 `GET /api/employee` · `GET /api/employee/{name}` | 🔵 진행 중 |
+| **[PRD-002 직원 연락처 조회 · 일괄 등록](../10-delivery/prd/PRD-002-employee-contacts.md)** | Employee 연락정보 모델 재설계(스키마 리셋), CSV / JSON 일괄 등록 `POST /api/employee`, 목록 · 이름 조회 `GET /api/employee` · `GET /api/employee/{name}`. S05 · S06 완료, S07 진행 중 | 🔵 진행 중 |
 
 🟡 후보 토픽 (PRD로 확정):
 
@@ -68,7 +68,7 @@ PRD-001에서 정한 방향 (S01에서 ADR로 확정 예정, [PRD-001 질문과 
 
 | Phase | 스프린트 | PRD | 릴리스 | 상태 |
 |---|---|---|---|---|
-| 1 | [S01](../10-delivery/sprints/S01-decisions-build-ci.md) ~ [S04](../10-delivery/sprints/S04-tests-docs-evidence.md) | [PRD-001](../10-delivery/prd/PRD-001-foundation.md) 기반 구축 | `v0.1.0` (예정) | 🔵 진행 중 |
+| 1 | [S01](../10-delivery/sprints/S01-decisions-build-ci.md) ~ [S04](../10-delivery/sprints/S04-tests-docs-evidence.md) | [PRD-001](../10-delivery/prd/PRD-001-foundation.md) 기반 구축 | `v0.1.0` | 🟢 완료 |
 | 2 | [S05](../10-delivery/sprints/S05-rebase-decisions-schema.md) ~ [S07](../10-delivery/sprints/S07-query-api-docs.md) | [PRD-002](../10-delivery/prd/PRD-002-employee-contacts.md) 직원 연락처 조회 · 일괄 등록 | `v0.2.0` (예정) | 🔵 진행 중 |
 
 스프린트 상세는 [개발 관리](../10-delivery/README.md)를 참고합니다.
@@ -84,3 +84,4 @@ PRD-001에서 정한 방향 (S01에서 ADR로 확정 예정, [PRD-001 질문과 
 | 2026-09-27 | - | Phase별 토픽 작성: Phase 1 = PRD-001 기반 구축(미정 ADR 항목), Phase 2 ~ 4는 후보 토픽 |
 | 2026-09-27 | - | PRD-001 토픽 시작(S01~S04), 결정 방향 반영 |
 | 2026-09-28 | developer | PRD-002 토픽(S05~S07) 행 추가 (S05-T01) |
+| 2026-09-29 | developer | PRD-001 행을 완료 · `v0.1.0`으로, ADR 확정 문구, PRD-002 행에 스프린트 진행 상태 (S07-T04, BL-128) |

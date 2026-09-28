@@ -5,7 +5,7 @@ status: stable
 tags: [delivery, tech-debt]
 aliases: [Tech Debt]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 기술부채
@@ -54,7 +54,7 @@ updated: 2026-09-28
 | TD-025 | Controller ↛ Repository 아키텍처 규칙은 시그니처 기준이라 메서드 본문 서비스 로케이터(GetRequiredService<IXxxRepository>())는 잡지 못함 | 테스트 | 하 | S02-T05 | 그 전까지 reviewer 점검표에 'Controller 본문 서비스 로케이터 금지', 필요해지면 Mono.Cecil IL 피연산자 규칙 추가 | open |
 | TD-026 | Employee.Infrastructure가 IConfiguration을 전이 참조(Microsoft.Extensions.Configuration.Abstractions 8.0.0, BuildingBlocks.Infrastructure 경유)로 사용: 직접 참조 · package-versions.md 등록 여부 판단 필요(현재 빌드 · 감사 문제 없음) | 의존성 | 하 | S03-T02 | S04 종료 정리: 문서분(package-versions 전이 참조 행)은 S04-T02 완료, 직접 참조 여부는 TD-002 때 TD-019와 함께. S04 계획 확정: S04-T02 편입(문서 한 줄). 빌드 · 감사 문제 없음. S04-T02에서 package-versions.md에 전이 사용(BuildingBlocks.Infrastructure 경유) 한 줄, 직접 참조 여부는 .NET 10 전환(TD-002) 때 TD-019와 함께 | open |
 | TD-027 | 테스트 fixture의 ApplyMigrationsAsync가 MigrationWorker 적용 코드를 복제(차이가 생겨도 못 잡음), EmployeeDatabaseFixture.OpenAsync · TestTriggers.OpenAsync 중복 | 테스트 | 하 | S03 결과 리뷰(S03-T06) | BL-103 해결 때 적용 코드를 Infrastructure 공용 메서드 하나로 모아 Worker · fixture가 같이 쓰고, OpenAsync는 fixture 한 곳으로. 그 전까지 fixture 주석에 복제 사실 · 원본 위치 | open |
-| TD-028 | CSV 헤더 행 미지원(PRD-002 FR-03, S06-T02 구현): 헤더를 넣으면 첫 줄을 데이터로 읽어 날짜 형식 오류로 요청 전체를 거부함 | 설계 | 하 | PRD-002 범위 밖 (Q7 · FR-03) | BL-122(헤더 지원) 결정 때 함께 상환 · S05 종료 정리: S06-T02는 FR-03대로 헤더 미지원 구현, S07-T04 API 명세에 명시 | open |
+| TD-028 | CSV 헤더 행 미지원(PRD-002 FR-03, S06-T02 구현): 헤더를 넣으면 첫 줄을 데이터로 읽어 날짜 형식 오류로 요청 전체를 거부함 | 설계 | 하 | PRD-002 범위 밖 (Q7 · FR-03) | BL-122(헤더 지원) 결정 때 함께 상환 · S05 종료 정리: S06-T02는 FR-03대로 헤더 미지원 구현, S07-T04 API 명세에 명시 · S07-T04 API 명세에 명시(실측: 헤더 행은 날짜만이 아니라 `rows[1]` email 21004 · tel 21011 · joined 21016로 거부) | open |
 | TD-029 | 제품 코드의 null-forgiving `!`(coding-conventions Nullable 규칙 위반): `InvalidModelStateResponses.cs:57` `FullName!`, `Employee.cs:40-44` EF 생성자 `null!`. EF 생성자 예외 규칙을 둘지 고칠지, 분석기 · 아키텍처 테스트 검사 방안 | 코드 | 하 | S06-T01 reviewer | /retro PRD-002에서 결정: (1) EF 생성자 `null!` 예외 명시 또는 수정 (2) InvalidModelStateResponses.cs:57은 다음 BuildingBlocks.Api 변경 때 속성 패턴으로 (3) 분석기 · grep 점검을 reviewer 진입 점검 · CI에 둘지. S06에서 같은 위반이 반려 2회 | open |
 | TD-030 | 라우트 템플릿 도우미 RouteTemplatePath(약 10줄)를 BuildingBlocks.Api와 ServiceDefaults에 같은 internal 코드로 중복, 테스트 표도 두 벌. 두 프로젝트는 서로 참조할 수 없음(ADR-0024 의존성 표) | 설계 | 하 | S07-T02 developer | 트리거: 두 번째 서비스가 생길 때 공통 위치 재검토(S07 계획 리뷰 Q2 대리 승인) | new |
 
@@ -74,3 +74,4 @@ updated: 2026-09-28
 | 2026-09-28 | developer | S05-T01: TD-010 PRD-002 위험 수용 메모(S05-T06 실측, ADR ② 위험 항목), TD-028 추가(`new`) |
 | 2026-09-28 | orchestrator | S05 종료 정리: TD-028 new → open(영향 하, S06-T02는 헤더 미지원으로 구현, S07-T04 명세에 명시), TD-010 open 유지(S05-T06 실측 반영), `new` 0 |
 | 2026-09-29 | orchestrator | S06 종료 정리: TD-029 new → open(/retro PRD-002에서 점검 수단 결정), TD-021 S06-T01 부분 상환 비고, TD-010 S06-T06 실측 비고, `new` 0 |
+| 2026-09-29 | developer | S07-T04: TD-028 상환 계획에 API 명세 명시 · 헤더 행 실측 응답(상태 open 유지) |

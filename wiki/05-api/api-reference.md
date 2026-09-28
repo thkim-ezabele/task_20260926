@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [api]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # API 레퍼런스
@@ -29,7 +29,7 @@ Development 환경에서만 노출합니다([ADR-0019](../03-architecture/adr/00
 
 | 서비스 | 명세 | 엔드포인트 |
 |---|---|---|
-| Employee | [직원 API](employee-api.md) | 없음(헬스 경로만). PRD-001 `POST /api/v1/employees` · `GET /api/v1/employees/{id}`는 S05-T04에서 제거, PRD-002 API는 S06-T05 · S07 |
+| Employee | [직원 API](employee-api.md) | `POST /api/employee`(일괄 등록), `GET /api/employee`(목록), `GET /api/employee/{name}`(이름 조회). PRD-001 `/api/v1/employees`는 S05-T04에서 제거 |
 
 ---
 
@@ -40,3 +40,4 @@ Development 환경에서만 노출합니다([ADR-0019](../03-architecture/adr/00
 | 2026-09-27 | - | 문서 생성 |
 | 2026-09-28 | developer | Swagger 접속 정보, 서비스별 API 목록(Employee → [직원 API](employee-api.md)) (S03-T04) |
 | 2026-09-28 | developer | Employee 엔드포인트 목록을 샘플 API 제거 뒤 상태로 (S05-T04) |
+| 2026-09-29 | developer | Employee 엔드포인트 목록을 PRD-002 API 3개로 (S07-T04) |

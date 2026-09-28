@@ -168,9 +168,9 @@ BuildingBlocks가 정의하고 모든 서비스가 씁니다.
 |---|---|---|---|---|---|
 | 1001 | `Validation` | 400 | `Common.ValidationFailed` | 요청 검증 실패 (상세는 `errors`에 필드별로, `ValidationError`) | 사용 |
 | 1002 | `Validation` | 400 | `Common.InvalidCode` | 정의되지 않은 코드값 / 비트 플래그 | 사용 |
-| 1003 | `Validation` | 400 | `Common.InvalidPaging` | 페이징 · 정렬 매개변수 오류 | 사용 |
+| 1003 | `Validation` | 400 | `Common.InvalidPaging` | 페이징 · 정렬 매개변수 오류. 최상위 `code`가 아니라 필드 코드로 담김(최상위 1001, `errors.page[0].code`, S07-T01) | 사용 |
 | 1004 | `PayloadTooLarge` | 413 | `Common.PayloadTooLarge` | 요청 본문이 허용 크기를 넘음 (전역 예외 처리의 `BadHttpRequestException` 413. 일괄 등록은 바인더가 본문 · multipart 본문 · `data` 값의 바이트 수로 판정해 같은 예외를 던짐, [API 설계 가이드 규칙 예외](../04-development/api-guidelines.md#규칙-예외-과제-api-명세-adr-0025)) | 사용 |
-| 1005 | `UnsupportedMediaType` | 415 | `Common.UnsupportedMediaType` | 지원하지 않는 요청 Content-Type (`[Consumes]` 불일치, `[FromBody]` 액션의 Content-Type 없음) | 사용 |
+| 1005 | `UnsupportedMediaType` | 415 | `Common.UnsupportedMediaType` | 지원하지 않는 요청 Content-Type (`[Consumes]` 불일치, `[FromBody]` 액션의 Content-Type 없음). 일괄 등록의 Content-Type 없음은 415가 아니라 raw 본문으로 보고 내용으로 판별(빈 본문이면 21028, S06-T05) | 사용 |
 | 2001 | `NotFound` | 404 | `Common.NotFound` | 리소스 없음 (서비스별 코드가 없을 때) | 사용 |
 | 3001 | `Conflict` | 409 | `Common.ConcurrencyConflict` | 동시 수정 충돌 (낙관적 잠금) | 사용 |
 | 3002 | `Conflict` | 409 | `Common.DuplicateRequest` | 같은 `Idempotency-Key`로 이미 처리됨 | 사용 |
@@ -220,7 +220,7 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 | 21025 | `Validation` | 400 | `Employee.JsonValueNotString` | JSON 항목의 필드 값이 문자열이 아님 (`"joined": 20000101` · `null` 등, 항목 오류, 경로 `rows[n].joined`처럼 그 필드). 속성이 없으면 이 코드가 아니라 그 필드의 필수 코드. 판정 원본은 Application JSON 파서 | 사용 |
 | 21026 | `Validation` | 400 | `Employee.JsonDuplicateProperty` | JSON 항목에 같은 필드 속성이 두 번 이상 (대소문자만 다른 이름 포함, 알 수 없는 속성은 판정 안 함, 항목 오류, 경로는 그 필드). 판정 원본은 Application JSON 파서 | 사용 |
 | 21027 | `Validation` | 400 | `Employee.ImportTooManyRows` | 행 수가 1,000을 넘음 (경로 `""`, 빈 줄 제외 · 행 오류 행 포함). 판정 원본은 Application 파서(CSV S06-T02, JSON S06-T03) | 사용 |
-| 21028 | `Validation` | 400 | `Employee.ImportInputEmpty` | 빈 입력 (입력 없음(`Sources` = 0), 길이 0, 맨 앞 BOM 하나를 뗀 뒤 0x20 · 0x09 · 0x0D · 0x0A만 있음, form-urlencoded `data` 키 없음, 파싱 결과 행 0개, 경로 `""`). 판정 원본은 일괄 등록 Validator, 행 0개는 Handler(S07-T05) | 사용 |
+| 21028 | `Validation` | 400 | `Employee.ImportInputEmpty` | 빈 입력 (입력 없음(`Sources` = 0), 길이 0, 맨 앞 BOM 하나를 뗀 뒤 0x20 · 0x09 · 0x0D · 0x0A만 있음, form-urlencoded `data` 키 없음, 파싱 결과 행 0개이고 행 오류도 0개, 경로 `""`). 판정 원본은 일괄 등록 Validator, 행 0개는 Handler(S07-T05) | 사용 |
 | 21029 | `Validation` | 400 | `Employee.ImportMultipleSources` | multipart `file`과 `data`를 함께 보냄 (`Sources` 비트가 둘 이상, 경로 `""`). 판정 원본은 일괄 등록 Validator | 사용 |
 | 21030 | `Validation` | 400 | `Employee.RowErrorsTruncated` | 행 오류가 100개를 넘어 잘림 (101번째 항목, 경로 `""`). 판정 원본은 일괄 등록 Handler | 사용 |
 | 22001 | `NotFound` | 404 | `Employee.NotFound` | 직원 없음 (이름 조회에 일치하는 직원 없음, S07-T02) | 사용 |
@@ -254,3 +254,4 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 | 2026-09-28 | developer | 21018 · 21028 · 21029 · 21030 · 23002 상수 추가로 `사용`(판정 원본 · 경로), 21004 설명에 제어 문자 · 짝 없는 서로게이트(BL-129), 요청 전체 오류 목록에 21028 · 21029와 Validator 판정 순서 (S06-T04) |
 | 2026-09-28 | developer | 1004 설명에 일괄 등록 바인더의 바이트 수 판정, 상태 칸의 S06-T05 대기 문구 삭제 (S06-T05) |
 | 2026-09-29 | developer | 21028 설명 · 판정 원본에 파싱 결과 행 0개(Handler) 추가(BL-137 결정 A) (S07-T05) |
+| 2026-09-29 | developer | 1003은 필드 코드로 담김, 1005에 일괄 등록의 Content-Type 없음은 raw 판별(415 아님), 21028 행 0개에 "행 오류도 0개" 조건 (S07-T04) |

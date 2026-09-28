@@ -4,7 +4,7 @@ type: doc
 status: draft
 tags: [getting-started]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 로컬 개발 환경 구성
@@ -183,9 +183,9 @@ docker ps -a --filter volume=emergency-hub-postgres-data --format '{{.Names}}'
 
 ## 동작 확인 (Swagger / Health Check)
 
-`employee-api`가 Healthy가 된 뒤 실행합니다. Api 주소는 `http://localhost:5180`입니다. S05-T04에서 PRD-001 샘플 API(`/api/v1/employees`)를 지워, 지금 확인할 HTTP 엔드포인트는 헬스 경로와 Swagger 문서뿐입니다(등록 · 조회 API는 S06-T05 · S07에서 생김, [직원 API](../05-api/employee-api.md)). 아래 헬스 체크 결과는 2026-09-28 `http` 프로필 실행에서 확인했습니다.
+`employee-api`가 Healthy가 된 뒤 실행합니다. Api 주소는 `http://localhost:5180`입니다. HTTP 엔드포인트는 헬스 경로, [직원 API](../05-api/employee-api.md) 3개(`POST /api/employee`, `GET /api/employee`, `GET /api/employee/{name}`), Swagger 문서입니다. 아래 헬스 체크 결과는 2026-09-28, 등록 → 조회는 2026-09-29 `http` 프로필 실행에서 확인했습니다.
 
-- PowerShell 5.1에서 `curl`은 `Invoke-WebRequest`의 별칭이라 아래 PowerShell 예는 `Invoke-RestMethod`를 씁니다.
+- PowerShell 5.1에서 `curl`은 `Invoke-WebRequest`의 별칭이라 아래 PowerShell 예는 `Invoke-RestMethod` 또는 `curl.exe`(확장자까지 씀)를 씁니다.
 
 ### 헬스 체크
 
@@ -205,11 +205,48 @@ curl -s -i http://localhost:5180/health/ready
 
 ### 등록 → 조회
 
-- PRD-001 샘플 등록 · 조회 API는 S05-T04에서 지웠습니다. 예전 명령과 기대 결과는 `v0.1.0` 태그의 이 문서에 있습니다. PRD-002 등록 API(`POST /api/employee`) 예시는 그 API를 만드는 작업(S06-T05)에서 추가합니다.
+빈 DB에서 원문 예시 CSV(3행)를 파일로 등록하고 목록 · 이름으로 조회합니다. 파일 입력과 ASCII 인자만 써서 두 셸에서 명령 문자열이 같습니다(PowerShell은 `curl.exe`, 2026-09-29 두 셸 실측, 원문은 [S07-T04 증빙](../10-delivery/evidence/S07-T04/http-curl.txt)). 저장소 루트에서 실행합니다. 입력 형식별 예시 · 오류 응답은 [직원 API](../05-api/employee-api.md#curl-예시)에 있습니다.
+
+PowerShell:
+
+```powershell
+curl.exe -s -i -X POST http://localhost:5180/api/employee -F "file=@tests/Services/Employee/EmergencyHub.Employee.IntegrationTests/TestData/Examples/original-example.csv"
+curl.exe -s -i "http://localhost:5180/api/employee?page=1&pageSize=2"
+curl.exe -s -i http://localhost:5180/api/employee/%EA%B9%80%EC%9D%B4%EB%A6%84
+```
+
+Git Bash:
+
+```bash
+curl -s -i -X POST http://localhost:5180/api/employee -F "file=@tests/Services/Employee/EmergencyHub.Employee.IntegrationTests/TestData/Examples/original-example.csv"
+curl -s -i "http://localhost:5180/api/employee?page=1&pageSize=2"
+curl -s -i http://localhost:5180/api/employee/%EA%B9%80%EC%9D%B4%EB%A6%84
+```
+
+기대 결과(ID는 실행마다 다름):
+
+```text
+HTTP/1.1 201 Created
+{"count":3,"ids":["01a0e9fd-afb0-74b5-8376-017ac91d94af","01a0e9fd-afb0-74b6-a528-f909b341849b","01a0e9fd-afb0-74b7-a537-b3d0112a952c"]}
+
+HTTP/1.1 200 OK
+{"items":[{"id":"01a0e9fd-afb0-74b5-8376-017ac91d94af","name":"김이름","email":"kim@gmail.com","tel":"010-0000-0000","joined":"2000-01-01"},{"id":"01a0e9fd-afb0-74b6-a528-f909b341849b","name":"이이름","email":"lee@gmail.com","tel":"010-1111-1111","joined":"2001-02-03"}],"totalCount":3,"page":1,"pageSize":2}
+
+HTTP/1.1 200 OK
+{"id":"01a0e9fd-afb0-74b5-8376-017ac91d94af","name":"김이름","email":"kim@gmail.com","tel":"010-0000-0000","joined":"2000-01-01"}
+```
+
+- 같은 파일을 한 번 더 등록하면 `409` · 23001(`rows[1].email` ~ `rows[3].email`)이고 아무것도 저장되지 않습니다. 처음 상태로 되돌리려면 [초기화](#초기화-볼륨--user-secrets)의 "볼륨만 지우는 경우"를 씁니다.
+- 이름 경로는 UTF-8 퍼센트 인코딩으로 보냅니다(`%EA%B9%80%EC%9D%B4%EB%A6%84` = `김이름`). URL에 `&`가 있으면 따옴표로 감쌉니다.
+- **Git Bash의 `curl`과 한글 인자**: Git for Windows에 든 `curl`(8.6.0 mingw)은 명령줄 인자의 한글을 CP949로 바꿔 보내 `-F 'data=김이름,...'` · `--data-binary '김이름,...'` 같은 인라인 입력이 `400` · 21022(올바른 UTF-8 아님)가 됩니다(2026-09-29 실측). 인라인 한글 입력은 Windows 내장 `/c/Windows/System32/curl.exe`(8.21.0 실측, UTF-8)로 보내거나 UTF-8 파일로 보냅니다. PowerShell의 `curl.exe`는 `C:WindowsSystem32curl.exe`입니다(PATH 순서가 기본값일 때).
+
+### Api 단독 실행 (AppHost 없이)
+
+- `EmergencyHub.Employee.Api`를 AppHost 없이 `dotnet run --project src/Services/Employee/EmergencyHub.Employee.Api`로 띄우려면 연결 문자열 `ConnectionStrings__Write` · `ConnectionStrings__Read` 두 개가 필요합니다(AppHost가 주입하는 값, 필수 설정 키는 [설정](../06-deployment/configuration.md)). 비밀번호가 든 값을 셸 환경 변수로 두지 않는 규칙([금지 명령](#금지-명령))은 같으므로, 로컬 확인은 AppHost 실행을 기본으로 합니다.
 
 ### Swagger
 
-- Swagger UI: `http://localhost:5180/swagger`(→ `/swagger/index.html`), OpenAPI 문서: `http://localhost:5180/swagger/v1/swagger.json`. Api 환경이 Development일 때만 노출됩니다([ADR-0019](../03-architecture/adr/0019-use-swashbuckle-openapi.md)). 로컬 Api는 Development입니다([환경 구성](../06-deployment/environments.md)). S05-T04부터 Controller가 없어 문서의 `paths`는 비어 있습니다(단위 테스트 `ProgramTests.ConfigurePipeline_DevelopmentWithoutControllers_ServesOpenApiDocumentWithNoPaths`).
+- Swagger UI: `http://localhost:5180/swagger`(→ `/swagger/index.html`), OpenAPI 문서: `http://localhost:5180/swagger/v1/swagger.json`. Api 환경이 Development일 때만 노출됩니다([ADR-0019](../03-architecture/adr/0019-use-swashbuckle-openapi.md)). 로컬 Api는 Development입니다([환경 구성](../06-deployment/environments.md)). 문서의 `paths`는 `/api/employee`(`post` · `get`, `post` 요청 본문은 `multipart/form-data` · `application/x-www-form-urlencoded` · `text/csv` · `application/json`)와 `/api/employee/{name}`(`get`) 두 개입니다(2026-09-29 `swagger.json` 실측).
 
 ## DB 마이그레이션
 
@@ -353,3 +390,4 @@ dotnet user-secrets list --project src/Aspire/EmergencyHub.AppHost | sed -E 's/ 
 | 2026-09-28 | developer | 반려 1회째 재작업: 등록 → 조회 두 셸 명령의 `email`을 대소문자 섞인 `Hong.Gildong@Example.com`으로 바꾸고 기대 결과 조회 응답을 소문자 정규화 값 `hong.gildong@example.com`으로 맞춤(입력 → 출력 일치), 연속 빈 줄 2곳 정리 (S04-T03) |
 | 2026-09-28 | developer | 동작 확인에서 PRD-001 샘플 등록 · 조회 명령 · 기대 결과를 지우고 헬스 · Swagger(경로 0개)만 남김(샘플 API 제거) (S05-T04) |
 | 2026-09-28 | dba | 운영 전 리셋 뒤 볼륨 삭제 안내 절 추가(ID `20260928090646_InitialCreate`, 옛 볼륨의 `42P07` 예상, 다른 worktree · clone 볼륨 공유 주의, psql 점검 8번 확인), 허용 명령 2번에 스냅샷이 없을 때 `--output-dir Persistence/Migrations` 필수(S05-T05 실측) (S05-T05) |
+| 2026-09-29 | developer | 동작 확인에 PRD-002 등록 → 조회(원문 예시 CSV 파일, 두 셸 `curl` · `curl.exe` 실측, 기대 결과, 409 재등록, Git Bash curl 한글 인자 CP949 주의), Api 단독 실행에 `ConnectionStrings__Write` · `Read` 필요, Swagger `paths` 두 개로 갱신 (S07-T04) |
