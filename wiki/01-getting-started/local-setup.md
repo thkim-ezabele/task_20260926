@@ -59,12 +59,12 @@ dotnet dev-certs https --trust
 
 - **짧은 경로에 clone합니다**(예: `C:\eh`). Windows 깊은 경로에 clone하면 빌드 출력 경로가 MAX_PATH(260자)를 넘어 `MSB3101` · `MSB3030`으로 빌드가 실패할 수 있습니다(S01-T05 발견, BL-049). Windows 긴 경로 사용(`LongPathsEnabled`)도 방법이지만 이 저장소에서는 확인하지 않았습니다.
 - 저장소는 private입니다. 접근 권한이 있는 계정으로 로그인해 둡니다(`gh auth status`).
-- GitHub 기본 브랜치는 `develop`입니다. PRD-001 토픽이 병합되기 전에는 코드가 토픽 브랜치 `feature/prd-001-foundation`에 있으므로 `--branch`로 지정합니다(병합 뒤에는 `--branch` 없이 `develop`).
+- GitHub 기본 브랜치는 `develop`입니다. 최신 릴리스는 `main`(태그 `vX.Y.Z`)에 있습니다.
 
 PowerShell:
 
 ```powershell
-git clone --branch feature/prd-001-foundation https://github.com/thkim-ezabele/task_20260926.git C:\eh
+git clone https://github.com/thkim-ezabele/task_20260926.git C:\eh
 Set-Location C:\eh
 dotnet --version
 dotnet tool restore
@@ -73,7 +73,7 @@ dotnet tool restore
 Git Bash:
 
 ```bash
-git clone --branch feature/prd-001-foundation https://github.com/thkim-ezabele/task_20260926.git /c/eh
+git clone https://github.com/thkim-ezabele/task_20260926.git /c/eh
 cd /c/eh
 dotnet --version
 dotnet tool restore
@@ -391,3 +391,4 @@ dotnet user-secrets list --project src/Aspire/EmergencyHub.AppHost | sed -E 's/ 
 | 2026-09-28 | developer | 동작 확인에서 PRD-001 샘플 등록 · 조회 명령 · 기대 결과를 지우고 헬스 · Swagger(경로 0개)만 남김(샘플 API 제거) (S05-T04) |
 | 2026-09-28 | dba | 운영 전 리셋 뒤 볼륨 삭제 안내 절 추가(ID `20260928090646_InitialCreate`, 옛 볼륨의 `42P07` 예상, 다른 worktree · clone 볼륨 공유 주의, psql 점검 8번 확인), 허용 명령 2번에 스냅샷이 없을 때 `--output-dir Persistence/Migrations` 필수(S05-T05 실측) (S05-T05) |
 | 2026-09-29 | developer | 동작 확인에 PRD-002 등록 → 조회(원문 예시 CSV 파일, 두 셸 `curl` · `curl.exe` 실측, 기대 결과, 409 재등록, Git Bash curl 한글 인자 CP949 주의), Api 단독 실행에 `ConnectionStrings__Write` · `Read` 필요, Swagger `paths` 두 개로 갱신 (S07-T04) |
+| 2026-09-29 | orchestrator | 저장소 클론 절: PRD-001 토픽 브랜치 `--branch` 안내 제거(`develop` 기본, 릴리스는 `main`) |

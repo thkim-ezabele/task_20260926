@@ -15,6 +15,8 @@ updated: 2026-09-29
 
 > 🟡 Phase 2 ~ 4의 토픽은 **후보**입니다. 실제 토픽과 순서는 사용자가 주는 PRD로 정하며, PRD를 받을 때마다 이 문서를 갱신합니다. 일정(날짜)은 정하지 않았습니다(스프린트는 범위 고정).
 
+**현재 릴리스: `v0.2.0`** (Phase 1 완료, Phase 2 첫 토픽 완료). 진행 중인 토픽은 없습니다.
+
 ## Phase 1 - 프로젝트 초기 구축 (위키 / 솔루션 / 공통 기반)
 
 | 구분 | 내용 | 상태 |
@@ -36,7 +38,7 @@ PRD-001에서 정한 방향 (S01에서 ADR 0011 ~ 0023으로 확정, [PRD-001 �
 
 | 구분 | 내용 | 상태 |
 |---|---|---|
-| **[PRD-002 직원 연락처 조회 · 일괄 등록](../10-delivery/prd/PRD-002-employee-contacts.md)** | Employee 연락정보 모델 재설계(스키마 리셋), CSV / JSON 일괄 등록 `POST /api/employee`, 목록 · 이름 조회 `GET /api/employee` · `GET /api/employee/{name}`. S05 · S06 완료, S07 진행 중 | 🔵 진행 중 |
+| **[PRD-002 직원 연락처 조회 · 일괄 등록](../10-delivery/prd/PRD-002-employee-contacts.md)** | Employee 연락정보 모델 재설계(스키마 리셋), CSV / JSON 일괄 등록 `POST /api/employee`, 목록 · 이름 조회 `GET /api/employee` · `GET /api/employee/{name}`. 릴리스 `v0.2.0`([회고](../10-delivery/retros/RETRO-PRD-002.md)) | 🟢 완료 |
 
 🟡 후보 토픽 (PRD로 확정):
 
@@ -69,7 +71,7 @@ PRD-001에서 정한 방향 (S01에서 ADR 0011 ~ 0023으로 확정, [PRD-001 �
 | Phase | 스프린트 | PRD | 릴리스 | 상태 |
 |---|---|---|---|---|
 | 1 | [S01](../10-delivery/sprints/S01-decisions-build-ci.md) ~ [S04](../10-delivery/sprints/S04-tests-docs-evidence.md) | [PRD-001](../10-delivery/prd/PRD-001-foundation.md) 기반 구축 | `v0.1.0` | 🟢 완료 |
-| 2 | [S05](../10-delivery/sprints/S05-rebase-decisions-schema.md) ~ [S07](../10-delivery/sprints/S07-query-api-docs.md) | [PRD-002](../10-delivery/prd/PRD-002-employee-contacts.md) 직원 연락처 조회 · 일괄 등록 | `v0.2.0` (예정) | 🔵 진행 중 |
+| 2 | [S05](../10-delivery/sprints/S05-rebase-decisions-schema.md) ~ [S07](../10-delivery/sprints/S07-query-api-docs.md) | [PRD-002](../10-delivery/prd/PRD-002-employee-contacts.md) 직원 연락처 조회 · 일괄 등록 | `v0.2.0` | 🟢 완료 |
 
 스프린트 상세는 [개발 관리](../10-delivery/README.md)를 참고합니다.
 
@@ -85,3 +87,4 @@ PRD-001에서 정한 방향 (S01에서 ADR 0011 ~ 0023으로 확정, [PRD-001 �
 | 2026-09-27 | - | PRD-001 토픽 시작(S01~S04), 결정 방향 반영 |
 | 2026-09-28 | developer | PRD-002 토픽(S05~S07) 행 추가 (S05-T01) |
 | 2026-09-29 | developer | PRD-001 행을 완료 · `v0.1.0`으로, ADR 확정 문구, PRD-002 행에 스프린트 진행 상태 (S07-T04, BL-128) |
+| 2026-09-29 | - | PRD-002 행을 완료 · `v0.2.0`으로(회고 링크) |
