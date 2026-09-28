@@ -171,7 +171,7 @@ updated: 2026-09-29
 | BL-142 | troubleshooting.md에 Windows Git Bash 내장 curl(8.6.0 mingw)이 명령줄 한글을 CP949로 보내 21022가 나는 현상 한 줄 추가 검토(지금은 employee-api · local-setup에만 기재) | S07-T04 developer | 하 | open | System32 curl 8.21.0은 UTF-8 · S07 종료 정리: employee-api · local-setup에 주의 있음. /retro 개선 브랜치 문서 묶음 |
 | BL-143 | PRD-002 범위 밖 문장 "(현재 헤더를 넣으면 날짜 형식 오류로 거부)"가 실측(rows[1] email 21004 · tel 21011 · joined 21016)보다 좁음. PRD 문구 수정 여부 | S07-T04 developer | 하 | open | TD-028 비고에 실측 반영됨. /retro PRD-002에서 판단 · S07 종료 정리: /retro PRD-002에서 TD-028 · BL-122와 함께 판단 |
 | BL-144 | FR-03 · FR-04 파서 테스트(CsvImportParserTests · JsonImportParserTests · ImportTextDecoderTests)에 FR Trait 추가, Trait 키 오용 2파일(CommandCountingInterceptorTests · ActivityCollectorTests, FR 키에 NFR ID)을 NFR 키로 | RETRO-PRD-002 | 하 | open | 회고 개선안 12. 다음 토픽 첫 작업 |
-| BL-145 | RETRO-PRD-002 개선안 1~10 반영(에이전트 이스케이프 · null-forgiving grep, check-docs U+FFFD · raw-log 예외, testing-strategy · database · coding-conventions · agents.md · sprint 스킬 보완, troubleshooting · PRD 정정) | RETRO-PRD-002 | 상 | open | `feature/retro-prd-002-*`에서 반영(v0.2.0 뒤). 반영 시 BL-018 · 131 · 136 · 140 · 142 · 143 닫힘 |
+| BL-145 | RETRO-PRD-002 개선안 1~10 반영(에이전트 이스케이프 · null-forgiving grep, check-docs U+FFFD · raw-log 예외, testing-strategy · database · coding-conventions · agents.md · sprint 스킬 보완, troubleshooting · PRD 정정) | RETRO-PRD-002 | 상 | open | `feature/retro-prd-002-*`에서 반영(v0.2.0 뒤). 반영 시 BL-018 · 131 · 136 · 140 · 142 · 143 닫힘. local-setup 클론 브랜치 안내는 v0.2.1 정리에서 먼저 고침. |
 | BL-146 | ADR 정합화: ADR-0026 1절 부분 대체 + ADR-0028 415 경로 분담(1건), ADR-0025 보완(BL-141), RETRO-PRD-001 (a) · (b) | RETRO-PRD-002 | 상 | open | ADR 파일은 사용자 확인 뒤. 다음 토픽 첫 스프린트 |
 
 ---
@@ -196,3 +196,4 @@ updated: 2026-09-29
 | 2026-09-29 | developer | S07-T04: BL-024 · BL-128 · BL-134 planned:S07 → done(대시보드 span 확인, roadmap 행, employee-api.md 재작성) |
 | 2026-09-29 | orchestrator | S07 종료 정리: BL-140~143 new → open(/retro PRD-002 대상), BL-139 planned:S07 → done, BL-024 · 128 · 134 · 137 done 확인, `new` 0 |
 | 2026-09-29 | orchestrator | RETRO-PRD-002: BL-144 · 145 · 146 추가(회고 개선안 12 · 1~10 · ADR 정합화) |
+| 2026-09-29 | orchestrator | v0.2.1 정리: BL-145 비고(local-setup 클론 브랜치 선반영). 백로그 · 기술부채 상태 변경 없음(모두 기록 유지) |
