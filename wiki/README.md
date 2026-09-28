@@ -5,13 +5,14 @@ status: stable
 tags: [home]
 aliases: [Home, 위키 홈]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # Emergency Hub Backend Wiki
 
 > **직원 긴급연락망 서비스** Emergency Hub 백엔드 시스템의 설계, 개발, 운영 문서입니다.
 > 위키 관련 문서는 모두 `wiki/` 폴더 안에서 관리하며, `wiki/` 폴더가 곧 **Obsidian vault**입니다.
+> 프로젝트 소개와 빠른 실행 방법은 저장소 루트 [README](../README.md)에 있습니다.
 
 | 항목 | 내용 |
 |---|---|
@@ -19,7 +20,16 @@ updated: 2026-09-28
 | 아키텍처 | MSA · Clean Architecture |
 | 설계 방법론 | DDD · EDA · TDD |
 | 데이터베이스 | PostgreSQL |
+| 로컬 실행 / 관측성 | .NET Aspire AppHost / Serilog · OpenTelemetry |
 | 형상관리 / CI | GitHub / GitHub Actions |
+| 현재 릴리스 | `v0.2.0`: Employee 서비스(직원 연락처 일괄 등록 · 조회) |
+
+## 🚀 처음 보는 경우
+
+1. [프로젝트 개요](00-overview/project-overview.md): 목적, 현재 범위, 주요 기능
+2. [로컬 개발 환경 구성](01-getting-started/local-setup.md): 명령 하나로 DB · 마이그레이션 · API 실행
+3. [직원 API](05-api/employee-api.md): 현재 제공하는 API 명세와 curl 예시
+4. [Clean Architecture & 솔루션 구조](03-architecture/clean-architecture.md) · [ADR](03-architecture/adr/README.md): 구조와 설계 결정
 
 ## 📚 목차
 
@@ -176,3 +186,4 @@ updated: 2026-09-28
 | 2026-09-27 | - | 09. 장기기억 섹션 추가, Obsidian vault 형식(frontmatter, 템플릿, vault 설정)으로 재구성 |
 | 2026-09-27 | - | 10. 개발 관리 섹션 추가, frontmatter에 `prd` / `sprint` / `retro` 유형 추가 |
 | 2026-09-27 | developer | 03. 아키텍처에 패키지 버전 · 라이선스 문서 추가 (S01-T01) |
+| 2026-09-29 | - | 루트 README 링크, 요약 표(로컬 실행 · 관측성, 현재 릴리스), "처음 보는 경우" 안내 추가 |
