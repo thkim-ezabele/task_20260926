@@ -81,6 +81,8 @@ updated: 2026-09-29
 | 2026-09-29 | S07-T05 | tester | PASS | 4입력 경로 × 0행 3본문 12 보강, build 경고 0 · format 0, test 2,544 통과 · 1 건너뜀 · 실패 0, check-docs 6(BL-018) |
 | 2026-09-29 | S07-T04 | dba | 해당 없음 | 스키마 · 매핑 · SQL 변경 없음(문서 검토만, database 문서는 reviewer D 점검) |
 | 2026-09-29 | S07-T04 | developer | PASS | 문서: employee-api.md PRD-002 3개 엔드포인트로 재작성(BL-134), error-codes 1003 · 1005 · 21028, local-setup 등록 → 조회 · Api 단독 실행, api-reference, roadmap(BL-128), TD-028 문구. Aspire(http) curl 실행: API 명세 28개 + local-setup 3개 × 두 셸 + BL-024용 3개, 대시보드 span 확인 통과(BL-024 done). 아래 실행 기록 |
+| 2026-09-29 | S07-T04 | reviewer | REJECT → developer | 문서 사실: local-setup.md:241 curl.exe 경로 역슬래시 누락. D2 · D4 · D5 나머지 통과, 코드 번호 일치 |
+| 2026-09-29 | S07-T04 | tester | REJECT → developer | 같은 241행 경로 + evidence README 마스킹 문장(머리말 1줄 grep 일치). curl 28개 재실측 일치, check-docs 6(BL-018), build 경고 0 |
 
 
 ### S07-T04 Aspire curl 실행 기록 (2026-09-29, developer)
