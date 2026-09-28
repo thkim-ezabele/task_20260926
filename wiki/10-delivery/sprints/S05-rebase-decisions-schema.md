@@ -400,7 +400,7 @@ updated: 2026-09-28
 - [x] 빌드와 모든 테스트(단위 · 통합 · 아키텍처)가 통과했다 (경고 0, 커버리지 보고 — NFR-06. S05는 샘플 제거로 분모가 작아진 수치임을 적는다) — 로컬 Release: 경고 0, 1,638 = 통과 1,634 · 실패 0 · 건너뜀 4, 라인 99.4% · 분기 95.6%(대상 6개, coverable 910줄로 분모 축소)
 - [x] 관련 위키 문서(API, 이벤트, DB)를 갱신했다 — DB · error-codes · ADR 4건 · 기준 문서. 이벤트 변경 없음, API는 이 스프린트에 없음(employee-api.md 83행은 BL-134)
 - [x] 백로그 / 기술부채를 정리했다 (`new` 항목 없음)
-- [ ] 토픽 브랜치를 push하고 `sprint/S05` 태그를 붙였다
+- [x] 토픽 브랜치를 push하고 `sprint/S05` 태그를 붙였다 — push `d125bee..7811804`, PR #8 CI [36411894258](https://github.com/thkim-ezabele/task_20260926/actions/runs/36411894258) success(HEAD `7811804`, 4m16s)
 
 ## 진행 기록
 
@@ -446,6 +446,7 @@ updated: 2026-09-28
 | 2026-09-28 | S05-T06 | developer | 보완(문서만) | reviewer handoff 처리: testing-strategy 도우미 표에 ReadInterceptors · AddReadDbContextInterceptors · QueryPlans 도우미(CommandCaptureInterceptor · CapturedCommand · QueryPlan.ExplainAsync) 추가, database.md 인덱스 용도를 '확인됨(실측 S05-T06)'으로(목록 · 이름 Index Scan Sort 없음, `= ANY` Bitmap Index Scan on ux_employees_normalized_email(VACUUM 전이라 Index Only 아님), 끝 페이지 Seq Scan + Sort 정상(dba 실측 출처 표시)). check-docs 결함 4, src · tests 변경 0 |
 | 2026-09-28 | S05-T06 | tester | PASS | 빈 곳 2개만 보강(RoundTrip [Theory] joined_on 1900-01-01 · 2999-12-31 DB 왕복 + Active → employee_status 1). ① BuildingBlocks diff 0 ② 람다 LINQ만 ③ 대응표 DB 16행 trx 대조 전부 통과 ④ EXPLAIN detailed 재실행: 목록 · 이름 Index Scan Sort 없음, `= ANY` 매개변수 1개 Bitmap Index Scan ux, 개수 Seq Scan ⑤ map-check 114행 · 269개 bad 0 · 중복 0. 문서 재실측: TD-010(임시 postgres:17 OID 순서 pk 먼저, 대조군 뒤집힘), database 521행, testing-strategy P4 · 도우미 표, coding-conventions 코드 블록 diff 0 모두 일치. test 1,638 = 통과 1,634 · 실패 0 · 건너뜀 4, build 경고 0. S06 인계: 동시 경합 · 재전송 테스트 기대값은 3003 · 로그 202, InitialCreate 재생성 때 순서 재확인 |
 | 2026-09-28 | - | 결과 리뷰 | 승인(대리) | orchestrator 결과 리뷰 → 오케스트레이션 대리 승인: 백로그 / 기술부채 정리안 전체, S06 · S07 'S05 인계' 이관, coding-conventions 프로젝션 `record` 규칙 추인(조건: Query 하나만 쓰면 기능 폴더 안), BL-135 → BL-117 병합, S05-T05 PASS 추인. DoD 직접 실행: Release build 경고 0 · 오류 0, test 1,638 = 통과 1,634 · 실패 0 · 건너뜀 4, 커버리지(대상 6개) 라인 99.4% · 분기 95.6%(coverable 910줄, 샘플 제거로 분모 축소) |
+| 2026-09-28 | - | DoD | CI 통과 | push `d125bee..7811804` → PR #8 CI [36411894258](https://github.com/thkim-ezabele/task_20260926/actions/runs/36411894258) success(10:48:38Z → 10:52:54Z, 4m16s, ubuntu-24.04, SDK 8.0.425, HEAD `7811804`). 13개 프로젝트 통과 1,634 · 실패 0 · 건너뜀 4(ArchitectureTests 대상 대기 3 + 기존 1), IntegrationTests 127/127(UUID v7 같은 밀리초 테스트 · 새 InitialCreate 적용 포함), 커버리지 라인 99.4% · 분기 95.6%(375/392). 종료 판정 CI 조건 4개 충족 |
 
 ## 계획 리뷰
 
