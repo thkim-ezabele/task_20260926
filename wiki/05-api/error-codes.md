@@ -195,21 +195,21 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 |---|---|---|---|---|---|
 | 21001 | `Validation` | 400 | `Employee.DisplayNameRequired` | PRD-001 샘플 `displayName` 필수 | 폐기 (PRD-002, 상수 삭제 S05-T04) |
 | 21002 | `Validation` | 400 | `Employee.DisplayNameTooLong` | PRD-001 샘플 `displayName` 길이 초과 | 폐기 (PRD-002, 상수 삭제 S05-T04) |
-| 21003 | `Validation` | 400 | `Employee.EmailRequired` | `email` 필수 (누락 · 빈 값 · 공백만). 판정 원본은 Email Value Object `Create`(S05-T03부터) | 사용 |
-| 21004 | `Validation` | 400 | `Employee.EmailInvalid` | `email` 형식 오류. 앞뒤 공백 제거 뒤 `@`가 정확히 하나, 공백 없음, domain에 `.` 포함, 첫 · 끝 `.`과 연속 `.` 거부(예: `a@.com` · `a@com.` · `a@b..c`). 판정 원본은 Email Value Object(S05-T03부터) | 사용 |
-| 21005 | `Validation` | 400 | `Employee.EmailTooLong` | `email` 길이 초과 (앞뒤 공백 제거 뒤 254자 초과). 판정 원본은 Email Value Object(S05-T03부터) | 사용 |
+| 21003 | `Validation` | 400 | `Employee.EmailRequired` | `email` 필수 (누락 · 빈 값 · 공백만). 판정 원본은 Email Value Object `Create` | 사용 |
+| 21004 | `Validation` | 400 | `Employee.EmailInvalid` | `email` 형식 오류. 앞뒤 공백 제거 뒤 `@`가 정확히 하나, 공백 없음, domain에 `.` 포함, 첫 · 끝 `.`과 연속 `.` 거부(예: `a@.com` · `a@com.` · `a@b..c`). 판정 원본은 Email Value Object | 사용 |
+| 21005 | `Validation` | 400 | `Employee.EmailTooLong` | `email` 길이 초과 (앞뒤 공백 제거 뒤 254자 초과). 판정 원본은 Email Value Object | 사용 |
 | 21006 | `Validation` | 400 | `Employee.EmployeeStatusRequired` | PRD-001 샘플 `employeeStatus` 필수 (상태는 API에 노출하지 않음, 등록 시 Active 고정) | 폐기 (PRD-002, 상수 삭제 S05-T04) |
-| 21007 | `Validation` | 400 | `Employee.NameRequired` | `name` 필수 (누락 · 빈 값 · 공백만). `GET /api/employee/{name}`의 공백 제거 뒤 빈 이름(400)에도 쓴다(S07-T02) | 예약: S05-T03 |
-| 21008 | `Validation` | 400 | `Employee.NameTooLong` | `name` 길이 초과 (앞뒤 공백 제거 + NFC 뒤 UTF-16 100자 초과) | 예약: S05-T03 |
-| 21009 | `Validation` | 400 | `Employee.NameInvalidCharacter` | `name`에 허용하지 않는 문자가 있음: 제어 문자(Cc, `char.IsControl`, 탭 포함) 또는 짝 없는 서로게이트 | 예약: S05-T03 |
-| 21010 | `Validation` | 400 | `Employee.PhoneNumberRequired` | `tel` 필수 (누락 · 빈 값 · 공백만) | 예약: S05-T03 |
-| 21011 | `Validation` | 400 | `Employee.PhoneNumberInvalidCharacter` | `tel`에 ASCII 숫자와 `-` 밖의 문자가 있음 (`+` · 공백 포함) | 예약: S05-T03 |
-| 21012 | `Validation` | 400 | `Employee.PhoneNumberDigitCountOutOfRange` | `tel` 숫자 자리 수가 8 ~ 15 밖 | 예약: S05-T03 |
-| 21013 | `Validation` | 400 | `Employee.PhoneNumberTooLong` | `tel` 전체 길이 20자 초과 | 예약: S05-T03 |
-| 21014 | `Validation` | 400 | `Employee.PhoneNumberInvalidHyphen` | `tel` 맨 앞 · 맨 뒤 · 연속 하이픈 | 예약: S05-T03 |
-| 21015 | `Validation` | 400 | `Employee.JoinedOnRequired` | `joined` 필수 (누락 · 빈 값 · 공백만) | 예약: S05-T03 |
-| 21016 | `Validation` | 400 | `Employee.JoinedOnInvalidFormat` | `joined`가 `yyyy-MM-dd` 정확 형식 · 있는 날짜가 아님 (`2000-2-3` · `2000-02-30`) | 예약: S05-T03 |
-| 21017 | `Validation` | 400 | `Employee.JoinedOnTooEarly` | `joined`가 1900-01-01 이전 (`1899-12-31`) | 예약: S05-T03 |
+| 21007 | `Validation` | 400 | `Employee.NameRequired` | `name` 필수 (누락 · 빈 값 · 공백만). `GET /api/employee/{name}`의 공백 제거 뒤 빈 이름(400)에도 쓴다(S07-T02). 판정 원본은 Name Value Object | 사용 |
+| 21008 | `Validation` | 400 | `Employee.NameTooLong` | `name` 길이 초과 (앞뒤 공백 제거 + NFC 뒤 UTF-16 100자 초과). 판정 원본은 Name Value Object | 사용 |
+| 21009 | `Validation` | 400 | `Employee.NameInvalidCharacter` | `name`에 허용하지 않는 문자가 있음: 제어 문자(Cc, `char.IsControl`, 탭 포함) 또는 짝 없는 서로게이트. 판정 원본은 Name Value Object | 사용 |
+| 21010 | `Validation` | 400 | `Employee.PhoneNumberRequired` | `tel` 필수 (누락 · 빈 값 · 공백만). 판정 원본은 PhoneNumber Value Object | 사용 |
+| 21011 | `Validation` | 400 | `Employee.PhoneNumberInvalidCharacter` | `tel`에 ASCII 숫자와 `-` 밖의 문자가 있음 (`+` · 공백 포함). 판정 원본은 PhoneNumber Value Object | 사용 |
+| 21012 | `Validation` | 400 | `Employee.PhoneNumberDigitCountOutOfRange` | `tel` 숫자 자리 수가 8 ~ 15 밖. 판정 원본은 PhoneNumber Value Object | 사용 |
+| 21013 | `Validation` | 400 | `Employee.PhoneNumberTooLong` | `tel` 전체 길이 20자 초과. 판정 원본은 PhoneNumber Value Object | 사용 |
+| 21014 | `Validation` | 400 | `Employee.PhoneNumberInvalidHyphen` | `tel` 맨 앞 · 맨 뒤 · 연속 하이픈. 판정 원본은 PhoneNumber Value Object | 사용 |
+| 21015 | `Validation` | 400 | `Employee.JoinedOnRequired` | `joined` 필수 (누락 · 빈 값 · 공백만). 판정 원본은 JoinedOn Value Object | 사용 |
+| 21016 | `Validation` | 400 | `Employee.JoinedOnInvalidFormat` | `joined`가 `yyyy-MM-dd` 정확 형식 · 있는 날짜가 아님 (`2000-2-3` · `2000-02-30`). 판정 원본은 JoinedOn Value Object | 사용 |
+| 21017 | `Validation` | 400 | `Employee.JoinedOnTooEarly` | `joined`가 1900-01-01 이전 (`1899-12-31`). 판정 원본은 JoinedOn Value Object | 사용 |
 | 21018 | `Validation` | 400 | `Employee.DuplicateEmailInRequest` | 같은 요청 안 이메일 중복 (`NormalizedEmail` 서수 비교, 두 행 모두 표시) | 예약: S06-T04 |
 | 21019 | `Validation` | 400 | `Employee.CsvColumnCountMismatch` | CSV 행의 열 개수가 4가 아님 | 예약: S06-T02 |
 | 21020 | `Validation` | 400 | `Employee.CsvUnclosedQuote` | CSV 닫히지 않은 따옴표 | 예약: S06-T02 |
@@ -229,7 +229,7 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 
 - 필드 코드(21003 ~ 21005, 21007 ~ 21017)는 Employee Value Object `Create(string?)`가 돌려주는 `Result`의 오류이고, 일괄 등록 Handler가 행 경로(`rows[n].email` 등, 1부터)로 `ValidationError`(1001)의 `errors`에 옮깁니다([ADR-0026](../03-architecture/adr/0026-employee-bulk-import-input-processing.md) 7 · 8절). 길이는 `string.Length`(UTF-16 코드 단위)로 잽니다(이모지는 한 글자가 2).
 - 파싱 · 입력 코드(21019 ~ 21030)도 같은 `errors`에 담깁니다. 요청 전체 오류(21022 · 21023 · 21027 · 21030)의 경로는 `""`, 행 전체 오류(21019 ~ 21021, 21024)는 `rows[n]`입니다.
-- 한 필드 안에서는 첫 실패만 보고합니다. S05-T02 이전 샘플의 판정 순서(`RegisterEmployeeCommandValidator`, 이름: 필수 → 길이, 이메일: 필수 → 길이 → 형식)는 S05-T04에서 샘플과 함께 없어지고, 새 순서는 Value Object가 정합니다(S05-T03).
+- 한 필드 안에서는 첫 실패만 보고합니다. S05-T02 이전 샘플의 판정 순서(`RegisterEmployeeCommandValidator`, 이름: 필수 → 길이, 이메일: 필수 → 길이 → 형식)는 S05-T04에서 샘플과 함께 없어지고, 새 순서는 Value Object가 정합니다(S05-T03): name 21007 → 21009 → 21008, email 21003 → 21005 → 21004, tel 21010 → 21011 → 21013 → 21014 → 21012, joined 21015 → 21016 → 21017(`Name` · `Email` · `PhoneNumber` · `JoinedOn` 문서 주석과 단위 테스트가 원본).
 
 ---
 
@@ -246,3 +246,4 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 | 2026-09-27 | developer | Employee 에러 코드 표(21001 ~ 21006, 22001, 23001)와 Employee 로그 이벤트 20001 `EmployeeRegistered` (S03-T01) |
 | 2026-09-27 | developer | Employee 로그 하위 범위(20001 ~ 20899 Application, 20901 ~ 20999 MigrationService)와 MigrationService 로그 이벤트 20901 `MigrationsApplied` · 20902 `MigrationsFailed` (S03-T03) |
 | 2026-09-28 | developer | ADR-0026 · 0027 · 0028 반영: `ErrorType` `PayloadTooLarge` = 11 · `UnsupportedMediaType` = 12(T = 1, 413 · 415), 공통 1004 · 1005 예약(S06-T01), 공통 · Employee 표에 상태 열(사용 · 예약 · 폐기), Employee 21001 · 21002 · 21006 폐기, 21003 ~ 21005 · 22001 · 23001 설명 갱신(23001은 `ux_employees_normalized_email`), 새 코드 21007 ~ 21030 · 23002 예약(행마다 구현 작업 ID) (S05-T02) |
+| 2026-09-28 | developer | Employee 21007 ~ 21017 상태를 예약 → 사용(Value Object `Name` · `PhoneNumber` · `JoinedOn`, 설명에 판정 원본 추가), 21003 ~ 21005 설명의 `(S05-T03부터)` 삭제, 필드별 판정 순서를 "첫 실패만 보고" 항목에 추가 (S05-T03) |

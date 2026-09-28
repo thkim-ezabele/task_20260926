@@ -155,6 +155,9 @@ updated: 2026-09-28
 | BL-126 | 직원 정보 수정 · 삭제 API | PRD-002 범위 밖 | | new | PRD-002는 등록 · 조회만 |
 | BL-127 | 조직 · 부서 정보 | PRD-002 범위 밖 | | new | 로드맵 Phase 2 후보 토픽(인증 / 직원 · 조직 관리)과 함께 판단 |
 | BL-128 | roadmap.md Phase 1 표와 일정표의 PRD-001 행이 '진행 중 / v0.1.0 (예정)'으로 남아 있음(v0.1.0 태그 2987cdc 존재). `/retro` 종료 때 갱신 누락 | S05-T01 developer | | new | 완료 조건 밖이라 S05-T01에서 고치지 않음 |
+| BL-129 | Email local 부분의 제어 문자(예: U+0001)를 거부할지: 현재 규칙(`@` 하나 · 공백 없음 · domain `.`)으로 거르지 않음 | S05-T03 developer | | new | PRD-002 FR-01 규칙 밖이라 구현하지 않음. PRD 개정 여부 판단 |
+| BL-130 | Value Object record 기본 ToString이 값을 출력(`Name { Value = 홍길동 }`): 로그 템플릿 인자로 넘기면 개인정보가 남음. ToString 재정의 또는 로그 인자 금지 규칙 검토 | S05-T03 developer | | new | NFR-04 · FR-10 개인정보 테스트(S06-T06)와 관련 |
+| BL-131 | testing-strategy 규칙 후보: xUnit v3 MemberData / InlineData는 발견 단계 직렬화에서 짝 없는 서로게이트 문자열을 바꿀 수 있으므로 `DisableDiscoveryEnumeration = true`와 입력 보존 단언을 둔다 | S05-T03 developer | | new | S05-T03 실측(21009 사례 4건 실패 후 수정) |
 
 ---
 

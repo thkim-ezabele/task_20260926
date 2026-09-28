@@ -13,20 +13,61 @@ public sealed class EmployeeErrorsTests
         .Select(field => (field.Name, (Error)field.GetValue(null)!))
         .ToList();
 
+    // error-codes Employee 표의 '사용' 행(1:1). 판정 원본이 Value Object인 필드 코드(21003 ~ 21005, 21007 ~ 21017)를 포함한다.
+    private static readonly (string Name, int Code, ErrorType Type)[] UsedRows =
+    [
+        ("EmailRequired", 21003, ErrorType.Validation),
+        ("EmailInvalid", 21004, ErrorType.Validation),
+        ("EmailTooLong", 21005, ErrorType.Validation),
+        ("NameRequired", 21007, ErrorType.Validation),
+        ("NameTooLong", 21008, ErrorType.Validation),
+        ("NameInvalidCharacter", 21009, ErrorType.Validation),
+        ("PhoneNumberRequired", 21010, ErrorType.Validation),
+        ("PhoneNumberInvalidCharacter", 21011, ErrorType.Validation),
+        ("PhoneNumberDigitCountOutOfRange", 21012, ErrorType.Validation),
+        ("PhoneNumberTooLong", 21013, ErrorType.Validation),
+        ("PhoneNumberInvalidHyphen", 21014, ErrorType.Validation),
+        ("JoinedOnRequired", 21015, ErrorType.Validation),
+        ("JoinedOnInvalidFormat", 21016, ErrorType.Validation),
+        ("JoinedOnTooEarly", 21017, ErrorType.Validation),
+        ("NotFound", 22001, ErrorType.NotFound),
+        ("DuplicateEmail", 23001, ErrorType.Conflict),
+    ];
+
+    // '폐기' 행. 상수는 PRD-001 샘플이 쓰므로 S05-T04에서 지운다(그때 이 목록을 비운다).
+    private static readonly (string Name, int Code, ErrorType Type)[] DeprecatedRows =
+    [
+        ("DisplayNameRequired", 21001, ErrorType.Validation),
+        ("DisplayNameTooLong", 21002, ErrorType.Validation),
+        ("EmployeeStatusRequired", 21006, ErrorType.Validation),
+    ];
+
+    // '예약' 행(21018 ~ 21030, 23002). 구현 작업(S06-T02 ~ T04)이 상수를 추가하면서 '사용'으로 옮긴다.
+    private static readonly int[] ReservedCodes =
+    [
+        21018, 21019, 21020, 21021, 21022, 21023, 21024, 21025, 21026, 21027, 21028, 21029, 21030, 23002,
+    ];
+
     [Fact]
-    public void Fields_MatchDocumentedTable()
+    public void Fields_MatchDocumentedUsedAndDeprecatedRows()
     {
-        Fields.Select(field => (field.Name, field.Error.Code, field.Error.Type)).Should().BeEquivalentTo(new[]
-        {
-            ("DisplayNameRequired", 21001, ErrorType.Validation),
-            ("DisplayNameTooLong", 21002, ErrorType.Validation),
-            ("EmailRequired", 21003, ErrorType.Validation),
-            ("EmailInvalid", 21004, ErrorType.Validation),
-            ("EmailTooLong", 21005, ErrorType.Validation),
-            ("EmployeeStatusRequired", 21006, ErrorType.Validation),
-            ("NotFound", 22001, ErrorType.NotFound),
-            ("DuplicateEmail", 23001, ErrorType.Conflict),
-        });
+        Fields.Select(field => (field.Name, field.Error.Code, field.Error.Type))
+            .Should().BeEquivalentTo(UsedRows.Concat(DeprecatedRows));
+    }
+
+    [Fact]
+    public void DocumentedRows_CountByStatus()
+    {
+        // S05-T03 기준선: 사용 16 · 폐기 3 · 예약 14(error-codes Employee 표 행 수 33).
+        UsedRows.Should().HaveCount(16);
+        DeprecatedRows.Should().HaveCount(3);
+        ReservedCodes.Should().HaveCount(14).And.OnlyHaveUniqueItems();
+    }
+
+    [Fact]
+    public void ReservedCodes_AreNotDefinedYet()
+    {
+        Fields.Select(field => field.Error.Code).Should().NotIntersectWith(ReservedCodes);
     }
 
     [Fact]

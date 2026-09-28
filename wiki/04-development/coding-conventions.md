@@ -397,7 +397,7 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
   - 예(PRD-001 샘플, S05-T04 전): `Employee.Register(id, displayName, email, status)`는 `Employee`를 돌려주고 불변식 위반이면 예외를 던진다. 이메일 중복(23001)은 Handler가 `Result`로 돌려준다. S05-T04부터 `Employee.Register`는 검증된 Value Object를 받는다.
 - 다른 Aggregate는 **ID로만** 참조한다.
 - ID는 강타입 `record struct`(`EmployeeId`)를 쓴다.
-- Value Object는 get-only `sealed record`로 만든다. PRD-001 샘플은 이메일을 값 객체로 만들지 않고 Aggregate가 정규화한 `string` 속성으로 두었다(`Employee.Email`, `EmployeeEmail.Normalize` = Trim + `ToLowerInvariant`, S03 결정). PRD-002부터 이메일은 Email Value Object이고(S05-T03), 입력 표기와 정규화 값(`NormalizedEmail`, NFC 없음)을 따로 가진다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)).
+- Value Object는 get-only `sealed record`로 만든다. `Create`로만 만들어야 하는 Value Object(Employee 4개)는 위치 기반 record가 아니라 **private 생성자 + get-only 속성**으로 둔다(위치 기반이면 public 생성자와 `init`이 생겨 `Create` 판정을 우회한다). 예: `public sealed record Name { private Name(string value) { Value = value; } public string Value { get; } public static Result<Name> Create(string? value) ... }`. PRD-001 샘플은 이메일을 값 객체로 만들지 않고 Aggregate가 정규화한 `string` 속성으로 두었다(`Employee.Email`, `EmployeeEmail.Normalize` = Trim + `ToLowerInvariant`, S03 결정). PRD-002부터 이메일은 Email Value Object이고(S05-T03), 입력 표기와 정규화 값(`NormalizedEmail`, NFC 없음)을 따로 가진다([ADR-0027](../03-architecture/adr/0027-case-insensitive-unique-email-with-normalized-column.md)).
 - 도메인 이벤트는 Aggregate가 발생시켜 수집한다. 지금은 **수집까지만** 하고 커밋 뒤 UnitOfWork가 `ClearDomainEvents`로 비운다([ADR-0014](../03-architecture/adr/0014-command-transaction-boundary-and-unit-of-work.md)). 디스패치는 이후 토픽, 다른 서비스로 알릴 통합 이벤트 · Outbox는 도입 보류다([ADR-0023](../03-architecture/adr/0023-deferred-adoptions.md), [ADR-0004](../03-architecture/adr/0004-adopt-event-driven-architecture.md) 유지).
 - Domain 프로젝트는 EF Core, ASP.NET Core 등 프레임워크를 참조하지 않는다(데이터 어노테이션 금지).
 
@@ -478,3 +478,4 @@ Controller는 primary constructor로 **`ISender`만** 받는다([ADR-0016](../03
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #14 반영: 새 경고 억제는 승인 목록 행과 함께 제출(행 없으면 reviewer PASS 불가), 앞선 작업의 같은 규칙 ID grep 대조와 검색 명령 |
 | 2026-09-28 | - | RETRO-PRD-001 개선안 #15 반영: 테스트 enum 기반 형식 명시(`: int` 포함, 위반 표본 예외, 점검 명령), 생성 코드 `*.Sealed.cs` 규칙(BL-090, 실제 선언), Controller 서비스 로케이터 금지(TD-025, 점검 명령) |
 | 2026-09-28 | developer | ADR-0026 · 0027 반영: 실패 처리 경계에 Employee 필드 규칙 판정 원본(Value Object `Create` → `Result`, 적용 범위 Employee Value Object 4개), CQRS 표 트랜잭션 · 검증 행의 `RegisterEmployeesCommand` 예외, 이메일 `string` 문구를 PRD-001 샘플 설명으로 한정하고 Email Value Object · `ux_employees_normalized_email` 추가, Register 예시가 샘플(S05-T04에서 제거, S06-T04에서 교체)임을 표시 (S05-T02) |
+| 2026-09-28 | developer | Value Object 규칙에 `Create`로만 만드는 Value Object는 private 생성자 + get-only 속성(위치 기반 record 아님) 추가 (S05-T03) |
