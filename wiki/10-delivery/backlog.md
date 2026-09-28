@@ -165,6 +165,7 @@ updated: 2026-09-28
 | BL-136 | check-docs.js에 U+FFFD(EF BF BD) 문자 검사 추가: 도구 인자에서 `\uXXXX` 이스케이프가 문자로 풀려 문서 · 테스트 데이터가 조용히 바뀌는 현상 방지(S06-T03 error-codes 217행 사례) | S06-T03 tester | 중 | new | |
 | BL-137 | 내용은 있지만 행이 0개인 일괄 등록 입력(JSON `[]`, NBSP만 있는 CSV 줄 등 Validator 공백 집합 밖이지만 파서가 빈 줄로 보는 입력)이 201 `{count:0, ids:[]}`로 처리됨. 21028로 거부할지 결정(PRD · ADR 규정 없음) | S06-T04 developer | 중 | new | |
 | BL-138 | 일괄 등록 성공 로그 20001(Information)이 직원마다 1줄이라 1,000행이면 1,000줄. 요약 로그(건수 1줄)로 바꿀지 검토(NFR-02 측정 때 로그 비용 확인) | S06-T04 developer | 하 | new | |
+| BL-139 | 통합 테스트 LogEventText.UnexpectedErrors(ids)가 이벤트 ID만으로 제외: 프레임워크 범주도 ID 1을 씀(TestServer RequestSizeLimitFilter 실측). 제외 시 SourceContext도 함께 보도록 할지 검토 | S06-T06 tester | 하 | new | |
 
 ---
 

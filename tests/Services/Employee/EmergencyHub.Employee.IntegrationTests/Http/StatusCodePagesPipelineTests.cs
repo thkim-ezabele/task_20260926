@@ -1,6 +1,7 @@
 using System.Net;
 using EmergencyHub.BuildingBlocks.Domain.Errors;
 using EmergencyHub.Employee.IntegrationTests.Fixtures;
+using EmergencyHub.Employee.IntegrationTests.TestData;
 using EmergencyHub.ServiceDefaults;
 
 namespace EmergencyHub.Employee.IntegrationTests.Http;
@@ -8,12 +9,16 @@ namespace EmergencyHub.Employee.IntegrationTests.Http;
 // S06-T01 완료 조건 ② · ④ 회귀(tester 보강): UseBuildingBlocksApi에 붙은 UseStatusCodePages는 415만 1005 ProblemDetails로 바꾸고,
 // 실제 Employee Api 파이프라인(ServiceDefaults · 헬스 엔드포인트 포함)의 본문 없는 404 · 405는 그대로 둔다.
 // S06-T05(tester T01 인계): 일괄 등록 엔드포인트의 [Consumes] 불일치 415 · 1005, 메서드 불일치 405(본문 없음),
-// 폼 한도 초과 413 · 1004(TestServer는 Kestrel MaxRequestBodySize를 적용하지 않으므로 바인더 경로, Kestrel 413은 S06-T06).
+// 폼 한도 초과 413 · 1004(TestServer는 Kestrel MaxRequestBodySize를 적용하지 않으므로 RequestFormLimits · RequestSizeLimit 메타데이터를 읽는 바인더 경로만 확인한다.
+// Kestrel MaxRequestBodySize 413은 S06-T06 RegisterEmployeesKestrelLimitTests가 실제 Kestrel 호스트로 확인한다).
 [Collection(EmployeeDatabaseCollectionDefinition.Name)]
 [Trait("FR", "PRD-002/FR-09")]
 public sealed class StatusCodePagesPipelineTests(EmployeeDatabaseFixture database) : EmployeeDatabaseTest(database)
 {
     private const string RegisterPath = "/api/employee";
+
+    // TestServer에서 [RequestSizeLimit]을 서버 한도로 적용하지 못하면 경고를 남기는 MVC 필터 범주입니다(Kestrel은 적용하므로 남기지 않음).
+    internal const string RequestSizeLimitFilter = "Microsoft.AspNetCore.Mvc.Filters.RequestSizeLimitFilter";
 
     // ---- 성공: 기존 경로는 그대로 ----
 
@@ -71,7 +76,7 @@ public sealed class StatusCodePagesPipelineTests(EmployeeDatabaseFixture databas
     }
 
     [Fact]
-    public async Task Post_RegisterEmployeesMultipartOverOneMebibyte_Returns413With1004()
+    public async Task Post_RegisterEmployeesMultipartOverOneMebibyteOnTestServerRequestFormLimitsPathOnly_Returns413With1004AndStoresNothing()
     {
         await using var factory = new EmployeeApiFactory(Database);
         using var client = factory.CreateClient();
@@ -81,6 +86,10 @@ public sealed class StatusCodePagesPipelineTests(EmployeeDatabaseFixture databas
 
         await response.ShouldBeProblemAsync(
             HttpStatusCode.RequestEntityTooLarge, 1004, CommonErrors.PayloadTooLarge.Message, RegisterPath, CancellationToken);
+        (await EmployeeRows.CountAsync(Database, CancellationToken)).Should().Be(0);
+        factory.Logs.Events.Should().Contain(
+            logEvent => logEvent.SourceContext() == RequestSizeLimitFilter && logEvent.Level == Serilog.Events.LogEventLevel.Warning,
+            "TestServer는 IHttpMaxRequestBodySizeFeature가 없어 [RequestSizeLimit]을 서버에 적용하지 못한다(413은 바인더가 메타데이터로 판정)");
     }
 
     // ---- 엣지: 지원하지 않는 Content-Type이어도 경로가 없으면 415가 아니라 본문 없는 404 ----
