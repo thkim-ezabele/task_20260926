@@ -3,7 +3,7 @@ title: "설계 요약"
 type: memory
 tags: [memory]
 created: 2026-09-27
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 # 설계 요약
@@ -63,6 +63,7 @@ updated: 2026-09-28
 - 오류: 요청 안 중복 400, DB 중복 409 + 행 번호(BuildingBlocks 상세 Conflict), 413 / 415는 ErrorType + 공통 코드. 입력은 Api 전용 바인더 → Application 파서 → Domain Value Object.
 - 스키마: 샘플 API 제거, `employee_status` 유지, 이메일 원본 + `normalized_email` 유니크, `joined_on` · `phone_number`, `InitialCreate` 리셋 전용 작업. ADR 후보 4건은 S05-T02에서 0025~0028로 확정(대리 확인, `/retro` 추인 대기).
 - S05 구현 결정(ADR 아님, 원본은 기준 문서 · [S05 결과 리뷰](../10-delivery/sprints/S05-rebase-decisions-schema.md#결과-리뷰)): 배포 코드 21001 · 21002 · 21006 폐기 · 새 코드 21007~21030 · 23002, VO는 EmployeeConfiguration 안 HasConversion(Owned · Complex는 복합 인덱스 불가, 실측), NormalizedEmail string 속성, 아키텍처 규칙 "대상 대기" 목록(해제 작업 ID + 안전장치), 리셋 `20260928090646_InitialCreate`(`--output-dir Persistence/Migrations` 필요), Read Repository 프로젝션 record는 여러 Query가 쓰면 기능 폴더 밖, TD-010 pk 먼저 보고 → 3003(인덱스 생성 순서 의존).
+- S06 구현 결정(ADR 아님, 원본은 기준 문서 · [S06 결과 리뷰](../10-delivery/sprints/S06-bulk-register-api.md#결과-리뷰)): email 제어 문자 · 짝 없는 서로게이트 21004(PRD FR-01 개정), 409 `errors` = ValidationError와 같은 모양, 415 두 경로(라우팅 = 상태 코드 페이지, [FromBody] Content-Type 없음 = ClientErrorFactory), 전용 바인더가 폼 값 공급자 없이 원래 바이트 전달 · 한도 바이트 수로 413 · Content-Type 없음은 내용 판별, VO · Command 로그 템플릿 인자 금지, 400 · 409 목록 각 100개 + 잘림. ADR 후보 2건(ADR-0026 1절 부분 대체 · ADR-0028 구체화)은 `/retro PRD-002`.
 
 ## 검토 중 (초안 기본값)
 

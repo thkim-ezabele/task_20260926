@@ -7,7 +7,7 @@ prd: [PRD-002]
 started: 2026-09-28
 finished: 2026-09-29
 adrs: []
-worklogs: []
+worklogs: [WL-2026-09-29-01]
 aliases: [S06]
 tags: [delivery, sprint]
 created: 2026-09-27
@@ -111,6 +111,7 @@ updated: 2026-09-29
 | 2026-09-29 | S06-T06 | 기록 | 실측 ⑥ | 1,000행 CSV 중앙값 170.2ms(워밍업 1 + 5회, 2초 이내, 테스트는 4초 단언), 요청당 명령 2개, INSERT 배치 1개(문 1,000 · 매개변수 9,000), 분할 없음 |
 | 2026-09-29 | S06-T06 | 기록 | 실측 ③ | TestServer 413 테스트는 바인더(RequestFormLimits · RequestSizeLimit 메타데이터) 경로만. Kestrel 413은 네 경로 · chunked 모두 서버 413 · 1004 · DB 0건, 정확히 1 MiB 201 |
 | 2026-09-29 | - | 결과 리뷰 | 승인(대리) | orchestrator 결과 리뷰 → 대리 승인. DoD 직접 실행: build 경고 0, test 통과 2,277 · 건너뜀 1 · 실패 0, 커버리지 라인 99.3% · 분기 96.7%. new 5건 정리, BL-137 결정 대기 |
+| 2026-09-29 | - | 종료 | push | 종료 커밋 `f5e0877`(태그 대상, PRD 종료 뒤 일괄), push `ef9eb86..f5e0877`. CI 대기 · 태그 없음 |
 
 ## 계획 리뷰
 
