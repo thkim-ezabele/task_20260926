@@ -214,7 +214,7 @@ Employee.Domain `EmployeeErrors`가 정의합니다(S03-T01 선배정, PRD-002 S
 | 21019 | `Validation` | 400 | `Employee.CsvColumnCountMismatch` | CSV 행의 열 개수가 4가 아님 (행 오류, 경로 `rows[n]`). 판정 원본은 Application CSV 파서 | 사용 |
 | 21020 | `Validation` | 400 | `Employee.CsvUnclosedQuote` | CSV 닫히지 않은 따옴표 (행 오류, 레코드가 시작한 줄). 판정 원본은 Application CSV 파서 | 사용 |
 | 21021 | `Validation` | 400 | `Employee.CsvUnexpectedQuote` | CSV 따옴표 없는 필드 안의 `"`, 닫는 따옴표 뒤의 공백 아닌 문자 (`"a"b`, 행 오류). 판정 원본은 Application CSV 파서 | 사용 |
-| 21022 | `Validation` | 400 | `Employee.ImportInvalidUtf8` | 입력이 올바른 UTF-8이 아님 (CP949, UTF-8로 인코딩한 서로게이트 `ED A0 80` 등, 경로 `""`). BOM `EF BB BF`는 맨 앞 하나만 허용. JSON 이스케이프의 짝 없는 서로게이트(`�` · `�`, 속성 이름 또는 읽는 필드 값)도 이 코드. 판정 원본은 Application 해독 단계 · JSON 파서 | 사용 |
+| 21022 | `Validation` | 400 | `Employee.ImportInvalidUtf8` | 입력이 올바른 UTF-8이 아님 (CP949, UTF-8로 인코딩한 서로게이트 `ED A0 80` 등, 경로 `""`). BOM `EF BB BF`는 맨 앞 하나만 허용. JSON 이스케이프의 짝 없는 서로게이트(`\ud800` · `\udc00`, 속성 이름 또는 읽는 필드 값)도 이 코드. 판정 원본은 Application 해독 단계 · JSON 파서 | 사용 |
 | 21023 | `Validation` | 400 | `Employee.JsonSyntaxInvalid` | JSON 문법 오류 (끝 쉼표 · 주석 · `[..],[..]` · 입력 기준 최대 깊이 64 초과 · 배열 · 객체가 아닌 루트, 경로 `""`). 판정 원본은 Application JSON 파서 | 사용 |
 | 21024 | `Validation` | 400 | `Employee.JsonItemNotObject` | JSON 항목이 객체가 아님 (`null` · 숫자 · 문자열 · 배열, 항목 오류, 경로 `rows[n]`). 판정 원본은 Application JSON 파서 | 사용 |
 | 21025 | `Validation` | 400 | `Employee.JsonValueNotString` | JSON 항목의 필드 값이 문자열이 아님 (`"joined": 20000101` · `null` 등, 항목 오류, 경로 `rows[n].joined`처럼 그 필드). 속성이 없으면 이 코드가 아니라 그 필드의 필수 코드. 판정 원본은 Application JSON 파서 | 사용 |

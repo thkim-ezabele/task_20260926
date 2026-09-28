@@ -83,6 +83,7 @@ updated: 2026-09-28
 | 2026-09-28 | S06-T03 | 기록 | handoff | T04: Field None → Rows[n], 필드 있으면 Rows[n].Name 등, 속성 누락은 null → VO 필수 코드, 요청 전체(21022 · 21023 · 21027) 경로 "" |
 | 2026-09-28 | S06-T03 | reviewer | REJECT → developer | [컨벤션] JsonImportParser.cs:126 `Error!` null-forgiving. [버그(문서)] error-codes.md:217 21022 예시 `\ud800` · `\udc00`이 U+FFFD 2개로 깨짐 |
 | 2026-09-28 | S06-T03 | tester | REJECT → developer | error-codes.md:217 U+FFFD(사실 문장 오류). test 통과 1,902 · 건너뜀 4 · 실패 0. 보강 +3, 이스케이프 속성 이름 테스트 입력 복구. BL-136 new |
+| 2026-09-28 | S06-T03 | developer | PASS | 재작업 1: 속성 패턴 switch로 `!` 제거, error-codes 217행 이스케이프 원문 복구(EF BF BD 0), 변경 파일 9개 grep 0. Application 173/173 |
 
 ## 계획 리뷰
 

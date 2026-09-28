@@ -117,13 +117,14 @@ internal static class JsonImportParser
                 return Result.Failure<ImportParseResult>(itemResult.Error);
             }
 
-            if (itemResult.Value.Row is { } row)
+            switch (itemResult.Value)
             {
-                rows.Add(row);
-            }
-            else
-            {
-                errors.Add(itemResult.Value.Error!);
+                case { Row: { } row }:
+                    rows.Add(row);
+                    break;
+                case { Error: { } error }:
+                    errors.Add(error);
+                    break;
             }
         }
 
