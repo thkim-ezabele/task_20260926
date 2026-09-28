@@ -55,13 +55,14 @@ updated: 2026-09-28
 - S04 결정(ADR 아님, 원본은 기준 문서): 커버리지 대상 6개(BuildingBlocks 4 + Employee Domain / Application, `coverlet.runsettings`), Aspire 스모크 미도입(BL-111), 실패 처리 경계(요청 값만으로 판정 = Validator · Result, Aggregate 불변식 위반 = 예외, 저장 데이터 · 상태 의존 = Result), 경고 억제는 `[SuppressMessage]` + Justification과 승인 목록(coding-conventions). ADR 후보 4건은 [S04 결과 리뷰](../10-delivery/sprints/S04-tests-docs-evidence.md#adr-후보-파일은-만들지-않음-retro에서-판단).
 - 정책: 도메인 이벤트는 수집만(디스패치는 이후 토픽). Aspire 9.x 마이너 버전은 9.5.2(S01-T01).
 
-## 방향 결정 (PRD-002, ADR은 S05-T02에서)
+## 방향 결정 (PRD-002, ADR 0025~0028로 확정)
 
 원본: [PRD-002 질문과 답변](../10-delivery/prd/PRD-002-employee-contacts.md#질문과-답변)
 
 - 과제 필수 경로 `/api/employee`(page / pageSize, `{name}` 단건 = 입사일 빠른 순, 동명이인 전체는 백로그), 일괄 등록 CSV(헤더 없음) / JSON(대괄호 없는 나열 포함) · multipart + raw body, 전부 거부.
 - 오류: 요청 안 중복 400, DB 중복 409 + 행 번호(BuildingBlocks 상세 Conflict), 413 / 415는 ErrorType + 공통 코드. 입력은 Api 전용 바인더 → Application 파서 → Domain Value Object.
-- 스키마: 샘플 API 제거, `employee_status` 유지, 이메일 원본 + `normalized_email` 유니크, `joined_on` · `phone_number`, `InitialCreate` 리셋 전용 작업. ADR 후보 4건.
+- 스키마: 샘플 API 제거, `employee_status` 유지, 이메일 원본 + `normalized_email` 유니크, `joined_on` · `phone_number`, `InitialCreate` 리셋 전용 작업. ADR 후보 4건은 S05-T02에서 0025~0028로 확정(대리 확인, `/retro` 추인 대기).
+- S05 구현 결정(ADR 아님, 원본은 기준 문서 · [S05 결과 리뷰](../10-delivery/sprints/S05-rebase-decisions-schema.md#결과-리뷰)): 배포 코드 21001 · 21002 · 21006 폐기 · 새 코드 21007~21030 · 23002, VO는 EmployeeConfiguration 안 HasConversion(Owned · Complex는 복합 인덱스 불가, 실측), NormalizedEmail string 속성, 아키텍처 규칙 "대상 대기" 목록(해제 작업 ID + 안전장치), 리셋 `20260928090646_InitialCreate`(`--output-dir Persistence/Migrations` 필요), Read Repository 프로젝션 record는 여러 Query가 쓰면 기능 폴더 밖, TD-010 pk 먼저 보고 → 3003(인덱스 생성 순서 의존).
 
 ## 검토 중 (초안 기본값)
 
